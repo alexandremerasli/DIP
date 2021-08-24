@@ -1,0 +1,263 @@
+castor-recon() -> Launch reconstruction from CASToR version 3.1.
+sOutputManager::LogCommandLine() -> Write command line into the log file
+==================================================================================================
+                                      COMMAND LINE CONTEXT
+==================================================================================================
+Command line: castor-recon -df data_eff10/data_eff10.cdh -dout castor_output -dim 128,128,1 -vox 4,4,4 -vb 3 -it 6:1 -proj incrementalSiddon -opti MLEM -th 0 -osens -oit -1 
+Working directory: /home/meraslia/sgld/hernan_folder/simu_mmr
+Data of execution: Thu Jul  1 17:46:28 2021
+Float numbers precision in bytes (for matrices and some computations): 4
+Float numbers precision in bytes (for sensitive computations that require at least double precision): 8
+Float numbers precision in bytes (for datafile reading/writing): 4
+Float numbers precision in bytes (for scanner LUT reading/writing): 4
+CASToR version: 3.1
+==================================================================================================
+sScannerManager::FindScannerSystem() -> Search for scanner PET_SIEMENS_MMR_2D in the configuration directory
+sScannerManager::GetAvailableScanners() -> Scan the scanner configuration directory
+  --> matched custom LUT for the scanner system: PET_SIEMENS_MMR_2D.hscan
+sScannerManager::BuildScannerObject() -> Start building
+sScannerManager::InstantiateScanner() -> Instantiate the scanner geometry structure
+iScannerPET::Instantiate() -> Create scanner structure and read parameters from configuration file
+sScannerManager::GetGeometricInfoFromDataFile() -> Look for acquisition specific settings into datafile header
+iScannerPET::GetGeometricInfoFromDataFile() -> Specific to PET
+sScannerManager::BuildLUT() -> Generate the geometric Look-Up Table
+iScannerPET::BuildLUT() -> Build LUT for scanner elements coordinates and orientations
+iScannerPET::LoadLUT() -> Start loading LUT from user-provided file
+  --> LUT successfully loaded
+sScannerManager::Initialize() -> From scanner PET_SIEMENS_MMR_2D
+iScannerPET::Initialize() -> Initialize remaining stuff for scanner to be ready
+oImageDimensionsAndQuantification::Initialize() -> Initialize image dimensions, basis functions and quantification
+  --> Image dimensions: [128;128;1] voxels of [4.0000000e+00;4.0000000e+00;4.0000000e+00] mm3
+  --> FOV size: [5.1200000e+02;5.1200000e+02;4.0000000e+00] mm3
+  --> Number of parallel threads: 64
+sRandomNumberGenerator::Initialize ...
+sRandomNumberGenerator::Initialize() -> Seed for thread 0 : 3784494100
+sRandomNumberGenerator::Initialize() -> Seed for thread 1 : 3495229994
+sRandomNumberGenerator::Initialize() -> Seed for thread 2 : 3774249806
+sRandomNumberGenerator::Initialize() -> Seed for thread 3 : 1767578126
+sRandomNumberGenerator::Initialize() -> Seed for thread 4 : 128404597
+sRandomNumberGenerator::Initialize() -> Seed for thread 5 : 3182620190
+sRandomNumberGenerator::Initialize() -> Seed for thread 6 : 2626289981
+sRandomNumberGenerator::Initialize() -> Seed for thread 7 : 491341999
+sRandomNumberGenerator::Initialize() -> Seed for thread 8 : 1042535377
+sRandomNumberGenerator::Initialize() -> Seed for thread 9 : 1804627440
+sRandomNumberGenerator::Initialize() -> Seed for thread 10 : 546911368
+sRandomNumberGenerator::Initialize() -> Seed for thread 11 : 1708238513
+sRandomNumberGenerator::Initialize() -> Seed for thread 12 : 1783867529
+sRandomNumberGenerator::Initialize() -> Seed for thread 13 : 3718843235
+sRandomNumberGenerator::Initialize() -> Seed for thread 14 : 1987159947
+sRandomNumberGenerator::Initialize() -> Seed for thread 15 : 2170633326
+sRandomNumberGenerator::Initialize() -> Seed for thread 16 : 4244797845
+sRandomNumberGenerator::Initialize() -> Seed for thread 17 : 1400188135
+sRandomNumberGenerator::Initialize() -> Seed for thread 18 : 1196365351
+sRandomNumberGenerator::Initialize() -> Seed for thread 19 : 166492414
+sRandomNumberGenerator::Initialize() -> Seed for thread 20 : 3452672520
+sRandomNumberGenerator::Initialize() -> Seed for thread 21 : 2445931100
+sRandomNumberGenerator::Initialize() -> Seed for thread 22 : 1611941658
+sRandomNumberGenerator::Initialize() -> Seed for thread 23 : 569879030
+sRandomNumberGenerator::Initialize() -> Seed for thread 24 : 2436080919
+sRandomNumberGenerator::Initialize() -> Seed for thread 25 : 1374966632
+sRandomNumberGenerator::Initialize() -> Seed for thread 26 : 3920467635
+sRandomNumberGenerator::Initialize() -> Seed for thread 27 : 2895230077
+sRandomNumberGenerator::Initialize() -> Seed for thread 28 : 372206424
+sRandomNumberGenerator::Initialize() -> Seed for thread 29 : 1324266923
+sRandomNumberGenerator::Initialize() -> Seed for thread 30 : 1643310699
+sRandomNumberGenerator::Initialize() -> Seed for thread 31 : 1378789608
+sRandomNumberGenerator::Initialize() -> Seed for thread 32 : 3494529725
+sRandomNumberGenerator::Initialize() -> Seed for thread 33 : 3855181381
+sRandomNumberGenerator::Initialize() -> Seed for thread 34 : 3564131991
+sRandomNumberGenerator::Initialize() -> Seed for thread 35 : 3472807173
+sRandomNumberGenerator::Initialize() -> Seed for thread 36 : 2098001781
+sRandomNumberGenerator::Initialize() -> Seed for thread 37 : 415349699
+sRandomNumberGenerator::Initialize() -> Seed for thread 38 : 2045780422
+sRandomNumberGenerator::Initialize() -> Seed for thread 39 : 2581498389
+sRandomNumberGenerator::Initialize() -> Seed for thread 40 : 2098233850
+sRandomNumberGenerator::Initialize() -> Seed for thread 41 : 1766303197
+sRandomNumberGenerator::Initialize() -> Seed for thread 42 : 1403544422
+sRandomNumberGenerator::Initialize() -> Seed for thread 43 : 3578052815
+sRandomNumberGenerator::Initialize() -> Seed for thread 44 : 4133012165
+sRandomNumberGenerator::Initialize() -> Seed for thread 45 : 4232608012
+sRandomNumberGenerator::Initialize() -> Seed for thread 46 : 3169319325
+sRandomNumberGenerator::Initialize() -> Seed for thread 47 : 1721511354
+sRandomNumberGenerator::Initialize() -> Seed for thread 48 : 2435781456
+sRandomNumberGenerator::Initialize() -> Seed for thread 49 : 4123888156
+sRandomNumberGenerator::Initialize() -> Seed for thread 50 : 3904922840
+sRandomNumberGenerator::Initialize() -> Seed for thread 51 : 2514529187
+sRandomNumberGenerator::Initialize() -> Seed for thread 52 : 604402396
+sRandomNumberGenerator::Initialize() -> Seed for thread 53 : 2559718294
+sRandomNumberGenerator::Initialize() -> Seed for thread 54 : 297254124
+sRandomNumberGenerator::Initialize() -> Seed for thread 55 : 2619647112
+sRandomNumberGenerator::Initialize() -> Seed for thread 56 : 3763893579
+sRandomNumberGenerator::Initialize() -> Seed for thread 57 : 3314391211
+sRandomNumberGenerator::Initialize() -> Seed for thread 58 : 1451747771
+sRandomNumberGenerator::Initialize() -> Seed for thread 59 : 1009371960
+sRandomNumberGenerator::Initialize() -> Seed for thread 60 : 1054658558
+sRandomNumberGenerator::Initialize() -> Seed for thread 61 : 2739752258
+sRandomNumberGenerator::Initialize() -> Seed for thread 62 : 618449368
+sRandomNumberGenerator::Initialize() -> Seed for thread 63 : 1999820830
+vDataFile::ReadInfoInHeader() -> Read datafile header from 'data_eff10/data_eff10.cdh ...'
+oImageDimensionsAndQuantification::SetAcquisitionTime() -> Static single bed acquisition with duration [ 0.0000000e+00 : 1.0000000e+00 ] seconds
+  --> Correct for frame duration
+iDataFilePET::ReadSpecificInfoInHeader() -> Read information specific to PET
+oImageDimensionsAndQuantification::SetPETIsotope() -> Isotope INF has infinite half life and 1.0000000e+00 branching ratio
+  --> Correct for branching ratio
+oImageDimensionsAndQuantification::SetCalibrationFactor() -> Correct for following calibration factor: 1.1262900e+01
+vDataFile::CheckParameters() -> Check mandatory parameters
+iDataFilePET::ComputeSizeEvent() -> In bytes
+  --> Event size = 32 bytes
+vDataFile::InitializeMappedFile() -> Map datafile to memory
+iDataFilePET::PrepareDataFile() -> Build histogram events
+  --> Allocating an event buffer for each thread
+  --> Correct for attenuation
+  --> Correct for normalization
+  --> Correct for scatter events
+  --> Correct for random events
+oDynamicDataManager::InitDynamicData() -> Initialize dynamic data management
+oDynamicDataManager::CheckParameters() -> Check parameters for dynamic data settings
+oDynamicDataManager::SetDynamicSpecificQuantificationFactors() ... 
+oProjectorManager::Initialize() -> Initialize projectors and projection lines
+iProjectorIncrementalSiddon::InitializeSpecific() -> Use incremental Siddon projector
+vProjector::Initialize() -> Exit function
+----- Dynamic model: No parameters given - setting diagonal basis functions !
+oOptimizerManager::Initialize() -> Initialize optimizer and penalty
+iOptimizerMLEM::InitializeSpecific() -> Use the MLEM optimizer
+  --> Initial image value: 1.0000000e+00
+  --> Data space denominator threshold: 1.0000000e-10
+  --> Minimum image update factor: 9.9999998e-03
+sChronoManager::Initialize() -> Initialize all duration counters for profiling
+vAlgorithm::SetNbIterationsAndSubsets() ->  Selected numbers of subsets for each iteration:
+  Iteration / number of subsets 
+    1  /  1
+    2  /  1
+    3  /  1
+    4  /  1
+    5  /  1
+    6  /  1
+vAlgorithm::SetOutputIterations ...
+iIterativeAlgorithm::InitSpecificOptions ... 
+vAlgorithm::Iterate ...
+vAlgorithm::IterateCPU() -> Start algorithm for 6 iterations
+vAlgorithm::StepBeforeIterationLoop ... 
+oImageSpace::InstantiateImage() -> Initialize to 0.
+oImageSpace::InstantiateForwardImage() -> Initialize to 0.
+oImageSpace::InstantiateSensitivityImage() -> For all threads
+oImageSpace::InstantiateOutputImage ...
+oImageSpace::InstantiateVisitedVoxelsImage ...
+oImageSpace::InitSensitivityImage ...
+iIterativeAlgorithm::StepBeforeIterationLoop ... 
+oImageSpace::InstantiateBackwardImageFromDynamicBasis() -> Initialize to 0.
+oImageSpace::InitImage ...
+iIterativeAlgorithm::StepBeforeSubsetLoop ... 
+vAlgorithm::IterateCPU() -> Start iteration 1/6 subset 1/1
+iIterativeAlgorithm::StepPreProcessInsideSubsetLoop ... 
+oImageSpace::InitBackwardImage ...
+oImageSpace::PrepareForwardImage ...
+iIterativeAlgorithm::StepInnerLoopInsideSubsetLoop() -> Start loop over events
+iIterativeAlgorithm::StepPostProcessInsideSubsetLoop ... 
+oImageSpace::Reduce() -> Merge parallel results
+  --> Over threads ...
+oOptimizerManager::ImageUpdateStep() -> Proceed to image update
+vOptimizer::UpdateVisitedVoxels() -> Tick visited voxels based on sensitivity
+vOptimizer::ImageUpdateStep() -> Start image update
+vAlgorithm::IterateCPU() -> Time spent for subset 1 | User: 0 sec | CPU: 4.4267401e-01 sec
+iIterativeAlgorithm::StepAfterSubsetLoop() -> Clean never visited voxels and save images if needed
+oImageSpace::CleanNeverVisitedVoxels ...
+iIterativeAlgorithm::StepBeforeSubsetLoop ... 
+vAlgorithm::IterateCPU() -> Start iteration 2/6 subset 1/1
+iIterativeAlgorithm::StepPreProcessInsideSubsetLoop ... 
+oImageSpace::InitBackwardImage ...
+oImageSpace::PrepareForwardImage ...
+iIterativeAlgorithm::StepInnerLoopInsideSubsetLoop() -> Start loop over events
+iIterativeAlgorithm::StepPostProcessInsideSubsetLoop ... 
+oImageSpace::Reduce() -> Merge parallel results
+  --> Over threads ...
+oOptimizerManager::ImageUpdateStep() -> Proceed to image update
+vOptimizer::UpdateVisitedVoxels() -> Tick visited voxels based on sensitivity
+vOptimizer::ImageUpdateStep() -> Start image update
+vAlgorithm::IterateCPU() -> Time spent for subset 1 | User: 0 sec | CPU: 5.0904298e-01 sec
+iIterativeAlgorithm::StepAfterSubsetLoop() -> Clean never visited voxels and save images if needed
+oImageSpace::CleanNeverVisitedVoxels ...
+iIterativeAlgorithm::StepBeforeSubsetLoop ... 
+vAlgorithm::IterateCPU() -> Start iteration 3/6 subset 1/1
+iIterativeAlgorithm::StepPreProcessInsideSubsetLoop ... 
+oImageSpace::InitBackwardImage ...
+oImageSpace::PrepareForwardImage ...
+iIterativeAlgorithm::StepInnerLoopInsideSubsetLoop() -> Start loop over events
+iIterativeAlgorithm::StepPostProcessInsideSubsetLoop ... 
+oImageSpace::Reduce() -> Merge parallel results
+  --> Over threads ...
+oOptimizerManager::ImageUpdateStep() -> Proceed to image update
+vOptimizer::UpdateVisitedVoxels() -> Tick visited voxels based on sensitivity
+vOptimizer::ImageUpdateStep() -> Start image update
+vAlgorithm::IterateCPU() -> Time spent for subset 1 | User: 0 sec | CPU: 5.0403398e-01 sec
+iIterativeAlgorithm::StepAfterSubsetLoop() -> Clean never visited voxels and save images if needed
+oImageSpace::CleanNeverVisitedVoxels ...
+iIterativeAlgorithm::StepBeforeSubsetLoop ... 
+vAlgorithm::IterateCPU() -> Start iteration 4/6 subset 1/1
+iIterativeAlgorithm::StepPreProcessInsideSubsetLoop ... 
+oImageSpace::InitBackwardImage ...
+oImageSpace::PrepareForwardImage ...
+iIterativeAlgorithm::StepInnerLoopInsideSubsetLoop() -> Start loop over events
+iIterativeAlgorithm::StepPostProcessInsideSubsetLoop ... 
+oImageSpace::Reduce() -> Merge parallel results
+  --> Over threads ...
+oOptimizerManager::ImageUpdateStep() -> Proceed to image update
+vOptimizer::UpdateVisitedVoxels() -> Tick visited voxels based on sensitivity
+vOptimizer::ImageUpdateStep() -> Start image update
+vAlgorithm::IterateCPU() -> Time spent for subset 1 | User: 0 sec | CPU: 2.5943199e-01 sec
+iIterativeAlgorithm::StepAfterSubsetLoop() -> Clean never visited voxels and save images if needed
+oImageSpace::CleanNeverVisitedVoxels ...
+iIterativeAlgorithm::StepBeforeSubsetLoop ... 
+vAlgorithm::IterateCPU() -> Start iteration 5/6 subset 1/1
+iIterativeAlgorithm::StepPreProcessInsideSubsetLoop ... 
+oImageSpace::InitBackwardImage ...
+oImageSpace::PrepareForwardImage ...
+iIterativeAlgorithm::StepInnerLoopInsideSubsetLoop() -> Start loop over events
+iIterativeAlgorithm::StepPostProcessInsideSubsetLoop ... 
+oImageSpace::Reduce() -> Merge parallel results
+  --> Over threads ...
+oOptimizerManager::ImageUpdateStep() -> Proceed to image update
+vOptimizer::UpdateVisitedVoxels() -> Tick visited voxels based on sensitivity
+vOptimizer::ImageUpdateStep() -> Start image update
+vAlgorithm::IterateCPU() -> Time spent for subset 1 | User: 0 sec | CPU: 5.0260001e-01 sec
+iIterativeAlgorithm::StepAfterSubsetLoop() -> Clean never visited voxels and save images if needed
+oImageSpace::CleanNeverVisitedVoxels ...
+iIterativeAlgorithm::StepBeforeSubsetLoop ... 
+vAlgorithm::IterateCPU() -> Start iteration 6/6 subset 1/1
+iIterativeAlgorithm::StepPreProcessInsideSubsetLoop ... 
+oImageSpace::InitBackwardImage ...
+oImageSpace::PrepareForwardImage ...
+iIterativeAlgorithm::StepInnerLoopInsideSubsetLoop() -> Start loop over events
+iIterativeAlgorithm::StepPostProcessInsideSubsetLoop ... 
+oImageSpace::Reduce() -> Merge parallel results
+  --> Over threads ...
+oOptimizerManager::ImageUpdateStep() -> Proceed to image update
+vOptimizer::UpdateVisitedVoxels() -> Tick visited voxels based on sensitivity
+vOptimizer::ImageUpdateStep() -> Start image update
+oImageSpace::SaveSensitivityImage ...
+IntfWriteImgFile (static/dynamic image) ...
+vAlgorithm::IterateCPU() -> Time spent for subset 1 | User: 0 sec | CPU: 2.6106799e-01 sec
+iIterativeAlgorithm::StepAfterSubsetLoop() -> Clean never visited voxels and save images if needed
+oImageSpace::CleanNeverVisitedVoxels ...
+iIterativeAlgorithm::StepAfterSubsetLoop() -> Save image at iteration 6
+oImageSpace::PrepareForwardImage ...
+oImageSpace::SaveOutputImage ...
+IntfWriteImgFile (static/dynamic image) ...
+vAlgorithm::StepAfterIterationLoop ... 
+oImageSpace::DeallocateSensitivityImage() -> Free memory
+oImageSpace::DeallocateForwardImage() -> Free memory
+oImageSpace::DeallocateImage() -> Free memory
+oImageSpace::DeallocateOutputImage ...
+oImageSpace::InstantiateVisitedVoxelsImage ...
+iIterativeAlgorithm::StepAfterIterationLoop ... 
+oImageSpace::DeallocateBackwardImageFromDynamicBasis() -> Free memory
+vAlgorithm::IterateCPU() -> Total time spent | User: 0 sec | CPU: 2.4900200e+00 sec
+sChronoManager::Display() -> Results from the profiling
+  --> Profiling of the data update step:
+    | Datafile management: 00 hours 00 mins 00 secs 001 ms
+    | Dynamic management: 00 hours 00 mins 00 secs 000 ms
+    | Projection management: 00 hours 00 mins 00 secs 014 ms
+    | Optimizer management: 00 hours 00 mins 00 secs 008 ms
+  --> Profiling of the convolution steps: 00 hours 00 mins 00 secs 000 ms
+  --> Custom update step 1: 00 hours 00 mins 00 secs 000 ms
+

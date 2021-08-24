@@ -1,0 +1,18 @@
+data/Algo/Block1/
+data/Algo/Block2/checkpoint/
+data/Algo/Block2/data/random_input.img
+data/Algo/Block2/data/x_label_DIP/
+data/Algo/Block2/out_cnn/
+data/Algo/Block2/x_label/
+data/Algo/Config/
+data/Algo/Images/
+env/
+
+models/__pycache__/
+
+runs (copy)/
+runs/
+simu_mmr/
+.vscode/
+__pycache__/
+

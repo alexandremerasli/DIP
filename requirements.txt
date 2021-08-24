@@ -1,0 +1,9 @@
+pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org torch
+pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pillow
+pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org tifffile
+pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org matplotlib
+pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org numpy
+pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org scikit-image
+pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org tensorboard
+pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pytorch-lightning
+pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org "ray[tune]" 

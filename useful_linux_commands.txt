@@ -1,0 +1,37 @@
+cd sgld/hernan_folder
+
+source env/bin/activate
+
+st3
+
+code .
+
+python3 block_1bis.py --proc GPU --net DIP_VAE --max_iter 400 --sub_iter_DIP 10 --sub_iter_MAP 2 --finetuning last
+
+python3 diff_images.py --img1 data/Algo/Images/out_final/final_out.img --img2 data/Algo/final_out.img
+
+tensorboard --logdir=runs --bind_all --load_fast=false &
+
+kill %1
+
+pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org package_name
+
+./ongoing.sh -o BSREM -b 1 -i 16 -s 6
+
+##################### plus rares ##################### 
+
+sed -i -e 's/new_norm_vol_classic/stand_imag/g' utils/common_utils.py
+
+## si pb de memoire sur gpu
+sudo service gdm3 stop
+
+sudo rmmod nvidia_uvm
+sudo rmmod nvidia_drm
+sudo rmmod nvidia_modeset
+sudo rmmod nvidia
+
+# Then, reload them if desired:
+sudo modprobe nvidia
+sudo modprobe nvidia_modeset
+sudo modprobe nvidia_drm
+sudo modprobe nvidia_uvm

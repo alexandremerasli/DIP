@@ -1,0 +1,36 @@
+!INTERFILE := 
+!imaging modality := phantom
+!version of keys := CASToRv3.1
+CASToR version := 3.1
+
+!GENERAL DATA := 
+!originating system := create_phantom
+!data offset in bytes := 0
+!name of data file := phantom_act.img
+patient name := phantom_act
+
+!GENERAL IMAGE DATA 
+!type of data := Static
+!total number of images := 1
+imagedata byte order := LITTLEENDIAN
+!study duration (sec) := 1
+
+!STATIC STUDY (General) :=
+number of dimensions := 3
+!matrix size [1] := 128
+!matrix size [2] := 128
+!matrix size [3] := 1
+!number format := short float
+!number of bytes per pixel := 4
+scaling factor (mm/pixel) [1] := 4
+scaling factor (mm/pixel) [2] := 4
+scaling factor (mm/pixel) [3] := 4
+first pixel offset (mm) [1] := 0
+first pixel offset (mm) [2] := 0
+first pixel offset (mm) [3] := 0
+data rescale offset := 0
+data rescale slope := 1
+quantification units := 1
+!image duration (sec) := 1
+!image start time (sec) := 0
+!END OF INTERFILE :=
