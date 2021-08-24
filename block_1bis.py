@@ -106,7 +106,7 @@ def admm_loop(config, args, root):
 
     # Config dictionnary for hyperparameters
     rho = config["rho"]
-    np.save(subroot + 'config/config' + suffix + '.npy', config) # Save this configuration of hyperparameters, and reload it at the beginning of block 2 thanks to suffix (passed in subprocess call argumentsZ)
+    np.save(subroot + 'Config/config' + suffix + '.npy', config) # Save this configuration of hyperparameters, and reload it at the beginning of block 2 thanks to suffix (passed in subprocess call argumentsZ)
 
     # castor-recon command line
     header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
@@ -208,7 +208,7 @@ def admm_loop(config, args, root):
         subprocess.call(["python3", root+"/block_2_bis_lightning.py", str(i), str(test), net, processing_unit, finetuning, PETImage_shape_str, root, suffix]) #Calling block 2 algorithm and passing variables (current iter-number of epochs and test number, chosen net, processing unit, way to do finetuning, and image dimensions)
         print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
         f = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_DIP' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
-
+        f[f<0] = 0
         # Metrics for NN output
         compute_metrics(f,image_gt,i,max_iter,writer=writer,write_tensorboard=True)
 
@@ -322,7 +322,7 @@ config = {
     #"opti_DIP" : tune.grid_search(['LBFGS']),
     "mlem_subsets" : tune.grid_search([False,True])
 }
-#'''
+'''
 config = {
     "lr" : tune.grid_search([0.0001]),
     "sub_iter_DIP" : tune.grid_search([10]),
@@ -330,7 +330,8 @@ config = {
     "opti_DIP" : tune.grid_search(['Adam']),
     "mlem_subsets" : tune.grid_search([False])
 }
-#'''
+'''
+
 #reporter = CLIReporter(
 #    parameter_columns=['lr'],
 #    metric_columns=['mse'])
