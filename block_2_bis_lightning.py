@@ -86,23 +86,61 @@ image_corrupt_torch = image_corrupt_torch.view(1,1,PETImage_shape[0],PETImage_sh
 Training the model using checkpoint to load model
 """
 
+'''
+from torch.utils.data import Dataset
+class Dataset():
+
+    # load the dataset
+    def __init__(self, X, y):
+        # store the inputs and outputs
+        self.X = X
+        self.y = y
+     
+    # number of rows in the dataset
+    def __len__(self):
+        return self.X.size()[0]
+     
+    # get a row at an index
+    def __getitem__(self, idx):
+
+        X_sample = self.X[idx]
+        y_sample = self.y[idx]
+        
+        return X_sample, y_sample
+'''
+#from memory_profiler import profile
+ 
+#@profile
 def train_process(config, finetuning, processing_unit, sub_iter_DIP, max_iter, image_net_input_torch, image_corrupt_torch):
     # Implements Dataset
     train_dataset = torch.utils.data.TensorDataset(image_net_input_torch, image_corrupt_torch)
+    # train_dataset = Dataset(image_net_input_torch, image_corrupt_torch)
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
 
     # Choose network architecture as model
     model, model_class = choose_net(net, config)
 
+    #'''
+    #Summary of the network
+    if (net == 'DIP' or net == 'DIP_VAE'):
+        summary(model, input_size=(1,PETImage_shape[0],PETImage_shape[1])) # for DIP
+    else:
+        input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"]))
+        summary(model, input_size=(config["k_DD"],input_size_DD,input_size_DD)) # For Deep Decoder    
+    #'''
+    
     # Loading using previous model if we want to do finetuning
     checkpoint_simple_path = subroot+'Block2/checkpoint/'
     checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(test)  + '/' + suffix + '/'
     model = load_model(config, finetuning, max_iter, model, model_class, checkpoint_simple_path_exp, training=True)
 
+
     # Start training
     print('Starting optimization, iteration',max_iter)
     trainer = create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, checkpoint_simple_path, test, checkpoint_simple_path_exp)
+
     trainer.fit(model, train_dataloader)
+
     return model
 
 model = train_process(config, finetuning, processing_unit, sub_iter_DIP, max_iter, image_net_input_torch, image_corrupt_torch)

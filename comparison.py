@@ -1,11 +1,11 @@
 ## Python libraries
 
 # Pytorch
-import numpy
 from torch.utils.tensorboard import SummaryWriter
 
 # Useful
 import os
+import argparse
 
 # Math
 import numpy as np
@@ -14,7 +14,27 @@ import matplotlib.pyplot as plt
 # Local files to import
 from utils_func import *
 
-## Computing metrics FOR MLEM (must add post smoothing) reconstruction
+## Arguments for linux command to launch script
+# Creating arguments
+parser = argparse.ArgumentParser(description='DIP + ADMM computation')
+parser.add_argument('--opti', type=str, dest='opti', help='optimizer to use in CASToR')
+parser.add_argument('--nb_iter', type=str, dest='nb_iter', help='number of optimizer iterations')
+parser.add_argument('--beta', type=str, dest='beta', help='penalty strength (beta)')
+
+# Retrieving arguments in this python script
+args = parser.parse_args()
+optimizer = args.opti
+nb_iter = args.nb_iter
+beta = args.beta 
+
+# Define PET input dimensions according to input data dimensions
+PETImage_shape_str = read_input_dim()
+PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
+
+#Loading Ground Truth image to compute metrics
+image_gt = fijii_np(subroot+'Block2/data/phantom_act.img',shape=(PETImage_shape))
+
+## Computing metrics for (must add post smoothing for MLEM) reconstruction
 
 # castor-recon command line
 header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
@@ -23,63 +43,32 @@ executable = 'castor-recon'
 dim = ' -dim ' + PETImage_shape_str
 vox = ' -vox 4,4,4'
 vb = ' -vb 3'
-it = ' -it 40:6'
+it = ' -it ' + str(nb_iter) + ':21'
 th = ' -th 0'
+opti = ' -opti ' + optimizer
 proj = ' -proj incrementalSiddon'
-conv = ''
 
-output_path = ' -dout ' + subroot + 'Comparaison/MLEM' # Output path for CASTOR framework
+if (optimizer == 'MLEM'):
+    conv = ' -conv gaussian,4,4,3.5::post'
+    penalty = ''
+    penaltyStrength = ''
+else:
+    conv = ''
+    penalty = ' -pnlt MRF'
+    penaltyStrength = ' -pnlt-beta ' + str(beta)
+
+output_path = ' -dout ' + subroot + 'Comparaison/' + optimizer # Output path for CASTOR framework
 initialimage = ' -img ' + subroot + 'Data/castor_output_it6.hdr'
 
 # Command line for calculating the Likelihood
 vb_like = ' -vb 0'
 opti_like = ' -opti-fom'
 
-os.system(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + conv)
+os.system(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv)
 
 # load MLEM previously computed image 
-image_MLEM = fijii_np(subroot+'Comparaison/MLEM/MLEM_it40.img', shape=(PETImage_shape))
+image_optimizer = fijii_np(subroot+'Comparaison/' + optimizer + '/' + optimizer + '_it' + str(nb_iter) + '.img', shape=(PETImage_shape))
 
-compute_metrics(image_MLEM,image_gt,i,max_iter,write_tensorboard=False)
-write_image_tensorboard(writer,image_MLEM,"Final image computed with MLEM") # MLEM image in tensorboard
-
-# Computing metrics for BSREM reconstruction
-
-# castor-recon command line
-header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
-
-executable = 'castor-recon'
-dim = ' -dim ' + PETImage_shape_str
-vox = ' -vox 4,4,4'
-vb = ' -vb 3'
-it = ' -it 40:6'
-th = ' -th 0'
-proj = ' -proj incrementalSiddon'
-conv = ''
-opti = ' -opti BSREM'
-penalty = ' -pnlt MRF'
-penaltyStrength = ' -pnlt-beta 1'
-ignoreTOF =' ' #'-ignore-TOF'
-sauvegardeSens = ''#' -osens'
-sauvegardeApresSsEnsemble = '' #-osub'
-sauvegardelut = '' #'-olut'
-
-output_path = ' -dout ' + subroot + 'Comparaison/BSREM' # Output path for CASTOR framework
-initialimage = ' -img ' + subroot + 'Data/castor_output_it6.hdr'
-
-# Command line for calculating the Likelihood
-vb_like = ' -vb 0'
-opti_like = ' -opti-fom'
-
-print(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage
-          + conv + ignoreTOF + sauvegardeSens + sauvegardeApresSsEnsemble + sauvegardelut + penalty
-                      + penaltyStrength)
-os.system(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage
-          + conv + ignoreTOF + sauvegardeSens + sauvegardeApresSsEnsemble + sauvegardelut + penalty
-                      + penaltyStrength)
-
-# load BSREM previously computed image 
-image_BSREM = fijii_np(subroot+'Comparaison/BSREM/BSREM_it40.img', shape=(PETImage_shape))
-
-compute_metrics(image_BSREM,image_gt,i,max_iter,write_tensorboard=False)
-write_image_tensorboard(writer,image_BSREM,"Final image computed with BSREM") # BSREM image in tensorboard
+compute_metrics(image_optimizer,image_gt,0,1,write_tensorboard=False)
+writer = SummaryWriter()
+write_image_tensorboard(writer,image_optimizer,"Final image computed with " + optimizer) # image in tensorboard

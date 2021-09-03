@@ -2,6 +2,7 @@
 Libraries
 """
 
+from models.DD_2D_lightning import DD_2D_lightning
 import torch
 import numpy as np
 from PIL import Image
@@ -19,7 +20,7 @@ from models.ConvNet3D_VAE_lightning import * # vae
 subroot=os.getcwd()+'/data/Algo/'
 
 def suffix_func(config):
-    suffix = ""
+    suffix = "config"
     for key, value in config.items():
         suffix +=  "_" + key + "=" + str(value)
     return suffix
@@ -77,7 +78,7 @@ def stand_imag(image_corrupt):
     image_corrupt_std = image_center / std
     return norm_positive_imag(image_corrupt)
     return norm_imag(image_corrupt)
-    return image_corrupt_std,mean,std
+    return image_corrupt_std.detach(),mean,std
 
 def destand_imag(image, mean, std):
     image_np = image.detach().numpy()
@@ -90,13 +91,13 @@ def save_img(img,name):
     img.tofile(fp)
     print('Succesfully save in:', name)
 
-def write_hdr(i,j,lr):
-    """ write a header for the output of the DIP (it's use as CASTOR input)"""
+def write_hdr(i,j,config):
+    """ write a header for the optimization transfer solution (it's use as CASTOR input)"""
     if (j>=0):
-        filename = subroot+'Block1/Test_block1/' + suffix_func(lr) + '/out_eq22/'+ format(i) + '_' + format(j+1) +'.hdr'
+        filename = subroot+'Block1/Test_block1/' + suffix_func(config) + '/out_eq22/'+ format(i) + '_' + format(j+1) +'.hdr'
         ref_numbers = format(i) + '_' + format(j+1)
     else:
-        filename = subroot+'Block1/Test_block1/' + suffix_func(lr) + '/out_eq22/'+ format(i) +'.hdr'
+        filename = subroot+'Block1/Test_block1/' + suffix_func(config) + '/out_eq22/'+ format(i) +'.hdr'
         ref_numbers = format(i)
     with open(subroot+'Data/castor_output_it6.hdr') as f:
         with open(filename, "w") as f1:
@@ -110,12 +111,28 @@ def write_hdr(i,j,lr):
                 else:
                     f1.write(line)
 
-def find_nan (image):
-    """ find NaN values on the 3D image"""
+def write_hdr_f_mu(i,config):
+    """ write a header for f-mu (it's use as CASTOR input)"""
+    filename = subroot+'Block1/Test_block1/' + suffix_func(config) + '/before_eq22/'+ format(i) +'.hdr'
+    ref_numbers = format(i)
+    with open(subroot+'Data/castor_output_it6.hdr') as f:
+        with open(filename, "w") as f1:
+            for line in f:
+                if line.strip() == ('!name of data file := castor_output_it6.img'):
+                    f1.write('!name of data file := '+ref_numbers+'.img')
+                    f1.write('\n') 
+                elif line.strip() == ('patient name := castor_output_it6'):
+                    f1.write('patient name := '+ref_numbers)
+                    f1.write('\n') 
+                else:
+                    f1.write(line)
+
+def find_nan(image):
+    """ find NaN values on the image"""
     idx = np.argwhere(np.isnan(image))
     print('index with NaN value:',len(idx))
     for i in range(len(idx)):
-        image[idx[i,0],idx[i,1],idx[i,2]] = 0
+        image[idx[i,0],idx[i,1]] = 0
     print('index with NaN value:',len(np.argwhere(np.isnan(image))))
     return image
 
@@ -220,8 +237,6 @@ def compute_metrics(image_recon,image_gt,i,max_iter,writer=None,write_tensorboar
         print("Metrics saved in tensorboard")
         writer.flush()
         writer.add_scalar('MSE gt (best : 0)', MSE_recon[i],i)
-        from ray import tune
-        tune.report(mse=MSE_recon[i])
         writer.close()
         writer.flush()
         writer.add_scalar('Mean activity in cold cylinder (best : 0)', MA_cold_recon[i],i)
@@ -250,24 +265,28 @@ def choose_net(net, config):
         model = ConvNet3D_VAE_lightning(config) #Loading DIP VAE architecture
         model_class = ConvNet3D_VAE_lightning #Loading DIP VAE architecture
     else:
-        model = DD_2D_real() #Loading Deep Decoder architecture
-        model_class = DD_2D_real #Loading Deep Decoder architecture
+        model = DD_2D_lightning(config) #Loading Deep Decoder architecture
+        model_class = DD_2D_lightning #Loading Deep Decoder architecture
     return model, model_class
 
-def create_random_input(net,PETImage_shape):
+def create_random_input(net,PETImage_shape,config): #CT map for high-count data, but not CT yet...
     if (net == 'DIP' or net == 'DIP_VAE'):
         im_input = np.random.normal(0,1,PETImage_shape[0]*PETImage_shape[1]).astype('float32') # initializing input image with random image (for DIP)
         im_input = im_input.reshape(PETImage_shape) # reshaping (for DIP)
     else:
-        im_input = np.random.normal(0,1,32*16*16) # initializing input image with random image (for Deep Decoder)
-        im_input = im_input.reshape(32,16,16) # reshaping (for Deep Decoder)
+        input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"]))
+        im_input = np.random.normal(0,1,config['k_DD']*input_size_DD*input_size_DD).astype('float32') # initializing input image with random image (for Deep Decoder)
+        im_input = im_input.reshape(config['k_DD'],input_size_DD,input_size_DD) # reshaping (for Deep Decoder)
 
-    file_path = (subroot+'Block2/data/random_input.img') #CT map for high-count data, but not CT yet...
+    file_path = (subroot+'Block2/data/random_input.img')
     save_img(im_input,file_path)
 
-def load_input(net,PETImage_shape):
+def load_input(net,PETImage_shape,config):
     #file_path = (subroot+'Block2/data/umap_00_new.raw') #CT map for low-count data
     file_path = (subroot+'Block2/data/random_input.img') #CT map for high-count data, but not CT yet...
+    if (net == 'DD'):
+        input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"]))
+        PETImage_shape = (config['k_DD'],input_size_DD,input_size_DD)
     im_input = fijii_np(file_path, shape=(PETImage_shape)) # Load input of the DNN (CT image)
     return im_input
 
@@ -295,6 +314,9 @@ def input_dim_str_to_list(PETImage_shape_str):
 
 def write_image_tensorboard(writer,image,name):
     # Creating matplotlib figure with colorbar
+    if (len(image.shape) != 2):
+        print('image is ' + str(len(image.shape)) + 'D, plotting only 2D slice')
+        image = image[:,:,0]
     plt.imshow(image, cmap='gray_r',vmin=np.min(image),vmax=np.max(image))
     plt.colorbar()
     plt.axis('off')
@@ -308,27 +330,28 @@ def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, checkpoint_simp
     TuneReportCheckpointCallback
 
     tuning_callback = TuneReportCallback({"loss": "val_loss"}, on="validation_end")
-
+    accelerator = None
     if (processing_unit == 'CPU'): # use cpus and no gpu
         gpus = 0
-    else: # use all available gpus
-        gpus = -1 
-
+    elif (processing_unit == 'GPU' or processing_unit == 'both'): # use all available gpus, no cpu (pytorch lightning does not handle cpus and gpus at the same time)
+        gpus = -1
+        #if (torch.cuda.device_count() > 1):
+        #    accelerator = 'dp'
     if (finetuning == 'False'): # Do not save and use checkpoints (still save hparams and event files for now ...)
         logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(test), name='') # Store checkpoints in checkpoint_simple_path path
         checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=0, save_weights_only=True) # Do not save any checkpoint (save_top_k = 0)
-        trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, callbacks=[checkpoint_callback, tuning_callback], logger=logger,gpus=gpus,profiler="simple")
+        trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, callbacks=[checkpoint_callback, tuning_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple")
     else:
         if (finetuning == 'last'): # last model saved in checkpoint
             # Checkpoints pl variables
             logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(test), name='') # Store checkpoints in checkpoint_simple_path path
             checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0)
-            trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback],gpus=gpus,profiler="simple") # Prepare trainer model with callback to save checkpoint        
+            trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all") # Prepare trainer model with callback to save checkpoint        
         if (finetuning == 'best'): # best model saved in checkpoint
             # Checkpoints pl variables
             logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(test), name='') # Store checkpoints in checkpoint_simple_path path
             checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, filename = 'best_loss', monitor='loss_monitor', save_top_k=1) # Save best checkpoint (save_top_k = 1) (according to minimum loss (monitor)) as best_loss.ckpt
-            trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback],gpus=gpus,profiler="simple") # Prepare trainer model with callback to save checkpoint
+            trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback],gpus=gpus, accelerator=accelerator, profiler="simple") # Prepare trainer model with callback to save checkpoint
 
     return trainer
 
@@ -364,42 +387,33 @@ def castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, s
     start_time_block1 = time.time()
     mlem_subsets = config['mlem_subsets']
     if (mlem_subsets):
+
+
+        # Save image f-mu in .img and .hdr format - block 1
+        name_f_mu = (subroot+'Block1/Test_block1/' + suffix + '/before_eq22/' + format(i))
+        save_img(f-mu, name_f_mu + '.img')
+        write_hdr_f_mu(i,config)
+        f_mu_for_penalty = ' -multimodal ' + name_f_mu + '.hdr'
+
         if i==0:   # choose initial image for CASToR reconstruction
             initialimage = ' -img ' + subroot + 'Data/castor_output_it6.hdr' # image_init normalement...???
             # initialimage = '' # no MLEM initial image, but useful to speed up reconstruction when initializing
         elif i>=1:
             initialimage = input_path +format(i-1) +'.hdr'
 
-        full_output_path = subroot_output_path + format(i)
-        it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to replace for loop on j. Not 100% accurate but converges quicker to the MAP argmax, instead of doing a few iterations on j
-        os.system(castor_command_line + initialimage + full_output_path + it)
+        full_output_path = subroot_output_path + '/out_eq22/' + format(i)
+        it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to replace for loop on j. 
+        os.system(castor_command_line + initialimage + full_output_path + it + f_mu_for_penalty)
+        print(castor_command_line + initialimage + full_output_path + it + f_mu_for_penalty)
+        print("--- %s seconds - optimization transfer (CASToR) iteration ---" % (time.time() - start_time_block1))
 
-        print("--- %s seconds - ML-EM iteration ---" % (time.time() - start_time_block1))
-        
-        """
-        Optimization transfer : solution of the subproblem 1
-        """
-
-        # load MLEM previously computed image 
-        image_EM = fijii_np(subroot+'Block1/Test_block1/' + suffix + '/' + format(i) +'/' +format(i) +'_it30.img', shape=(PETImage_shape))
-
-        print('Before optimization transfer')
-
-        # Compute solution for the MAP Subproblem
-        start_time_block1_eq22 = time.time()
-        b = image_sens - rho * (f - mu)
-        d = np.sqrt(b ** 2 + 4 * rho * image_sens * image_EM)
-        d = find_nan(d)
-        x = find_pos(rho * np.ones((PETImage_shape[0], PETImage_shape[1]), dtype='<f'), b, image_sens, image_EM, d)  # Choosing the positive solution of the trinome
-        x = find_nan(x)
-        print("--- %s seconds - optimization transfer ---" % (time.time() - start_time_block1_eq22))
-
-        print('After optimization transfer')
+        # load previously computed image with CASToR optimization transfer function
+        x = fijii_np(subroot+'Block1/Test_block1/' + suffix + '/out_eq22/' +format(i) + '/' + format(i) +'_it30.img', shape=(PETImage_shape))
 
         # Save image x in .img and .hdr format - block 1
         name = (subroot+'Block1/Test_block1/' + suffix + '/out_eq22/' + format(i) + '.img')
         save_img(x, name)
-        write_hdr(i, -1, config) # Put -1 to tell function there is no loop on j, to choose the write filename
+        write_hdr(i, -1, config) # -1 to choose the right filename
     else:
         for j in range(sub_iter_MAP):
             print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! MAP sub iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', j)
@@ -449,7 +463,6 @@ def castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, s
     # Save x_label for load into block 2 - CNN as corrupted image (x_label)
     x_label = x + mu
     x_label = find_nan(x_label)
-    print(np.mean(x_label))
 
     # Save x_label in .img and .hdr format
     name=(subroot+'Block2/x_label/'+format(test) + '/' + format(i) +'_x_label' + suffix + '.img')

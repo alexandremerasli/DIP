@@ -4,15 +4,21 @@ source env/bin/activate
 
 st3
 
-code .
+code . --ignore-certificate-errors
 
-python3 block_1bis.py --proc GPU --net DIP_VAE --max_iter 400 --sub_iter_DIP 10 --sub_iter_MAP 2 --finetuning last
+python3 block_1bis.py --proc GPU --net DIP --max_iter 400 --sub_iter_MAP 2 --finetuning last
 
 python3 diff_images.py --img1 data/Algo/Images/out_final/final_out.img --img2 data/Algo/final_out.img
+
+python3 comparison.py --opti MLEM --nb_iter 10 --beta 0.1
 
 tensorboard --logdir=runs --bind_all --load_fast=false &
 
 kill %1
+
+watch -n 0.1 nvidia-smi
+
+kill -9 <PID>
 
 pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org package_name
 

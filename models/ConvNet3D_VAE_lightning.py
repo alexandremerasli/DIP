@@ -131,6 +131,8 @@ class ConvNet3D_VAE_lightning(pl.LightningModule):
                                    nn.BatchNorm2d(1))
 
         self.positivity = nn.ReLU() # Final ReLU to enforce positivity of ouput image
+        # self.positivity = nn.SiLU() # Final SiLU, smoother than ReLU but not positive
+        # self.positivity = nn.Softplus() # Final SiLU to enforce positivity of ouput image, smoother than ReLU
 
         # for the gaussian likelihood
         self.log_scale = nn.Parameter(torch.Tensor([0.0]))
@@ -225,6 +227,6 @@ class ConvNet3D_VAE_lightning(pl.LightningModule):
         # Optimization algorithm according to command line
         if (self.opti_DIP == 'Adam'):
             optimizer = torch.optim.Adam(self.parameters(), lr=self.lr, weight_decay=5E-8) # Optimizing using Adam
-        elif (self.opti_DIP == 'LBFGS' or opti_DIP is None): # None means no argument was given in command line
+        elif (self.opti_DIP == 'LBFGS' or self.opti_DIP is None): # None means no argument was given in command line
             optimizer = torch.optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4) # Optimizing using L-BFGS
         return optimizer
