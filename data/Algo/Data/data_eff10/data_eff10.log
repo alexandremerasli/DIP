@@ -2,7 +2,7 @@
                                       COMMAND LINE CONTEXT
 ==================================================================================================
 SMmaker.exe -m mmr2d -o data_eff10 -p simu_eff10/simu_eff10_pt.s.hdr -r simu_eff10/simu_eff10_rd.s.hdr -s simu_eff10/simu_eff10_sc.s.hdr -n simu_eff10/simu_eff10_nm.s.hdr -A simu_eff10/simu_eff10_at.s -c cmap_eff10/cmap_eff10.ecm -castor -v 2 
-Date of execution (since Epoch): 1625154388
+Date of execution (since Epoch): 1631033448
 Code precision in bytes: 4
 ==================================================================================================
 oSinoModeCreation::Constructor() -> Construct
@@ -15,7 +15,7 @@ oSinoModeCreation::InitPrompt() -> Initialize prompt sinogram from file 'simu_ef
 !!!!! oSinoModeCreation::InitPrompt() -> No real isotope definition found, will not correct for decay nor branching ratio !
   --> Reading data file 'simu_eff10/simu_eff10_pt.s' ...
   --> Radial elements: 344 | Views: 252 | Sinograms: 1 | Span: 1 | Maximum ring difference: 0
-  --> Number of prompts: 99986060 | Delays: 89992611 | Net trues: 9993449
+  --> Number of prompts: 1498246 | Delays: 1348705 | Net trues: 149541
   --> Start acquisition: 0 s | Duration: 1 s
 oSinoModeCreation::InitRandom() -> Initialize random sinogram from file 'simu_eff10/simu_eff10_rd.s.hdr'
   --> Reading header file 'simu_eff10/simu_eff10_rd.s.hdr' ...
@@ -27,20 +27,20 @@ oSinoModeCreation::InitNormalization() -> Initialize normalization sinogram from
   --> Reading header file 'simu_eff10/simu_eff10_nm.s.hdr' ...
   --> Reading file 'simu_eff10/simu_eff10_nm.s' ...
   --> Reading calibration header file 'simu_eff10/simu_eff10_nm.calib.hdr' ...
-      Calibration factor: 11.2629
+      Calibration factor: 761.825
 oSinoModeCreation::InitAttenuation() -> Initialize attenuation sinogram from file 'simu_eff10/simu_eff10_at.s'
 oSinoModeCreation::InitInputFile() -> Finish initializing input file(s)
 oSinoModeCreation::InitConversionTable() -> Initialize tables
 oTableMMR2D::Constructor() -> Initialize MMR 2D conversion table
 oTableMMR2D::ComputeRingTables() -> Compute the ring conversion tables
 oSinoModeCreation::ComputeTotalRandom() -> Compute total random counts
-  --> Total un-normalized counts: 9e+07
+  --> Total un-normalized counts: 1.35e+06
 oSinoModeCreation::ComputeTotalScatter() -> Compute total scatter counts
-  --> Total un-normalized scatter counts: 3.5e+06
-  --> Random proportion: 90.0125 %
-  --> Scatter proportion: 3.50049 %
-  --> Scatter fraction: 35.0489 %
-  --> Trues / Prompts: 6.48697 %
+  --> Total un-normalized scatter counts: 52500
+  --> Random proportion: 90.1054 %
+  --> Scatter proportion: 3.5041 %
+  --> Scatter fraction: 35.4141 %
+  --> Trues / Prompts: 6.39054 %
 oScanner::ReadCrystalMap() -> Read esteban crystal map from file 'cmap_eff10/cmap_eff10.ecm'
 oSinoModeCreation::ProcessListMode() -> Begin processing ...
   --> Initialization (writing mode: 1) ...

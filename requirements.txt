@@ -7,3 +7,4 @@ pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org scikit
 pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org tensorboard
 pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pytorch-lightning
 pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org "ray[tune]" 
+pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org SimpleITK

@@ -2,7 +2,7 @@
 Libraries
 """
 
-from models.DD_2D_lightning import DD_2D_lightning
+
 import torch
 import numpy as np
 from PIL import Image
@@ -12,9 +12,10 @@ from skimage.metrics import peak_signal_noise_ratio
 import matplotlib.pyplot as plt
 import time
 
-from models.ConvNet3D_real_lightning import *
-from models.DD_2D_real import *
-from models.ConvNet3D_VAE_lightning import * # vae
+from models.ConvNet3D_real_lightning import * # DIP
+from models.ConvNet3D_VAE_lightning import * # DIP vae
+from models.DD_2D_lightning import DD_2D_lightning # DD
+from models.DD_AE_2D_lightning import DD_AE_2D_lightning # DD adding encoder part
 
 
 subroot=os.getcwd()+'/data/Algo/'
@@ -170,18 +171,7 @@ def coord_to_value_array(coord_arr,arr):
         l[i] = arr[coord]
     return l
 
-def compute_metrics(image_recon,image_gt,i,max_iter,writer=None,write_tensorboard=False):
-
-    PSNR_recon = np.zeros(max_iter)
-    PSNR_norm_recon = np.zeros(max_iter)
-    MSE_recon = np.zeros(max_iter)
-    MA_cold_recon = np.zeros(max_iter)
-    CRC_hot_recon = np.zeros(max_iter)
-    CRC_bkg_recon = np.zeros(max_iter)
-    IR_bkg_recon = np.zeros(max_iter)
-    bias_cold_recon = np.zeros(max_iter)
-    bias_hot_recon = np.zeros(max_iter)
-    STD_recon = np.zeros(max_iter)
+def compute_metrics(image_recon,image_gt,i,max_iter,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=None,write_tensorboard=False):
 
     f_metric = find_nan(image_recon)
     image_gt_norm,mini_gt_input,maxe_gt_input = norm_imag(image_gt)
@@ -265,8 +255,12 @@ def choose_net(net, config):
         model = ConvNet3D_VAE_lightning(config) #Loading DIP VAE architecture
         model_class = ConvNet3D_VAE_lightning #Loading DIP VAE architecture
     else:
-        model = DD_2D_lightning(config) #Loading Deep Decoder architecture
-        model_class = DD_2D_lightning #Loading Deep Decoder architecture
+        if (net == 'DD'):
+            model = DD_2D_lightning(config) #Loading Deep Decoder architecture
+            model_class = DD_2D_lightning #Loading Deep Decoder architecture
+        elif (net == 'DD_AE'):
+            model = DD_AE_2D_lightning(config) #Loading Deep Decoder architecture
+            model_class = DD_AE_2D_lightning #Loading Deep Decoder architecture
     return model, model_class
 
 def create_random_input(net,PETImage_shape,config): #CT map for high-count data, but not CT yet...
@@ -274,9 +268,15 @@ def create_random_input(net,PETImage_shape,config): #CT map for high-count data,
         im_input = np.random.normal(0,1,PETImage_shape[0]*PETImage_shape[1]).astype('float32') # initializing input image with random image (for DIP)
         im_input = im_input.reshape(PETImage_shape) # reshaping (for DIP)
     else:
-        input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"]))
-        im_input = np.random.normal(0,1,config['k_DD']*input_size_DD*input_size_DD).astype('float32') # initializing input image with random image (for Deep Decoder)
-        im_input = im_input.reshape(config['k_DD'],input_size_DD,input_size_DD) # reshaping (for Deep Decoder)
+        if (net == 'DD'):
+            input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
+            im_input = np.random.normal(0,1,config["k_DD"]*input_size_DD*input_size_DD).astype('float32') # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+            im_input = im_input.reshape(config["k_DD"],input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+            
+        elif (net == 'DD_AE'):
+            input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
+            im_input = np.random.normal(0,1,input_size_DD*input_size_DD).astype('float32') # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+            im_input = im_input.reshape(input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if auto encoder based on Deep Decoder
 
     file_path = (subroot+'Block2/data/random_input.img')
     save_img(im_input,file_path)
@@ -285,8 +285,12 @@ def load_input(net,PETImage_shape,config):
     #file_path = (subroot+'Block2/data/umap_00_new.raw') #CT map for low-count data
     file_path = (subroot+'Block2/data/random_input.img') #CT map for high-count data, but not CT yet...
     if (net == 'DD'):
-        input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"]))
-        PETImage_shape = (config['k_DD'],input_size_DD,input_size_DD)
+        input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
+        PETImage_shape = (config['k_DD'],input_size_DD,input_size_DD) # if original Deep Decoder (i.e. only with decoder part)
+    elif (net == 'DD_AE'):   
+        input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
+        PETImage_shape = (input_size_DD,input_size_DD) # if auto encoder based on Deep Decoder
+
     im_input = fijii_np(file_path, shape=(PETImage_shape)) # Load input of the DNN (CT image)
     return im_input
 
@@ -312,7 +316,7 @@ def read_input_dim():
 def input_dim_str_to_list(PETImage_shape_str):
     return [int(e.strip()) for e in PETImage_shape_str.split(',')][:-1]
 
-def write_image_tensorboard(writer,image,name):
+def write_image_tensorboard(writer,image,name,i=0):
     # Creating matplotlib figure with colorbar
     if (len(image.shape) != 2):
         print('image is ' + str(len(image.shape)) + 'D, plotting only 2D slice')
@@ -322,7 +326,7 @@ def write_image_tensorboard(writer,image,name):
     plt.axis('off')
     # Adding this figure to tensorboard
     writer.flush()
-    writer.add_figure(name, plt.gcf())
+    writer.add_figure(name,plt.gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
     writer.close()
 
 def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, checkpoint_simple_path, test, checkpoint_simple_path_exp):

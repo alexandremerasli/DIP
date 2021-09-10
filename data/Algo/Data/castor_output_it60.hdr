@@ -6,8 +6,8 @@ CASToR version := 3.1
 !GENERAL DATA := 
 !originating system := PET_SIEMENS_MMR_2D
 !data offset in bytes := 0
-!name of data file := castor_output_SGLD_it100.img
-patient name := castor_output_SGLD_it100
+!name of data file := castor_output_it60.img
+patient name := castor_output_it60
 
 !GENERAL IMAGE DATA 
 !type of data := Dynamic

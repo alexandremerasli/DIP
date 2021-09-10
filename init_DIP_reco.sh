@@ -9,6 +9,8 @@ dim1=128
 dim2=128
 dim3=1
 
+nb_counts = 1500000
+
 if [ $1 = 'biograph' ]
 then
 	
@@ -29,7 +31,7 @@ create_phantom.exe -o phantom_atn -d $dim1 $dim2 $dim3 -v 4. 4. 4. -c 0. 0. 0. 1
 CMmaker.exe -m biograph2D -u -o biograph
 
 # Simulation with sinograms
-simulator.exe -m biograph2D -c biograph/biograph.ecm -i phantom_act.hdr -a phantom_atn.hdr -r 0.9 -s 0.3 -p 4 -P 50000000 -D -v 2 -o simulation1 -T 4
+simulator.exe -m biograph2D -c biograph/biograph.ecm -i phantom_act.hdr -a phantom_atn.hdr -r 0.9 -s 0.3 -p 4 -P $nb_counts -D -v 2 -o simulation1 -T 4
 
 # Convert in list mode
 make_castor_datafile.exe -m biograph -p simulation1/simulation1_pt.s.hdr -r simulation1/simulation1_rd.s.hdr -s simulation1/simulation1_sc.s.hdr -n simulation1/simulation1_nm.s.hdr -A simulation1/simulation1_at.s -v 2 -o data_eff10 -c biograph/biograph.ecm
@@ -74,7 +76,7 @@ CMmaker.exe -m mmr2d -r ${eff} -o cmap_eff${eff} -w -v 2
 # -i l'image d'emission en entree
 # -a la mumap en cm-1, doit etre de la meme taille que l'image d'emission
 # -P le nombre de prompts a simuler
-SMprojector.exe -m mmr2d -c cmap_eff${eff}/cmap_eff${eff}.ecm -i phantom_act.hdr -a phantom_atn.hdr -s 0.35 -r 0.9 -l 0.8 -p 4. -v 5 -P 100000000 -o simu_eff${eff} -D
+SMprojector.exe -m mmr2d -c cmap_eff${eff}/cmap_eff${eff}.ecm -i phantom_act.hdr -a phantom_atn.hdr -s 0.35 -r 0.9 -l 0.8 -p 4. -v 5 -P $nb_counts -o simu_eff${eff} -D
 
 ## Etape 3: Creation du ficher castor a partir des sinogrammes simules
 
@@ -84,7 +86,7 @@ SMmaker.exe -m mmr2d -o data_eff${eff} -p simu_eff${eff}/simu_eff${eff}_pt.s.hdr
 
 
 # MLEM short reconstruction with CASToR
-it=6
+it=60
 castor-recon -df data_eff10/data_eff10.cdh -dout castor_output -dim $dim1,$dim2,$dim3 -vox 4,4,4 -vb 3 -it $it:1 -proj incrementalSiddon -opti MLEM -th 0 -osens -oit -1
 
 fi

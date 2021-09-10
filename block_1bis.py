@@ -139,6 +139,17 @@ def admm_loop(config, args, root):
     #writer = SummaryWriter(comment='-%s-%s-maxIter_%s' % (net,finetuning, max_iter ))
     writer = SummaryWriter()
 
+    # Metrics arrays
+    PSNR_recon = np.zeros(max_iter)
+    PSNR_norm_recon = np.zeros(max_iter)
+    MSE_recon = np.zeros(max_iter)
+    MA_cold_recon = np.zeros(max_iter)
+    CRC_hot_recon = np.zeros(max_iter)
+    CRC_bkg_recon = np.zeros(max_iter)
+    IR_bkg_recon = np.zeros(max_iter)
+    bias_cold_recon = np.zeros(max_iter)
+    bias_hot_recon = np.zeros(max_iter)
+
     """
     MLEM - CASTOR framework
     """
@@ -160,8 +171,12 @@ def admm_loop(config, args, root):
     if (net == 'DIP' or net == 'DIP_VAE'):
         image_net_input_torch = image_net_input_torch.view(1,1,PETImage_shape[0],PETImage_shape[1]) # For DIP
     else:
-        input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"]))
-        image_net_input_torch = image_net_input_torch.view(1,config["k_DD"],input_size_DD,input_size_DD) # For Deep Decoder
+        if (net == 'DD'):
+            input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
+            image_net_input_torch = image_net_input_torch.view(1,config["k_DD"],input_size_DD,input_size_DD) # For Deep Decoder, if original Deep Decoder (i.e. only with decoder part)
+        elif (net == 'DD_AE'):
+            input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
+            image_net_input_torch = image_net_input_torch.view(1,1,input_size_DD,input_size_DD) # For Deep Decoder, if auto encoder based on Deep Decoder
     torch.save(image_net_input_torch,subroot + 'Data/image_net_input_torch.pt')
 
     # Ininitializeing DIP output and first image x with image_init = DIP output after fitting a MLEM image
@@ -208,7 +223,7 @@ def admm_loop(config, args, root):
         f = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_DIP' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
 
         # Metrics for NN output
-        compute_metrics(f,image_gt,i,max_iter,writer=writer,write_tensorboard=True)
+        compute_metrics(f,image_gt,i,max_iter,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
 
         # Block 3 - equation 15 - mu
         
@@ -232,6 +247,29 @@ def admm_loop(config, args, root):
         writer.add_graph(model, image_net_input_torch)
         writer.close()
         '''
+
+        '''
+        # Saving DIP output for each ADMM iteration as video in tensorboard
+        import imageio
+        frames = [fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_DIP' + format(p) + suffix + '.img',shape=(PETImage_shape)) for p in range(i+1)] # loading DIP outputs
+        imageio.mimsave(subroot+'output.gif', frames, fps=(max_iter / 1.0))
+        '''
+
+        # Write image over ADMM iterations
+        if ((i%(max_iter // 10) == 0)):
+            write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",i)
+        
+        # Display CRC vs STD curve in tensorboard
+        if (i>max_iter - min(max_iter,10)):
+            # Creating matplotlib figure
+            plt.plot(IR_bkg_recon,CRC_hot_recon,linestyle='None',marker='x')
+            plt.xlabel('IR')
+            plt.ylabel('CRC')
+            # Adding this figure to tensorboard
+            writer.flush()
+            writer.add_figure('CRC in hot region vs IR in background', plt.gcf(),global_step=i,close=True)
+            writer.close()
+
 
     """
     Output framework
@@ -285,13 +323,13 @@ def admm_loop(config, args, root):
             x_var = (list_samples[i] - x_avg)**2 / n_posterior_samples
         
         # Computing metrics to compare averaging vae outputs with single output
-        compute_metrics(x_avg,image_gt,i,max_iter,write_tensorboard=False)
+        compute_metrics(x_avg,image_gt,i,max_iter,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,write_tensorboard=False)
 
     # Display images in tensorboard
     write_image_tensorboard(writer,image_init,"initialization of DIP output") # DIP input in tensorboard
     write_image_tensorboard(writer,image_net_input,"DIP input") # Initialization of DIP output in tensorboard
     write_image_tensorboard(writer,image_gt,"Ground Truth") # Ground truth image in tensorboard
-    write_image_tensorboard(writer,x_out,"Final image (DIP output)") # DIP output in tensorboard
+    #write_image_tensorboard(writer,x_out,"Final image (" + net + "output)") # DIP output in tensorboard
 
     if (net == 'DIP_VAE'):
         write_image_tensorboard(writer,x_avg,"Final averaged image (average over DIP outputs)") # Final averaged image in tensorboard
@@ -300,7 +338,8 @@ def admm_loop(config, args, root):
 # Configuration dictionnary for hyperparameters to tune
 config = {
     "lr" : tune.grid_search([0.0001,0.001,0.01]),
-    "sub_iter_DIP" : tune.grid_search([10,30,50]),
+    #"sub_iter_DIP" : tune.grid_search([10,30,50]),
+    "sub_iter_DIP" : tune.grid_search([100,200,500]),
     #"rho" : tune.grid_search([5e-4,3e-3,6e-2,1e-2]),
     "rho" : tune.grid_search([3e-3]),
     #"rho" : tune.grid_search([1e-6]), # Trying to reproduce MLEM result as rho close to 0
@@ -310,17 +349,17 @@ config = {
     "d_DD" : tune.grid_search([3]),
     "k_DD" : tune.grid_search([32])
 }
-#'''
+'''
 config = {
     "lr" : tune.grid_search([0.001]),
-    "sub_iter_DIP" : tune.grid_search([200]),
+    "sub_iter_DIP" : tune.grid_search([50]),
     "rho" : tune.grid_search([0.003]),
     "opti_DIP" : tune.grid_search(['Adam']),
-    "mlem_subsets" : tune.grid_search([True]),
+    "mlem_subsets" : tune.grid_search([False]),
     "d_DD" : tune.grid_search([3]),
     "k_DD" : tune.grid_search([32])
 }
-#'''
+'''
 
 ## Arguments for linux command to launch script
 # Creating arguments
@@ -339,7 +378,7 @@ args = parser.parse_args()
 if (args.net is None): # Must check if all args are None
     args.net = 'DD' # Network architecture
     args.proc = 'CPU'
-    args.max_iter = 20 # Outer iterations
+    args.max_iter = 150 # Outer iterations
     args.sub_iter_MAP = 2 # Block 1 iterations (Sub-problem 1 - MAP)
     args.finetuning = 'last' # Finetuning or not for the DIP optimizations (block 2)
     
@@ -351,7 +390,7 @@ if args.proc == 'CPU':
     resources_per_trial = {"cpu": 1, "gpu": 0}
 elif args.proc == 'GPU':
     resources_per_trial = {"cpu": 0, "gpu": 0.1} # "gpu": 1 / config_combination
-    resources_per_trial = {"cpu": 0, "gpu": 1} # "gpu": 1 / config_combination
+    #resources_per_trial = {"cpu": 0, "gpu": 1} # "gpu": 1 / config_combination
 elif args.proc == 'both':
     resources_per_trial = {"cpu": 10, "gpu": 1} # not efficient
 

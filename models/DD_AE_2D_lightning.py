@@ -3,7 +3,7 @@ import torch.nn as nn
 import pytorch_lightning as pl
 import os
 
-class DD_2D_lightning(pl.LightningModule):
+class DD_AE_2D_lightning(pl.LightningModule):
 
     def __init__(self, config):
         super().__init__()
@@ -14,8 +14,21 @@ class DD_2D_lightning(pl.LightningModule):
         d = config["d_DD"] # Number of layers
         k = config['k_DD'] # Number of channels, depending on how much noise we mant to remove. Small k = less noise, but less fit
         self.num_channels_up = [k]*(d+1) + [1]
+        self.num_channels_down = list(reversed(self.num_channels_up))
 
+        self.encoder_deep_layers = nn.ModuleList([])
+        self.encoder_down_layers = nn.ModuleList([])
         self.decoder_layers = nn.ModuleList([])
+
+        for i in range(len(self.num_channels_down)-2):       
+            self.encoder_deep_layers.append(nn.Sequential(
+                               #nn.ReplicationPad2d(1), # if kernel size = 3
+                               nn.Conv2d(self.num_channels_down[i], self.num_channels_down[i+1], 1, stride=1)))
+            self.encoder_down_layers.append(nn.Sequential(
+                               nn.Conv2d(self.num_channels_down[i+1], self.num_channels_down[i+1], 1, stride=2), # Learning pooling operation to increase the model's expressiveness ability
+                               #nn.MaxPool2d(2), # Max pooling to have fewer parameters
+                               nn.ReLU(),
+                               nn.BatchNorm2d(self.num_channels_down[i+1])))
 
         for i in range(len(self.num_channels_up)-2):       
             self.decoder_layers.append(nn.Sequential(
@@ -33,8 +46,15 @@ class DD_2D_lightning(pl.LightningModule):
 
     def forward(self, x):
         out = x
+        out_skip = []
+        for i in range(len(self.num_channels_down)-2):
+            out = self.encoder_deep_layers[i](out)
+            out_skip.append(out)
+            out = self.encoder_down_layers[i](out)
+        
         for i in range(len(self.num_channels_up)-2):
             out = self.decoder_layers[i](out)
+            #out = out + out_skip[len(self.num_channels_up)-2 - (i+1)] # skip connection
         out = self.last_layers(out)
         out = self.positivity(out)
         return out

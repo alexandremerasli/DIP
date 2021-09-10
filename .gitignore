@@ -6,6 +6,7 @@ data/Algo/Block2/out_cnn/
 data/Algo/Block2/x_label/
 data/Algo/Config/
 data/Algo/Images/
+data/Algo/Comparaison/
 env/
 
 models/__pycache__/

@@ -20,7 +20,7 @@ variable_torch : torch representation of variable
 import os
 import sys
 from pathlib import Path
-import multiprocessing
+import warnings
 
 # Math
 import numpy as np
@@ -121,12 +121,19 @@ def train_process(config, finetuning, processing_unit, sub_iter_DIP, max_iter, i
     model, model_class = choose_net(net, config)
 
     #'''
-    #Summary of the network
-    if (net == 'DIP' or net == 'DIP_VAE'):
-        summary(model, input_size=(1,PETImage_shape[0],PETImage_shape[1])) # for DIP
+    if (processing_unit == 'CPU'):
+        #Summary of the network
+        if (net == 'DIP' or net == 'DIP_VAE'):
+            summary(model, input_size=(1,PETImage_shape[0],PETImage_shape[1])) # for DIP
+        else:
+            if (net == 'DD'):
+                input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
+                summary(model, input_size=(config["k_DD"],input_size_DD,input_size_DD)) # For Deep Decoder, # if original Deep Decoder (i.e. only with decoder part)
+            elif (net == 'DD_AE'):
+                input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
+                summary(model, input_size=(1,input_size_DD,input_size_DD)) # For Deep Decoder,  # if auto encoder based on Deep Decoder
     else:
-        input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"]))
-        summary(model, input_size=(config["k_DD"],input_size_DD,input_size_DD)) # For Deep Decoder    
+        warnings.warn("GPU have problems then between inputs and weights, so use CPU if you want to see torch summary")
     #'''
     
     # Loading using previous model if we want to do finetuning
