@@ -139,8 +139,8 @@ def train_process(config, finetuning, processing_unit, sub_iter_DIP, max_iter, i
     # Loading using previous model if we want to do finetuning
     checkpoint_simple_path = subroot+'Block2/checkpoint/'
     checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(test)  + '/' + suffix + '/'
-    model = load_model(config, finetuning, max_iter, model, model_class, checkpoint_simple_path_exp, training=True)
 
+    model = load_model(config, finetuning, max_iter, model, model_class, subroot, checkpoint_simple_path_exp, training=True)
 
     # Start training
     print('Starting optimization, iteration',max_iter)

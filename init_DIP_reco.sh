@@ -9,7 +9,8 @@ dim1=128
 dim2=128
 dim3=1
 
-nb_counts = 1500000
+#nb_counts=100000000 # high statistics
+nb_counts=1500000 # low statistics
 
 if [ $1 = 'biograph' ]
 then

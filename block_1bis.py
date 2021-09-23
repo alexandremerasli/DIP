@@ -257,7 +257,8 @@ def admm_loop(config, args, root):
 
         # Write image over ADMM iterations
         if ((i%(max_iter // 10) == 0)):
-            write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",i)
+            write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",i) # Showing all images with same contrast to compare them together
+            write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output, FULL CONTRAST)",i,full_contrast=True) # Showing each image with contrast = 1
         
         # Display CRC vs STD curve in tensorboard
         if (i>max_iter - min(max_iter,10)):
@@ -339,27 +340,27 @@ def admm_loop(config, args, root):
 config = {
     "lr" : tune.grid_search([0.0001,0.001,0.01]),
     #"sub_iter_DIP" : tune.grid_search([10,30,50]),
-    "sub_iter_DIP" : tune.grid_search([100,200,500]),
+    "sub_iter_DIP" : tune.grid_search([10,50,100,200]),
     #"rho" : tune.grid_search([5e-4,3e-3,6e-2,1e-2]),
     "rho" : tune.grid_search([3e-3]),
     #"rho" : tune.grid_search([1e-6]), # Trying to reproduce MLEM result as rho close to 0
     "opti_DIP" : tune.grid_search(['Adam']),
     #"opti_DIP" : tune.grid_search(['LBFGS']),
     "mlem_subsets" : tune.grid_search([True]),
-    "d_DD" : tune.grid_search([3]),
+    "d_DD" : tune.grid_search([6]), # not below 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32])
 }
-'''
+#'''
 config = {
     "lr" : tune.grid_search([0.001]),
-    "sub_iter_DIP" : tune.grid_search([50]),
+    "sub_iter_DIP" : tune.grid_search([100]),
     "rho" : tune.grid_search([0.003]),
     "opti_DIP" : tune.grid_search(['Adam']),
     "mlem_subsets" : tune.grid_search([False]),
-    "d_DD" : tune.grid_search([3]),
+    "d_DD" : tune.grid_search([6]), # not below 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32])
 }
-'''
+#'''
 
 ## Arguments for linux command to launch script
 # Creating arguments
@@ -376,9 +377,9 @@ args = parser.parse_args()
 
 # For VS Code (without command line)
 if (args.net is None): # Must check if all args are None
-    args.net = 'DD' # Network architecture
+    args.net = 'DIP' # Network architecture
     args.proc = 'CPU'
-    args.max_iter = 150 # Outer iterations
+    args.max_iter = 20 # Outer iterations
     args.sub_iter_MAP = 2 # Block 1 iterations (Sub-problem 1 - MAP)
     args.finetuning = 'last' # Finetuning or not for the DIP optimizations (block 2)
     

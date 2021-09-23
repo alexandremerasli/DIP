@@ -39,7 +39,13 @@ image_gt = fijii_np(subroot+'Block2/data/phantom_act.img',shape=(PETImage_shape)
 # Metrics arrays
 
 beta = [0.0001,0.001,0.01,0.1,1,10]
-max_iter = len(beta)
+beta = [0.01,0.03,0.05,0.07,0.09]
+beta = [0.03,0.035,0.04,0.045,0.05]
+beta = [0.04]
+if (optimizer == 'MLEM'):
+    max_iter = 1
+elif (optimizer == 'BSREM'):
+    max_iter = len(beta)
 
 PSNR_recon = np.zeros(max_iter)
 PSNR_norm_recon = np.zeros(max_iter)
@@ -62,28 +68,31 @@ for i in range(max_iter):
     dim = ' -dim ' + PETImage_shape_str
     vox = ' -vox 4,4,4'
     vb = ' -vb 3'
-    it = ' -it ' + str(nb_iter) + ':21'
+    it = ' -it ' + str(nb_iter) + ':28'
     th = ' -th 0'
-    opti = ' -opti ' + optimizer
     proj = ' -proj incrementalSiddon'
+    psf = ' -conv gaussian,4,4,3.5::psf'
 
     if (optimizer == 'MLEM'):
-        conv = ' -conv gaussian,4,4,3.5::post'
+        opti = ' -opti ' + optimizer
+        conv = ' -conv gaussian,8,8,3.5::post'
         penalty = ''
         penaltyStrength = ''
     else:
+        opti = ' -opti ' + optimizer + ':BSREM.conf'
         conv = ''
-        penalty = ' -pnlt MRF'
+        penalty = ' -pnlt MRF:MRF.conf'
         penaltyStrength = ' -pnlt-beta ' + str(beta[i])
 
     output_path = ' -dout ' + subroot + 'Comparaison/' + optimizer # Output path for CASTOR framework
-    initialimage = ' -img ' + subroot + 'Data/castor_output_it6.hdr'
+    initialimage = ' -img ' + subroot + 'Data/castor_output_it60.hdr'
+    initialimage = ''
 
     # Command line for calculating the Likelihood
     vb_like = ' -vb 0'
     opti_like = ' -opti-fom'
 
-    os.system(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv)
+    os.system(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv + psf + ' -fov-out 95')
 
     # load MLEM previously computed image 
     image_optimizer = fijii_np(subroot+'Comparaison/' + optimizer + '/' + optimizer + '_it' + str(nb_iter) + '.img', shape=(PETImage_shape))
@@ -105,3 +114,7 @@ for i in range(max_iter):
         writer.flush()
         writer.add_figure('CRC in hot region vs IR in background', plt.gcf(),global_step=i,close=True)
         writer.close()
+
+import subprocess
+root = os.getcwd()
+successful_process = subprocess.call(["python3", root+"/show_castor_results.py"]) # Showing results in tensorboard

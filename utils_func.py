@@ -83,7 +83,10 @@ def stand_imag(image_corrupt):
 
 def destand_imag(image, mean, std):
     image_np = image.detach().numpy()
-    return denorm_positive_imag(image_np, 0, std)
+    return destand_numpy_imag(image_np, mean, std)
+
+def destand_numpy_imag(image, mean, std):
+    return denorm_positive_imag(image, 0, std)
     return denorm_imag(image_np, mean, std)
     return image_np * std + mean
 
@@ -100,13 +103,13 @@ def write_hdr(i,j,config):
     else:
         filename = subroot+'Block1/Test_block1/' + suffix_func(config) + '/out_eq22/'+ format(i) +'.hdr'
         ref_numbers = format(i)
-    with open(subroot+'Data/castor_output_it6.hdr') as f:
+    with open(subroot+'Data/castor_output_it60.hdr') as f:
         with open(filename, "w") as f1:
             for line in f:
-                if line.strip() == ('!name of data file := castor_output_it6.img'):
+                if line.strip() == ('!name of data file := castor_output_it60.img'):
                     f1.write('!name of data file := '+ref_numbers+'.img')
                     f1.write('\n') 
-                elif line.strip() == ('patient name := castor_output_it6'):
+                elif line.strip() == ('patient name := castor_output_it60'):
                     f1.write('patient name := '+ref_numbers)
                     f1.write('\n') 
                 else:
@@ -116,13 +119,13 @@ def write_hdr_f_mu(i,config):
     """ write a header for f-mu (it's use as CASTOR input)"""
     filename = subroot+'Block1/Test_block1/' + suffix_func(config) + '/before_eq22/'+ format(i) +'.hdr'
     ref_numbers = format(i)
-    with open(subroot+'Data/castor_output_it6.hdr') as f:
+    with open(subroot+'Data/castor_output_it60.hdr') as f:
         with open(filename, "w") as f1:
             for line in f:
-                if line.strip() == ('!name of data file := castor_output_it6.img'):
+                if line.strip() == ('!name of data file := castor_output_it60.img'):
                     f1.write('!name of data file := '+ref_numbers+'.img')
                     f1.write('\n') 
-                elif line.strip() == ('patient name := castor_output_it6'):
+                elif line.strip() == ('patient name := castor_output_it60'):
                     f1.write('patient name := '+ref_numbers)
                     f1.write('\n') 
                 else:
@@ -225,27 +228,13 @@ def compute_metrics(image_recon,image_gt,i,max_iter,PSNR_recon,PSNR_norm_recon,M
 
     if (write_tensorboard):
         print("Metrics saved in tensorboard")
-        writer.flush()
         writer.add_scalar('MSE gt (best : 0)', MSE_recon[i],i)
-        writer.close()
-        writer.flush()
         writer.add_scalar('Mean activity in cold cylinder (best : 0)', MA_cold_recon[i],i)
-        writer.close()
-        writer.flush()
         writer.add_scalar('FOV bias in cold region (best : 0)', bias_cold_recon[i],i)
-        writer.close()
-        writer.flush()
         writer.add_scalar('Mean Concentration Recovery coefficient in hot cylinder (best : 1)', CRC_hot_recon[i],i)
-        writer.close()
-        writer.flush()
         writer.add_scalar('FOV bias in hot region (best : 0)', bias_hot_recon[i],i)
-        writer.close()
-        writer.flush()
         writer.add_scalar('Mean Concentration Recovery coefficient in background (best : 1)', CRC_bkg_recon[i],i)
-        writer.close()
-        writer.flush()
         writer.add_scalar('Image roughness in the background (best : 0)', IR_bkg_recon[i],i)
-        writer.close()
 
 def choose_net(net, config):
     if (net == 'DIP'):
@@ -296,7 +285,7 @@ def load_input(net,PETImage_shape,config):
 
 def read_input_dim():
     # Read CASToR header file to retrieve image dimension """
-    with open(subroot+'Data/castor_output_it6.hdr') as f:
+    with open(subroot+'Data/castor_output_it60.hdr') as f:
         for line in f:
             if line.strip().startswith('!matrix size [1]'):
                 dim1 = [int(s) for s in line.split() if s.isdigit()][-1]
@@ -316,20 +305,21 @@ def read_input_dim():
 def input_dim_str_to_list(PETImage_shape_str):
     return [int(e.strip()) for e in PETImage_shape_str.split(',')][:-1]
 
-def write_image_tensorboard(writer,image,name,i=0):
+def write_image_tensorboard(writer,image,name,i=0,full_contrast=False):
     # Creating matplotlib figure with colorbar
     if (len(image.shape) != 2):
         print('image is ' + str(len(image.shape)) + 'D, plotting only 2D slice')
         image = image[:,:,0]
-    plt.imshow(image, cmap='gray_r',vmin=np.min(image),vmax=np.max(image))
+    if (full_contrast):
+        plt.imshow(image, cmap='gray_r',vmin=np.min(image),vmax=np.max(image)) # Showing each image with maximum contrast  
+    else:
+        plt.imshow(image, cmap='gray_r',vmin=0,vmax=500) # Showing all images with same contrast
     plt.colorbar()
     plt.axis('off')
     # Adding this figure to tensorboard
-    writer.flush()
     writer.add_figure(name,plt.gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
-    writer.close()
 
-def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, checkpoint_simple_path, test, checkpoint_simple_path_exp):
+def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, checkpoint_simple_path, test, checkpoint_simple_path_exp, name=''):
     from ray.tune.integration.pytorch_lightning import TuneReportCallback, \
     TuneReportCheckpointCallback
 
@@ -342,32 +332,39 @@ def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, checkpoint_simp
         #if (torch.cuda.device_count() > 1):
         #    accelerator = 'dp'
     if (finetuning == 'False'): # Do not save and use checkpoints (still save hparams and event files for now ...)
-        logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(test), name='') # Store checkpoints in checkpoint_simple_path path
+        logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(test), name=name) # Store checkpoints in checkpoint_simple_path path
         checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=0, save_weights_only=True) # Do not save any checkpoint (save_top_k = 0)
         trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, callbacks=[checkpoint_callback, tuning_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple")
     else:
         if (finetuning == 'last'): # last model saved in checkpoint
             # Checkpoints pl variables
-            logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(test), name='') # Store checkpoints in checkpoint_simple_path path
+            logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(test), name=name) # Store checkpoints in checkpoint_simple_path path
             checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0)
             trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all") # Prepare trainer model with callback to save checkpoint        
         if (finetuning == 'best'): # best model saved in checkpoint
             # Checkpoints pl variables
-            logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(test), name='') # Store checkpoints in checkpoint_simple_path path
+            logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(test), name=name) # Store checkpoints in checkpoint_simple_path path
             checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, filename = 'best_loss', monitor='loss_monitor', save_top_k=1) # Save best checkpoint (save_top_k = 1) (according to minimum loss (monitor)) as best_loss.ckpt
             trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback],gpus=gpus, accelerator=accelerator, profiler="simple") # Prepare trainer model with callback to save checkpoint
 
     return trainer
 
-def load_model(config, finetuning, max_iter, model, model_class, checkpoint_simple_path_exp, training):
+def load_model(config, finetuning, max_iter, model, model_class, subroot, checkpoint_simple_path_exp, training):
     if (finetuning == 'last'): # last model saved in checkpoint
         if (max_iter > 0): # if model has already been trained
             model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config) # Load previous model in checkpoint        
+    #if (max_iter == 0):
+    # DD finetuning, k=32, d=6
+        #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
     if (finetuning == 'best'): # best model saved in checkpoint
         if (max_iter > 0): # if model has already been trained
             model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'best_loss.ckpt'), config=config) # Load best model in checkpoint
+        #if (max_iter == 0):
+        # DD finetuning, k=32, d=6
+            #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
         if (training):
             os.system('rm -rf ' + checkpoint_simple_path_exp + '/best_loss.ckpt') # Otherwise, pl will store checkpoint with version in filename
+    
     return model
 
 def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finetuning, max_iter, test, suffix):
@@ -400,7 +397,7 @@ def castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, s
         f_mu_for_penalty = ' -multimodal ' + name_f_mu + '.hdr'
 
         if i==0:   # choose initial image for CASToR reconstruction
-            initialimage = ' -img ' + subroot + 'Data/castor_output_it6.hdr' # image_init normalement...???
+            initialimage = ' -img ' + subroot + 'Data/castor_output_it60.hdr' # image_init normalement...???
             # initialimage = '' # no MLEM initial image, but useful to speed up reconstruction when initializing
         elif i>=1:
             initialimage = input_path +format(i-1) +'.hdr'
@@ -423,7 +420,7 @@ def castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, s
             print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! MAP sub iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', j)
             # choose initial image for CASToR reconstruction
             if i==0 and j==0:
-                initialimage = ' -img ' + subroot + 'Data/castor_output_it6.hdr' # image_init normalement...???
+                initialimage = ' -img ' + subroot + 'Data/castor_output_it60.hdr' # image_init normalement...???
                 # initialimage = '' # no MLEM initial image, but useful to speed up reconstruction when initializing
             elif i>=1 and j==0:
                 initialimage = (input_path +format(i-1) + '_' + format(j+sub_iter_MAP)+'.hdr')
