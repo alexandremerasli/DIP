@@ -256,7 +256,8 @@ def admm_loop(config, args, root):
         '''
 
         # Write image over ADMM iterations
-        if ((i%(max_iter // 10) == 0)):
+        if ((max_iter>=10) and (i%(max_iter // 10) == 0)):
+
             write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",i) # Showing all images with same contrast to compare them together
             write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output, FULL CONTRAST)",i,full_contrast=True) # Showing each image with contrast = 1
         
@@ -316,7 +317,7 @@ def admm_loop(config, args, root):
 
         for i in range(n_posterior_samples):
             # Generate one destandardized NN output
-            out_destand = generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finetuning, max_iter, test, suffix)
+            out_destand = generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finetuning, max_iter, test, suffix, subroot)
             list_samples.append(np.squeeze(out_destand))
             
         for i in range(n_posterior_samples):
@@ -353,7 +354,7 @@ config = {
 #'''
 config = {
     "lr" : tune.grid_search([0.001]),
-    "sub_iter_DIP" : tune.grid_search([100]),
+    "sub_iter_DIP" : tune.grid_search([10]),
     "rho" : tune.grid_search([0.003]),
     "opti_DIP" : tune.grid_search(['Adam']),
     "mlem_subsets" : tune.grid_search([False]),
@@ -379,7 +380,7 @@ args = parser.parse_args()
 if (args.net is None): # Must check if all args are None
     args.net = 'DIP' # Network architecture
     args.proc = 'CPU'
-    args.max_iter = 20 # Outer iterations
+    args.max_iter = 2 # Outer iterations
     args.sub_iter_MAP = 2 # Block 1 iterations (Sub-problem 1 - MAP)
     args.finetuning = 'last' # Finetuning or not for the DIP optimizations (block 2)
     

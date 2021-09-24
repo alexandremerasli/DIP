@@ -58,10 +58,20 @@ def denorm_imag(img, mini, maxi):
         return img
 
 def norm_positive_imag(img):
+
+    print('noooooooooooooooooooooooooooooooooooooooooorm')
+    print(np.min(img))
+
     """ Normalization of the 3D input - output [0..1] and the normalization value for each slide"""
     if (np.max(img) - np.min(img)) != 0:
+
+        print('noooooooooooooooooooooooooooooooooooooooooorm')
+        print(np.min(img / np.max(img)))
         return img / np.max(img), np.min(img), np.max(img)
     else:
+
+        print('noooooooooooooooooooooooooooooooooooooooooorm1111111111111111111111111111111')
+        print(np.min(img / np.max(img)))
         return img, 0, np.max(img)
 
 def denorm_positive_imag(img, mini, maxi):
@@ -77,6 +87,10 @@ def stand_imag(image_corrupt):
     std=np.std(image_corrupt)
     image_center = image_corrupt - mean
     image_corrupt_std = image_center / std
+
+    a,mean,std = norm_positive_imag(image_corrupt)
+    print('noooooooooooooooooooooooooooooooooooooooooorm staaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaand')
+    print(np.min(a))
     return norm_positive_imag(image_corrupt)
     return norm_imag(image_corrupt)
     return image_corrupt_std.detach(),mean,std
@@ -367,11 +381,12 @@ def load_model(config, finetuning, max_iter, model, model_class, subroot, checkp
     
     return model
 
-def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finetuning, max_iter, test, suffix):
+def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finetuning, max_iter, test, suffix, subroot):
     # Loading using previous model
     model, model_class = choose_net(net, config)
     checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(test) + '/' + suffix_func(config) + '/'
-    model = load_model(config, finetuning, max_iter, model, model_class, checkpoint_simple_path_exp, training=False)
+    model = load_model(config, finetuning, max_iter, model, model_class, subroot, checkpoint_simple_path_exp, training=False)
+
     # Compute output image
     out, mu, logvar, z = model(image_net_input_torch)
 

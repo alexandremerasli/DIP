@@ -36,9 +36,6 @@ from torchsummary import summary
 from torch.utils.tensorboard import SummaryWriter
 
 # Local files to import
-from models.ConvNet3D_real_lightning import *
-from models.DD_2D_real import *
-from models.ConvNet3D_VAE_lightning import * # vae
 from utils_func import *
 
 """
@@ -58,7 +55,7 @@ config = {
 
 max_iter = 1 # Outer iterations
 test = 24 # Label of the experiment
-net = 'DIP' # Network architecture
+net = 'DIP_VAE' # Network architecture
 processing_unit = 'CPU' # Processing unit (CPU or GPU)
 finetuning = 'False' # Finetuning (with best model or last saved model for checkpoint) or not for the DIP optimizations
 # PETImage_shape_str = sys.argv[6] # PET input dimensions (string, tF)

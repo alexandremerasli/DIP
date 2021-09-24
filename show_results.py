@@ -24,17 +24,30 @@ from utils_func import *
 # Configuration dictionnary for hyperparameters to tune
 config = {
     "lr" : 0.001,
+<<<<<<< HEAD
     "sub_iter_DIP" : 100,
     "rho" : 0.003,
     "opti_DIP" : 'Adam',
     "mlem_subsets" : False,
     "d_DD" : 6,
+=======
+    "sub_iter_DIP" : 10,
+    "rho" : 0.003,
+    "opti_DIP" : 'Adam',
+    "mlem_subsets" : False,
+    "d_DD" : 3,
+>>>>>>> 821939545a759c10f2b1bb2b9641cb5f2096329b
     "k_DD" : 32
 }
 
 # For VS Code (without command line)
+<<<<<<< HEAD
 net = 'DIP' # Network architecture
 max_iter = 20 # Outer iterations
+=======
+net = 'DD' # Network architecture
+max_iter = 150 # Outer iterations
+>>>>>>> 821939545a759c10f2b1bb2b9641cb5f2096329b
 test = 24
 
 # Useful variables
@@ -71,11 +84,17 @@ for i in range(max_iter):
     #write_image_tensorboard(writer,image_init,"initialization of DIP output") # DIP input in tensorboard
     #write_image_tensorboard(writer,image_net_input,"DIP input") # Initialization of DIP output in tensorboard
     write_image_tensorboard(writer,image_gt,"Ground Truth") # Ground truth image in tensorboard
+<<<<<<< HEAD
 
     # Write image over ADMM iterations
     if ((i%(max_iter // 10) == 0)):
         write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",i) # Showing all images with same contrast to compare them together
         write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output, FULL CONTRAST)",i,full_contrast=True) # Showing each image with contrast = 1
     
+=======
+    # Write image over ADMM iterations
+    if ((i%(max_iter // 10) == 0)):
+        write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",i)
+>>>>>>> 821939545a759c10f2b1bb2b9641cb5f2096329b
 
 writer.close()

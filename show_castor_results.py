@@ -22,8 +22,13 @@ import matplotlib.pyplot as plt
 from utils_func import *
 
 # For VS Code (without command line)
+<<<<<<< HEAD
 opti = 'BSREM' # CASToR optimizer
 max_iter = 30 # Optimizer number of iterations
+=======
+opti = 'MLEM' # CASToR optimizer
+max_iter = 10 # Optimizer number of iterations
+>>>>>>> 821939545a759c10f2b1bb2b9641cb5f2096329b
 test = 24
 
 # Useful variables
@@ -59,11 +64,17 @@ for i in range(1,max_iter):
     #write_image_tensorboard(writer,image_init,"initialization of DIP output") # DIP input in tensorboard
     #write_image_tensorboard(writer,image_net_input,"DIP input") # Initialization of DIP output in tensorboard
     write_image_tensorboard(writer,image_gt,"Ground Truth") # Ground truth image in tensorboard
+<<<<<<< HEAD
 
     # Write image over ADMM iterations
     if ((i%(max_iter // 10) == 0)):
         write_image_tensorboard(writer,f,"Image over " + opti + " iterations",i) # Showing all images with same contrast to compare them together
         write_image_tensorboard(writer,f,"Image over " + opti + " iterations (FULL CONTRAST)",i,full_contrast=True) # Showing each image with contrast = 1
     
+=======
+    # Write image over ADMM iterations
+    if ((i%(max_iter // 10) == 0)):
+        write_image_tensorboard(writer,f,"Image over " + opti + " iterations",i)
+>>>>>>> 821939545a759c10f2b1bb2b9641cb5f2096329b
 
 writer.close()

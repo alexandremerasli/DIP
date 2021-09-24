@@ -34,9 +34,6 @@ import pytorch_lightning as pl
 from torchsummary import summary
 
 # Local files to import
-from models.ConvNet3D_real_lightning import *
-from models.DD_2D_real import *
-from models.ConvNet3D_VAE_lightning import * # vae
 from utils_func import *
 
 """
