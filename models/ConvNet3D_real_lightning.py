@@ -1,21 +1,27 @@
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
-import os
 
 class ConvNet3D_real_lightning(pl.LightningModule):
 
     def __init__(self, config):
         super().__init__()
 
+        # Defining variables from config
         self.lr = config['lr']
         self.opti_DIP = config['opti_DIP']
+        self.sub_iter_DIP = config['sub_iter_DIP']
+        if (config['mlem_subsets'] is None):
+            self.post_reco_mode = True
+        else:
+            self.post_reco_mode = False
 
+        # Defining CNN variables
         L_relu = 0.2
         num_channel = [16, 32, 64, 128]
         pad = [0, 0]
 
-        num_groups = [2,4,8,16]
+        # Layers in CNN architecture
         self.deep1 = nn.Sequential(nn.ReplicationPad2d(1),
                                    nn.Conv2d(1, num_channel[0], (3, 3), stride=1, padding=pad[1]),
                                    nn.BatchNorm2d(num_channel[0]),
@@ -124,6 +130,8 @@ class ConvNet3D_real_lightning(pl.LightningModule):
         out = self.down3(out3)
         out = self.deep4(out)
 
+        
+
         out = self.up1(out)
         out_skip1 = out3 + out
         out = self.deep5(out_skip1)
@@ -142,8 +150,12 @@ class ConvNet3D_real_lightning(pl.LightningModule):
     def training_step(self, train_batch, batch_idx):
         image_net_input_torch, image_corrupt_torch = train_batch
         out = self.forward(image_net_input_torch)
+        # Save image over epochs
+        if (self.post_reco_mode):
+            self.post_reco(out)
         loss = self.DIP_loss(out, image_corrupt_torch)
-        self.log('loss_monitor', loss)
+        # logging using tensorboard logger
+        self.logger.experiment.add_scalar('loss', loss,self.current_epoch)        
         return loss
 
     def configure_optimizers(self):
@@ -158,3 +170,12 @@ class ConvNet3D_real_lightning(pl.LightningModule):
         elif (self.opti_DIP == 'LBFGS' or self.opti_DIP is None): # None means no argument was given in command line
             optimizer = torch.optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4) # Optimizing using L-BFGS
         return optimizer
+
+    def post_reco(self,out):
+        from utils_func import save_img
+        if ((self.current_epoch%(self.sub_iter_DIP // 10) == 0)):
+            out_np = out.detach().numpy()[0,0,:,:]
+            subroot = 'data/Algo/'
+            test = 24
+            save_img(out_np, subroot+'Block2/out_cnn/' + format(test) + '/out_' + 'DIP' + '_post_reco_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+        

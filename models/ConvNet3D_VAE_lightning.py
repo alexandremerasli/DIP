@@ -1,3 +1,4 @@
+from matplotlib.pyplot import xcorr
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
@@ -8,19 +9,26 @@ class ConvNet3D_VAE_lightning(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
 
+        # Defining variables from config
         self.lr = config['lr']
         self.opti_DIP = config['opti_DIP']
+        self.sub_iter_DIP = config['sub_iter_DIP']
+        if (config['mlem_subsets'] is None):
+            self.post_reco_mode = True
+        else:
+            self.post_reco_mode = False
 
+        # Defining CNN variables
         L_relu = 0.2
         num_channel = [16, 32, 64, 128]
-
+        pad = [0, 0]
+        
         # Dimensions before and after going to the latent space
         self.latent_dim = 2
         input_size = 128
         self.high_dim = int(num_channel[-1] * (input_size / 2**(len(num_channel) - 1)) **2)
 
-        pad = [0, 0]
-        num_groups = [2,4,8,16]
+        # Layers in CNN architecture
         self.deep1 = nn.Sequential(nn.ReplicationPad2d(1),
                                    nn.Conv2d(1, num_channel[0], (3, 3), stride=1, padding=pad[1]),
                                    nn.BatchNorm2d(num_channel[0]),
@@ -44,8 +52,6 @@ class ConvNet3D_VAE_lightning(pl.LightningModule):
                                    nn.BatchNorm2d(num_channel[1]),
                                    nn.LeakyReLU(L_relu))
 
-        # self.deep2 = nn.DataParallel(self.deep2)
-
         self.down2 = nn.Sequential(nn.ReplicationPad2d(1),
                                    nn.Conv2d(num_channel[1], num_channel[1], 3, stride=(2, 2), padding=pad[1]),
                                    nn.BatchNorm2d(num_channel[1]),
@@ -59,8 +65,6 @@ class ConvNet3D_VAE_lightning(pl.LightningModule):
                                    nn.Conv2d(num_channel[2], num_channel[2], (3, 3), stride=1, padding=pad[1]),
                                    nn.BatchNorm2d(num_channel[2]),
                                    nn.LeakyReLU(L_relu))
-
-        # self.deep3 = nn.DataParallel(self.deep3)
 
         self.down3 = nn.Sequential(nn.ReplicationPad2d(1),
                                    nn.Conv2d(num_channel[2], num_channel[2], 3, stride=(2, 2), padding=pad[1]),
@@ -182,6 +186,9 @@ class ConvNet3D_VAE_lightning(pl.LightningModule):
     def gaussian_likelihood(self, x_hat, logscale, x): # return logarithm of gaussian likelihood (so with minus...)
         scale = torch.exp(logscale)
         mean = x_hat
+        print(mean)
+        print(torch.mean(mean),torch.max(mean),torch.min(mean))
+        print(scale)
         dist = torch.distributions.Normal(mean, scale) # normal distribution object, with mean x_hat (output of DIP) and std scale (exp(logscale) = exp(0) = 1)
         # log prob = ||x_hat
         # measure prob of seeing image under p(x|z)
@@ -220,7 +227,12 @@ class ConvNet3D_VAE_lightning(pl.LightningModule):
     def training_step(self, train_batch, batch_idx):
         image_net_input_torch, image_corrupt_torch = train_batch
         out, mu, logvar, z = self.forward(image_net_input_torch)
+        # Save image over epochs
+        if (self.post_reco_mode):
+            self.post_reco(out)
         loss = self.DIP_loss(out, image_corrupt_torch, mu, logvar, z)
+        # logging using tensorboard logger
+        self.logger.experiment.add_scalar('loss', loss,self.current_epoch)        
         return loss
 
     def configure_optimizers(self):
@@ -230,3 +242,12 @@ class ConvNet3D_VAE_lightning(pl.LightningModule):
         elif (self.opti_DIP == 'LBFGS' or self.opti_DIP is None): # None means no argument was given in command line
             optimizer = torch.optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4) # Optimizing using L-BFGS
         return optimizer
+
+    def post_reco(self,out):
+        from utils_func import save_img
+        if ((self.current_epoch%(self.sub_iter_DIP // 10) == 0)):
+            out_np = out.detach().numpy()[0,0,:,:]
+            subroot = 'data/Algo/'
+            test = 24
+            save_img(out_np, subroot+'Block2/out_cnn/' + format(test) + '/out_' + 'DIP_VAE' + '_post_reco_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+        
