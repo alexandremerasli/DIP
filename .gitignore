@@ -7,6 +7,7 @@ data/Algo/Block2/x_label/
 data/Algo/Config/
 data/Algo/Images/
 data/Algo/Comparaison/
+data/Algo/Data/image_net_input_torch.pt
 env/
 
 models/__pycache__/
