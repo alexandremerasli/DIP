@@ -154,20 +154,6 @@ def find_nan(image):
     print('index with NaN value:',len(np.argwhere(np.isnan(image))))
     return image
 
-def find_pos(rho, b, sens_imag, x_em, d):
-    """ It is used for solving the subproblem 1 as in https://github.com/zgongkuang/IterativeCNN """
-    idx_pos = np.argwhere((rho>0) & (b>0))
-    idx_neg = np.argwhere((rho > 0) & (b <= 0))
-    print('index with positive values:', len(idx_pos))
-    print('index with negative values:', len(idx_neg))
-    image = np.zeros(b.shape,dtype='<f')
-    #''' like in Gong code, using second trinome solution
-    for i in range(len(idx_pos)):
-        image[idx_pos[i,0],idx_pos[i,1]] = 2 * sens_imag[idx_pos[i,0],idx_pos[i,1]] * x_em[idx_pos[i,0],idx_pos[i,1]] / (d[idx_pos[i,0],idx_pos[i,1]] + b[idx_pos[i,0],idx_pos[i,1]])
-    for k in range(len(idx_neg)):
-        image[idx_neg[k, 0], idx_neg[k, 1]] = (d[idx_neg[k, 0], idx_neg[k, 1]] - b[idx_neg[k, 0], idx_neg[k, 1]]) / (2 * rho[idx_neg[k, 0], idx_neg[k, 1]])
-    return image
-
 def points_in_circle(center_y,center_x,radius,inner_circle=True): # x and y are inverted in an array compared to coordinates
     liste = []   
     center_x = int(128/2 + center_x)
@@ -399,12 +385,10 @@ def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finet
     out_destand = destand_imag(out, mean_label, std_label)
     return out_destand
 
-def castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, image_sens, rho, f, mu, PETImage_shape):
+def castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, f, mu, PETImage_shape):
     start_time_block1 = time.time()
-    mlem_subsets = config['mlem_subsets']
-    if (mlem_subsets):
-
-
+    mlem_sequence = config['mlem_sequence']
+    if (mlem_sequence):
         # Save image f-mu in .img and .hdr format - block 1
         name_f_mu = (subroot+'Block1/Test_block1/' + suffix + '/before_eq22/' + format(i))
         save_img(f-mu, name_f_mu + '.img')
@@ -418,7 +402,7 @@ def castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, s
             initialimage = input_path +format(i-1) +'.hdr'
 
         full_output_path = subroot_output_path + '/out_eq22/' + format(i)
-        it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to replace for loop on j. 
+        it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax 
         os.system(castor_command_line + initialimage + full_output_path + it + f_mu_for_penalty)
         print(castor_command_line + initialimage + full_output_path + it + f_mu_for_penalty)
         print("--- %s seconds - optimization transfer (CASToR) iteration ---" % (time.time() - start_time_block1))
@@ -430,51 +414,33 @@ def castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, s
         name = (subroot+'Block1/Test_block1/' + suffix + '/out_eq22/' + format(i) + '.img')
         save_img(x, name)
         write_hdr(i, -1, config) # -1 to choose the right filename
+
     else:
-        for j in range(sub_iter_MAP):
-            print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! MAP sub iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', j)
-            # choose initial image for CASToR reconstruction
-            if i==0 and j==0:
-                initialimage = ' -img ' + subroot + 'Data/castor_output_it60.hdr' # image_init normalement...???
-                # initialimage = '' # no MLEM initial image, but useful to speed up reconstruction when initializing
-            elif i>=1 and j==0:
-                initialimage = (input_path +format(i-1) + '_' + format(j+sub_iter_MAP)+'.hdr')
-            else:
-                initialimage = (input_path +format(i) + '_' + format(j)+'.hdr')
+        # Save image f-mu in .img and .hdr format - block 1
+        name_f_mu = (subroot+'Block1/Test_block1/' + suffix + '/before_eq22/' + format(i))
+        save_img(f-mu, name_f_mu + '.img')
+        write_hdr_f_mu(i,config)
+        f_mu_for_penalty = ' -multimodal ' + name_f_mu + '.hdr'
 
-            full_output_path = (subroot_output_path + format(i) + '_' + format(j+1))
-            it = ' -it 1:1' # Only 1 iteration (and 1 subset), cf mathematic formula in optimization transfer
-            os.system(castor_command_line + initialimage + full_output_path + it)
+        if i==0:   # choose initial image for CASToR reconstruction
+            initialimage = ' -img ' + subroot + 'Data/castor_output_it60.hdr' # image_init normalement...???
+            # initialimage = '' # no MLEM initial image, but useful to speed up reconstruction when initializing
+        elif i>=1:
+            initialimage = input_path +format(i-1) +'.hdr'
 
-            print("--- %s seconds - ML-EM iteration ---" % (time.time() - start_time_block1))
-            
-            """
-            Optimization transfer : solution of the subproblem 1
-            """
+        full_output_path = subroot_output_path + '/out_eq22/' + format(i)
+        it = ' -it ' + str(sub_iter_MAP) + ':1' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
+        os.system(castor_command_line + initialimage + full_output_path + it + f_mu_for_penalty)
+        print(castor_command_line + initialimage + full_output_path + it + f_mu_for_penalty)
+        print("--- %s seconds - optimization transfer (CASToR) iteration ---" % (time.time() - start_time_block1))
 
-            # load MLEM previously computed image 
-            image_EM = fijii_np(subroot+'Block1/Test_block1/' + suffix + '/' + format(i) + '_' + format(j+1) +'/' +format(i)
-                                + '_' + format(j+1)+'_it1.img', shape=(PETImage_shape))
+        # load previously computed image with CASToR optimization transfer function
+        x = fijii_np(subroot+'Block1/Test_block1/' + suffix + '/out_eq22/' +format(i) + '/' + format(i) +'_it' + str(sub_iter_MAP) + '.img', shape=(PETImage_shape))
 
-            print('Before optimization transfer')
-
-            # Compute solution for the MAP Subproblem
-            start_time_block1_eq22 = time.time()
-            b = image_sens - rho * (f - mu)
-            d = np.sqrt(b ** 2 + 4 * rho * image_sens * image_EM)
-            d = find_nan(d)
-            x = find_pos(rho * np.ones((PETImage_shape[0], PETImage_shape[1]), dtype='<f'), b, image_sens, image_EM, d)  # Choosing the positive solution of the trinome
-            x = find_nan(x)
-            print("--- %s seconds - optimization transfer ---" % (time.time() - start_time_block1_eq22))
-
-            print('After optimization transfer')
-
-            start_time_block1 = time.time()
-
-            # Save image x in .img and .hdr format - block 1
-            name = (subroot+'Block1/Test_block1/' + suffix + '/out_eq22/' + format(i) + '_' + format(j+1) + '.img')
-            save_img(x, name)
-            write_hdr(i, j, config)
+        # Save image x in .img and .hdr format - block 1
+        name = (subroot+'Block1/Test_block1/' + suffix + '/out_eq22/' + format(i) + '.img')
+        save_img(x, name)
+        write_hdr(i, -1, config) # -1 to choose the right filename
 
     # Save x_label for load into block 2 - CNN as corrupted image (x_label)
     x_label = x + mu

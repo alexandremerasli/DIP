@@ -27,7 +27,7 @@ config = {
     "sub_iter_DIP" : 100,
     "rho" : 0.003,
     "opti_DIP" : 'Adam',
-    "mlem_subsets" : False,
+    "mlem_sequence" : False,
     "d_DD" : 6,
     "k_DD" : 32
 }

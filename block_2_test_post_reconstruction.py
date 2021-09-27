@@ -48,7 +48,7 @@ config = {
     "sub_iter_DIP" : 200,
     "rho" : 0.003,
     "opti_DIP" : 'Adam',
-    "mlem_subsets" : None, # None means we are in post reconstruction mode
+    "mlem_sequence" : None, # None means we are in post reconstruction mode
     "d_DD" : 3,
     "k_DD" : 32
 }

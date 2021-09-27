@@ -11,7 +11,7 @@ class ConvNet3D_real_lightning(pl.LightningModule):
         self.lr = config['lr']
         self.opti_DIP = config['opti_DIP']
         self.sub_iter_DIP = config['sub_iter_DIP']
-        if (config['mlem_subsets'] is None):
+        if (config['mlem_sequence'] is None):
             self.post_reco_mode = True
         else:
             self.post_reco_mode = False

@@ -96,7 +96,7 @@ def admm_loop(config, args, root):
 
     # Config dictionnary for hyperparameters
     rho = config["rho"]
-    mlem_subsets = config["mlem_subsets"]
+    mlem_sequence = config["mlem_sequence"]
     np.save(subroot + 'Config/config' + suffix + '.npy', config) # Save this configuration of hyperparameters, and reload it at the beginning of block 2 thanks to suffix (passed in subprocess call argumentsZ)
 
     # castor-recon command line
@@ -108,14 +108,11 @@ def admm_loop(config, args, root):
     vb = ' -vb 1'
     th = ' -th 1'
     proj = ' -proj incrementalSiddon'
-    if (mlem_subsets):
-        opti = ' -opti OPTITR'
-        pnlt = ' -pnlt DIP_ADMM'
-        pnlt_beta = ' -pnlt-beta ' + str(rho)
-    else:
-        opti = ' -opti MLEM'
-        pnlt = ''
-        pnlt_beta = ''
+
+    opti = ' -opti OPTITR'
+    pnlt = ' -pnlt DIP_ADMM'
+    pnlt_beta = ' -pnlt-beta ' + str(rho)
+
     subroot_output_path = ' -dout ' + subroot + 'Block1/Test_block1/' + suffix + '/' # Output path for CASTOR framework
     input_path = ' -img ' + subroot + 'Block1/Test_block1/' + suffix + '/out_eq22/' # Input path for CASTOR framework
 
@@ -131,12 +128,10 @@ def admm_loop(config, args, root):
 
     # ADMM variables
     mu = 0* np.ones((PETImage_shape[0], PETImage_shape[1]), dtype='<f')
-    # rho = rho * np.ones((PETImage_shape[0], PETImage_shape[1]), dtype='<f')
 
     x = np.zeros((PETImage_shape[0], PETImage_shape[1]), dtype='<f') # image x at iteration i
     x_out = np.zeros((PETImage_shape[0], PETImage_shape[1]), dtype='<f') # output of DIP
 
-    #writer = SummaryWriter(comment='-%s-%s-maxIter_%s' % (net,finetuning, max_iter ))
     writer = SummaryWriter()
 
     # Metrics arrays
@@ -212,7 +207,7 @@ def admm_loop(config, args, root):
         start_time_outer_iter = time.time()
         
         # Reconstruction with CASToR (first equation of ADMM)
-        x_label = castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, image_sens, rho, f, mu, PETImage_shape)
+        x_label = castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, f, mu, PETImage_shape)
 
         # Block 2 - CNN - 10 iterations
         start_time_block2= time.time()
@@ -347,7 +342,7 @@ config = {
     #"rho" : tune.grid_search([1e-6]), # Trying to reproduce MLEM result as rho close to 0
     "opti_DIP" : tune.grid_search(['Adam']),
     #"opti_DIP" : tune.grid_search(['LBFGS']),
-    "mlem_subsets" : tune.grid_search([True]),
+    "mlem_sequence" : tune.grid_search([True]),
     "d_DD" : tune.grid_search([6]), # not below 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32])
 }
@@ -357,7 +352,7 @@ config = {
     "sub_iter_DIP" : tune.grid_search([10]),
     "rho" : tune.grid_search([0.003]),
     "opti_DIP" : tune.grid_search(['Adam']),
-    "mlem_subsets" : tune.grid_search([False]),
+    "mlem_sequence" : tune.grid_search([False]),
     "d_DD" : tune.grid_search([6]), # not below 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32])
 }
@@ -380,8 +375,8 @@ args = parser.parse_args()
 if (args.net is None): # Must check if all args are None
     args.net = 'DIP' # Network architecture
     args.proc = 'CPU'
-    args.max_iter = 2 # Outer iterations
-    args.sub_iter_MAP = 2 # Block 1 iterations (Sub-problem 1 - MAP)
+    args.max_iter = 20 # Outer iterations
+    args.sub_iter_MAP = 2 # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
     args.finetuning = 'last' # Finetuning or not for the DIP optimizations (block 2)
     
 config_combination = 1
