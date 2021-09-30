@@ -12,6 +12,7 @@ class DD_AE_2D_lightning(pl.LightningModule):
         self.lr = config['lr']
         self.opti_DIP = config['opti_DIP']
         self.sub_iter_DIP = config['sub_iter_DIP']
+        self.skip = config['skip_connections']
         if (config['mlem_sequence'] is None):
             self.post_reco_mode = True
         else:
@@ -61,9 +62,10 @@ class DD_AE_2D_lightning(pl.LightningModule):
         
         for i in range(len(self.num_channels_up)-2):
             out = self.decoder_layers[i](out)
-            #out = out + out_skip[len(self.num_channels_up)-2 - (i+1)] # skip connection
+            if (self.skip):
+                out = out + out_skip[len(self.num_channels_up)-2 - (i+1)] # skip connection
         out = self.last_layers(out)
-        out = self.positivity(out)
+        #out = self.positivity(out)
         return out
 
     def DIP_loss(self, out, image_corrupt_torch):
@@ -96,7 +98,10 @@ class DD_AE_2D_lightning(pl.LightningModule):
     def post_reco(self,out):
         from utils_func import save_img
         if ((self.current_epoch%(self.sub_iter_DIP // 10) == 0)):
-            out_np = out.detach().numpy()[0,0,:,:]
-            subroot = 'data/Algo/'
+            try:
+                out_np = out.detach().numpy()[0,0,:,:]
+            except:
+                out_np = out.cpu().detach().numpy()[0,0,:,:]
+            subroot = '/home/meraslia/sgld/hernan_folder/data/Algo/'
             test = 24
             save_img(out_np, subroot+'Block2/out_cnn/' + format(test) + '/out_' + 'DD_AE' + '_post_reco_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard

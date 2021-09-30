@@ -218,7 +218,7 @@ def admm_loop(config, args, root):
         f = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_DIP' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
 
         # Metrics for NN output
-        compute_metrics(f,image_gt,i,max_iter,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
+        compute_metrics(f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
 
         # Block 3 - equation 15 - mu
         
@@ -320,7 +320,7 @@ def admm_loop(config, args, root):
             x_var = (list_samples[i] - x_avg)**2 / n_posterior_samples
         
         # Computing metrics to compare averaging vae outputs with single output
-        compute_metrics(x_avg,image_gt,i,max_iter,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,write_tensorboard=False)
+        compute_metrics(x_avg,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,write_tensorboard=False)
 
     # Display images in tensorboard
     write_image_tensorboard(writer,image_init,"initialization of DIP output") # DIP input in tensorboard
@@ -344,7 +344,8 @@ config = {
     #"opti_DIP" : tune.grid_search(['LBFGS']),
     "mlem_sequence" : tune.grid_search([True]),
     "d_DD" : tune.grid_search([6]), # not below 6, otherwise 128 is too little as output size
-    "k_DD" : tune.grid_search([32])
+    "k_DD" : tune.grid_search([32]),
+    "skip_connections" : tune.grid_search([False])
 }
 #'''
 config = {
@@ -354,7 +355,8 @@ config = {
     "opti_DIP" : tune.grid_search(['Adam']),
     "mlem_sequence" : tune.grid_search([False]),
     "d_DD" : tune.grid_search([6]), # not below 6, otherwise 128 is too little as output size
-    "k_DD" : tune.grid_search([32])
+    "k_DD" : tune.grid_search([32]),
+    "skip_connections" : tune.grid_search([False])
 }
 #'''
 
@@ -374,7 +376,7 @@ args = parser.parse_args()
 # For VS Code (without command line)
 if (args.net is None): # Must check if all args are None
     args.net = 'DIP' # Network architecture
-    args.proc = 'CPU'
+    args.proc = 'GPU'
     args.max_iter = 20 # Outer iterations
     args.sub_iter_MAP = 2 # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
     args.finetuning = 'last' # Finetuning or not for the DIP optimizations (block 2)

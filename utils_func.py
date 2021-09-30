@@ -174,7 +174,7 @@ def coord_to_value_array(coord_arr,arr):
         l[i] = arr[coord]
     return l
 
-def compute_metrics(image_recon,image_gt,i,max_iter,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=None,write_tensorboard=False):
+def compute_metrics(image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=None,write_tensorboard=False):
 
     f_metric = find_nan(image_recon)
     image_gt_norm,mini_gt_input,maxe_gt_input = norm_imag(image_gt)

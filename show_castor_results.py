@@ -53,7 +53,7 @@ for i in range(1,max_iter):
     f = fijii_np(subroot+'Comparaison/' + opti + '/' + opti + '_it' + format(i) + '.img',shape=(PETImage_shape)) # loading optimizer output
 
     # Metrics for NN output
-    compute_metrics(f,image_gt,i,max_iter,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
+    compute_metrics(f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
 
     # Display images in tensorboard
     #write_image_tensorboard(writer,image_init,"initialization of DIP output") # DIP input in tensorboard

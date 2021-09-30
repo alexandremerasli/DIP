@@ -11,6 +11,7 @@ class ConvNet3D_real_lightning(pl.LightningModule):
         self.lr = config['lr']
         self.opti_DIP = config['opti_DIP']
         self.sub_iter_DIP = config['sub_iter_DIP']
+        self.skip = config['skip_connections']
         if (config['mlem_sequence'] is None):
             self.post_reco_mode = True
         else:
@@ -122,6 +123,7 @@ class ConvNet3D_real_lightning(pl.LightningModule):
         # self.positivity = nn.Softplus() # Final SiLU to enforce positivity of ouput image, smoother than ReLU
 
     def forward(self, x):
+        # Encoder
         out1 = self.deep1(x)
         out = self.down1(out1)
         out2 = self.deep2(out)
@@ -130,17 +132,26 @@ class ConvNet3D_real_lightning(pl.LightningModule):
         out = self.down3(out3)
         out = self.deep4(out)
 
-        
-
+        # Decoder
         out = self.up1(out)
-        out_skip1 = out3 + out
-        out = self.deep5(out_skip1)
+        if (self.skip):
+            out_skip1 = out3 + out
+            out = self.deep5(out_skip1)
+        else:
+            out = self.deep5(out)
         out = self.up2(out)
-        out_skip2 = out2 + out
-        out = self.deep6(out_skip2)
+        if (self.skip):
+            out_skip2 = out2 + out
+            out = self.deep6(out_skip2)
+        else:
+            out = self.deep6(out)
         out = self.up3(out)
-        out_skip3 = out1 + out
-        out = self.deep7(out_skip3)
+        if (self.skip):
+            out_skip3 = out1 + out
+            out = self.deep7(out_skip3)
+        else:
+            out = self.deep7(out)
+
         out = self.positivity(out)
         return out
 
@@ -174,8 +185,11 @@ class ConvNet3D_real_lightning(pl.LightningModule):
     def post_reco(self,out):
         from utils_func import save_img
         if ((self.current_epoch%(self.sub_iter_DIP // 10) == 0)):
-            out_np = out.detach().numpy()[0,0,:,:]
-            subroot = 'data/Algo/'
+            try:
+                out_np = out.detach().numpy()[0,0,:,:]
+            except:
+                out_np = out.cpu().detach().numpy()[0,0,:,:]
+            subroot = '/home/meraslia/sgld/hernan_folder/data/Algo/'
             test = 24
             save_img(out_np, subroot+'Block2/out_cnn/' + format(test) + '/out_' + 'DIP' + '_post_reco_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
         
