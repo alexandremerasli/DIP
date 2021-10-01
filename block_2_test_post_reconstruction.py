@@ -17,6 +17,7 @@ variable_torch : torch representation of variable
 ## Python libraries
 
 # Useful
+import os
 import sys
 import warnings
 from datetime import datetime
@@ -27,11 +28,11 @@ from ray import tune
 import numpy as np
 
 # Pytorch
+import torch
 from torchsummary import summary
 
 # Local files to import
 from utils_func import *
-
 
 def post_reconstruction(config,root):
     admm_it = 1 # Set it to 1, 0 is for ADMM reconstruction with hard coded values
@@ -93,8 +94,10 @@ def post_reconstruction(config,root):
     image_net_input_torch = torch.load(subroot + 'Data/image_net_input_torch.pt')# Here we CAN create random input as this script is only run once
 
     # Loading DIP x_label (corrupted image) from block1
-    image_corrupt = fijii_np(subroot+'Comparaison/MLEM/MLEM_converge.img',shape=(PETImage_shape))
-    #image_corrupt = fijii_np(subroot+'Comparaison/MLEM/MLEM_it2.img',shape=(PETImage_shape))
+    image_corrupt = fijii_np(subroot+'Comparison/MLEM/MLEM_converge_avec_post_filtre.img',shape=(PETImage_shape))
+    #image_corrupt = fijii_np(subroot+'Comparison/MLEM/MLEM_converge_sans_post_filtre.img',shape=(PETImage_shape)) # Does not "denoise" so well
+    #image_corrupt = fijii_np(subroot+'Comparison/BSREM/BSREM_it30_REF.img',shape=(PETImage_shape))
+    #image_corrupt = fijii_np(subroot+'Comparison/MLEM/MLEM_it2.img',shape=(PETImage_shape))
 
     # Normalization of x_label image
     # image_corrupt_norm_scale, maxe = norm_imag(image_corrupt) # Normalization of x_label image
@@ -139,7 +142,7 @@ def post_reconstruction(config,root):
     write_image_tensorboard(writer,image_corrupt,"Corrupted image to fit (FULL CONTRAST)",full_contrast=True) # Showing corrupted image with contrast = 1
     for epoch in range(0,sub_iter_DIP,sub_iter_DIP//10):
         # Load saved (STANDARDIZED) images
-        net_outputs_path = subroot+'Block2/out_cnn/' + format(test) + '/out_' + net + '_post_reco_epoch=' + format(epoch) + '.img'
+        net_outputs_path = subroot+'Block2/out_cnn/' + format(test) + '/out_' + net + '_post_reco_epoch=' + format(epoch) + suffix_func(config) + '.img'
         out = fijii_np(net_outputs_path,shape=(PETImage_shape))
         # Destandardize like at the beginning
         out_destand = destand_numpy_imag(out, mean_label, std_label)
@@ -202,7 +205,7 @@ elif (net=='DD_AE'):
 config = {
     "lr" : tune.grid_search([0.0001,0.001,0.01]),
     #"sub_iter_DIP" : tune.grid_search([10,30,50]),
-    "sub_iter_DIP" : tune.grid_search([10,50,100,200]),
+    "sub_iter_DIP" : tune.grid_search([2000]),
     #"rho" : tune.grid_search([5e-4,3e-3,6e-2,1e-2]),
     "rho" : tune.grid_search([3e-3]),
     #"rho" : tune.grid_search([1e-6]), # Trying to reproduce MLEM result as rho close to 0
@@ -211,12 +214,12 @@ config = {
     "mlem_sequence" : tune.grid_search([None]), # None means post reconstruction mode
     "d_DD" : tune.grid_search([6]), # not below 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
-    "skip_connections" : tune.grid_search([False])
+    "skip_connections" : tune.grid_search([True])
 }
 '''
 config = {
     "lr" : tune.grid_search([0.001]),
-    "sub_iter_DIP" : tune.grid_search([100]),
+    "sub_iter_DIP" : tune.grid_search([200]),
     "rho" : tune.grid_search([0.003]),
     "opti_DIP" : tune.grid_search(['Adam']),
     "mlem_sequence" : tune.grid_search([None]), # None means we are in post reconstruction mode

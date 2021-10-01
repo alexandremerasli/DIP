@@ -18,6 +18,7 @@ f_init : initialization of DIP output (f_0), BUT NOT theta_0
 ## Python libraries
 
 # Pytorch
+import torch
 from torch.utils.tensorboard import SummaryWriter
 
 # Useful
@@ -82,8 +83,8 @@ def admm_loop(config, args, root):
     Path(subroot+'Block2/out_cnn/cnn_metrics/'+ format(test)+'/').mkdir(parents=True, exist_ok=True)
     Path(subroot+'Block2/data/x_label_DIP/'+format(test) + '/').mkdir(parents=True, exist_ok=True) # Directory where all labels for DIP stage are saved
 
-    Path(subroot+'Comparaison/MLEM/').mkdir(parents=True, exist_ok=True) # CASTor path
-    Path(subroot+'Comparaison/BSREM/').mkdir(parents=True, exist_ok=True) # CASTor path
+    Path(subroot+'Comparison/MLEM/').mkdir(parents=True, exist_ok=True) # CASTor path
+    Path(subroot+'Comparison/BSREM/').mkdir(parents=True, exist_ok=True) # CASTor path
 
     Path(subroot+'Config/').mkdir(parents=True, exist_ok=True) # CASTor path
 
@@ -177,11 +178,11 @@ def admm_loop(config, args, root):
     # Ininitializeing DIP output and first image x with f_init and image_init
     #image_init_path_without_extension = ''
     #image_init = np.ones((PETImage_shape[0],PETImage_shape[1])) # initializing CASToR MAP reconstruction with uniform image with ones.
-    #image_init_path_without_extension = 'Comparaison/BSREM/BSREM_30it_REF'
-    image_init_path_without_extension = 'Comparaison/MLEM/MLEM_converge'
+    #image_init_path_without_extension = 'Comparison/BSREM/BSREM_30it_REF'
+    image_init_path_without_extension = 'Comparison/MLEM/MLEM_converge_avec_post_filtre'
     image_init = fijii_np(subroot + image_init_path_without_extension + '.img',shape=(PETImage_shape)) # initializing CASToR MAP reconstruction with BSREM precomputed reference
-    #f_init = fijii_np(subroot+'Comparaison/BSREM/BSREM_it30_REF.img',shape=(PETImage_shape))
-    f_init = fijii_np(subroot+'Comparaison/MLEM/MLEM_converge.img',shape=(PETImage_shape))
+    #f_init = fijii_np(subroot+'Comparison/BSREM/BSREM_it30_REF.img',shape=(PETImage_shape))
+    f_init = fijii_np(subroot+'Comparison/MLEM/MLEM_converge_avec_post_filtre.img',shape=(PETImage_shape))
 
     #Loading Ground Truth image to compute metrics
     image_gt = fijii_np(subroot+'Block2/data/phantom_act.img',shape=(PETImage_shape))
@@ -213,34 +214,9 @@ def admm_loop(config, args, root):
         compute_metrics(f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
 
         # Block 3 - equation 15 - mu
-        
         mu = x_label- f
 
-        """
-        plt.figure()
-        plt.imshow(mu, cmap='gray_r')
-        plt.colorbar()
-        plt.title(r'mu difference ')
-        plt.savefig(subroot+'Images/mu_diff/' + format(test) + '/' + format(i) + '.png')
-        """
-
         print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))
-
-        '''
-        # Loading DIP input (we do not have CT-map, so random image created in block 1)
-        image_net_input_torch = torch.load(subroot + 'Data/image_net_input_torch.pt') # DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1. JUST LOAD IT FROM BLOCK 1
-        model, model_class = choose_net(net, config)
-        writer.flush()
-        writer.add_graph(model, image_net_input_torch)
-        writer.close()
-        '''
-
-        '''
-        # Saving DIP output for each ADMM iteration as video in tensorboard
-        import imageio
-        frames = [fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(p) + suffix + '.img',shape=(PETImage_shape)) for p in range(i+1)] # loading DIP outputs
-        imageio.mimsave(subroot+'output.gif', frames, fps=(max_iter / 1.0))
-        '''
 
         # Write image over ADMM iterations
         if ((max_iter>=10) and (i%(max_iter // 10) == 0)):
@@ -339,7 +315,7 @@ config = {
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([False])
 }
-#'''
+'''
 config = {
     "lr" : tune.grid_search([0.001]),
     "sub_iter_DIP" : tune.grid_search([100]),
@@ -350,7 +326,7 @@ config = {
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([True])
 }
-#'''
+'''
 
 ## Arguments for linux command to launch script
 # Creating arguments
@@ -368,7 +344,7 @@ args = parser.parse_args()
 # For VS Code (without command line)
 if (args.net is None): # Must check if all args are None
     args.net = 'DD' # Network architecture
-    args.proc = 'CPU'
+    args.proc = 'GPU'
     args.max_iter = 10 # Outer iterations
     args.sub_iter_MAP = 2 # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
     args.finetuning = 'last' # Finetuning or not for the DIP optimizations (block 2)

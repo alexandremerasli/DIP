@@ -2,18 +2,16 @@
 Libraries
 """
 
-
-import torch
+import os
+import pytorch_lightning as pl
 import numpy as np
-from PIL import Image
-from tifffile import imsave
 from itertools import product
 from skimage.metrics import peak_signal_noise_ratio
 import matplotlib.pyplot as plt
 import time
 
-from models.ConvNet3D_real_lightning import * # DIP
-from models.ConvNet3D_VAE_lightning import * # DIP vae
+from models.ConvNet3D_real_lightning import ConvNet3D_real_lightning # DIP
+from models.ConvNet3D_VAE_lightning import ConvNet3D_VAE_lightning # DIP vae
 from models.DD_2D_lightning import DD_2D_lightning # DD
 from models.DD_AE_2D_lightning import DD_AE_2D_lightning # DD adding encoder part
 

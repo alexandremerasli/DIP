@@ -24,6 +24,7 @@ import warnings
 import numpy as np
 
 # Pytorch
+import torch
 from torchsummary import summary
 
 # Local files to import

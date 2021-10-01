@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
-import os
 
 class DD_2D_lightning(pl.LightningModule):
 
@@ -14,6 +13,7 @@ class DD_2D_lightning(pl.LightningModule):
         self.sub_iter_DIP = config['sub_iter_DIP']
         if (config['mlem_sequence'] is None):
             self.post_reco_mode = True
+            self.suffix = self.suffix_func(config)
         else:
             self.post_reco_mode = False
         d = config["d_DD"] # Number of layers
@@ -82,5 +82,10 @@ class DD_2D_lightning(pl.LightningModule):
                 out_np = out.cpu().detach().numpy()[0,0,:,:]
             subroot = '/home/meraslia/sgld/hernan_folder/data/Algo/'
             test = 24
-            save_img(out_np, subroot+'Block2/out_cnn/' + format(test) + '/out_' + 'DD' + '_post_reco_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
-        
+            save_img(out_np, subroot+'Block2/out_cnn/' + format(test) + '/out_' + 'DD' + '_post_reco_epoch=' + format(self.current_epoch) + self.suffix + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+                    
+    def suffix_func(self,config):
+        suffix = "config"
+        for key, value in config.items():
+            suffix +=  "_" + key + "=" + str(value)
+        return suffix

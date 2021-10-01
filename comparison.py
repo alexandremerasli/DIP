@@ -85,7 +85,7 @@ for i in range(max_iter):
         penalty = ' -pnlt MRF:MRF.conf'
         penaltyStrength = ' -pnlt-beta ' + str(beta[i])
 
-    output_path = ' -dout ' + subroot + 'Comparaison/' + optimizer # Output path for CASTOR framework
+    output_path = ' -dout ' + subroot + 'Comparison/' + optimizer # Output path for CASTOR framework
     initialimage = ' -img ' + subroot + 'Data/castor_output_it60.hdr'
     initialimage = ''
 
@@ -96,7 +96,7 @@ for i in range(max_iter):
     os.system(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv + psf + ' -fov-out 95')
 
     # load MLEM previously computed image 
-    image_optimizer = fijii_np(subroot+'Comparaison/' + optimizer + '/' + optimizer + '_it' + str(nb_iter) + '.img', shape=(PETImage_shape))
+    image_optimizer = fijii_np(subroot+'Comparison/' + optimizer + '/' + optimizer + '_it' + str(nb_iter) + '.img', shape=(PETImage_shape))
 
 
     # compute metrics varying beta (if BSREM)
