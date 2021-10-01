@@ -319,7 +319,7 @@ def write_image_tensorboard(writer,image,name,i=0,full_contrast=False):
     # Adding this figure to tensorboard
     writer.add_figure(name,plt.gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
 
-def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, checkpoint_simple_path, test, checkpoint_simple_path_exp, name=''):
+def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, checkpoint_simple_path, test, checkpoint_simple_path_exp, name=''):
     from ray.tune.integration.pytorch_lightning import TuneReportCallback, \
     TuneReportCheckpointCallback
 
@@ -331,6 +331,10 @@ def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, checkpoint_simp
         gpus = -1
         #if (torch.cuda.device_count() > 1):
         #    accelerator = 'dp'
+
+    if (admm_it == 0):
+        sub_iter_DIP = 1000 if net.startswith('DD') else 200
+
     if (finetuning == 'False'): # Do not save and use checkpoints (still save hparams and event files for now ...)
         logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(test), name=name) # Store checkpoints in checkpoint_simple_path path
         checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=0, save_weights_only=True) # Do not save any checkpoint (save_top_k = 0)
@@ -349,17 +353,26 @@ def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, checkpoint_simp
 
     return trainer
 
-def load_model(config, finetuning, max_iter, model, model_class, subroot, checkpoint_simple_path_exp, training):
+def load_model(image_net_input_torch, config, finetuning, admm_it, model, model_class, subroot, checkpoint_simple_path_exp, training):
     if (finetuning == 'last'): # last model saved in checkpoint
-        if (max_iter > 0): # if model has already been trained
+        if (admm_it > 0): # if model has already been trained
             model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config) # Load previous model in checkpoint        
-    #if (max_iter == 0):
-    # DD finetuning, k=32, d=6
+    # if (admm_it == 0):
+        # DD finetuning, k=32, d=6
         #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
+        #from torch.utils.tensorboard import SummaryWriter
+        #writer = SummaryWriter()
+        #out = model(image_net_input_torch)
+        #write_image_tensorboard(writer,out.detach().numpy(),"high statistics output)") # Showing all corrupted images with same contrast to compare them together
+        #write_image_tensorboard(writer,out.detach().numpy(),"high statistics (" + "output, FULL CONTRAST)",0,full_contrast=True) # Showing each corrupted image with contrast = 1
+    
+        # Set first network iterations to have convergence, as if we do post processing
+        # model = model_class.load_from_checkpoint(os.path.join(subroot,'post_reco'+net+'.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
+
     if (finetuning == 'best'): # best model saved in checkpoint
-        if (max_iter > 0): # if model has already been trained
+        if (admm_it > 0): # if model has already been trained
             model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'best_loss.ckpt'), config=config) # Load best model in checkpoint
-        #if (max_iter == 0):
+        #if (admm_it == 0):
         # DD finetuning, k=32, d=6
             #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
         if (training):
@@ -367,17 +380,17 @@ def load_model(config, finetuning, max_iter, model, model_class, subroot, checkp
     
     return model
 
-def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finetuning, max_iter, test, suffix, subroot):
+def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finetuning, admm_it, test, suffix, subroot):
     # Loading using previous model
     model, model_class = choose_net(net, config)
     checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(test) + '/' + suffix_func(config) + '/'
-    model = load_model(config, finetuning, max_iter, model, model_class, subroot, checkpoint_simple_path_exp, training=False)
+    model = load_model(config, finetuning, admm_it, model, model_class, subroot, checkpoint_simple_path_exp, training=False)
 
     # Compute output image
     out, mu, logvar, z = model(image_net_input_torch)
 
     # Loading X_label from block1 to destandardize NN output
-    image_corrupt = fijii_np(subroot+'Block2/x_label/' + format(test)+'/'+ format(max_iter - 1) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
+    image_corrupt = fijii_np(subroot+'Block2/x_label/' + format(test)+'/'+ format(admm_it - 1) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
     #image_corrupt_norm_scale, mini, maxe = norm_imag(image_corrupt)
     image_corrupt_norm,mean_label,std_label= stand_imag(image_corrupt)
 
@@ -385,23 +398,24 @@ def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finet
     out_destand = destand_imag(out, mean_label, std_label)
     return out_destand
 
-def castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, f, mu, PETImage_shape):
+def castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
     start_time_block1 = time.time()
     mlem_sequence = config['mlem_sequence']
+
+    # Save image f-mu in .img and .hdr format - block 1
+    name_f_mu = (subroot+'Block1/Test_block1/' + suffix + '/before_eq22/' + format(i))
+    save_img(f-mu, name_f_mu + '.img')
+    write_hdr_f_mu(i,config)
+    f_mu_for_penalty = ' -multimodal ' + name_f_mu + '.hdr'
+
+    if i==0:   # choose initial image for CASToR reconstruction
+        initialimage = ' -img ' + subroot + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+    elif i>=1:
+        initialimage = input_path +format(i-1) +'.hdr'
+
+    full_output_path = subroot_output_path + '/out_eq22/' + format(i)
+
     if (mlem_sequence):
-        # Save image f-mu in .img and .hdr format - block 1
-        name_f_mu = (subroot+'Block1/Test_block1/' + suffix + '/before_eq22/' + format(i))
-        save_img(f-mu, name_f_mu + '.img')
-        write_hdr_f_mu(i,config)
-        f_mu_for_penalty = ' -multimodal ' + name_f_mu + '.hdr'
-
-        if i==0:   # choose initial image for CASToR reconstruction
-            initialimage = ' -img ' + subroot + 'Data/castor_output_it60.hdr' # image_init normalement...???
-            # initialimage = '' # no MLEM initial image, but useful to speed up reconstruction when initializing
-        elif i>=1:
-            initialimage = input_path +format(i-1) +'.hdr'
-
-        full_output_path = subroot_output_path + '/out_eq22/' + format(i)
         it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax 
         os.system(castor_command_line + initialimage + full_output_path + it + f_mu_for_penalty)
         print(castor_command_line + initialimage + full_output_path + it + f_mu_for_penalty)
@@ -409,26 +423,7 @@ def castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, s
 
         # load previously computed image with CASToR optimization transfer function
         x = fijii_np(subroot+'Block1/Test_block1/' + suffix + '/out_eq22/' +format(i) + '/' + format(i) +'_it30.img', shape=(PETImage_shape))
-
-        # Save image x in .img and .hdr format - block 1
-        name = (subroot+'Block1/Test_block1/' + suffix + '/out_eq22/' + format(i) + '.img')
-        save_img(x, name)
-        write_hdr(i, -1, config) # -1 to choose the right filename
-
     else:
-        # Save image f-mu in .img and .hdr format - block 1
-        name_f_mu = (subroot+'Block1/Test_block1/' + suffix + '/before_eq22/' + format(i))
-        save_img(f-mu, name_f_mu + '.img')
-        write_hdr_f_mu(i,config)
-        f_mu_for_penalty = ' -multimodal ' + name_f_mu + '.hdr'
-
-        if i==0:   # choose initial image for CASToR reconstruction
-            initialimage = ' -img ' + subroot + 'Data/castor_output_it60.hdr' # image_init normalement...???
-            # initialimage = '' # no MLEM initial image, but useful to speed up reconstruction when initializing
-        elif i>=1:
-            initialimage = input_path +format(i-1) +'.hdr'
-
-        full_output_path = subroot_output_path + '/out_eq22/' + format(i)
         it = ' -it ' + str(sub_iter_MAP) + ':1' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
         os.system(castor_command_line + initialimage + full_output_path + it + f_mu_for_penalty)
         print(castor_command_line + initialimage + full_output_path + it + f_mu_for_penalty)
@@ -437,10 +432,10 @@ def castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, s
         # load previously computed image with CASToR optimization transfer function
         x = fijii_np(subroot+'Block1/Test_block1/' + suffix + '/out_eq22/' +format(i) + '/' + format(i) +'_it' + str(sub_iter_MAP) + '.img', shape=(PETImage_shape))
 
-        # Save image x in .img and .hdr format - block 1
-        name = (subroot+'Block1/Test_block1/' + suffix + '/out_eq22/' + format(i) + '.img')
-        save_img(x, name)
-        write_hdr(i, -1, config) # -1 to choose the right filename
+    # Save image x in .img and .hdr format - block 1
+    name = (subroot+'Block1/Test_block1/' + suffix + '/out_eq22/' + format(i) + '.img')
+    save_img(x, name)
+    write_hdr(i, -1, config) # -1 to choose the right filename
 
     # Save x_label for load into block 2 - CNN as corrupted image (x_label)
     x_label = x + mu

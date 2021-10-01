@@ -17,9 +17,7 @@ variable_torch : torch representation of variable
 ## Python libraries
 
 # Useful
-import os
 import sys
-from pathlib import Path
 import warnings
 from datetime import datetime
 from functools import partial
@@ -27,22 +25,16 @@ from ray import tune
 
 # Math
 import numpy as np
-from skimage.metrics import peak_signal_noise_ratio
-import matplotlib.pyplot as plt
 
 # Pytorch
-import torch.nn as nn
-import torch.optim as optim
-import pytorch_lightning as pl
 from torchsummary import summary
-from torch.utils.tensorboard import SummaryWriter
 
 # Local files to import
 from utils_func import *
 
 
 def post_reconstruction(config,root):
-    max_iter = 1 # Outer iterations
+    admm_it = 1 # Set it to 1, 0 is for ADMM reconstruction with hard coded values
     test = 24 # Label of the experiment
     finetuning = 'False' # Finetuning (with best model or last saved model for checkpoint) or not for the DIP optimizations
     # PETImage_shape_str = sys.argv[6] # PET input dimensions (string, tF)
@@ -116,7 +108,7 @@ def post_reconstruction(config,root):
     # Adding dimensions to fit network architecture
     image_corrupt_torch = image_corrupt_torch.view(1,1,PETImage_shape[0],PETImage_shape[1])
 
-    def train_process(config, finetuning, processing_unit, sub_iter_DIP, max_iter, image_net_input_torch, image_corrupt_torch):
+    def train_process(config, finetuning, processing_unit, sub_iter_DIP, admm_it, image_net_input_torch, image_corrupt_torch):
         # Implements Dataset
         train_dataset = torch.utils.data.TensorDataset(image_net_input_torch, image_corrupt_torch)
         # train_dataset = Dataset(image_net_input_torch, image_corrupt_torch)
@@ -129,14 +121,14 @@ def post_reconstruction(config,root):
         checkpoint_simple_path_exp = '' # We do not need its value in this script
         
         # Start training
-        print('Starting optimization, iteration',max_iter)
-        trainer = create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, checkpoint_simple_path, test, checkpoint_simple_path_exp,name=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        print('Starting optimization, iteration',admm_it)
+        trainer = create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, checkpoint_simple_path, test, checkpoint_simple_path_exp,name=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
         trainer.fit(model, train_dataloader)
 
         return model
 
-    model = train_process(config, finetuning, processing_unit, sub_iter_DIP, max_iter, image_net_input_torch, image_corrupt_torch)
+    model = train_process(config, finetuning, processing_unit, sub_iter_DIP, admm_it, image_net_input_torch, image_corrupt_torch)
 
     """
     Saving variables and model
@@ -173,7 +165,7 @@ if (net=='DIP'):
     # Configuration dictionnary for hyperparameters to tune
     config = {
         "lr" : 0.01,
-        "sub_iter_DIP" : 200,
+        "sub_iter_DIP" : 2000,
         "rho" : 0.003,
         "opti_DIP" : 'Adam',
         "mlem_sequence" : None, # None means we are in post reconstruction mode

@@ -17,20 +17,13 @@ variable_torch : torch representation of variable
 ## Python libraries
 
 # Useful
-import os
 import sys
-from pathlib import Path
 import warnings
 
 # Math
 import numpy as np
-from skimage.metrics import peak_signal_noise_ratio
-import matplotlib.pyplot as plt
 
 # Pytorch
-import torch.nn as nn
-import torch.optim as optim
-import pytorch_lightning as pl
 from torchsummary import summary
 
 # Local files to import
@@ -40,7 +33,7 @@ from utils_func import *
 Receiving variables from block 1 part and initializing variables
 """
 
-max_iter = int(sys.argv[1]) # Outer iterations
+admm_it = int(sys.argv[1]) # Current ADMM iteration 
 test = int(sys.argv[2]) # Label of the experiment
 net = sys.argv[3] # Network architecture
 processing_unit = sys.argv[4] # Processing unit (CPU or GPU)
@@ -66,7 +59,7 @@ PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
 image_net_input_torch = torch.load(subroot + 'Data/image_net_input_torch.pt')# DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1. JUST LOAD IT FROM BLOCK 1
 
 # Loading DIP x_label (corrupted image) from block1
-image_corrupt = fijii_np(subroot+'Block2/x_label/' + format(test)+'/'+ format(max_iter) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
+image_corrupt = fijii_np(subroot+'Block2/x_label/' + format(test)+'/'+ format(admm_it) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
 # Normalization of x_label image
 # image_corrupt_norm_scale, maxe = norm_imag(image_corrupt) # Normalization of x_label image
 image_corrupt_norm,mean_label,std_label= stand_imag(image_corrupt) # Standardization of x_label image
@@ -108,7 +101,7 @@ class Dataset():
 #from memory_profiler import profile
  
 #@profile
-def train_process(config, finetuning, processing_unit, sub_iter_DIP, max_iter, image_net_input_torch, image_corrupt_torch):
+def train_process(config, finetuning, processing_unit, sub_iter_DIP, admm_it, image_net_input_torch, image_corrupt_torch):
     # Implements Dataset
     train_dataset = torch.utils.data.TensorDataset(image_net_input_torch, image_corrupt_torch)
     # train_dataset = Dataset(image_net_input_torch, image_corrupt_torch)
@@ -137,17 +130,17 @@ def train_process(config, finetuning, processing_unit, sub_iter_DIP, max_iter, i
     checkpoint_simple_path = subroot+'Block2/checkpoint/'
     checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(test)  + '/' + suffix + '/'
 
-    model = load_model(config, finetuning, max_iter, model, model_class, subroot, checkpoint_simple_path_exp, training=True)
+    model = load_model(image_net_input_torch, config, finetuning, admm_it, model, model_class, subroot, checkpoint_simple_path_exp, training=True)
 
     # Start training
-    print('Starting optimization, iteration',max_iter)
-    trainer = create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, checkpoint_simple_path, test, checkpoint_simple_path_exp)
+    print('Starting optimization, iteration',admm_it)
+    trainer = create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, checkpoint_simple_path, test, checkpoint_simple_path_exp)
 
     trainer.fit(model, train_dataloader)
 
     return model
 
-model = train_process(config, finetuning, processing_unit, sub_iter_DIP, max_iter, image_net_input_torch, image_corrupt_torch)
+model = train_process(config, finetuning, processing_unit, sub_iter_DIP, admm_it, image_net_input_torch, image_corrupt_torch)
 
 """
 Saving variables and model
@@ -160,6 +153,6 @@ else:
 # Destandardize like at the beginning
 out_destand = destand_imag(out, mean_label, std_label)
 # Saving image output
-save_img(out_destand, subroot+'Block2/out_cnn/' + format(test) + '/out_DIP' + format(max_iter) + suffix + '.img')
+save_img(out_destand, subroot+'Block2/out_cnn/' + format(test) + '/out_' + net + '' + format(admm_it) + suffix + '.img')
 
 print('Finish')

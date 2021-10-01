@@ -76,6 +76,7 @@ for i in range(max_iter):
     if (optimizer == 'MLEM'):
         opti = ' -opti ' + optimizer
         conv = ' -conv gaussian,8,8,3.5::post'
+        conv = ''
         penalty = ''
         penaltyStrength = ''
     else:

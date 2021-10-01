@@ -63,7 +63,7 @@ bias_hot_recon = np.zeros(max_iter)
 image_gt = fijii_np(subroot+'Block2/data/phantom_act.img',shape=(PETImage_shape))
 
 for i in range(max_iter):
-    f = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_DIP' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
+    f = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
 
     # Metrics for NN output
     compute_metrics(f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)

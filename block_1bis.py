@@ -11,7 +11,8 @@ image_sens : sensitivity image
 image_gt : ground truth image
 x_out : DIP output
 x : image x at iteration i
-image_init : initialization of image x = initialization of DIP output
+image_init : initialization of image x (x_0)
+f_init : initialization of DIP output (f_0), BUT NOT theta_0
 """
 
 ## Python libraries
@@ -96,7 +97,6 @@ def admm_loop(config, args, root):
 
     # Config dictionnary for hyperparameters
     rho = config["rho"]
-    mlem_sequence = config["mlem_sequence"]
     np.save(subroot + 'Config/config' + suffix + '.npy', config) # Save this configuration of hyperparameters, and reload it at the beginning of block 2 thanks to suffix (passed in subprocess call argumentsZ)
 
     # castor-recon command line
@@ -174,48 +174,40 @@ def admm_loop(config, args, root):
             image_net_input_torch = image_net_input_torch.view(1,1,input_size_DD,input_size_DD) # For Deep Decoder, if auto encoder based on Deep Decoder
     torch.save(image_net_input_torch,subroot + 'Data/image_net_input_torch.pt')
 
-    # Ininitializeing DIP output and first image x with image_init = DIP output after fitting a MLEM image
-    image_init = np.ones((PETImage_shape[0],PETImage_shape[1])) # initializing DIP output with uniform image with ones.
-
-    '''
-    # Save config_init with different sub_iter_DIP just for this call
-    config_init = config
-    config_init["sub_iter_DIP"] = 100
-    suffix = '_init' + suffix_func(config_init)
-    np.save(root + '/config' + suffix + '.npy', config_init) # Save this configuration of hyperparameters, and reload it at the beginning of block 2 thanks to suffix (passed in subprocess call argumentsZ)
-
-    # Reading and saving (= copying) DIP x_label (corrupted image) as MLEM image
-    MLEM_label = fijii_np(subroot+'Data/castor_output_it60.img',shape=(PETImage_shape))
-    i = -1 # before true iterations
-    save_img(MLEM_label, subroot+'Block2/x_label/' + format(test)+'/'+ format(i) +'_x_label' + suffix + '.img')
-    # DIP fitting to obtain first image x = first DIP output
-    subprocess.call(["python3", root+"/block_2_bis_lightning.py", str(i), str(test), 'DIP', processing_unit, 'False', PETImage_shape_str, root, suffix]) #Calling block 2 algorithm and passing variables (current iter-number of epochs and test number, chosen net, processing unit, way to do finetuning, and image dimensions)
-    image_init = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_DIP' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
-    
-    import sys
-    sys.exit()
-    # renommer pour la suite initialimage
-    #'''
+    # Ininitializeing DIP output and first image x with f_init and image_init
+    #image_init_path_without_extension = ''
+    #image_init = np.ones((PETImage_shape[0],PETImage_shape[1])) # initializing CASToR MAP reconstruction with uniform image with ones.
+    #image_init_path_without_extension = 'Comparaison/BSREM/BSREM_30it_REF'
+    image_init_path_without_extension = 'Comparaison/MLEM/MLEM_converge'
+    image_init = fijii_np(subroot + image_init_path_without_extension + '.img',shape=(PETImage_shape)) # initializing CASToR MAP reconstruction with BSREM precomputed reference
+    #f_init = fijii_np(subroot+'Comparaison/BSREM/BSREM_it30_REF.img',shape=(PETImage_shape))
+    f_init = fijii_np(subroot+'Comparaison/MLEM/MLEM_converge.img',shape=(PETImage_shape))
 
     #Loading Ground Truth image to compute metrics
     image_gt = fijii_np(subroot+'Block2/data/phantom_act.img',shape=(PETImage_shape))
 
-    f = image_init  # Initializing DIP output with image_init
+    f = f_init  # Initializing DIP output with f_init
 
     for i in range(max_iter):
         print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Outer iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', i)
         start_time_outer_iter = time.time()
         
         # Reconstruction with CASToR (first equation of ADMM)
-        x_label = castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, f, mu, PETImage_shape)
+        x_label = castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension)
+        
+        # Write image over ADMM iterations
+        if ((max_iter>=10) and (i%(max_iter // 10) == 0) or True):
 
+            write_image_tensorboard(writer,x_label,"Corrupted image (x_label) over ADMM iterations",i) # Showing all corrupted images with same contrast to compare them together
+            write_image_tensorboard(writer,x_label,"Corrupted image (x_label) over ADMM iterations (FULL CONTRAST)",i,full_contrast=True) # Showing each corrupted image with contrast = 1
+        
         # Block 2 - CNN - 10 iterations
         start_time_block2= time.time()
         successful_process = subprocess.call(["python3", root+"/block_2_bis_lightning.py", str(i), str(test), net, processing_unit, finetuning, PETImage_shape_str, root, suffix]) #Calling block 2 algorithm and passing variables (current iter-number of epochs and test number, chosen net, processing unit, way to do finetuning, and image dimensions)
         if successful_process != 0: # if there is an error in block2, then stop the run
             raise ValueError('An error occured in block2 computation. Stopping overall iterations.')
         print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
-        f = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_DIP' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
+        f = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
 
         # Metrics for NN output
         compute_metrics(f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
@@ -246,13 +238,12 @@ def admm_loop(config, args, root):
         '''
         # Saving DIP output for each ADMM iteration as video in tensorboard
         import imageio
-        frames = [fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_DIP' + format(p) + suffix + '.img',shape=(PETImage_shape)) for p in range(i+1)] # loading DIP outputs
+        frames = [fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(p) + suffix + '.img',shape=(PETImage_shape)) for p in range(i+1)] # loading DIP outputs
         imageio.mimsave(subroot+'output.gif', frames, fps=(max_iter / 1.0))
         '''
 
         # Write image over ADMM iterations
         if ((max_iter>=10) and (i%(max_iter // 10) == 0)):
-
             write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",i) # Showing all images with same contrast to compare them together
             write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output, FULL CONTRAST)",i,full_contrast=True) # Showing each image with contrast = 1
         
@@ -323,10 +314,10 @@ def admm_loop(config, args, root):
         compute_metrics(x_avg,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,write_tensorboard=False)
 
     # Display images in tensorboard
-    write_image_tensorboard(writer,image_init,"initialization of DIP output") # DIP input in tensorboard
-    write_image_tensorboard(writer,image_net_input,"DIP input") # Initialization of DIP output in tensorboard
+    write_image_tensorboard(writer,f_init,"initialization of DIP output (f_0)") # initialization of DIP output in tensorboard
+    write_image_tensorboard(writer,image_init,"initialization of CASToR MAP reconstruction (x_0)") # initialization of CASToR MAP reconstruction in tensorboard
+    write_image_tensorboard(writer,image_net_input,"DIP input") # DIP input in tensorboard
     write_image_tensorboard(writer,image_gt,"Ground Truth") # Ground truth image in tensorboard
-    #write_image_tensorboard(writer,x_out,"Final image (" + net + "output)") # DIP output in tensorboard
 
     if (net == 'DIP_VAE'):
         write_image_tensorboard(writer,x_avg,"Final averaged image (average over DIP outputs)") # Final averaged image in tensorboard
@@ -337,12 +328,13 @@ config = {
     "lr" : tune.grid_search([0.0001,0.001,0.01]),
     #"sub_iter_DIP" : tune.grid_search([10,30,50]),
     "sub_iter_DIP" : tune.grid_search([10,50,100,200]),
+    #"sub_iter_DIP" : tune.grid_search([50,100,200,500]),
     #"rho" : tune.grid_search([5e-4,3e-3,6e-2,1e-2]),
     "rho" : tune.grid_search([3e-3]),
     #"rho" : tune.grid_search([1e-6]), # Trying to reproduce MLEM result as rho close to 0
     "opti_DIP" : tune.grid_search(['Adam']),
     #"opti_DIP" : tune.grid_search(['LBFGS']),
-    "mlem_sequence" : tune.grid_search([True]),
+    "mlem_sequence" : tune.grid_search([False]),
     "d_DD" : tune.grid_search([6]), # not below 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([False])
@@ -350,13 +342,13 @@ config = {
 #'''
 config = {
     "lr" : tune.grid_search([0.001]),
-    "sub_iter_DIP" : tune.grid_search([10]),
+    "sub_iter_DIP" : tune.grid_search([100]),
     "rho" : tune.grid_search([0.003]),
     "opti_DIP" : tune.grid_search(['Adam']),
     "mlem_sequence" : tune.grid_search([False]),
     "d_DD" : tune.grid_search([6]), # not below 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
-    "skip_connections" : tune.grid_search([False])
+    "skip_connections" : tune.grid_search([True])
 }
 #'''
 
@@ -375,9 +367,9 @@ args = parser.parse_args()
 
 # For VS Code (without command line)
 if (args.net is None): # Must check if all args are None
-    args.net = 'DIP' # Network architecture
-    args.proc = 'GPU'
-    args.max_iter = 20 # Outer iterations
+    args.net = 'DD' # Network architecture
+    args.proc = 'CPU'
+    args.max_iter = 10 # Outer iterations
     args.sub_iter_MAP = 2 # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
     args.finetuning = 'last' # Finetuning or not for the DIP optimizations (block 2)
     
