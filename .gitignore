@@ -19,3 +19,5 @@ simu_mmr/
 __pycache__/
 
 PlotNeuralNet/
+
+test.py

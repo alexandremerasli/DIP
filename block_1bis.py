@@ -57,8 +57,10 @@ def admm_loop(config, args, root):
     suffix =  suffix_func(config) # suffix to make difference between raytune runs (different hyperparameters)
     subroot = root + '/data/Algo/'  # Directory root
 
-    Path(subroot+'Block1/Test_block1/' + suffix + '/out_eq22').mkdir(parents=True, exist_ok=True) # CASTor path
-    Path(subroot+'Block1/Test_block1/' + suffix + '/before_eq22').mkdir(parents=True, exist_ok=True) # CASTor path
+    Path(subroot+'Block1/Test_block1/' + suffix + '/before_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
+    Path(subroot+'Block1/Test_block1/' + suffix + '/during_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
+    Path(subroot+'Block1/Test_block1/' + suffix + '/out_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
+
 
     Path(subroot+'Images/eq_22/'+format(test)+'/').mkdir(parents=True, exist_ok=True) # First subproblem - folder
     Path(subroot+'Images/image_EM/'+format(test)+'/').mkdir(parents=True, exist_ok=True) # MLEM image - folder
@@ -89,7 +91,7 @@ def admm_loop(config, args, root):
     Path(subroot+'Config/').mkdir(parents=True, exist_ok=True) # CASTor path
 
     # Define PET input dimensions according to input data dimensions
-    PETImage_shape_str = read_input_dim()
+    PETImage_shape_str = read_input_dim(subroot+'Data/castor_output_it60.hdr')
     PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
 
     """
@@ -110,18 +112,24 @@ def admm_loop(config, args, root):
     th = ' -th 1'
     proj = ' -proj incrementalSiddon'
 
-    opti = ' -opti OPTITR'
+    opti_x = ' -opti ADMM_spec_x'
+    opti_init_v = ' -opti ADMM_spec_init_v'
+    opti_v = ' -opti ADMM_spec_v'
+    opti_u = ' -opti ADMM_spec_u'
     pnlt = ' -pnlt DIP_ADMM'
     pnlt_beta = ' -pnlt-beta ' + str(rho)
 
-    subroot_output_path = ' -dout ' + subroot + 'Block1/Test_block1/' + suffix + '/' # Output path for CASTOR framework
+    subroot_output_path_castor = ' -dout ' + subroot + 'Block1/Test_block1/' + suffix + '/' # Output path for CASTOR framework
     input_path = ' -img ' + subroot + 'Block1/Test_block1/' + suffix + '/out_eq22/' # Input path for CASTOR framework
 
     # Command line for calculating the Likelihood
     opti_like = ' -opti-fom'
     opti_like = ''
 
-    castor_command_line = executable + dim + vox + header_file + vb + th + proj + opti + opti_like + pnlt + pnlt_beta
+    castor_command_line_x = executable + dim + vox + header_file + vb + th + proj + opti_x + opti_like + pnlt + pnlt_beta
+    castor_command_line_init_v = executable + dim + vox + header_file + vb + th + proj + opti_init_v + opti_like
+    castor_command_line_v = executable + dim + vox + header_file + vb + th + proj + opti_v + opti_like
+    castor_command_line_u = executable + dim + vox + header_file + vb + th + proj + opti_u + opti_like
 
     """
     Initialization : variables
@@ -176,14 +184,15 @@ def admm_loop(config, args, root):
     torch.save(image_net_input_torch,subroot + 'Data/image_net_input_torch.pt')
 
     # Ininitializeing DIP output and first image x with f_init and image_init
-    #image_init_path_without_extension = ''
-    #image_init = np.ones((PETImage_shape[0],PETImage_shape[1])) # initializing CASToR MAP reconstruction with uniform image with ones.
-    #image_init_path_without_extension = 'Comparison/BSREM/BSREM_30it_REF'
-    image_init_path_without_extension = 'Comparison/MLEM/MLEM_converge_avec_post_filtre'
-    image_init = fijii_np(subroot + image_init_path_without_extension + '.img',shape=(PETImage_shape)) # initializing CASToR MAP reconstruction with BSREM precomputed reference
-    #f_init = fijii_np(subroot+'Comparison/BSREM/BSREM_it30_REF.img',shape=(PETImage_shape))
-    f_init = fijii_np(subroot+'Comparison/MLEM/MLEM_converge_avec_post_filtre.img',shape=(PETImage_shape))
-
+    image_init_path_without_extension = ''
+    image_init = np.ones((PETImage_shape[0],PETImage_shape[1])) # initializing CASToR MAP reconstruction with uniform image with ones.
+    image_init_path_without_extension = 'Comparison/BSREM/BSREM_it30_REF'
+    #image_init_path_without_extension = 'Comparison/MLEM/MLEM_converge_avec_post_filtre'
+    #image_init = fijii_np(subroot + image_init_path_without_extension + '.img',shape=(PETImage_shape)) # initializing CASToR MAP reconstruction with BSREM precomputed reference
+    f_init = fijii_np(subroot+'Comparison/BSREM/BSREM_it30_REF.img',shape=(PETImage_shape))
+    #f_init = fijii_np(subroot+'Comparison/MLEM/MLEM_converge_avec_post_filtre.img',shape=(PETImage_shape))
+    #f_init = np.ones((PETImage_shape[0],PETImage_shape[1]))
+    
     #Loading Ground Truth image to compute metrics
     image_gt = fijii_np(subroot+'Block2/data/phantom_act.img',shape=(PETImage_shape))
 
@@ -194,7 +203,7 @@ def admm_loop(config, args, root):
         start_time_outer_iter = time.time()
         
         # Reconstruction with CASToR (first equation of ADMM)
-        x_label = castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension)
+        x_label = castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_init_v, castor_command_line_v, castor_command_line_u, subroot, sub_iter_MAP, test, subroot_output_path_castor, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension)
         
         # Write image over ADMM iterations
         if ((max_iter>=10) and (i%(max_iter // 10) == 0) or True):
@@ -315,7 +324,7 @@ config = {
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([False])
 }
-'''
+#'''
 config = {
     "lr" : tune.grid_search([0.001]),
     "sub_iter_DIP" : tune.grid_search([100]),
@@ -326,7 +335,7 @@ config = {
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([True])
 }
-'''
+#'''
 
 ## Arguments for linux command to launch script
 # Creating arguments
@@ -344,7 +353,7 @@ args = parser.parse_args()
 # For VS Code (without command line)
 if (args.net is None): # Must check if all args are None
     args.net = 'DD' # Network architecture
-    args.proc = 'GPU'
+    args.proc = 'CPU'
     args.max_iter = 10 # Outer iterations
     args.sub_iter_MAP = 2 # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
     args.finetuning = 'last' # Finetuning or not for the DIP optimizations (block 2)

@@ -9,6 +9,7 @@ from itertools import product
 from skimage.metrics import peak_signal_noise_ratio
 import matplotlib.pyplot as plt
 import time
+from shutil import copy
 
 from models.ConvNet3D_real_lightning import ConvNet3D_real_lightning # DIP
 from models.ConvNet3D_VAE_lightning import ConvNet3D_VAE_lightning # DIP vae
@@ -56,20 +57,10 @@ def denorm_imag(img, mini, maxi):
         return img
 
 def norm_positive_imag(img):
-
-    print('noooooooooooooooooooooooooooooooooooooooooorm')
-    print(np.min(img))
-
     """ Normalization of the 3D input - output [0..1] and the normalization value for each slide"""
     if (np.max(img) - np.min(img)) != 0:
-
-        print('noooooooooooooooooooooooooooooooooooooooooorm')
-        print(np.min(img / np.max(img)))
         return img / np.max(img), np.min(img), np.max(img)
     else:
-
-        print('noooooooooooooooooooooooooooooooooooooooooorm1111111111111111111111111111111')
-        print(np.min(img / np.max(img)))
         return img, 0, np.max(img)
 
 def denorm_positive_imag(img, mini, maxi):
@@ -86,10 +77,7 @@ def stand_imag(image_corrupt):
     image_center = image_corrupt - mean
     image_corrupt_std = image_center / std
 
-    a,mean,std = norm_positive_imag(image_corrupt)
-    print('noooooooooooooooooooooooooooooooooooooooooorm staaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaand')
-    print(np.min(a))
-    return norm_positive_imag(image_corrupt)
+    #return norm_positive_imag(image_corrupt)
     return norm_imag(image_corrupt)
     return image_corrupt_std.detach(),mean,std
 
@@ -98,47 +86,39 @@ def destand_imag(image, mean, std):
     return destand_numpy_imag(image_np, mean, std)
 
 def destand_numpy_imag(image, mean, std):
-    return denorm_positive_imag(image, 0, std)
-    return denorm_imag(image_np, mean, std)
-    return image_np * std + mean
+    #return denorm_positive_imag(image, 0, std)
+    return denorm_imag(image, mean, std)
+    return image * std + mean
 
 def save_img(img,name):
     fp=open(name,'wb')
     img.tofile(fp)
     print('Succesfully save in:', name)
 
-def write_hdr(i,j,config):
+def write_hdr(L,config,subpath,variable_name=''):
     """ write a header for the optimization transfer solution (it's use as CASTOR input)"""
-    if (j>=0):
-        filename = subroot+'Block1/Test_block1/' + suffix_func(config) + '/out_eq22/'+ format(i) + '_' + format(j+1) +'.hdr'
-        ref_numbers = format(i) + '_' + format(j+1)
+    if (len(L) == 1):
+        i = L[0]
+        if variable_name != '':
+            ref_numbers = format(i) + '_' + variable_name
+        else:
+            ref_numbers = format(i)
     else:
-        filename = subroot+'Block1/Test_block1/' + suffix_func(config) + '/out_eq22/'+ format(i) +'.hdr'
-        ref_numbers = format(i)
+        i = L[0]
+        k = L[1]
+        if variable_name != '':
+            ref_numbers = format(i) + '_' + format(k) + '_' + variable_name
+        else:
+            ref_numbers = format(i)
+    filename = subroot+'Block1/Test_block1/' + suffix_func(config) + '/'+ subpath + '/' + ref_numbers +'.hdr'
     with open(subroot+'Data/castor_output_it60.hdr') as f:
         with open(filename, "w") as f1:
             for line in f:
                 if line.strip() == ('!name of data file := castor_output_it60.img'):
-                    f1.write('!name of data file := '+ref_numbers+'.img')
+                    f1.write('!name of data file := '+ ref_numbers +'.img')
                     f1.write('\n') 
                 elif line.strip() == ('patient name := castor_output_it60'):
-                    f1.write('patient name := '+ref_numbers)
-                    f1.write('\n') 
-                else:
-                    f1.write(line)
-
-def write_hdr_f_mu(i,config):
-    """ write a header for f-mu (it's use as CASTOR input)"""
-    filename = subroot+'Block1/Test_block1/' + suffix_func(config) + '/before_eq22/'+ format(i) +'.hdr'
-    ref_numbers = format(i)
-    with open(subroot+'Data/castor_output_it60.hdr') as f:
-        with open(filename, "w") as f1:
-            for line in f:
-                if line.strip() == ('!name of data file := castor_output_it60.img'):
-                    f1.write('!name of data file := '+ref_numbers+'.img')
-                    f1.write('\n') 
-                elif line.strip() == ('patient name := castor_output_it60'):
-                    f1.write('patient name := '+ref_numbers)
+                    f1.write('patient name := ' + ref_numbers)
                     f1.write('\n') 
                 else:
                     f1.write(line)
@@ -281,15 +261,15 @@ def load_input(net,PETImage_shape,config):
     im_input = fijii_np(file_path, shape=(PETImage_shape)) # Load input of the DNN (CT image)
     return im_input
 
-def read_input_dim():
+def read_input_dim(file_path):
     # Read CASToR header file to retrieve image dimension """
-    with open(subroot+'Data/castor_output_it60.hdr') as f:
+    with open(file_path) as f:
         for line in f:
-            if line.strip().startswith('!matrix size [1]'):
+            if 'matrix size [1]' in line.strip():
                 dim1 = [int(s) for s in line.split() if s.isdigit()][-1]
-            if line.strip().startswith('!matrix size [2]'):
+            if 'matrix size [2]' in line.strip():
                 dim2 = [int(s) for s in line.split() if s.isdigit()][-1]
-            if line.strip().startswith('!matrix size [3]'):
+            if 'matrix size [3]' in line.strip():
                 dim3 = [int(s) for s in line.split() if s.isdigit()][-1]
 
     # Create variables to store dimensions
@@ -396,44 +376,86 @@ def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finet
     out_destand = destand_imag(out, mean_label, std_label)
     return out_destand
 
-def castor_reconstruction(i, castor_command_line, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
+def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_init_v, castor_command_line_v, castor_command_line_u, subroot, sub_iter_MAP, test, subroot_output_path_castor, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
     start_time_block1 = time.time()
     mlem_sequence = config['mlem_sequence']
+    nb_iter_second_admm = 10
 
     # Save image f-mu in .img and .hdr format - block 1
-    name_f_mu = (subroot+'Block1/Test_block1/' + suffix + '/before_eq22/' + format(i))
-    save_img(f-mu, name_f_mu + '.img')
-    write_hdr_f_mu(i,config)
-    f_mu_for_penalty = ' -multimodal ' + name_f_mu + '.hdr'
+    subroot_output_path = (subroot + 'Block1/Test_block1/' + suffix)
+    path_before_eq_22 = (subroot_output_path + '/before_eq22/')
+    path_during_eq_22 = (subroot_output_path + '/during_eq22/')
+    save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
+    write_hdr([i],config,'before_eq22','f_mu')
 
-    if i==0:   # choose initial image for CASToR reconstruction
-        initialimage = ' -img ' + subroot + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
-    elif i>=1:
-        initialimage = input_path +format(i-1) +'.hdr'
-
-    full_output_path = subroot_output_path + '/out_eq22/' + format(i)
-
+    # Compute u^0 (u^-1 in CASToR) and store it with zeros, and save in .hdr format - block 1            
+    u_0 = np.float32(np.zeros((128,128))) # initialize u_0 to zeros
+    save_img(u_0,path_during_eq_22 + format(i) + '1_value.img')
+    write_hdr([i,-1],config,'during_eq22','u')
+    
+    # Compute v^0 (v^-1 in CASToR) with ADMM_spec_init_v optimizer and save in .hdr format - block 1
+    if (i == 0):   # choose initial image for CASToR reconstruction
+        x_for_multimodal_init = ' -multimodal ' + subroot + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+    elif (i >= 1):
+        x_for_multimodal_init = ' -multimodal ' + subroot + 'Block1/Test_block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
+    os.system(castor_command_line_init_v + subroot_output_path_castor + '/during_eq22/' + 'not_useful' + ' -it 1:1' + x_for_multimodal_init)
+    copy(subroot + 'Data/ADMM_spec_init_v.img', path_during_eq_22 + format(i) + '_-1_v.img')
+    write_hdr([i,-1],config,'during_eq22','v')
+        
+    # Choose number of argmax iteration for (second) x computation
     if (mlem_sequence):
-        it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax 
-        os.system(castor_command_line + initialimage + full_output_path + it + f_mu_for_penalty)
-        print(castor_command_line + initialimage + full_output_path + it + f_mu_for_penalty)
-        print("--- %s seconds - optimization transfer (CASToR) iteration ---" % (time.time() - start_time_block1))
-
-        # load previously computed image with CASToR optimization transfer function
-        x = fijii_np(subroot+'Block1/Test_block1/' + suffix + '/out_eq22/' +format(i) + '/' + format(i) +'_it30.img', shape=(PETImage_shape))
+        it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax
     else:
         it = ' -it ' + str(sub_iter_MAP) + ':1' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
-        os.system(castor_command_line + initialimage + full_output_path + it + f_mu_for_penalty)
-        print(castor_command_line + initialimage + full_output_path + it + f_mu_for_penalty)
-        print("--- %s seconds - optimization transfer (CASToR) iteration ---" % (time.time() - start_time_block1))
 
-        # load previously computed image with CASToR optimization transfer function
-        x = fijii_np(subroot+'Block1/Test_block1/' + suffix + '/out_eq22/' +format(i) + '/' + format(i) +'_it' + str(sub_iter_MAP) + '.img', shape=(PETImage_shape))
+    # Second ADMM computation
+    for k in range(-1,nb_iter_second_admm):
+
+        if (k == -1):
+            if (i == 0):   # choose initial image for CASToR reconstruction
+                initialimage = ' -img ' + subroot + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+            elif (i >= 1):
+                initialimage = ' -img ' + subroot + 'Block1/Test_block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
+        else:
+            initialimage = ' -img ' + subroot + 'Block1/Test_block1/' + suffix + '/during_eq22/' +format(i) + '_' + format(k) + '_x.hdr'
+
+        full_output_path_k = subroot_output_path + '/during_eq22/' + format(i) + '_' + format(k)
+        full_output_path_k_next = subroot_output_path + '/during_eq22/' + format(i) + '_' + format(k+1)
+        f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'
+        x_for_multimodal_next = ' -multimodal ' + full_output_path_k_next + '_x' + '.hdr'
+        v_for_additional_data = ' -additional-data ' + full_output_path_k + '_v' + '.hdr'
+        v_for_additional_data_next = ' -additional-data ' + full_output_path_k_next + '_v' + '.hdr'
+        u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u' + '.hdr'
+
+        print('xxxxxxxxxxxxxxxxxxxxx')
+        print(castor_command_line_x + ' -dout ' + subroot_output_path + '/during_eq22' + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage)
+        os.system(castor_command_line_x + ' -dout ' + subroot_output_path + '/during_eq22' + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage)
+        copy(subroot + 'Data/ADMM_spec_x.img', full_output_path_k_next + '_x.img')
+        write_hdr([i,k+1],config,'during_eq22','x')
+        x = fijii_np(subroot+'Block1/Test_block1/' + suffix + '/during_eq22/' +format(i) + '_' + format (k+1) + '_x.img', shape=(PETImage_shape))
+        if (k>0):
+            write_image_tensorboard(writer,x,"x in second ADMM over iterations", k) # Showing all corrupted images with same contrast to compare them together
+            write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)", k,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
+
+        print('vvvvvvvvvvvvvvvvvvvvvvv')
+        os.system(castor_command_line_v + ' -dout ' + subroot_output_path + '/during_eq22' + ' -it 1:1' + x_for_multimodal_next + u_for_additional_data) # Analytical update so we only need 1 iteration
+        copy(subroot + 'Data/ADMM_spec_v.img', full_output_path_k_next + '_v.img')
+        write_hdr([i,k+1],config,'during_eq22','v')
+        
+        print("uuuuuuuuuuuuuuuuuuuuuuu")
+        os.system(castor_command_line_u + ' -dout ' + subroot_output_path + '/during_eq22' + ' -it 1:1' + x_for_multimodal_next + u_for_additional_data + v_for_additional_data_next) # Analytical update so we only need 1 iteration
+        copy(subroot + 'Data/ADMM_spec_u.img', full_output_path_k_next + '_u.img')
+        write_hdr([i,k+1],config,'during_eq22','u')
+
+    print("--- %s seconds - second ADMM (CASToR) iteration ---" % (time.time() - start_time_block1))
+
+    # Load previously computed image with CASToR ADMM optimizers
+    x = fijii_np(subroot+'Block1/Test_block1/' + suffix + '/during_eq22/' +format(i) + '_' + format (k+1) + '_x.img', shape=(PETImage_shape))
 
     # Save image x in .img and .hdr format - block 1
     name = (subroot+'Block1/Test_block1/' + suffix + '/out_eq22/' + format(i) + '.img')
     save_img(x, name)
-    write_hdr(i, -1, config) # -1 to choose the right filename
+    write_hdr([i], config, 'out_eq22')
 
     # Save x_label for load into block 2 - CNN as corrupted image (x_label)
     x_label = x + mu
