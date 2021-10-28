@@ -379,7 +379,7 @@ def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finet
 def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_init_v, castor_command_line_v, castor_command_line_u, subroot, sub_iter_MAP, test, subroot_output_path_castor, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
     start_time_block1 = time.time()
     mlem_sequence = config['mlem_sequence']
-    nb_iter_second_admm = 10
+    nb_iter_second_admm = 100
 
     # Save image f-mu in .img and .hdr format - block 1
     subroot_output_path = (subroot + 'Block1/Test_block1/' + suffix)
@@ -426,13 +426,11 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
         full_output_path_k = subroot_output_path + '/during_eq22/' + format(i) + '_' + format(k)
         full_output_path_k_next = subroot_output_path + '/during_eq22/' + format(i) + '_' + format(k+1)
         f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'
-        x_for_multimodal_next = ' -multimodal ' + full_output_path_k_next + '_x' + '.hdr'
-        v_for_additional_data = ' -additional-data ' + full_output_path_k + '_v' + '.hdr'
-        v_for_additional_data_next = ' -additional-data ' + full_output_path_k_next + '_v' + '.hdr'
-        u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u' + '.hdr'
+        v_for_additional_data = ' -additional-data ' + full_output_path_k + '_v.hdr'
+        u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
 
-        x = fijii_np(subroot+'Block1/Test_block1/' + suffix + '/during_eq22/' +format(i) + '_' + format (k) + '_x.img', shape=(PETImage_shape))
+        x = fijii_np(full_output_path_k + '_x.img', shape=(PETImage_shape))
         if (k>=-1):
             write_image_tensorboard(writer,x,"x in second ADMM over iterations", k) # Showing all corrupted images with same contrast to compare them together
             write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)", k,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
@@ -444,18 +442,12 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
         copy(subroot + 'Data/ADMM_spec_x.img', full_output_path_k_next + '_x.img')
         write_hdr([i,k+1],config,'during_eq22','x')
 
-        v = fijii_np(subroot+'Block1/Test_block1/' + suffix + '/during_eq22/' +format(i) + '_' + format (k) + '_v.img', shape=(2447,28))
-        if (k>=-1):
-            write_image_tensorboard(writer,v,"v in second ADMM over iterations", k) # Showing all corrupted images with same contrast to compare them together
-            write_image_tensorboard(writer,v,"v in second ADMM over iterations(FULL CONTRAST)", k,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
 
         print('vvvvvvvvvvvvvvvvvvvvvvv')
-        os.system(castor_command_line_v + ' -dout ' + subroot_output_path + '/during_eq22' + ' -it 1:1' + x_for_multimodal_next + u_for_additional_data) # Analytical update so we only need 1 iteration
         copy(subroot + 'Data/ADMM_spec_v.img', full_output_path_k_next + '_v.img')
         write_hdr([i,k+1],config,'during_eq22','v')
         
         print("uuuuuuuuuuuuuuuuuuuuuuu")
-        os.system(castor_command_line_u + ' -dout ' + subroot_output_path + '/during_eq22' + ' -it 1:1' + x_for_multimodal_next + u_for_additional_data + v_for_additional_data_next) # Analytical update so we only need 1 iteration
         copy(subroot + 'Data/ADMM_spec_u.img', full_output_path_k_next + '_u.img')
         write_hdr([i,k+1],config,'during_eq22','u')
 

@@ -187,7 +187,7 @@ def admm_loop(config, args, root):
     image_init_path_without_extension = ''
     #image_init = np.ones((PETImage_shape[0],PETImage_shape[1])) # initializing CASToR MAP reconstruction with uniform image with ones.
     image_init_path_without_extension = '1_value'
-    image_init_path_without_extension = 'BSREM_it30_REF'
+    #image_init_path_without_extension = 'BSREM_it30_REF'
     #image_init_path_without_extension = 'Comparison/BSREM/BSREM_it30_REF'
     #image_init_path_without_extension = 'Comparison/MLEM/MLEM_converge_avec_post_filtre'
     #image_init = fijii_np(subroot + image_init_path_without_extension + '.img',shape=(PETImage_shape)) # initializing CASToR MAP reconstruction with BSREM precomputed reference
@@ -330,7 +330,7 @@ config = {
 config = {
     "lr" : tune.grid_search([0.001]),
     "sub_iter_DIP" : tune.grid_search([100]),
-    "rho" : tune.grid_search([0.003]),
+    "rho" : tune.grid_search([0.003/10000]),
     "opti_DIP" : tune.grid_search(['Adam']),
     "mlem_sequence" : tune.grid_search([False]),
     "d_DD" : tune.grid_search([6]), # not below 6, otherwise 128 is too little as output size
@@ -356,8 +356,8 @@ args = parser.parse_args()
 if (args.net is None): # Must check if all args are None
     args.net = 'DD' # Network architecture
     args.proc = 'CPU'
-    args.max_iter = 10 # Outer iterations
-    args.sub_iter_MAP = 2 # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
+    args.max_iter = 1 # Outer iterations
+    args.sub_iter_MAP = 10 # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
     args.finetuning = 'last' # Finetuning or not for the DIP optimizations (block 2)
     
 config_combination = 1
