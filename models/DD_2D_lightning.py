@@ -43,7 +43,7 @@ class DD_2D_lightning(pl.LightningModule):
         for i in range(len(self.num_channels_up)-2):
             out = self.decoder_layers[i](out)
         out = self.last_layers(out)
-        out = self.positivity(out)
+        #out = self.positivity(out)
         return out
 
     def DIP_loss(self, out, image_corrupt_torch):

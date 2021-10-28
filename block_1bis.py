@@ -185,8 +185,10 @@ def admm_loop(config, args, root):
 
     # Ininitializeing DIP output and first image x with f_init and image_init
     image_init_path_without_extension = ''
-    image_init = np.ones((PETImage_shape[0],PETImage_shape[1])) # initializing CASToR MAP reconstruction with uniform image with ones.
-    image_init_path_without_extension = 'Comparison/BSREM/BSREM_it30_REF'
+    #image_init = np.ones((PETImage_shape[0],PETImage_shape[1])) # initializing CASToR MAP reconstruction with uniform image with ones.
+    image_init_path_without_extension = '1_value'
+    image_init_path_without_extension = 'BSREM_it30_REF'
+    #image_init_path_without_extension = 'Comparison/BSREM/BSREM_it30_REF'
     #image_init_path_without_extension = 'Comparison/MLEM/MLEM_converge_avec_post_filtre'
     #image_init = fijii_np(subroot + image_init_path_without_extension + '.img',shape=(PETImage_shape)) # initializing CASToR MAP reconstruction with BSREM precomputed reference
     f_init = fijii_np(subroot+'Comparison/BSREM/BSREM_it30_REF.img',shape=(PETImage_shape))
@@ -300,7 +302,7 @@ def admm_loop(config, args, root):
 
     # Display images in tensorboard
     write_image_tensorboard(writer,f_init,"initialization of DIP output (f_0)") # initialization of DIP output in tensorboard
-    write_image_tensorboard(writer,image_init,"initialization of CASToR MAP reconstruction (x_0)") # initialization of CASToR MAP reconstruction in tensorboard
+    #write_image_tensorboard(writer,image_init,"initialization of CASToR MAP reconstruction (x_0)") # initialization of CASToR MAP reconstruction in tensorboard
     write_image_tensorboard(writer,image_net_input,"DIP input") # DIP input in tensorboard
     write_image_tensorboard(writer,image_gt,"Ground Truth") # Ground truth image in tensorboard
 

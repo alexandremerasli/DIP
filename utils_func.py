@@ -388,14 +388,18 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
     save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
     write_hdr([i],config,'before_eq22','f_mu')
 
+    # x^0
+    copy(subroot + 'Data/' + image_init_path_without_extension + '.img', path_during_eq_22 + format(i) + '_-1_x.img')
+    write_hdr([i,-1],config,'during_eq22','x')
+
     # Compute u^0 (u^-1 in CASToR) and store it with zeros, and save in .hdr format - block 1            
-    u_0 = np.float32(np.zeros((128,128))) # initialize u_0 to zeros
-    save_img(u_0,path_during_eq_22 + format(i) + '1_value.img')
+    u_0 = np.zeros((344,252)) # initialize u_0 to zeros
+    save_img(u_0,path_during_eq_22 + format(i) + '_-1_u.img')
     write_hdr([i,-1],config,'during_eq22','u')
     
     # Compute v^0 (v^-1 in CASToR) with ADMM_spec_init_v optimizer and save in .hdr format - block 1
     if (i == 0):   # choose initial image for CASToR reconstruction
-        x_for_multimodal_init = ' -multimodal ' + subroot + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+        x_for_multimodal_init = ' -multimodal ' + subroot + 'Data/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
     elif (i >= 1):
         x_for_multimodal_init = ' -multimodal ' + subroot + 'Block1/Test_block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
     os.system(castor_command_line_init_v + subroot_output_path_castor + '/during_eq22/' + 'not_useful' + ' -it 1:1' + x_for_multimodal_init)
@@ -413,7 +417,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
 
         if (k == -1):
             if (i == 0):   # choose initial image for CASToR reconstruction
-                initialimage = ' -img ' + subroot + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+                initialimage = ' -img ' + subroot + 'Data/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
             elif (i >= 1):
                 initialimage = ' -img ' + subroot + 'Block1/Test_block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
         else:
@@ -427,15 +431,23 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
         v_for_additional_data_next = ' -additional-data ' + full_output_path_k_next + '_v' + '.hdr'
         u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u' + '.hdr'
 
+
+        x = fijii_np(subroot+'Block1/Test_block1/' + suffix + '/during_eq22/' +format(i) + '_' + format (k) + '_x.img', shape=(PETImage_shape))
+        if (k>=-1):
+            write_image_tensorboard(writer,x,"x in second ADMM over iterations", k) # Showing all corrupted images with same contrast to compare them together
+            write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)", k,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
+
+
         print('xxxxxxxxxxxxxxxxxxxxx')
         print(castor_command_line_x + ' -dout ' + subroot_output_path + '/during_eq22' + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage)
         os.system(castor_command_line_x + ' -dout ' + subroot_output_path + '/during_eq22' + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage)
         copy(subroot + 'Data/ADMM_spec_x.img', full_output_path_k_next + '_x.img')
         write_hdr([i,k+1],config,'during_eq22','x')
-        x = fijii_np(subroot+'Block1/Test_block1/' + suffix + '/during_eq22/' +format(i) + '_' + format (k+1) + '_x.img', shape=(PETImage_shape))
-        if (k>0):
-            write_image_tensorboard(writer,x,"x in second ADMM over iterations", k) # Showing all corrupted images with same contrast to compare them together
-            write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)", k,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
+
+        v = fijii_np(subroot+'Block1/Test_block1/' + suffix + '/during_eq22/' +format(i) + '_' + format (k) + '_v.img', shape=(2447,28))
+        if (k>=-1):
+            write_image_tensorboard(writer,v,"v in second ADMM over iterations", k) # Showing all corrupted images with same contrast to compare them together
+            write_image_tensorboard(writer,v,"v in second ADMM over iterations(FULL CONTRAST)", k,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
 
         print('vvvvvvvvvvvvvvvvvvvvvvv')
         os.system(castor_command_line_v + ' -dout ' + subroot_output_path + '/during_eq22' + ' -it 1:1' + x_for_multimodal_next + u_for_additional_data) # Analytical update so we only need 1 iteration

@@ -171,7 +171,7 @@ class ConvNet3D_VAE_lightning(pl.LightningModule):
         out = self.up3(out)
         out_skip3 = out1 + out
         out = self.deep7(out_skip3)
-        out = self.positivity(out)
+        #out = self.positivity(out)
 
         return out, mu, logvar, z
 
