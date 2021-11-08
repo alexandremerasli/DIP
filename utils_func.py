@@ -261,7 +261,7 @@ def load_input(net,PETImage_shape,config):
     im_input = fijii_np(file_path, shape=(PETImage_shape)) # Load input of the DNN (CT image)
     return im_input
 
-def read_input_dim(file_path):
+def read_input_dim(file_path,cropped=False):
     # Read CASToR header file to retrieve image dimension """
     with open(file_path) as f:
         for line in f:
@@ -271,6 +271,11 @@ def read_input_dim(file_path):
                 dim2 = [int(s) for s in line.split() if s.isdigit()][-1]
             if 'matrix size [3]' in line.strip():
                 dim3 = [int(s) for s in line.split() if s.isdigit()][-1]
+
+    # Crop dimensions if needed
+    if (cropped):
+        dim1 = 112
+        dim2 = 112
 
     # Create variables to store dimensions
     PETImage_shape = (dim1,dim2)
@@ -293,7 +298,7 @@ def write_image_tensorboard(writer,image,name,i=0,full_contrast=False):
     else:
         plt.imshow(image, cmap='gray_r',vmin=0,vmax=500) # Showing all images with same contrast
     plt.colorbar()
-    plt.axis('off')
+    #plt.axis('off')
     # Adding this figure to tensorboard
     writer.add_figure(name,plt.gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
 
@@ -393,17 +398,21 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
     write_hdr([i,-1],config,'during_eq22','x')
 
     # Compute u^0 (u^-1 in CASToR) and store it with zeros, and save in .hdr format - block 1            
-    u_0 = np.zeros((344,252)) # initialize u_0 to zeros
+    u_0 = 0*np.ones((344,252)) # initialize u_0 to zeros
     save_img(u_0,path_during_eq_22 + format(i) + '_-1_u.img')
     write_hdr([i,-1],config,'during_eq22','u')
     
     # Compute v^0 (v^-1 in CASToR) with ADMM_spec_init_v optimizer and save in .hdr format - block 1
     if (i == 0):   # choose initial image for CASToR reconstruction
-        x_for_multimodal_init = ' -multimodal ' + subroot + 'Data/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+        x_for_init = ' -img ' + subroot + 'Data/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+        #v^0 is BSREM if we only look at x optimization
+        #x_for_init = ' -img ' + subroot + 'Data/' + 'BSREM_it30_REF' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+        #x_for_init = ' -img ' + subroot + 'Data/' + '1_value' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
     elif (i >= 1):
-        x_for_multimodal_init = ' -multimodal ' + subroot + 'Block1/Test_block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
-    os.system(castor_command_line_init_v + subroot_output_path_castor + '/during_eq22/' + 'not_useful' + ' -it 1:1' + x_for_multimodal_init)
+        x_for_init = ' -img ' + subroot + 'Block1/Test_block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
+    os.system(castor_command_line_init_v + subroot_output_path_castor + '/during_eq22/' + 'not_useful' + ' -it 1:1' + x_for_init)
     copy(subroot + 'Data/ADMM_spec_init_v.img', path_during_eq_22 + format(i) + '_-1_v.img')
+    #copy(subroot + 'Data/y_data_from_castor.img', path_during_eq_22 + format(i) + '_-1_v.img')
     write_hdr([i,-1],config,'during_eq22','v')
         
     # Choose number of argmax iteration for (second) x computation
@@ -411,6 +420,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
         it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax
     else:
         it = ' -it ' + str(sub_iter_MAP) + ':1' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
+        it = ' -it ' + str(10) + ':16' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
 
     # Second ADMM computation
     for k in range(-1,nb_iter_second_admm):
@@ -418,6 +428,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
         if (k == -1):
             if (i == 0):   # choose initial image for CASToR reconstruction
                 initialimage = ' -img ' + subroot + 'Data/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+                #initialimage = ' -img ' + subroot + 'Block1/Test_block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(199) + '_x.hdr'
             elif (i >= 1):
                 initialimage = ' -img ' + subroot + 'Block1/Test_block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
         else:
@@ -429,25 +440,38 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
         v_for_additional_data = ' -additional-data ' + full_output_path_k + '_v.hdr'
         u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
-
-        x = fijii_np(full_output_path_k + '_x.img', shape=(PETImage_shape))
+        x = fijii_np(full_output_path_k + '_x.img', shape=(128,128))
         if (k>=-1):
             write_image_tensorboard(writer,x,"x in second ADMM over iterations", k) # Showing all corrupted images with same contrast to compare them together
             write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)", k,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
 
 
+
+
         print('xxxxxxxxxxxxxxxxxxxxx')
         print(castor_command_line_x + ' -dout ' + subroot_output_path + '/during_eq22' + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage)
         os.system(castor_command_line_x + ' -dout ' + subroot_output_path + '/during_eq22' + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage)
+        x_full = fijii_np(subroot + 'Data/ADMM_spec_x.img',(128,128))
+        x_cropped = x_full[8:120,8:120]
+        save_img(x_cropped,subroot + 'Data/ADMM_spec_x_cropped.img')
+
         copy(subroot + 'Data/ADMM_spec_x.img', full_output_path_k_next + '_x.img')
         write_hdr([i,k+1],config,'during_eq22','x')
 
 
+
         print('vvvvvvvvvvvvvvvvvvvvvvv')
+        # not changing v
+        #copy(subroot_output_path + '/during_eq22/' + format(i) + '_' + format(-1) + '_v.img',full_output_path_k_next + '_v.img')
+        #copy(subroot + 'Data/ADMM_spec_init_v.img', full_output_path_k_next + '_v.img')
+        # true ADMM, changing v
         copy(subroot + 'Data/ADMM_spec_v.img', full_output_path_k_next + '_v.img')
         write_hdr([i,k+1],config,'during_eq22','v')
         
         print("uuuuuuuuuuuuuuuuuuuuuuu")
+        # not changing u
+        #copy(subroot_output_path + '/during_eq22/' + format(i) + '_' + format(-1) + '_u.img',full_output_path_k_next + '_u.img')
+        # true ADMM, changing u
         copy(subroot + 'Data/ADMM_spec_u.img', full_output_path_k_next + '_u.img')
         write_hdr([i,k+1],config,'during_eq22','u')
 
