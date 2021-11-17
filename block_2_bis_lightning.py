@@ -60,7 +60,7 @@ PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
 image_net_input_torch = torch.load(subroot + 'Data/image_net_input_torch.pt')# DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1. JUST LOAD IT FROM BLOCK 1
 
 # Loading DIP x_label (corrupted image) from block1
-image_corrupt = fijii_np(subroot+'Block2/x_label/' + format(test)+'/'+ format(admm_it) +'_x_label' + suffix + '.img',shape=(PETImage_shape),cropped=True)
+image_corrupt = fijii_np(subroot+'Block2/x_label/' + format(test)+'/'+ format(admm_it) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
 # Normalization of x_label image
 # image_corrupt_norm_scale, maxe = norm_imag(image_corrupt) # Normalization of x_label image
 image_corrupt_norm,mean_label,std_label= stand_imag(image_corrupt) # Standardization of x_label image

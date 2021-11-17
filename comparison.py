@@ -28,7 +28,7 @@ nb_iter = args.nb_iter
 beta = args.beta 
 
 # Define PET input dimensions according to input data dimensions
-PETImage_shape_str = read_input_dim()
+PETImage_shape_str = read_input_dim(subroot+'Data/castor_output_it60.hdr')
 PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
 
 #Loading Ground Truth image to compute metrics

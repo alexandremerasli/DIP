@@ -384,7 +384,7 @@ def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finet
 def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_init_v, castor_command_line_v, castor_command_line_u, subroot, sub_iter_MAP, test, subroot_output_path_castor, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
     start_time_block1 = time.time()
     mlem_sequence = config['mlem_sequence']
-    nb_iter_second_admm = 100
+    nb_iter_second_admm = 5
 
     # Save image f-mu in .img and .hdr format - block 1
     subroot_output_path = (subroot + 'Block1/Test_block1/' + suffix)
@@ -420,7 +420,6 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
         it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax
     else:
         it = ' -it ' + str(sub_iter_MAP) + ':1' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
-        it = ' -it ' + str(10) + ':16' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
 
     # Second ADMM computation
     for k in range(-1,nb_iter_second_admm):
@@ -440,7 +439,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
         v_for_additional_data = ' -additional-data ' + full_output_path_k + '_v.hdr'
         u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
-        x = fijii_np(full_output_path_k + '_x.img', shape=(128,128))
+        x = fijii_np(full_output_path_k + '_x.img', shape=(PETImage_shape[0],PETImage_shape[0]))
         if (k>=-1):
             write_image_tensorboard(writer,x,"x in second ADMM over iterations", k) # Showing all corrupted images with same contrast to compare them together
             write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)", k,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
@@ -451,7 +450,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
         print('xxxxxxxxxxxxxxxxxxxxx')
         print(castor_command_line_x + ' -dout ' + subroot_output_path + '/during_eq22' + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage)
         os.system(castor_command_line_x + ' -dout ' + subroot_output_path + '/during_eq22' + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage)
-        x_full = fijii_np(subroot + 'Data/ADMM_spec_x.img',(128,128))
+        x_full = fijii_np(subroot + 'Data/ADMM_spec_x.img',(PETImage_shape[0],PETImage_shape[0]))
         x_cropped = x_full[8:120,8:120]
         save_img(x_cropped,subroot + 'Data/ADMM_spec_x_cropped.img')
 

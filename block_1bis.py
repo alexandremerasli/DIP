@@ -39,7 +39,6 @@ from utils_func import *
 
 def admm_loop(config, args, root):
 
-    crop = False
     # Retrieving arguments in this function
     net = args.net # Network architecture
     processing_unit = args.proc
@@ -92,7 +91,7 @@ def admm_loop(config, args, root):
     Path(subroot+'Config/').mkdir(parents=True, exist_ok=True) # CASTor path
 
     # Define PET input dimensions according to input data dimensions
-    PETImage_shape_str = read_input_dim(subroot+'Data/castor_output_it60.hdr',cropped=crop)
+    PETImage_shape_str = read_input_dim(subroot+'Data/castor_output_it60.hdr')
     PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
 
     """
@@ -107,8 +106,7 @@ def admm_loop(config, args, root):
     header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
 
     executable = 'castor-recon'
-    #dim = ' -dim ' + PETImage_shape_str
-    dim = ' -dim 128,128,1'
+    dim = ' -dim ' + PETImage_shape_str
     vox = ' -vox 4,4,4'
     vb = ' -vb 1'
     th = ' -th 1'
@@ -139,7 +137,6 @@ def admm_loop(config, args, root):
 
     # ADMM variables
     mu = 0* np.ones((PETImage_shape[0], PETImage_shape[1]), dtype='<f')
-    mu_uncropped = 0* np.ones((128, 128), dtype='<f')
 
     x = np.zeros((PETImage_shape[0], PETImage_shape[1]), dtype='<f') # image x at iteration i
     x_out = np.zeros((PETImage_shape[0], PETImage_shape[1]), dtype='<f') # output of DIP
@@ -186,44 +183,26 @@ def admm_loop(config, args, root):
     # Ininitializing DIP output and first image x with f_init and image_init
     image_init_path_without_extension = ''
     #image_init = np.ones((PETImage_shape[0],PETImage_shape[1])) # initializing CASToR MAP reconstruction with uniform image with ones.
-    image_init_path_without_extension = '1_value'
+    image_init_path_without_extension = '1_value_cropped'
     #image_init_path_without_extension = 'BSREM_it30_REF'
     #image_init_path_without_extension = 'Comparison/BSREM/BSREM_it30_REF'
     #image_init_path_without_extension = 'Comparison/MLEM/MLEM_converge_avec_post_filtre'
-    '''
-    if (crop):
-        image_init = fijii_np(subroot + image_init_path_without_extension + '_cropped.img',shape=(PETImage_shape)) # initializing CASToR MAP reconstruction with BSREM precomputed reference
-    else:
-        image_init = fijii_np(subroot + image_init_path_without_extension + '_cropped.img',shape=(PETImage_shape)) # initializing CASToR MAP reconstruction with BSREM precomputed reference
-    '''
-    if (crop):
-        f_init = fijii_np(subroot+'Comparison/BSREM/BSREM_it30_REF_cropped.img',shape=(PETImage_shape))
-    else:
-        f_init = fijii_np(subroot+'Comparison/BSREM/BSREM_it30_REF.img',shape=(PETImage_shape))
+    
+    #f_init = fijii_np(subroot+'Comparison/BSREM/BSREM_it30_REF_cropped.img',shape=(PETImage_shape))
     #f_init = fijii_np(subroot+'Comparison/MLEM/MLEM_converge_avec_post_filtre.img',shape=(PETImage_shape))
-    #f_init = np.ones((PETImage_shape[0],PETImage_shape[1]))
-
-    if (crop):
-        f_init_uncropped = np.zeros((128,128))
-        f_init_uncropped[8:120,8:120] = f_init
-    else:
-        f_init_uncropped = f_init
+    f_init = np.ones((PETImage_shape[0],PETImage_shape[1]))
     
     #Loading Ground Truth image to compute metrics
-    if (crop):
-        image_gt = fijii_np(subroot+'Block2/data/phantom_act_cropped.img',shape=(PETImage_shape))
-    else:
-        image_gt = fijii_np(subroot+'Block2/data/phantom_act.img',shape=(PETImage_shape))
+    image_gt = fijii_np(subroot+'Block2/data/phantom_act.img',shape=(PETImage_shape))
 
     f = f_init  # Initializing DIP output with f_init
-    f_uncropped = f_init_uncropped
 
     for i in range(max_iter):
         print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Outer iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', i)
         start_time_outer_iter = time.time()
         
         # Reconstruction with CASToR (first equation of ADMM)
-        x_label = castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_init_v, castor_command_line_v, castor_command_line_u, subroot, sub_iter_MAP, test, subroot_output_path_castor, input_path, config, suffix, f_uncropped, mu_uncropped, PETImage_shape, image_init_path_without_extension)
+        x_label = castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_init_v, castor_command_line_v, castor_command_line_u, subroot, sub_iter_MAP, test, subroot_output_path_castor, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension)
         
         # Write image over ADMM iterations
         if ((max_iter>=10) and (i%(max_iter // 10) == 0) or True):
@@ -244,12 +223,6 @@ def admm_loop(config, args, root):
 
         # Block 3 - equation 15 - mu
         mu = x_label- f
-        if (crop):
-            mu_uncropped = np.zeros((128,128))
-            mu_uncropped[8:120,8:120] = mu
-        else:
-            mu_uncropped = mu
-
         print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))
 
         # Write image over ADMM iterations
@@ -353,10 +326,10 @@ config = {
 config = {
     "lr" : tune.grid_search([0.001]),
     "sub_iter_DIP" : tune.grid_search([100]),
-    "rho" : tune.grid_search([0.0000003]),
+    "rho" : tune.grid_search([0.0003]),
     "opti_DIP" : tune.grid_search(['Adam']),
-    "mlem_sequence" : tune.grid_search([False]),
-    "d_DD" : tune.grid_search([6]), # not below 6, otherwise 128 is too little as output size
+    "mlem_sequence" : tune.grid_search([True]),
+    "d_DD" : tune.grid_search([4]), # not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([True])
 }
@@ -379,8 +352,8 @@ args = parser.parse_args()
 if (args.net is None): # Must check if all args are None
     args.net = 'DD' # Network architecture
     args.proc = 'CPU'
-    args.max_iter = 1 # Outer iterations
-    args.sub_iter_MAP = 1 # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
+    args.max_iter = 10 # Outer iterations
+    args.sub_iter_MAP = 2 # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
     args.finetuning = 'last' # Finetuning or not for the DIP optimizations (block 2)
     
 config_combination = 1

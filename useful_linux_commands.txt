@@ -26,6 +26,8 @@ pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org packag
 
 ##################### plus rares ##################### 
 
+export CASTOR_CONFIG=/home/meraslia/sgld/software/castor_v3.1/config/
+
 sed -i -e 's/new_norm_vol_classic/stand_imag/g' utils/common_utils.py
 
 ## si pb de memoire sur gpu

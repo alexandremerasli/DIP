@@ -22,8 +22,8 @@ import matplotlib.pyplot as plt
 from utils_func import *
 
 # For VS Code (without command line)
-opti = 'BSREM' # CASToR optimizer
-max_iter = 30 # Optimizer number of iterations
+opti = 'MLEM' # CASToR optimizer
+max_iter = 100 # Optimizer number of iterations
 test = 24
 
 # Useful variables
@@ -32,7 +32,7 @@ subroot = root + '/data/Algo/'  # Directory root
 writer = SummaryWriter()
 
 # Define PET input dimensions according to input data dimensions
-PETImage_shape_str = read_input_dim()
+PETImage_shape_str = read_input_dim(subroot+'Data/castor_output_it60.hdr')
 PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
 
 # Metrics arrays
