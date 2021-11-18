@@ -57,9 +57,9 @@ def admm_loop(config, args, root):
     suffix =  suffix_func(config) # suffix to make difference between raytune runs (different hyperparameters)
     subroot = root + '/data/Algo/'  # Directory root
 
-    Path(subroot+'Block1/Test_block1/' + suffix + '/before_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
-    Path(subroot+'Block1/Test_block1/' + suffix + '/during_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
-    Path(subroot+'Block1/Test_block1/' + suffix + '/out_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
+    Path(subroot+'Block1/' + suffix + '/before_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
+    Path(subroot+'Block1/' + suffix + '/during_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
+    Path(subroot+'Block1/' + suffix + '/out_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
 
 
     Path(subroot+'Images/eq_22/'+format(test)+'/').mkdir(parents=True, exist_ok=True) # First subproblem - folder
@@ -100,6 +100,7 @@ def admm_loop(config, args, root):
 
     # Config dictionnary for hyperparameters
     rho = config["rho"]
+    alpha = config["alpha"]
     np.save(subroot + 'Config/config' + suffix + '.npy', config) # Save this configuration of hyperparameters, and reload it at the beginning of block 2 thanks to suffix (passed in subprocess call argumentsZ)
 
     # castor-recon command line
@@ -112,24 +113,20 @@ def admm_loop(config, args, root):
     th = ' -th 1'
     proj = ' -proj incrementalSiddon'
 
-    opti_x = ' -opti ADMM_spec_x'
+    opti = ' -opti ADMMLim' + ',' + str(alpha) + ',0.01,10.'
     opti_init_v = ' -opti ADMM_spec_init_v'
-    opti_v = ' -opti ADMM_spec_v'
-    opti_u = ' -opti ADMM_spec_u'
     pnlt = ' -pnlt DIP_ADMM'
     pnlt_beta = ' -pnlt-beta ' + str(rho)
 
-    subroot_output_path_castor = ' -dout ' + subroot + 'Block1/Test_block1/' + suffix + '/' # Output path for CASTOR framework
-    input_path = ' -img ' + subroot + 'Block1/Test_block1/' + suffix + '/out_eq22/' # Input path for CASTOR framework
+    subroot_output_path_castor = ' -dout ' + subroot + 'Block1/' + suffix + '/' # Output path for CASTOR framework
+    input_path = ' -img ' + subroot + 'Block1/' + suffix + '/out_eq22/' # Input path for CASTOR framework
 
     # Command line for calculating the Likelihood
     opti_like = ' -opti-fom'
     opti_like = ''
 
-    castor_command_line_x = executable + dim + vox + header_file + vb + th + proj + opti_x + opti_like + pnlt + pnlt_beta
+    castor_command_line_x = executable + dim + vox + header_file + vb + th + proj + opti + opti_like + pnlt + pnlt_beta
     castor_command_line_init_v = executable + dim + vox + header_file + vb + th + proj + opti_init_v + opti_like
-    castor_command_line_v = executable + dim + vox + header_file + vb + th + proj + opti_v + opti_like
-    castor_command_line_u = executable + dim + vox + header_file + vb + th + proj + opti_u + opti_like
 
     """
     Initialization : variables
@@ -137,8 +134,6 @@ def admm_loop(config, args, root):
 
     # ADMM variables
     mu = 0* np.ones((PETImage_shape[0], PETImage_shape[1]), dtype='<f')
-
-    x = np.zeros((PETImage_shape[0], PETImage_shape[1]), dtype='<f') # image x at iteration i
     x_out = np.zeros((PETImage_shape[0], PETImage_shape[1]), dtype='<f') # output of DIP
 
     writer = SummaryWriter()
@@ -155,7 +150,7 @@ def admm_loop(config, args, root):
     bias_hot_recon = np.zeros(max_iter)
 
     """
-    MLEM - CASTOR framework
+    CASTOR framework
     """
 
     ## Loading images (NN input, first DIP output, GT)
@@ -184,13 +179,13 @@ def admm_loop(config, args, root):
     image_init_path_without_extension = ''
     #image_init = np.ones((PETImage_shape[0],PETImage_shape[1])) # initializing CASToR MAP reconstruction with uniform image with ones.
     image_init_path_without_extension = '1_value_cropped'
-    #image_init_path_without_extension = 'BSREM_it30_REF'
+    #image_init_path_without_extension = 'BSREM_it30_REF_cropped'
     #image_init_path_without_extension = 'Comparison/BSREM/BSREM_it30_REF'
     #image_init_path_without_extension = 'Comparison/MLEM/MLEM_converge_avec_post_filtre'
     
-    #f_init = fijii_np(subroot+'Comparison/BSREM/BSREM_it30_REF_cropped.img',shape=(PETImage_shape))
+    f_init = fijii_np(subroot + 'Data/' + 'BSREM_it30_REF_cropped.img',shape=(PETImage_shape))
     #f_init = fijii_np(subroot+'Comparison/MLEM/MLEM_converge_avec_post_filtre.img',shape=(PETImage_shape))
-    f_init = np.ones((PETImage_shape[0],PETImage_shape[1]))
+    #f_init = np.ones((PETImage_shape[0],PETImage_shape[1]))
     
     #Loading Ground Truth image to compute metrics
     image_gt = fijii_np(subroot+'Block2/data/phantom_act.img',shape=(PETImage_shape))
@@ -202,7 +197,7 @@ def admm_loop(config, args, root):
         start_time_outer_iter = time.time()
         
         # Reconstruction with CASToR (first equation of ADMM)
-        x_label = castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_init_v, castor_command_line_v, castor_command_line_u, subroot, sub_iter_MAP, test, subroot_output_path_castor, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension)
+        x_label = castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_init_v, subroot, sub_iter_MAP, test, subroot_output_path_castor, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension)
         
         # Write image over ADMM iterations
         if ((max_iter>=10) and (i%(max_iter // 10) == 0) or True):
@@ -315,6 +310,7 @@ config = {
     #"rho" : tune.grid_search([5e-4,3e-3,6e-2,1e-2]),
     "rho" : tune.grid_search([3e-3]),
     #"rho" : tune.grid_search([1e-6]), # Trying to reproduce MLEM result as rho close to 0
+    "alpha" : tune.grid_search([0.05]),
     "opti_DIP" : tune.grid_search(['Adam']),
     #"opti_DIP" : tune.grid_search(['LBFGS']),
     "mlem_sequence" : tune.grid_search([False]),
@@ -326,9 +322,10 @@ config = {
 config = {
     "lr" : tune.grid_search([0.001]),
     "sub_iter_DIP" : tune.grid_search([100]),
-    "rho" : tune.grid_search([0.0003]),
+    "rho" : tune.grid_search([0.00000003]),
+    "alpha" : tune.grid_search([0.05]),
     "opti_DIP" : tune.grid_search(['Adam']),
-    "mlem_sequence" : tune.grid_search([True]),
+    "mlem_sequence" : tune.grid_search([False]),
     "d_DD" : tune.grid_search([4]), # not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([True])
