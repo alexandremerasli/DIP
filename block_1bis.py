@@ -185,7 +185,7 @@ def admm_loop(config, args, root):
     
     f_init = fijii_np(subroot + 'Data/' + 'BSREM_it30_REF_cropped.img',shape=(PETImage_shape))
     #f_init = fijii_np(subroot+'Comparison/MLEM/MLEM_converge_avec_post_filtre.img',shape=(PETImage_shape))
-    #f_init = np.ones((PETImage_shape[0],PETImage_shape[1]))
+    #f_init = np.ones((PETImage_shape[0],PETImage_shape[1]), dtype='<f')
     
     #Loading Ground Truth image to compute metrics
     image_gt = fijii_np(subroot+'Block2/data/phantom_act.img',shape=(PETImage_shape))
@@ -214,14 +214,15 @@ def admm_loop(config, args, root):
         f = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
 
         # Metrics for NN output
-        compute_metrics(f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
+        compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
 
         # Block 3 - equation 15 - mu
         mu = x_label- f
+        write_image_tensorboard(writer,mu,"mu(FULL CONTRAST)",i,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
         print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))
 
         # Write image over ADMM iterations
-        if ((max_iter>=10) and (i%(max_iter // 10) == 0)):
+        if ((max_iter>=10) and (i%(max_iter // 10) == 0) or (max_iter<10)):
             write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",i) # Showing all images with same contrast to compare them together
             write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output, FULL CONTRAST)",i,full_contrast=True) # Showing each image with contrast = 1
         
@@ -320,9 +321,9 @@ config = {
 }
 #'''
 config = {
-    "lr" : tune.grid_search([0.001]),
+    "lr" : tune.grid_search([0.001]), # 0.01 for DIP, 0.001 for DD
     "sub_iter_DIP" : tune.grid_search([100]),
-    "rho" : tune.grid_search([0.00000003]),
+    "rho" : tune.grid_search([0.0003]),
     "alpha" : tune.grid_search([0.05]),
     "opti_DIP" : tune.grid_search(['Adam']),
     "mlem_sequence" : tune.grid_search([False]),
@@ -350,7 +351,7 @@ if (args.net is None): # Must check if all args are None
     args.net = 'DD' # Network architecture
     args.proc = 'CPU'
     args.max_iter = 10 # Outer iterations
-    args.sub_iter_MAP = 2 # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
+    args.sub_iter_MAP = 1 # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
     args.finetuning = 'last' # Finetuning or not for the DIP optimizations (block 2)
     
 config_combination = 1

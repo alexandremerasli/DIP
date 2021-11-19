@@ -132,10 +132,10 @@ def find_nan(image):
     print('index with NaN value:',len(np.argwhere(np.isnan(image))))
     return image
 
-def points_in_circle(center_y,center_x,radius,inner_circle=True): # x and y are inverted in an array compared to coordinates
+def points_in_circle(center_y,center_x,radius,PETImage_shape,inner_circle=True): # x and y are inverted in an array compared to coordinates
     liste = []   
-    center_x = int(128/2 + center_x)
-    center_y = int(128/2 + center_y)
+    center_x = int(PETImage_shape[0]/2 + center_x)
+    center_y = int(PETImage_shape[1]/2 + center_y)
     radius = int(radius)
     if (inner_circle): # only looking inside the circle, not on the border
         radius -= 2
@@ -152,7 +152,7 @@ def coord_to_value_array(coord_arr,arr):
         l[i] = arr[coord]
     return l
 
-def compute_metrics(image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=None,write_tensorboard=False):
+def compute_metrics(PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=None,write_tensorboard=False):
 
     f_metric = find_nan(image_recon)
     image_gt_norm,mini_gt_input,maxe_gt_input = norm_imag(image_gt)
@@ -174,7 +174,7 @@ def compute_metrics(image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,
 
     # Contrast Recovery Coefficient calculation    
     # Mean activity in cold cylinder calculation (-c -40. -40. 0. 40. 4. 0.)
-    cold_ROI = points_in_circle(-40/4,-40/4,40/4)
+    cold_ROI = points_in_circle(-40/4,-40/4,40/4,PETImage_shape)
     cold_ROI_act = coord_to_value_array(cold_ROI,f_metric)
     MA_cold_recon[i] = np.mean(cold_ROI_act)
     #IR_cold_recon[i] = np.std(cold_ROI_act) / MA_cold_recon[i]
@@ -184,7 +184,7 @@ def compute_metrics(image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,
     print('FOV bias in cold region',bias_cold_recon[i],' , must be as small as possible')
 
     # Mean Concentration Recovery coefficient (CRCmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
-    hot_ROI = points_in_circle(50/4,10/4,20/4)
+    hot_ROI = points_in_circle(50/4,10/4,20/4,PETImage_shape)
     hot_ROI_act = coord_to_value_array(hot_ROI,f_metric)
     CRC_hot_recon[i] = np.mean(hot_ROI_act) / 400.
     #IR_hot_recon[i] = np.std(hot_ROI_act) / np.mean(hot_ROI_act)
@@ -194,10 +194,10 @@ def compute_metrics(image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,
     print('FOV bias in hot region',bias_hot_recon[i],' , must be as small as possible')
 
     # Mean Concentration Recovery coefficient (CRCmean) in background calculation (-c 0. 0. 0. 150. 4. 100)
-    #bkg_ROI = points_in_circle(0/4,0/4,150/4)
+    #bkg_ROI = points_in_circle(0/4,0/4,150/4,PETImage_shape)
     #m0_bkg = (np.sum(coord_to_value_array(bkg_ROI,f_metric)) - np.sum([coord_to_value_array(cold_ROI,f_metric),coord_to_value_array(hot_ROI,f_metric)])) / (len(bkg_ROI) - (len(cold_ROI) + len(hot_ROI)))
     #CRC_bkg_recon[i] = m0_bkg / 100.   
-    bkg_ROI = points_in_circle(0/4,100/4,40/4)
+    bkg_ROI = points_in_circle(0/4,100/4,40/4,PETImage_shape)
     bkg_ROI_act = coord_to_value_array(bkg_ROI,f_metric)
     CRC_bkg_recon[i] = np.mean(bkg_ROI_act) / 100.
     IR_bkg_recon[i] = np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)
@@ -261,7 +261,7 @@ def load_input(net,PETImage_shape,config):
     im_input = fijii_np(file_path, shape=(PETImage_shape)) # Load input of the DNN (CT image)
     return im_input
 
-def read_input_dim(file_path,cropped=False):
+def read_input_dim(file_path):
     # Read CASToR header file to retrieve image dimension """
     with open(file_path) as f:
         for line in f:
@@ -271,11 +271,6 @@ def read_input_dim(file_path,cropped=False):
                 dim2 = [int(s) for s in line.split() if s.isdigit()][-1]
             if 'matrix size [3]' in line.strip():
                 dim3 = [int(s) for s in line.split() if s.isdigit()][-1]
-
-    # Crop dimensions if needed
-    if (cropped):
-        dim1 = 112
-        dim2 = 112
 
     # Create variables to store dimensions
     PETImage_shape = (dim1,dim2)
@@ -316,7 +311,7 @@ def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, c
         #    accelerator = 'dp'
 
     if (admm_it == 0):
-        sub_iter_DIP = 1000 if net.startswith('DD') else 200
+        sub_iter_DIP = 1000 if net.startswith('DD') else 500
 
     if (finetuning == 'False'): # Do not save and use checkpoints (still save hparams and event files for now ...)
         logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(test), name=name) # Store checkpoints in checkpoint_simple_path path
@@ -381,7 +376,7 @@ def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finet
     out_destand = destand_imag(out, mean_label, std_label)
     return out_destand
 
-def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,config,i,k,suffix,only_Lim):
+def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,config,i,k,suffix,only_x):
     print('xxxxxxxxxxxxxxxxxxxxx')
     os.system(x_reconstruction_command_line)
     #x = fijii_np(subroot + 'Data/ADMMLim.img',(PETImage_shape[0],PETImage_shape[0]))
@@ -396,7 +391,7 @@ def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,con
     subroot_output_path = (subroot + 'Block1/' + suffix)
     # true ADMM, changing v
     copy(subroot + 'Data/ADMMLim_v.img', full_output_path_k_next + '_v.img')
-    if (only_Lim):
+    if (only_x):
         #copy(subroot_output_path + '/during_eq22/' + format(i) + '_' + format(-1) + '_v.img',full_output_path_k_next + '_v.img')
         copy(subroot + 'Data/ADMM_spec_init_v.img', full_output_path_k_next + '_v.img')
     write_hdr([i,k+1],config,'during_eq22','v')
@@ -405,15 +400,15 @@ def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,con
     # true ADMM, changing u
     copy(subroot + 'Data/ADMMLim_u.img', full_output_path_k_next + '_u.img')
     # not changing u
-    if (only_Lim):
+    if (only_x):
         copy(subroot_output_path + '/during_eq22/' + format(i) + '_' + format(-1) + '_u.img',full_output_path_k_next + '_u.img')
     write_hdr([i,k+1],config,'during_eq22','u')
 
 def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_init_v, subroot, sub_iter_MAP, test, subroot_output_path_castor, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
-    only_Lim = True
+    only_x = False
     start_time_block1 = time.time()
     mlem_sequence = config['mlem_sequence']
-    nb_iter_second_admm = 50
+    nb_iter_second_admm = 10
 
     # Save image f-mu in .img and .hdr format - block 1
     subroot_output_path = (subroot + 'Block1/' + suffix)
@@ -435,13 +430,13 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
     if (i == 0):   # choose initial image for CASToR reconstruction
         x_for_init_v = ' -img ' + subroot + 'Data/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
         #v^0 is BSREM if we only look at x optimization
-        if (only_Lim):
+        if (only_x):
             x_for_init_v = ' -img ' + subroot + 'Data/' + 'BSREM_it30_REF' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
         #x_for_init_v = ' -img ' + subroot + 'Data/' + '1_value' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
     elif (i >= 1):
         x_for_init_v = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
     
-    '''
+    # Useful variables for command line
     k=-3
     full_output_path_k = subroot_output_path + '/during_eq22/' + format(i) + '_' + format(k)
     full_output_path_k_next = subroot_output_path + '/during_eq22/' + format(i) + '_' + format(k+1)
@@ -449,21 +444,12 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
     v_for_additional_data = ' -additional-data ' + full_output_path_k + '_v.hdr'
     u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
-    # Compute one ADMM iteration (x, v, u)
+    # Compute one ADMM iteration (x, v, u) when only initializing x
     x_reconstruction_command_line = castor_command_line_x + ' -dout ' + subroot_output_path + '/during_eq22' + ' -it 1:1' + x_for_init_v + f_mu_for_penalty #+ u_for_additional_data + v_for_additional_data # we need f-mu so that ADMM optimizer works, even if we will not use it...
     print('vvvvvvvvvvv0000000000')
-    compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,config,i,k,suffix)
+    compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,config,i,k,suffix,only_x)
     # When only initializing x, u computation is only the forward model Ax, thus exactly what we want to initialize v
     copy(path_during_eq_22 + format(i) + '_-2_u.img', path_during_eq_22 + format(i) + '_-1_v.img')
-    
-    '''
-    
-    
-    
-    os.system(castor_command_line_init_v + subroot_output_path_castor + '/during_eq22/' + 'not_useful' + ' -it 1:1' + x_for_init_v)
-
-    copy(subroot + 'Data/ADMM_spec_init_v.img', path_during_eq_22 + format(i) + '_-1_v.img')
-    #copy(subroot + 'Data/y_data_from_castor.img', path_during_eq_22 + format(i) + '_-1_v.img')
     write_hdr([i,-1],config,'during_eq22','v')
         
     # Choose number of argmax iteration for (second) x computation
@@ -471,6 +457,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
         it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax
     else:
         it = ' -it ' + str(sub_iter_MAP) + ':1' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
+        it = ' -it ' + '5:14' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
 
     # Second ADMM computation
     for k in range(-1,nb_iter_second_admm):
@@ -490,14 +477,14 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
         v_for_additional_data = ' -additional-data ' + full_output_path_k + '_v.hdr'
         u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
-        x = fijii_np(full_output_path_k + '_x.img', shape=(PETImage_shape[0],PETImage_shape[0]))
-        if (k>=-1):
-            write_image_tensorboard(writer,x,"x in second ADMM over iterations", k) # Showing all corrupted images with same contrast to compare them together
-            write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)", k,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
+        x = fijii_np(full_output_path_k + '_x.img', shape=(PETImage_shape[0],PETImage_shape[1]))
+        if (k>=0):
+            write_image_tensorboard(writer,x,"x in second ADMM over iterations", k+i*nb_iter_second_admm) # Showing all corrupted images with same contrast to compare them together
+            write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)", k+i*nb_iter_second_admm,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
 
         # Compute one ADMM iteration (x, v, u)
         x_reconstruction_command_line = castor_command_line_x + ' -dout ' + subroot_output_path + '/during_eq22' + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage
-        compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,config,i,k,suffix,only_Lim)
+        compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,config,i,k,suffix,only_x)
 
     print("--- %s seconds - second ADMM (CASToR) iteration ---" % (time.time() - start_time_block1))
 
