@@ -95,7 +95,7 @@ def save_img(img,name):
     img.tofile(fp)
     print('Succesfully save in:', name)
 
-def write_hdr(L,config,subpath,variable_name=''):
+def write_hdr(L,config,subpath,variable_name='',subroot=subroot):
     """ write a header for the optimization transfer solution (it's use as CASTOR input)"""
     if (len(L) == 1):
         i = L[0]
@@ -311,7 +311,7 @@ def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, c
         #    accelerator = 'dp'
 
     if (admm_it == 0):
-        sub_iter_DIP = 1000 if net.startswith('DD') else 500
+        sub_iter_DIP = 1000 if net.startswith('DD') else 200
 
     if (finetuning == 'False'): # Do not save and use checkpoints (still save hparams and event files for now ...)
         logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(test), name=name) # Store checkpoints in checkpoint_simple_path path
@@ -376,13 +376,13 @@ def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finet
     out_destand = destand_imag(out, mean_label, std_label)
     return out_destand
 
-def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,config,i,k,suffix,only_x):
+def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,config,i,k,suffix,only_x,subroot=subroot):
     print('xxxxxxxxxxxxxxxxxxxxx')
     os.system(x_reconstruction_command_line)
     #x = fijii_np(subroot + 'Data/ADMMLim.img',(PETImage_shape[0],PETImage_shape[0]))
 
     copy(subroot + 'Data/ADMMLim_x.img', full_output_path_k_next + '_x.img')
-    write_hdr([i,k+1],config,'during_eq22','x')
+    write_hdr([i,k+1],config,'during_eq22','x',subroot=subroot)
 
 
 
@@ -394,7 +394,7 @@ def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,con
     if (only_x):
         #copy(subroot_output_path + '/during_eq22/' + format(i) + '_' + format(-1) + '_v.img',full_output_path_k_next + '_v.img')
         copy(subroot + 'Data/ADMM_spec_init_v.img', full_output_path_k_next + '_v.img')
-    write_hdr([i,k+1],config,'during_eq22','v')
+    write_hdr([i,k+1],config,'during_eq22','v',subroot=subroot)
     
     print("uuuuuuuuuuuuuuuuuuuuuuu")
     # true ADMM, changing u
@@ -402,7 +402,7 @@ def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,con
     # not changing u
     if (only_x):
         copy(subroot_output_path + '/during_eq22/' + format(i) + '_' + format(-1) + '_u.img',full_output_path_k_next + '_u.img')
-    write_hdr([i,k+1],config,'during_eq22','u')
+    write_hdr([i,k+1],config,'during_eq22','u',subroot=subroot)
 
 def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_init_v, subroot, sub_iter_MAP, test, subroot_output_path_castor, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
     only_x = False
@@ -468,6 +468,9 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
                 #initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(199) + '_x.hdr'
             elif (i >= 1):
                 initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
+                # Trying to initialize ADMMLim
+                initialimage = ' -img ' + subroot + 'Data/' + 'BSREM_it30_REF_cropped.hdr'
+
         else:
             initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i) + '_' + format(k) + '_x.hdr'
 

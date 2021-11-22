@@ -28,6 +28,7 @@ pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org packag
 
 export CASTOR_CONFIG=/home/meraslia/sgld/software/castor_v3.1/config/
 
+git push https://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@github.com/alexandremerasli/DIP.git HEAD:positive_proj
 git pull https://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@github.com/alexandremerasli/DIP.git
 
 sed -i -e 's/new_norm_vol_classic/stand_imag/g' utils/common_utils.py

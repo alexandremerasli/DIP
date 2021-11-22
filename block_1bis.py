@@ -82,6 +82,7 @@ def admm_loop(config, args, root):
     Path(subroot+'Images/uncertainty/'+format(test)+'/').mkdir(parents=True, exist_ok=True) # Directory where all the samples are saved
     Path(subroot+'Block2/checkpoint/'+format(test)+'/').mkdir(parents=True, exist_ok=True)
     Path(subroot+'Block2/out_cnn/'+ format(test)+'/').mkdir(parents=True, exist_ok=True)
+    Path(subroot+'Block2/mu/'+ format(test)+'/').mkdir(parents=True, exist_ok=True)
     Path(subroot+'Block2/out_cnn/cnn_metrics/'+ format(test)+'/').mkdir(parents=True, exist_ok=True)
     Path(subroot+'Block2/data/x_label_DIP/'+format(test) + '/').mkdir(parents=True, exist_ok=True) # Directory where all labels for DIP stage are saved
 
@@ -134,6 +135,8 @@ def admm_loop(config, args, root):
 
     # ADMM variables
     mu = 0* np.ones((PETImage_shape[0], PETImage_shape[1]), dtype='<f')
+    save_img(mu,subroot+'Block2/mu/'+ format(test)+'/mu_' + format(-1) + suffix + '.img') # saving mu
+
     x_out = np.zeros((PETImage_shape[0], PETImage_shape[1]), dtype='<f') # output of DIP
 
     writer = SummaryWriter()
@@ -185,8 +188,9 @@ def admm_loop(config, args, root):
     
     f_init = fijii_np(subroot + 'Data/' + 'BSREM_it30_REF_cropped.img',shape=(PETImage_shape))
     #f_init = fijii_np(subroot+'Comparison/MLEM/MLEM_converge_avec_post_filtre.img',shape=(PETImage_shape))
-    #f_init = np.ones((PETImage_shape[0],PETImage_shape[1]), dtype='<f')
-    
+    f_init = np.ones((PETImage_shape[0],PETImage_shape[1]), dtype='<f')
+    save_img(f_init,subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(-1) + suffix + '.img') # saving DIP output
+
     #Loading Ground Truth image to compute metrics
     image_gt = fijii_np(subroot+'Block2/data/phantom_act.img',shape=(PETImage_shape))
 
@@ -197,8 +201,13 @@ def admm_loop(config, args, root):
         start_time_outer_iter = time.time()
         
         # Reconstruction with CASToR (first equation of ADMM)
-        x_label = castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_init_v, subroot, sub_iter_MAP, test, subroot_output_path_castor, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension)
-        
+        # x_label = castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_init_v, subroot, sub_iter_MAP, test, subroot_output_path_castor, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension) # without ADMMLim file
+        successful_process = subprocess.call(["python3", root+"/ADMMLim.py", str(i), castor_command_line_x, castor_command_line_init_v, subroot, str(sub_iter_MAP), str(test), subroot_output_path_castor, suffix, PETImage_shape_str, image_init_path_without_extension, net])
+        if successful_process != 0: # if there is an error in block2, then stop the run
+            raise ValueError('An error occured in ADMM Lim computation. Stopping overall iterations.')
+        x_label = fijii_np(subroot+'Block2/x_label/'+format(test) + '/' + format(i) +'_x_label' + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
+
+
         # Write image over ADMM iterations
         if ((max_iter>=10) and (i%(max_iter // 10) == 0) or True):
 
@@ -218,6 +227,8 @@ def admm_loop(config, args, root):
 
         # Block 3 - equation 15 - mu
         mu = x_label- f
+        save_img(mu,subroot+'Block2/mu/'+ format(test)+'/mu_' + format(i) + suffix + '.img') # saving mu
+
         write_image_tensorboard(writer,mu,"mu(FULL CONTRAST)",i,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
         print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))
 
@@ -248,7 +259,7 @@ def admm_loop(config, args, root):
     # Saving final image output
     save_img(x_out, subroot+'Images/out_final/final_out' + suffix + '.img')
     '''
-    #Plot and save output of the famework
+    #Plot and save output of the framework
     plt.figure()
     plt.plot(STD_recon,TCR_Recon,'--ro', label='Recon Algorithm')
     plt.title('STD vs CRC')
@@ -321,8 +332,8 @@ config = {
 }
 #'''
 config = {
-    "lr" : tune.grid_search([0.001]), # 0.01 for DIP, 0.001 for DD
-    "sub_iter_DIP" : tune.grid_search([100]),
+    "lr" : tune.grid_search([0.01]), # 0.01 for DIP, 0.001 for DD
+    "sub_iter_DIP" : tune.grid_search([80]), # 10 for DIP, 100 for DD
     "rho" : tune.grid_search([0.0003]),
     "alpha" : tune.grid_search([0.05]),
     "opti_DIP" : tune.grid_search(['Adam']),
@@ -348,7 +359,7 @@ args = parser.parse_args()
 
 # For VS Code (without command line)
 if (args.net is None): # Must check if all args are None
-    args.net = 'DD' # Network architecture
+    args.net = 'DIP' # Network architecture
     args.proc = 'CPU'
     args.max_iter = 10 # Outer iterations
     args.sub_iter_MAP = 1 # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
