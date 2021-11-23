@@ -102,7 +102,7 @@ def admm_loop(config, args, root):
     np.save(subroot + 'Config/config' + suffix + '.npy', config) # Save this configuration of hyperparameters, and reload it at the beginning of block 2 thanks to suffix (passed in subprocess call argumentsZ)
 
     # Define command line to run ADMM with CASToR
-    castor_command_line_x = castor_command_line(PETImage_shape_str, alpha, rho, suffix)
+    castor_command_line_x = castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix)
 
     """
     Initialization : variables
@@ -309,7 +309,7 @@ config = {
     "sub_iter_MAP" : tune.grid_search([2]), # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DIP_VAE)
     "rho" : tune.grid_search([0.0003]),
-    "alpha" : tune.grid_search([0.05]),
+    "alpha" : tune.grid_search([1]),
     "opti_DIP" : tune.grid_search(['Adam']),
     "mlem_sequence" : tune.grid_search([False]),
     "d_DD" : tune.grid_search([4]), # not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size

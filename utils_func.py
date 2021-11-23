@@ -16,7 +16,6 @@ from models.ConvNet3D_VAE_lightning import ConvNet3D_VAE_lightning # DIP vae
 from models.DD_2D_lightning import DD_2D_lightning # DD
 from models.DD_AE_2D_lightning import DD_AE_2D_lightning # DD adding encoder part
 
-#from ADMMLim import compute_x_v_u_ADMM
 import ADMMLim
 
 subroot=os.getcwd()+'/data/Algo/'
@@ -379,7 +378,7 @@ def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finet
     return out_destand
 
 def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
-    only_x = False
+    only_x = True
     start_time_block1 = time.time()
     mlem_sequence = config['mlem_sequence']
     nb_iter_second_admm = 10
@@ -405,7 +404,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
         x_for_init_v = ' -img ' + subroot + 'Data/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
         #v^0 is BSREM if we only look at x optimization
         if (only_x):
-            x_for_init_v = ' -img ' + subroot + 'Data/' + 'BSREM_it30_REF' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+            x_for_init_v = ' -img ' + subroot + 'Data/' + 'BSREM_it30_REF_cropped' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
         #x_for_init_v = ' -img ' + subroot + 'Data/' + '1_value' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
     elif (i >= 1):
         x_for_init_v = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
@@ -454,6 +453,8 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
                 # Trying to initialize ADMMLim
                 initialimage = ' -img ' + subroot + 'Data/' + 'BSREM_it30_REF_cropped.hdr'
                 initialimage = ' -img ' + subroot + 'Data/' + '1_value_cropped.hdr'
+                if (only_x):
+                    initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
 
         else:
             initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i) + '_' + format(k) + '_x.hdr'
@@ -493,7 +494,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
 
     return x_label
 
-def castor_command_line(PETImage_shape_str, alpha, rho, suffix):
+def castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix):
     # castor-recon command line
     header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
 
