@@ -40,13 +40,8 @@ from utils_func import *
 def admm_loop(config, args, root):
 
     # Retrieving arguments in this function
-    net = args.net # Network architecture
     processing_unit = args.proc
-    max_iter = args.max_iter # Outer iterations
-    if (args.sub_iter_MAP is None): # Block 1 iterations (Sub-problem 1 - MAP)
-        sub_iter_MAP = 1 # no argument given in command line
-    else:
-        sub_iter_MAP = args.sub_iter_MAP  
+    max_iter = args.max_iter # Outer iterations 
     finetuning = args.finetuning # Finetuning or not for the DIP optimizations (block 2)
 
     test = 24  # Label of the experiment
@@ -102,32 +97,12 @@ def admm_loop(config, args, root):
     # Config dictionnary for hyperparameters
     rho = config["rho"]
     alpha = config["alpha"]
+    sub_iter_MAP = config["sub_iter_MAP"]
+    net = config["net"]
     np.save(subroot + 'Config/config' + suffix + '.npy', config) # Save this configuration of hyperparameters, and reload it at the beginning of block 2 thanks to suffix (passed in subprocess call argumentsZ)
 
-    # castor-recon command line
-    header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
-
-    executable = 'castor-recon'
-    dim = ' -dim ' + PETImage_shape_str
-    vox = ' -vox 4,4,4'
-    vb = ' -vb 1'
-    th = ' -th 1'
-    proj = ' -proj incrementalSiddon'
-
-    opti = ' -opti ADMMLim' + ',' + str(alpha) + ',0.01,10.'
-    opti_init_v = ' -opti ADMM_spec_init_v'
-    pnlt = ' -pnlt DIP_ADMM'
-    pnlt_beta = ' -pnlt-beta ' + str(rho)
-
-    subroot_output_path_castor = ' -dout ' + subroot + 'Block1/' + suffix + '/' # Output path for CASTOR framework
-    input_path = ' -img ' + subroot + 'Block1/' + suffix + '/out_eq22/' # Input path for CASTOR framework
-
-    # Command line for calculating the Likelihood
-    opti_like = ' -opti-fom'
-    opti_like = ''
-
-    castor_command_line_x = executable + dim + vox + header_file + vb + th + proj + opti + opti_like + pnlt + pnlt_beta
-    castor_command_line_init_v = executable + dim + vox + header_file + vb + th + proj + opti_init_v + opti_like
+    # Define command line to run ADMM with CASToR
+    castor_command_line_x = castor_command_line(PETImage_shape_str, alpha, rho, suffix)
 
     """
     Initialization : variables
@@ -201,12 +176,7 @@ def admm_loop(config, args, root):
         start_time_outer_iter = time.time()
         
         # Reconstruction with CASToR (first equation of ADMM)
-        # x_label = castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_init_v, subroot, sub_iter_MAP, test, subroot_output_path_castor, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension) # without ADMMLim file
-        successful_process = subprocess.call(["python3", root+"/ADMMLim.py", str(i), castor_command_line_x, castor_command_line_init_v, subroot, str(sub_iter_MAP), str(test), subroot_output_path_castor, suffix, PETImage_shape_str, image_init_path_without_extension, net])
-        if successful_process != 0: # if there is an error in block2, then stop the run
-            raise ValueError('An error occured in ADMM Lim computation. Stopping overall iterations.')
-        x_label = fijii_np(subroot+'Block2/x_label/'+format(test) + '/' + format(i) +'_x_label' + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
-
+        x_label = castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension) # without ADMMLim file
 
         # Write image over ADMM iterations
         if ((max_iter>=10) and (i%(max_iter // 10) == 0) or True):
@@ -319,6 +289,8 @@ config = {
     #"sub_iter_DIP" : tune.grid_search([10,30,50]),
     "sub_iter_DIP" : tune.grid_search([10,50,100,200]),
     #"sub_iter_DIP" : tune.grid_search([50,100,200,500]),
+    "sub_iter_MAP" : tune.grid_search([2]), # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
+    "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DIP_VAE)
     #"rho" : tune.grid_search([5e-4,3e-3,6e-2,1e-2]),
     "rho" : tune.grid_search([3e-3]),
     #"rho" : tune.grid_search([1e-6]), # Trying to reproduce MLEM result as rho close to 0
@@ -334,6 +306,8 @@ config = {
 config = {
     "lr" : tune.grid_search([0.01]), # 0.01 for DIP, 0.001 for DD
     "sub_iter_DIP" : tune.grid_search([80]), # 10 for DIP, 100 for DD
+    "sub_iter_MAP" : tune.grid_search([2]), # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
+    "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DIP_VAE)
     "rho" : tune.grid_search([0.0003]),
     "alpha" : tune.grid_search([0.05]),
     "opti_DIP" : tune.grid_search(['Adam']),
@@ -347,10 +321,8 @@ config = {
 ## Arguments for linux command to launch script
 # Creating arguments
 parser = argparse.ArgumentParser(description='DIP + ADMM computation')
-parser.add_argument('--net', type=str, dest='net', help='network to use (DIP,DD,DIP_VAE)')
 parser.add_argument('--proc', type=str, dest='proc', help='processing unit (CPU, GPU or both)')
 parser.add_argument('--max_iter', type=int, dest='max_iter', help='number of outer iterations')
-parser.add_argument('--sub_iter_MAP', type=int, dest='sub_iter_MAP', help='number of block 1 iterations (Sub-problem 1 - MAP)', nargs='?', const=1)
 parser.add_argument('--finetuning', type=str, dest='finetuning', help='finetuning or not for the DIP optimizations', nargs='?', const='False')
 
 # Retrieving arguments in this python script
@@ -358,11 +330,9 @@ args = parser.parse_args()
 
 
 # For VS Code (without command line)
-if (args.net is None): # Must check if all args are None
-    args.net = 'DIP' # Network architecture
+if (args.proc is None): # Must check if all args are None
     args.proc = 'CPU'
-    args.max_iter = 10 # Outer iterations
-    args.sub_iter_MAP = 1 # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
+    args.max_iter = 30 # Outer iterations
     args.finetuning = 'last' # Finetuning or not for the DIP optimizations (block 2)
     
 config_combination = 1

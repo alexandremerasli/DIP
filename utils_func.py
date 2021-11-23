@@ -16,6 +16,8 @@ from models.ConvNet3D_VAE_lightning import ConvNet3D_VAE_lightning # DIP vae
 from models.DD_2D_lightning import DD_2D_lightning # DD
 from models.DD_AE_2D_lightning import DD_AE_2D_lightning # DD adding encoder part
 
+#from ADMMLim import compute_x_v_u_ADMM
+import ADMMLim
 
 subroot=os.getcwd()+'/data/Algo/'
 
@@ -95,7 +97,7 @@ def save_img(img,name):
     img.tofile(fp)
     print('Succesfully save in:', name)
 
-def write_hdr(L,config,subpath,variable_name='',subroot=subroot):
+def write_hdr(L,subpath,variable_name='',subroot_output_path=''):
     """ write a header for the optimization transfer solution (it's use as CASTOR input)"""
     if (len(L) == 1):
         i = L[0]
@@ -110,7 +112,7 @@ def write_hdr(L,config,subpath,variable_name='',subroot=subroot):
             ref_numbers = format(i) + '_' + format(k) + '_' + variable_name
         else:
             ref_numbers = format(i)
-    filename = subroot+'Block1/' + suffix_func(config) + '/'+ subpath + '/' + ref_numbers +'.hdr'
+    filename = subroot_output_path + '/'+ subpath + '/' + ref_numbers +'.hdr'
     with open(subroot+'Data/castor_output_it60.hdr') as f:
         with open(filename, "w") as f1:
             for line in f:
@@ -376,35 +378,7 @@ def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finet
     out_destand = destand_imag(out, mean_label, std_label)
     return out_destand
 
-def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,config,i,k,suffix,only_x,subroot=subroot):
-    print('xxxxxxxxxxxxxxxxxxxxx')
-    os.system(x_reconstruction_command_line)
-    #x = fijii_np(subroot + 'Data/ADMMLim.img',(PETImage_shape[0],PETImage_shape[0]))
-
-    copy(subroot + 'Data/ADMMLim_x.img', full_output_path_k_next + '_x.img')
-    write_hdr([i,k+1],config,'during_eq22','x',subroot=subroot)
-
-
-
-    print('vvvvvvvvvvvvvvvvvvvvvvv')
-    # not changing v
-    subroot_output_path = (subroot + 'Block1/' + suffix)
-    # true ADMM, changing v
-    copy(subroot + 'Data/ADMMLim_v.img', full_output_path_k_next + '_v.img')
-    if (only_x):
-        #copy(subroot_output_path + '/during_eq22/' + format(i) + '_' + format(-1) + '_v.img',full_output_path_k_next + '_v.img')
-        copy(subroot + 'Data/ADMM_spec_init_v.img', full_output_path_k_next + '_v.img')
-    write_hdr([i,k+1],config,'during_eq22','v',subroot=subroot)
-    
-    print("uuuuuuuuuuuuuuuuuuuuuuu")
-    # true ADMM, changing u
-    copy(subroot + 'Data/ADMMLim_u.img', full_output_path_k_next + '_u.img')
-    # not changing u
-    if (only_x):
-        copy(subroot_output_path + '/during_eq22/' + format(i) + '_' + format(-1) + '_u.img',full_output_path_k_next + '_u.img')
-    write_hdr([i,k+1],config,'during_eq22','u',subroot=subroot)
-
-def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_init_v, subroot, sub_iter_MAP, test, subroot_output_path_castor, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
+def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
     only_x = False
     start_time_block1 = time.time()
     mlem_sequence = config['mlem_sequence']
@@ -415,16 +389,16 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
     path_before_eq_22 = (subroot_output_path + '/before_eq22/')
     path_during_eq_22 = (subroot_output_path + '/during_eq22/')
     save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
-    write_hdr([i],config,'before_eq22','f_mu')
+    write_hdr([i],'before_eq22','f_mu',subroot_output_path)
 
     # x^0
     copy(subroot + 'Data/' + image_init_path_without_extension + '.img', path_during_eq_22 + format(i) + '_-1_x.img')
-    write_hdr([i,-1],config,'during_eq22','x')
+    write_hdr([i,-1],'during_eq22','x',subroot_output_path)
 
     # Compute u^0 (u^-1 in CASToR) and store it with zeros, and save in .hdr format - block 1            
     u_0 = 0*np.ones((344,252)) # initialize u_0 to zeros
     save_img(u_0,path_during_eq_22 + format(i) + '_-1_u.img')
-    write_hdr([i,-1],config,'during_eq22','u')
+    write_hdr([i,-1],'during_eq22','u',subroot_output_path)
     
     # Compute v^0 (v^-1 in CASToR) with ADMM_spec_init_v optimizer and save in .hdr format - block 1
     if (i == 0):   # choose initial image for CASToR reconstruction
@@ -447,10 +421,19 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
     # Compute one ADMM iteration (x, v, u) when only initializing x
     x_reconstruction_command_line = castor_command_line_x + ' -dout ' + subroot_output_path + '/during_eq22' + ' -it 1:1' + x_for_init_v + f_mu_for_penalty #+ u_for_additional_data + v_for_additional_data # we need f-mu so that ADMM optimizer works, even if we will not use it...
     print('vvvvvvvvvvv0000000000')
-    compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,config,i,k,suffix,only_x)
+    ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,only_x,subroot,subroot_output_path)
+
+    '''
+    successful_process = subprocess.call(["python3", root+"/ADMMLim.py", str(i), castor_command_line_x, subroot, str(sub_iter_MAP), str(test), suffix, PETImage_shape_str, image_init_path_without_extension, net])
+    if successful_process != 0: # if there is an error in block2, then stop the run
+        raise ValueError('An error occured in ADMM Lim computation. Stopping overall iterations.')
+    x_label = fijii_np(subroot+'Block2/x_label/'+format(test) + '/' + format(i) +'_x_label' + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
+    '''  
+
+
     # When only initializing x, u computation is only the forward model Ax, thus exactly what we want to initialize v
-    copy(path_during_eq_22 + format(i) + '_-2_u.img', path_during_eq_22 + format(i) + '_-1_v.img')
-    write_hdr([i,-1],config,'during_eq22','v')
+    copy(subroot + 'Data/ADMMLim_u.img', path_during_eq_22 + format(i) + '_-1_v.img')
+    write_hdr([i,-1],'during_eq22','v',subroot_output_path)
         
     # Choose number of argmax iteration for (second) x computation
     if (mlem_sequence):
@@ -470,6 +453,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
                 initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
                 # Trying to initialize ADMMLim
                 initialimage = ' -img ' + subroot + 'Data/' + 'BSREM_it30_REF_cropped.hdr'
+                initialimage = ' -img ' + subroot + 'Data/' + '1_value_cropped.hdr'
 
         else:
             initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i) + '_' + format(k) + '_x.hdr'
@@ -487,7 +471,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
 
         # Compute one ADMM iteration (x, v, u)
         x_reconstruction_command_line = castor_command_line_x + ' -dout ' + subroot_output_path + '/during_eq22' + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage
-        compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,config,i,k,suffix,only_x)
+        ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,only_x,subroot,subroot_output_path=subroot_output_path)
 
     print("--- %s seconds - second ADMM (CASToR) iteration ---" % (time.time() - start_time_block1))
 
@@ -497,7 +481,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
     # Save image x in .img and .hdr format - block 1
     name = (subroot+'Block1/' + suffix + '/out_eq22/' + format(i) + '.img')
     save_img(x, name)
-    write_hdr([i], config, 'out_eq22')
+    write_hdr([i],'out_eq22','',subroot_output_path)
 
     # Save x_label for load into block 2 - CNN as corrupted image (x_label)
     x_label = x + mu
@@ -508,3 +492,32 @@ def castor_reconstruction(writer, i, castor_command_line_x, castor_command_line_
     save_img(x_label, name)
 
     return x_label
+
+def castor_command_line(PETImage_shape_str, alpha, rho, suffix):
+    # castor-recon command line
+    header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
+
+    executable = 'castor-recon'
+    dim = ' -dim ' + PETImage_shape_str
+    vox = ' -vox 4,4,4'
+    vb = ' -vb 1'
+    th = ' -th 1'
+    proj = ' -proj incrementalSiddon'
+
+    opti = ' -opti ADMMLim' + ',' + str(alpha) + ',0.01,10.'
+    pnlt = ' -pnlt DIP_ADMM'
+    pnlt_beta = ' -pnlt-beta ' + str(rho)
+
+    subroot_output_path_castor = ' -dout ' + subroot + 'Block1/' + suffix + '/' # Output path for CASTOR framework
+    input_path = ' -img ' + subroot + 'Block1/' + suffix + '/out_eq22/' # Input path for CASTOR framework
+
+    # Command line for calculating the Likelihood
+    opti_like = ' -opti-fom'
+    opti_like = ''
+
+    castor_command_line_x = executable + dim + vox + header_file + vb + th + proj + opti + opti_like + pnlt + pnlt_beta
+    return castor_command_line_x
+
+# Do not run code if utils_func.py functions are imported in an other file
+if __name__ == "__main__":
+    print("This file do not need to be run alone, it just stores useful functions")
