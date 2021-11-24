@@ -1,7 +1,5 @@
 data/Algo/Block1/
 data/Algo/Block2/checkpoint/
-data/Algo/Block2/data/random_input.img
-data/Algo/Block2/data/x_label_DIP/
 data/Algo/Block2/out_cnn/
 data/Algo/Block2/x_label/
 data/Algo/Block2/mu/
@@ -9,7 +7,9 @@ data/Algo/Config/
 data/Algo/Images/
 data/Algo/Comparison/
 data/Algo/Data/initialization/image_net_input_torch.pt
+data/Algo/Data/initialization/random_input.img
 env/
+data/Algo/Comparison/ADMMLim
 
 data/Algo/Data/ADMMLim_*
 data/Algo/Data/data_eff10/data_eff10.log

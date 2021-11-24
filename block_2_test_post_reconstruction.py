@@ -68,7 +68,7 @@ def post_reconstruction(config,root):
     bias_hot_recon = np.zeros(sub_iter_DIP)
 
     #Loading Ground Truth image to compute metrics
-    image_gt = fijii_np(subroot+'Block2/data/phantom_act.img',shape=(PETImage_shape))
+    image_gt = fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape))
 
     ## Loading RAW stack of images
     # Loading DIP input (we do not have CT-map, so random image created in block 1)

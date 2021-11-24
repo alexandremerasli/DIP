@@ -73,13 +73,11 @@ def admm_loop(config, args, root):
     Path(subroot+'Block2/out_cnn/cnn_metrics/'+ format(test)+'/').mkdir(parents=True, exist_ok=True) # DIP block metrics
     Path(subroot+'Block2/out_cnn/'+ format(test)+'/like/').mkdir(parents=True, exist_ok=True) # folder for Likelihood calculation (using CASTOR)
     Path(subroot+'Block2/x_label/'+format(test) + '/').mkdir(parents=True, exist_ok=True) # x corrupted - folder
-    Path(subroot+'Block2/data/'+format(test) + '/').mkdir(parents=True, exist_ok=True) # ground truth
 
     Path(subroot+'Block2/checkpoint/'+format(test)+'/').mkdir(parents=True, exist_ok=True)
     Path(subroot+'Block2/out_cnn/'+ format(test)+'/').mkdir(parents=True, exist_ok=True)
     Path(subroot+'Block2/mu/'+ format(test)+'/').mkdir(parents=True, exist_ok=True)
     Path(subroot+'Block2/out_cnn/cnn_metrics/'+ format(test)+'/').mkdir(parents=True, exist_ok=True)
-    Path(subroot+'Block2/data/x_label_DIP/'+format(test) + '/').mkdir(parents=True, exist_ok=True) # Directory where all labels for DIP stage are saved
 
     Path(subroot+'Comparison/MLEM/').mkdir(parents=True, exist_ok=True) # CASTor path
     Path(subroot+'Comparison/BSREM/').mkdir(parents=True, exist_ok=True) # CASTor path
@@ -167,7 +165,7 @@ def admm_loop(config, args, root):
     save_img(f_init,subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(-1) + suffix + '.img') # saving DIP output
 
     #Loading Ground Truth image to compute metrics
-    image_gt = fijii_np(subroot+'Block2/data/phantom_act.img',shape=(PETImage_shape))
+    image_gt = fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape))
 
     f = f_init  # Initializing DIP output with f_init
 

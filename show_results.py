@@ -60,7 +60,7 @@ bias_cold_recon = np.zeros(max_iter)
 bias_hot_recon = np.zeros(max_iter)
 
 #Loading Ground Truth image to compute metrics
-image_gt = fijii_np(subroot+'Block2/data/phantom_act.img',shape=(PETImage_shape))
+image_gt = fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape))
 
 for i in range(max_iter):
     f = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output

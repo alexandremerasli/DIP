@@ -246,11 +246,11 @@ def create_random_input(net,PETImage_shape,config): #CT map for high-count data,
             im_input = np.random.normal(0,1,input_size_DD*input_size_DD).astype('float32') # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
             im_input = im_input.reshape(input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if auto encoder based on Deep Decoder
 
-    file_path = (subroot+'Block2/data/random_input.img')
+    file_path = (subroot+'Data/initialization/random_input.img')
     save_img(im_input,file_path)
 
 def load_input(net,PETImage_shape,config):
-    file_path = (subroot+'Block2/data/random_input.img') #CT map, but not CT yet...
+    file_path = (subroot+'Data/initialization/random_input.img') #CT map, but not CT yet...
     if (net == 'DD'):
         input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
         PETImage_shape = (config['k_DD'],input_size_DD,input_size_DD) # if original Deep Decoder (i.e. only with decoder part)

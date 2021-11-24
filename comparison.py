@@ -32,7 +32,7 @@ PETImage_shape_str = read_input_dim(subroot+'Data/castor_output_it60.hdr')
 PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
 
 #Loading Ground Truth image to compute metrics
-image_gt = fijii_np(subroot+'Block2/data/phantom_act.img',shape=(PETImage_shape))
+image_gt = fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape))
 
 ## Computing metrics for (must add post smoothing for MLEM) reconstruction
 

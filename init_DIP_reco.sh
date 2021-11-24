@@ -98,6 +98,6 @@ fi
 mkdir -p ../data/Algo/Block2/data
 mkdir -p ../data/Algo/Data/data_eff10
 
-cp phantom_* /home/meraslia/sgld/hernan_folder/data/Algo/Block2/data/
+cp phantom_* /home/meraslia/sgld/hernan_folder/data/Algo/Data/phantom
 cp data_eff10/* /home/meraslia/sgld/hernan_folder/data/Algo/Data/data_eff10
 cp castor_output/* /home/meraslia/sgld/hernan_folder/data/Algo/Data/

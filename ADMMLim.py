@@ -53,13 +53,13 @@ if __name__ == "__main__":
     root = os.getcwd() # Directory root
     subroot = root + '/data/Algo/'  # Directory subroot
     suffix =  utils_func.suffix_func(config) # Suffix to make difference between raytune runs (different hyperparameters)
-    subroot_output_path = (subroot + 'ADMM/' + suffix)
+    subroot_output_path = (subroot + 'Comparison/ADMMLim/' + suffix)
     i = 0
     k = -2
     full_output_path = subroot_output_path + '/ADMM/' + format(i) + '_' + format(k)
     subdir = 'ADMM'
-    Path(subroot+'ADMM/').mkdir(parents=True, exist_ok=True) # CASTor path
-    Path(subroot+'ADMM/' + suffix + '/ADMM').mkdir(parents=True, exist_ok=True) # CASToR path
+    Path(subroot+'Comparison/ADMMLim/').mkdir(parents=True, exist_ok=True) # CASTor path
+    Path(subroot+'Comparison/ADMMLim/' + suffix + '/ADMM').mkdir(parents=True, exist_ok=True) # CASToR path
 
     # Save this configuration of hyperparameters, and reload with suffix
     np.save(subroot + 'Config/config' + suffix + '.npy', config)
