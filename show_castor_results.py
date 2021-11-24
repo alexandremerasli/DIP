@@ -17,13 +17,10 @@ import sys
 
 # Math
 import numpy as np
-import matplotlib.pyplot as plt
 
 # Local files to import
 from utils_func import *
 
-print(len(sys.argv))
-print(sys.argv)
 if (len(sys.argv) - 1 == 3):
     opti = sys.argv[1] # CASToR optimizer
     max_iter = int(sys.argv[2]) # Number of outer iterations

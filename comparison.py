@@ -6,6 +6,7 @@ from torch.utils.tensorboard import SummaryWriter
 # Useful
 import os
 import argparse
+import sys
 
 # Math
 import numpy as np
@@ -23,9 +24,14 @@ parser.add_argument('--beta', type=str, dest='beta', help='penalty strength (bet
 
 # Retrieving arguments in this python script
 args = parser.parse_args()
-optimizer = args.opti
-nb_iter = args.nb_iter
-beta = args.beta 
+if (args.opti is not None): # Must check if all args are None    
+    optimizer = args.opti # CASToR optimizer
+    nb_iter = args.nb_iter # number of optimizer iterations
+    beta = args.beta # penalty strength (beta)
+else: # For VS Code (without command line)
+    optimizer = 'BSREM' # CASToR optimizer
+    nb_iter = 10 # number of optimizer iterations
+    beta = 0.04 # penalty strength (beta)
 
 # Define PET input dimensions according to input data dimensions
 PETImage_shape_str = read_input_dim(subroot+'Data/castor_output_it60.hdr')

@@ -12,11 +12,9 @@ from torch.utils.tensorboard import SummaryWriter
 
 # Useful
 import os
-import argparse
 
 # Math
 import numpy as np
-import matplotlib.pyplot as plt
 
 # Local files to import
 from utils_func import *

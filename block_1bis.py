@@ -56,16 +56,7 @@ def admm_loop(config, args, root):
     Path(subroot+'Block1/' + suffix + '/during_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
     Path(subroot+'Block1/' + suffix + '/out_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
 
-
-    Path(subroot+'Images/eq_22/'+format(test)+'/').mkdir(parents=True, exist_ok=True) # First subproblem - folder
-    Path(subroot+'Images/image_EM/'+format(test)+'/').mkdir(parents=True, exist_ok=True) # MLEM image - folder
-    Path(subroot+'Images/metrics/'+format(test)+'/').mkdir(parents=True, exist_ok=True) # Block 1 metrics - folder
-    Path(subroot+'Images/iter_in_DIP/'+format(test)+'/').mkdir(parents=True, exist_ok=True) # Images of every iteration in DIP block - folder
-    Path(subroot+'Images/out_cnn/'+format(test)+'/').mkdir(parents=True, exist_ok=True) # Output of DIP every n epochs - folder
     Path(subroot+'Images/out_final/'+format(test)+'/').mkdir(parents=True, exist_ok=True) # Output of the framework (Last output of the DIP)
-    Path(subroot+'Images/x_label/'+ format(test)+'/').mkdir(parents=True, exist_ok=True) # Folder for every updated corrupted image
-    Path(subroot+'Images/mu_diff/' + format(test) + '/').mkdir(parents=True, exist_ok=True) # Here are saved the difference between x corrupt (x_label) and recontructed x every outer iterations
-    Path(subroot+'Images/uncertainty/'+format(test)+'/').mkdir(parents=True, exist_ok=True) # Directory where all the samples are saved
 
     Path(subroot+'Block2/checkpoint/'+format(test)+'/').mkdir(parents=True, exist_ok=True)
     Path(subroot+'Block2/out_cnn/'+ format(test)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration

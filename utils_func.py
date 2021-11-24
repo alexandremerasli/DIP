@@ -503,7 +503,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
 
     return x_label
 
-def castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix, only_Lim=False, penalty='DIP_ADMM'):
+def castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix, only_Lim=False, pnlt=''):
     # castor-recon command line
     header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
 
@@ -526,7 +526,7 @@ def castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix, only_Lim=Fa
     opti_like = ' -opti-fom'
     opti_like = ''
 
-    castor_command_line_x = executable + dim + vox + header_file + vb + th + proj + opti + opti_like + pnlt + pnlt_beta
+    castor_command_line_x = executable + dim + vox + header_file + vb + th + proj + opti_like + pnlt + pnlt_beta + opti # opti must be the last one to be able to change suffix_extended in for loop in ADMM
     return castor_command_line_x
 
 # Do not run code if utils_func.py functions are imported in an other file
