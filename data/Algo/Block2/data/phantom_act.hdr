@@ -17,8 +17,8 @@ imagedata byte order := LITTLEENDIAN
 
 !STATIC STUDY (General) :=
 number of dimensions := 3
-!matrix size [1] := 128
-!matrix size [2] := 128
+!matrix size [1] := 112
+!matrix size [2] := 112
 !matrix size [3] := 1
 !number format := short float
 !number of bytes per pixel := 4
