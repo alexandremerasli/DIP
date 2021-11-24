@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Local files to import
-from utils_func import *
+from utils_func import * # subroot is defined here
 
 ## Arguments for linux command to launch script
 # Creating arguments
@@ -80,9 +80,9 @@ for i in range(max_iter):
         penalty = ''
         penaltyStrength = ''
     else:
-        opti = ' -opti ' + optimizer + ':BSREM.conf'
+        opti = ' -opti ' + optimizer + ':' + subroot + 'Comparison/' + 'BSREM.conf'
         conv = ''
-        penalty = ' -pnlt MRF:MRF.conf'
+        penalty = ' -pnlt MRF:' + subroot + 'Comparison/' + 'MRF.conf'
         penaltyStrength = ' -pnlt-beta ' + str(beta[i])
 
     output_path = ' -dout ' + subroot + 'Comparison/' + optimizer # Output path for CASTOR framework
@@ -100,7 +100,7 @@ for i in range(max_iter):
 
 
     # compute metrics varying beta (if BSREM)
-    compute_metrics(image_optimizer,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
+    compute_metrics(PETImage_shape,image_optimizer,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
 
     # write image varying beta (if BSREM)
     write_image_tensorboard(writer,image_optimizer,"Final image computed with " + optimizer,i) # image in tensorboard
@@ -118,4 +118,5 @@ for i in range(max_iter):
 
 import subprocess
 root = os.getcwd()
-successful_process = subprocess.call(["python3", root+"/show_castor_results.py"]) # Showing results in tensorboard
+test = 24
+successful_process = subprocess.call(["python3", root+"/show_castor_results.py", optimizer, str(nb_iter), str(test)]) # Showing results in tensorboard
