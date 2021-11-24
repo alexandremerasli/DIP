@@ -89,9 +89,9 @@ def post_reconstruction(config,root):
         elif (net == 'DD_AE'):
             input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
             image_net_input_torch = image_net_input_torch.view(1,1,input_size_DD,input_size_DD) # For Deep Decoder, if auto encoder based on Deep Decoder
-    torch.save(image_net_input_torch,subroot + 'Data/image_net_input_torch.pt')
+    torch.save(image_net_input_torch,subroot + 'Data/initialization/image_net_input_torch.pt')
 
-    image_net_input_torch = torch.load(subroot + 'Data/image_net_input_torch.pt')# Here we CAN create random input as this script is only run once
+    image_net_input_torch = torch.load(subroot + 'Data/initialization/image_net_input_torch.pt')# Here we CAN create random input as this script is only run once
 
     # Loading DIP x_label (corrupted image) from block1
     image_corrupt = fijii_np(subroot+'Comparison/MLEM/MLEM_converge_avec_post_filtre.img',shape=(PETImage_shape))

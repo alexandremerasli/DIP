@@ -57,7 +57,7 @@ PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
 
 ## Loading RAW stack of images
 # Loading DIP input (we do not have CT-map, so random image created in block 1)
-image_net_input_torch = torch.load(subroot + 'Data/image_net_input_torch.pt')# DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1. JUST LOAD IT FROM BLOCK 1
+image_net_input_torch = torch.load(subroot + 'Data/initialization/image_net_input_torch.pt')# DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1. JUST LOAD IT FROM BLOCK 1
 
 # Loading DIP x_label (corrupted image) from block1
 image_corrupt = fijii_np(subroot+'Block2/x_label/' + format(test)+'/'+ format(admm_it) +'_x_label' + suffix + '.img',shape=(PETImage_shape))

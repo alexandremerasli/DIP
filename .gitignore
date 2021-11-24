@@ -4,11 +4,15 @@ data/Algo/Block2/data/random_input.img
 data/Algo/Block2/data/x_label_DIP/
 data/Algo/Block2/out_cnn/
 data/Algo/Block2/x_label/
+data/Algo/Block2/mu/
 data/Algo/Config/
 data/Algo/Images/
 data/Algo/Comparison/
-data/Algo/Data/image_net_input_torch.pt
+data/Algo/Data/initialization/image_net_input_torch.pt
 env/
+
+data/Algo/Data/ADMMLim_*
+data/Algo/Data/data_eff10/data_eff10.log
 
 models/__pycache__/
 
@@ -16,6 +20,7 @@ runs (copy)/
 runs/
 simu_mmr/
 .vscode/
+trash/
 __pycache__/
 
 PlotNeuralNet/

@@ -31,12 +31,11 @@ def write_hdr_img(path,filename):
                 else:
                     f1.write(line)
 
-filenames = ['data/Algo/Data/1_value','data/Algo/Block2/data/phantom_act','simu_mmr/phantom_act','simu_mmr/phantom_atn','data/Algo/Block2/data/phantom_atn','data/Algo/Data/BSREM_it30_REF','data/Algo/Data/castor_output_it60','data/Algo/Block2/data/random_input']
+filenames = ['data/Algo/Data/initialization/0_im_value','data/Algo/Data/initialization/1_im_value','data/Algo/Data/initialization/BSREM_it30_REF','data/Algo/Block2/data/random_input']
 
 for filename in filenames:
     path = Path(filename)
     print(path)
-    print(filename)
     im_full = fijii_np(filename + ".img",(128,128))
     im_cropped = im_full[8:120,8:120]
     save_img(im_cropped,filename + "_cropped.img")

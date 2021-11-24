@@ -250,8 +250,7 @@ def create_random_input(net,PETImage_shape,config): #CT map for high-count data,
     save_img(im_input,file_path)
 
 def load_input(net,PETImage_shape,config):
-    #file_path = (subroot+'Block2/data/umap_00_new.raw') #CT map for low-count data
-    file_path = (subroot+'Block2/data/random_input.img') #CT map for high-count data, but not CT yet...
+    file_path = (subroot+'Block2/data/random_input.img') #CT map, but not CT yet...
     if (net == 'DD'):
         input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
         PETImage_shape = (config['k_DD'],input_size_DD,input_size_DD) # if original Deep Decoder (i.e. only with decoder part)
@@ -391,7 +390,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
     write_hdr([i],'before_eq22','f_mu',subroot_output_path)
 
     # x^0
-    copy(subroot + 'Data/' + image_init_path_without_extension + '.img', path_during_eq_22 + format(i) + '_-1_x.img')
+    copy(subroot + 'Data/initialization/' + image_init_path_without_extension + '.img', path_during_eq_22 + format(i) + '_-1_x.img')
     write_hdr([i,-1],'during_eq22','x',subroot_output_path)
 
     # Compute u^0 (u^-1 in CASToR) and store it with zeros, and save in .hdr format - block 1            
@@ -401,11 +400,11 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
     
     # Compute v^0 (v^-1 in CASToR) with ADMM_spec_init_v optimizer and save in .hdr format - block 1
     if (i == 0):   # choose initial image for CASToR reconstruction
-        x_for_init_v = ' -img ' + subroot + 'Data/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+        x_for_init_v = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
         #v^0 is BSREM if we only look at x optimization
         if (only_x):
-            x_for_init_v = ' -img ' + subroot + 'Data/' + 'BSREM_it30_REF_cropped' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
-        #x_for_init_v = ' -img ' + subroot + 'Data/' + '1_value' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+            x_for_init_v = ' -img ' + subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+        #x_for_init_v = ' -img ' + subroot + 'Data/initialization/' + '1_im_value' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
     elif (i >= 1):
         x_for_init_v = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
     
@@ -446,13 +445,13 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
         # Initialize variables for command line
         if (k == -1):
             if (i == 0):   # choose initial image for CASToR reconstruction
-                initialimage = ' -img ' + subroot + 'Data/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+                initialimage = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
                 #initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(199) + '_x.hdr'
             elif (i >= 1):
                 initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
                 # Trying to initialize ADMMLim
-                initialimage = ' -img ' + subroot + 'Data/' + 'BSREM_it30_REF_cropped.hdr'
-                initialimage = ' -img ' + subroot + 'Data/' + '1_value_cropped.hdr'
+                initialimage = ' -img ' + subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
+                initialimage = ' -img ' + subroot + 'Data/initialization/' + '1_im_value_cropped.hdr'
                 if (only_x):
                     initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
 

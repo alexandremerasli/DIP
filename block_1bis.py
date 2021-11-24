@@ -64,17 +64,17 @@ def admm_loop(config, args, root):
     Path(subroot+'Images/out_cnn/'+format(test)+'/').mkdir(parents=True, exist_ok=True) # Output of DIP every n epochs - folder
     Path(subroot+'Images/out_final/'+format(test)+'/').mkdir(parents=True, exist_ok=True) # Output of the framework (Last output of the DIP)
     Path(subroot+'Images/x_label/'+ format(test)+'/').mkdir(parents=True, exist_ok=True) # Folder for every updated corrupted image
+    Path(subroot+'Images/mu_diff/' + format(test) + '/').mkdir(parents=True, exist_ok=True) # Here are saved the difference between x corrupt (x_label) and recontructed x every outer iterations
+    Path(subroot+'Images/uncertainty/'+format(test)+'/').mkdir(parents=True, exist_ok=True) # Directory where all the samples are saved
 
     Path(subroot+'Block2/checkpoint/'+format(test)+'/').mkdir(parents=True, exist_ok=True)
     Path(subroot+'Block2/out_cnn/'+ format(test)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
     Path(subroot+'Block2/out_cnn/vae').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
     Path(subroot+'Block2/out_cnn/cnn_metrics/'+ format(test)+'/').mkdir(parents=True, exist_ok=True) # DIP block metrics
     Path(subroot+'Block2/out_cnn/'+ format(test)+'/like/').mkdir(parents=True, exist_ok=True) # folder for Likelihood calculation (using CASTOR)
-    Path(subroot+'Images/mu_diff/' + format(test) + '/').mkdir(parents=True, exist_ok=True) # Here are saved the difference between x corrupt (x_label) and recontructed x every outer iterations
     Path(subroot+'Block2/x_label/'+format(test) + '/').mkdir(parents=True, exist_ok=True) # x corrupted - folder
     Path(subroot+'Block2/data/'+format(test) + '/').mkdir(parents=True, exist_ok=True) # ground truth
 
-    Path(subroot+'Images/uncertainty/'+format(test)+'/').mkdir(parents=True, exist_ok=True) # Directory where all the samples are saved
     Path(subroot+'Block2/checkpoint/'+format(test)+'/').mkdir(parents=True, exist_ok=True)
     Path(subroot+'Block2/out_cnn/'+ format(test)+'/').mkdir(parents=True, exist_ok=True)
     Path(subroot+'Block2/mu/'+ format(test)+'/').mkdir(parents=True, exist_ok=True)
@@ -85,6 +85,8 @@ def admm_loop(config, args, root):
     Path(subroot+'Comparison/BSREM/').mkdir(parents=True, exist_ok=True) # CASTor path
 
     Path(subroot+'Config/').mkdir(parents=True, exist_ok=True) # CASTor path
+
+    Path(subroot+'Data/initialization').mkdir(parents=True, exist_ok=True)
 
     # Define PET input dimensions according to input data dimensions
     PETImage_shape_str = read_input_dim(subroot+'Data/castor_output_it60.hdr')
@@ -151,17 +153,15 @@ def admm_loop(config, args, root):
         elif (net == 'DD_AE'):
             input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
             image_net_input_torch = image_net_input_torch.view(1,1,input_size_DD,input_size_DD) # For Deep Decoder, if auto encoder based on Deep Decoder
-    torch.save(image_net_input_torch,subroot + 'Data/image_net_input_torch.pt')
+    torch.save(image_net_input_torch,subroot + 'Data/initialization/image_net_input_torch.pt')
 
     # Ininitializing DIP output and first image x with f_init and image_init
     image_init_path_without_extension = ''
     #image_init = np.ones((PETImage_shape[0],PETImage_shape[1])) # initializing CASToR MAP reconstruction with uniform image with ones.
-    image_init_path_without_extension = '1_value_cropped'
+    image_init_path_without_extension = '1_im_value_cropped'
     #image_init_path_without_extension = 'BSREM_it30_REF_cropped'
-    #image_init_path_without_extension = 'Comparison/BSREM/BSREM_it30_REF'
-    #image_init_path_without_extension = 'Comparison/MLEM/MLEM_converge_avec_post_filtre'
     
-    f_init = fijii_np(subroot + 'Data/' + 'BSREM_it30_REF_cropped.img',shape=(PETImage_shape))
+    f_init = fijii_np(subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped.img',shape=(PETImage_shape))
     #f_init = fijii_np(subroot+'Comparison/MLEM/MLEM_converge_avec_post_filtre.img',shape=(PETImage_shape))
     f_init = np.ones((PETImage_shape[0],PETImage_shape[1]), dtype='<f')
     save_img(f_init,subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(-1) + suffix + '.img') # saving DIP output
@@ -259,7 +259,7 @@ def admm_loop(config, args, root):
         list_samples = [] # list to store averaged and uncertainty images
 
         # Loading DIP input (we do not have CT-map, so random image created in block 1)
-        image_net_input_torch = torch.load(subroot + 'Data/image_net_input_torch.pt') # DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1. JUST LOAD IT FROM BLOCK 1
+        image_net_input_torch = torch.load(subroot + 'Data/initialization/image_net_input_torch.pt') # DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1. JUST LOAD IT FROM BLOCK 1
 
         for i in range(n_posterior_samples):
             # Generate one destandardized NN output

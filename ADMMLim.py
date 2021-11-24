@@ -19,7 +19,7 @@ def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path,subdir,i,k
     copy(subroot + 'Data/ADMMLim_v.img', full_output_path + '_v.img')
     if (only_x):
         #copy(subroot_output_path + subdir + format(i) + '_' + format(-1) + '_v.img',full_output_path + '_v.img')
-        copy(subroot + 'Data/ADMM_spec_init_v.img', full_output_path + '_v.img')
+        copy(subroot + 'Data/initialization/ADMM_spec_init_v.img', full_output_path + '_v.img')
     utils_func.write_hdr([i,k+1],subdir,'x',subroot_output_path=subroot_output_path)
     utils_func.write_hdr([i,k+1],subdir,'v',subroot_output_path=subroot_output_path)
     
@@ -35,8 +35,8 @@ if __name__ == "__main__":
     config = {
     "rho" : 0.0003,
     "alpha" : 0.05, # Put alpha = 1 if True, otherwise too slow. alpha smaller if False
-    "image_init_path_without_extension" : '1_value_cropped',
-    "nb_iter" : 100,
+    "image_init_path_without_extension" : '1_im_value_cropped',
+    "nb_iter" : 10,
     "nb_subsets" : 21,
     "penalty" : ''
     }
@@ -70,15 +70,15 @@ if __name__ == "__main__":
 
     # Define command line to run ADMM with CASToR
     castor_command_line_x = utils_func.castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix)
-    initialimage = ' -img ' + subroot + 'Data/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
-    f_mu_for_penalty = ' -multimodal ' + subroot + 'Data/BSREM_it30_REF_cropped.hdr'
-    x_for_init_v = ' -img ' + subroot + 'Data/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+    initialimage = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+    f_mu_for_penalty = ' -multimodal ' + subroot + 'Data/initialization/BSREM_it30_REF_cropped.hdr'
+    x_for_init_v = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
     if (only_x):
-        x_for_init_v = ' -img ' + subroot + 'Data/' + 'BSREM_it30_REF_cropped' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+        x_for_init_v = ' -img ' + subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
         
     # Compute one ADMM iteration (x, v, u) when only initializing x to compute v^0
     if (only_x):
-        copy(subroot + 'Data/0_sino_value.hdr', subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(-1) + '_u.img')
+        copy(subroot + 'Data/initialization/0_sino_value.hdr', subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(-1) + '_u.img')
     x_reconstruction_command_line = castor_command_line_x + ' -dout ' + subroot_output_path + '/useless' + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
     print('vvvvvvvvvvv0000000000')
     compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path,subdir,i,k-1,only_x,subroot,subroot_output_path)
@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
     # Compute one ADMM iteration (x, v, u)
     print('xxxxxxxxxxxxxxxxxxxxx')
-    u_for_additional_data = ' -additional-data ' + subroot + 'Data/0_sino_value.hdr'
+    u_for_additional_data = ' -additional-data ' + subroot + 'Data/initialization/0_sino_value.hdr'
     v_for_additional_data = ' -additional-data ' + full_output_path + '_v.hdr' # Previously computed v^0
     x_reconstruction_command_line = castor_command_line_x + ' -dout ' + subroot_output_path + '/' + subdir + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
     compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path,subdir,i,k,only_x,subroot,subroot_output_path)
