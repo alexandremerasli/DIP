@@ -493,7 +493,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
 
     return x_label
 
-def castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix):
+def castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix, only_Lim=False, penalty='DIP_ADMM'):
     # castor-recon command line
     header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
 
@@ -505,7 +505,8 @@ def castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix):
     proj = ' -proj incrementalSiddon'
 
     opti = ' -opti ADMMLim' + ',' + str(alpha) + ',0.01,10.'
-    pnlt = ' -pnlt DIP_ADMM'
+    if (~only_Lim): # DIP + ADMM reconstruction, so choose DIP_ADMM penalty from CASToR
+        pnlt = ' -pnlt DIP_ADMM'
     pnlt_beta = ' -pnlt-beta ' + str(rho)
 
     subroot_output_path_castor = ' -dout ' + subroot + 'Block1/' + suffix + '/' # Output path for CASTOR framework

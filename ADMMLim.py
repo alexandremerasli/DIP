@@ -38,7 +38,7 @@ if __name__ == "__main__":
     "image_init_path_without_extension" : '1_im_value_cropped',
     "nb_iter" : 10,
     "nb_subsets" : 21,
-    "penalty" : ''
+    "penalty" : 'DIP_ADMM'
     }
 
     # Variables from config dictionnary
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     rho = config["rho"] # Penalty strength
     alpha = config["alpha"] # ADMM parameter
     it = ' -it ' + str(config["nb_iter"]) + ':' + str(config["nb_subsets"])
-    penalty = config["penalty"]
+    penalty = ' -pnlt ' + config["penalty"]
     only_x = False # Freezing u and v computation, just updating x if True
 
     # Path variables
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     PETImage_shape = utils_func.input_dim_str_to_list(PETImage_shape_str)
 
     # Define command line to run ADMM with CASToR
-    castor_command_line_x = utils_func.castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix)
+    castor_command_line_x = utils_func.castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix,True,penalty)
     initialimage = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
     f_mu_for_penalty = ' -multimodal ' + subroot + 'Data/initialization/BSREM_it30_REF_cropped.hdr'
     x_for_init_v = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
