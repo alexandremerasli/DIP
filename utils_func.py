@@ -96,7 +96,7 @@ def save_img(img,name):
     img.tofile(fp)
     print('Succesfully save in:', name)
 
-def write_hdr(L,subpath,variable_name='',subroot_output_path=''):
+def write_hdr(L,subpath,variable_name='',subroot_output_path='',matrix_type='img'):
     """ write a header for the optimization transfer solution (it's use as CASTOR input)"""
     if (len(L) == 1):
         i = L[0]
@@ -122,7 +122,17 @@ def write_hdr(L,subpath,variable_name='',subroot_output_path=''):
                     f1.write('patient name := ' + ref_numbers)
                     f1.write('\n') 
                 else:
-                    f1.write(line)
+                    if (matrix_type == 'sino'): # There are 68516=2447*28 events, but not really useful for computation
+                        if line.strip().startswith('!matrix size [1]'):
+                            f1.write('matrix size [1] := 2447')
+                            f1.write('\n') 
+                        elif line.strip().startswith('!matrix size [2]'):
+                            f1.write('matrix size [2] := 28')
+                            f1.write('\n')
+                        else:
+                            f1.write(line) 
+                    else:
+                        f1.write(line) 
 
 def find_nan(image):
     """ find NaN values on the image"""
@@ -396,7 +406,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
     # Compute u^0 (u^-1 in CASToR) and store it with zeros, and save in .hdr format - block 1            
     u_0 = 0*np.ones((344,252)) # initialize u_0 to zeros
     save_img(u_0,path_during_eq_22 + format(i) + '_-1_u.img')
-    write_hdr([i,-1],'during_eq22','u',subroot_output_path)
+    write_hdr([i,-1],'during_eq22','u',subroot_output_path,matrix_type='sino')
     
     # Compute v^0 (v^-1 in CASToR) with ADMM_spec_init_v optimizer and save in .hdr format - block 1
     if (i == 0):   # choose initial image for CASToR reconstruction
@@ -431,7 +441,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
 
     # When only initializing x, u computation is only the forward model Ax, thus exactly what we want to initialize v
     copy(subroot + 'Data/ADMMLim_u.img', path_during_eq_22 + format(i) + '_-1_v.img')
-    write_hdr([i,-1],'during_eq22','v',subroot_output_path)
+    write_hdr([i,-1],'during_eq22','v',subroot_output_path,matrix_type='sino')
         
     # Choose number of argmax iteration for (second) x computation
     if (mlem_sequence):

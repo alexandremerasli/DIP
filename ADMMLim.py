@@ -21,13 +21,13 @@ def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path,subdir,i,k
         #copy(subroot_output_path + subdir + format(i) + '_' + format(-1) + '_v.img',full_output_path + '_v.img')
         copy(subroot + 'Data/initialization/ADMM_spec_init_v.img', full_output_path + '_v.img')
     utils_func.write_hdr([i,k+1],subdir,'x',subroot_output_path=subroot_output_path)
-    utils_func.write_hdr([i,k+1],subdir,'v',subroot_output_path=subroot_output_path)
+    utils_func.write_hdr([i,k+1],subdir,'v',subroot_output_path=subroot_output_path,matrix_type='sino')
     
     # Copy u and write hdr file
     copy(subroot + 'Data/ADMMLim_u.img', full_output_path + '_u.img')
     if (only_x):
         copy(subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(-1) + '_u.img',full_output_path + '_u.img')
-    utils_func.write_hdr([i,k+1],subdir,'u',subroot_output_path=subroot_output_path)
+    utils_func.write_hdr([i,k+1],subdir,'u',subroot_output_path=subroot_output_path,matrix_type='sino')
 
 # Do not run code if compute_x_v_u_ADMM function is imported in an other file
 if __name__ == "__main__":
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     "image_init_path_without_extension" : '1_im_value_cropped',
     "nb_iter" : 10,
     "nb_subsets" : 21,
-    "penalty" : 'DIP_ADMM'
+    "penalty" : 'MRF'
     }
 
     # Variables from config dictionnary
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     x_reconstruction_command_line = castor_command_line_x + ' -dout ' + subroot_output_path + '/useless' + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
     print('vvvvvvvvvvv0000000000')
     compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path,subdir,i,k-1,only_x,subroot,subroot_output_path)
-    utils_func.write_hdr([i,k+1],'ADMM','v',subroot_output_path)
+    utils_func.write_hdr([i,k+1],'ADMM','v',subroot_output_path,matrix_type='sino')
 
     # Compute one ADMM iteration (x, v, u)
     print('xxxxxxxxxxxxxxxxxxxxx')
