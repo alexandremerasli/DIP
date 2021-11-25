@@ -387,7 +387,7 @@ def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finet
     return out_destand
 
 def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
-    only_x = True
+    only_x = False
     start_time_block1 = time.time()
     mlem_sequence = config['mlem_sequence']
     nb_iter_second_admm = 10
@@ -420,14 +420,16 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
     
     # Useful variables for command line
     k=-3
-    full_output_path_k = subroot_output_path + '/during_eq22/' + format(i) + '_' + format(k)
-    full_output_path_k_next = subroot_output_path + '/during_eq22/' + format(i) + '_' + format(k+1)
+    base_name_k = format(i) + '_' + format(k)
+    base_name_k_next = format(i) + '_' + format(k+1)
+    full_output_path_k = subroot_output_path + '/during_eq22/' + base_name_k
+    full_output_path_k_next = subroot_output_path + '/during_eq22/' + base_name_k_next
     f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'
     v_for_additional_data = ' -additional-data ' + full_output_path_k + '_v.hdr'
     u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
     # Compute one ADMM iteration (x, v, u) when only initializing x
-    x_reconstruction_command_line = castor_command_line_x + ' -dout ' + subroot_output_path + '/during_eq22' + ' -it 1:1' + x_for_init_v + f_mu_for_penalty #+ u_for_additional_data + v_for_additional_data # we need f-mu so that ADMM optimizer works, even if we will not use it...
+    x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty #+ u_for_additional_data + v_for_additional_data # we need f-mu so that ADMM optimizer works, even if we will not use it...
     print('vvvvvvvvvvv0000000000')
     ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,only_x,subroot,subroot_output_path)
 
@@ -440,7 +442,8 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
 
 
     # When only initializing x, u computation is only the forward model Ax, thus exactly what we want to initialize v
-    copy(subroot + 'Data/ADMMLim_u.img', path_during_eq_22 + format(i) + '_-1_v.img')
+    # copy(subroot + 'Data/ADMMLim_u.img', path_during_eq_22 + format(i) + '_-1_v.img')
+    copy(path_during_eq_22 + base_name_k_next + '_u.img', path_during_eq_22 + format(i) + '_-1_v.img')
     write_hdr([i,-1],'during_eq22','v',subroot_output_path,matrix_type='sino')
         
     # Choose number of argmax iteration for (second) x computation
@@ -468,8 +471,10 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
         else:
             initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i) + '_' + format(k) + '_x.hdr'
 
-        full_output_path_k = subroot_output_path + '/during_eq22/' + format(i) + '_' + format(k)
-        full_output_path_k_next = subroot_output_path + '/during_eq22/' + format(i) + '_' + format(k+1)
+        base_name_k = format(i) + '_' + format(k)
+        base_name_k_next = format(i) + '_' + format(k+1)
+        full_output_path_k = subroot_output_path + '/during_eq22/' + base_name_k
+        full_output_path_k_next = subroot_output_path + '/during_eq22/' + base_name_k_next
         f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'
         v_for_additional_data = ' -additional-data ' + full_output_path_k + '_v.hdr'
         u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
@@ -480,7 +485,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
             write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)", k+i*nb_iter_second_admm,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
 
         # Compute one ADMM iteration (x, v, u)
-        x_reconstruction_command_line = castor_command_line_x + ' -dout ' + subroot_output_path + '/during_eq22' + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage
+        x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage
         ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,only_x,subroot,subroot_output_path=subroot_output_path)
 
     print("--- %s seconds - second ADMM (CASToR) iteration ---" % (time.time() - start_time_block1))
@@ -518,9 +523,6 @@ def castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix, only_Lim=Fa
     if (~only_Lim): # DIP + ADMM reconstruction, so choose DIP_ADMM penalty from CASToR
         pnlt = ' -pnlt DIP_ADMM'
     pnlt_beta = ' -pnlt-beta ' + str(rho)
-
-    subroot_output_path_castor = ' -dout ' + subroot + 'Block1/' + suffix + '/' # Output path for CASTOR framework
-    input_path = ' -img ' + subroot + 'Block1/' + suffix + '/out_eq22/' # Input path for CASTOR framework
 
     # Command line for calculating the Likelihood
     opti_like = ' -opti-fom'

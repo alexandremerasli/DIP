@@ -82,7 +82,7 @@ def admm_loop(config, args, root):
     PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
 
     """
-    Initialization : comand line for ML-EM using CASTOR framework
+    Initialization : command line for ML-EM using CASTOR framework
     """
 
     # Config dictionnary for hyperparameters

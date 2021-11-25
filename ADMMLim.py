@@ -3,28 +3,21 @@ from pathlib import Path
 import os
 import numpy as np
 from shutil import copy
+import argparse
 
 # Local files to import
 import utils_func
 
 def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path,subdir,i,k,only_x,subroot,subroot_output_path):
-    # Compute x,u,v and write hdr file
+    # Compute x,u,v
     os.system(x_reconstruction_command_line)
-    #x = fijii_np(subroot + 'Data/ADMMLim.img',(PETImage_shape[0],PETImage_shape[0]))
-    copy(subroot + 'Data/ADMMLim_x.img', full_output_path + '_x.img')
+    # Write x hdr file
     utils_func.write_hdr([i,k+1],subdir,'x',subroot_output_path=subroot_output_path)
-
-    
-    # Copy v and write hdr file
-    copy(subroot + 'Data/ADMMLim_v.img', full_output_path + '_v.img')
+    # Write v hdr file and change v file if only x computation is needed
     if (only_x):
-        #copy(subroot_output_path + subdir + format(i) + '_' + format(-1) + '_v.img',full_output_path + '_v.img')
-        copy(subroot + 'Data/initialization/ADMM_spec_init_v.img', full_output_path + '_v.img')
-    utils_func.write_hdr([i,k+1],subdir,'x',subroot_output_path=subroot_output_path)
+        copy(subroot_output_path + subdir + format(i) + '_' + format(-1) + '_v.img',full_output_path + '_v.img')
     utils_func.write_hdr([i,k+1],subdir,'v',subroot_output_path=subroot_output_path,matrix_type='sino')
-    
-    # Copy u and write hdr file
-    copy(subroot + 'Data/ADMMLim_u.img', full_output_path + '_u.img')
+    # Write u hdr file and change u file if only x computation is needed
     if (only_x):
         copy(subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(-1) + '_u.img',full_output_path + '_u.img')
     utils_func.write_hdr([i,k+1],subdir,'u',subroot_output_path=subroot_output_path,matrix_type='sino')
@@ -36,16 +29,27 @@ if __name__ == "__main__":
     "rho" : 0.0003,
     "alpha" : 0.05, # Put alpha = 1 if True, otherwise too slow. alpha smaller if False
     "image_init_path_without_extension" : '1_im_value_cropped',
-    "nb_iter" : 10,
     "nb_subsets" : 21,
     "penalty" : 'MRF'
     }
+
+    ## Arguments for linux command to launch script
+    # Creating arguments
+    parser = argparse.ArgumentParser(description='ADMM from Lim et al. computation')
+    parser.add_argument('--nb_iter', type=int, dest='nb_iter', help='number of outer iterations')
+ 
+    # Retrieving arguments in this python script
+    args = parser.parse_args()
+
+    # For VS Code (without command line)
+    if (args.nb_iter is None): # Must check if all args are None
+        args.nb_iter = '10'
 
     # Variables from config dictionnary
     image_init_path_without_extension = config["image_init_path_without_extension"] # Path to initial image for CASToR ADMM reconstruction
     rho = config["rho"] # Penalty strength
     alpha = config["alpha"] # ADMM parameter
-    it = ' -it ' + str(config["nb_iter"]) + ':' + str(config["nb_subsets"])
+    it = ' -it ' + str(args.nb_iter) + ':' + str(config["nb_subsets"])
     penalty = ' -pnlt ' + config["penalty"]
     only_x = False # Freezing u and v computation, just updating x if True
 
@@ -79,7 +83,7 @@ if __name__ == "__main__":
     # Compute one ADMM iteration (x, v, u) when only initializing x to compute v^0
     if (only_x):
         copy(subroot + 'Data/initialization/0_sino_value.hdr', subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(-1) + '_u.img')
-    x_reconstruction_command_line = castor_command_line_x + ' -dout ' + subroot_output_path + '/useless' + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
+    x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
     print('vvvvvvvvvvv0000000000')
     compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path,subdir,i,k-1,only_x,subroot,subroot_output_path)
     utils_func.write_hdr([i,k+1],'ADMM','v',subroot_output_path,matrix_type='sino')
@@ -88,5 +92,5 @@ if __name__ == "__main__":
     print('xxxxxxxxxxxxxxxxxxxxx')
     u_for_additional_data = ' -additional-data ' + subroot + 'Data/initialization/0_sino_value.hdr'
     v_for_additional_data = ' -additional-data ' + full_output_path + '_v.hdr' # Previously computed v^0
-    x_reconstruction_command_line = castor_command_line_x + ' -dout ' + subroot_output_path + '/' + subdir + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
+    x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
     compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path,subdir,i,k,only_x,subroot,subroot_output_path)
