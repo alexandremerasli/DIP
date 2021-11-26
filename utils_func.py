@@ -387,7 +387,7 @@ def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finet
     return out_destand
 
 def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
-    only_x = False
+    only_x = False # Freezing u and v computation, just updating x if True
     start_time_block1 = time.time()
     mlem_sequence = config['mlem_sequence']
     nb_iter_second_admm = 10
@@ -442,16 +442,16 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
 
 
     # When only initializing x, u computation is only the forward model Ax, thus exactly what we want to initialize v
-    # copy(subroot + 'Data/ADMMLim_u.img', path_during_eq_22 + format(i) + '_-1_v.img')
     copy(path_during_eq_22 + base_name_k_next + '_u.img', path_during_eq_22 + format(i) + '_-1_v.img')
     write_hdr([i,-1],'during_eq22','v',subroot_output_path,matrix_type='sino')
         
     # Choose number of argmax iteration for (second) x computation
     if (mlem_sequence):
-        it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax
+        it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, too many subsets for 2D, but maybe ok for 3D
+        #it = ' -it 16:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, 2D
     else:
         it = ' -it ' + str(sub_iter_MAP) + ':1' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
-        it = ' -it ' + '5:14' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
+        #it = ' -it ' + '5:14' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
 
     # Second ADMM computation
     for k in range(-1,nb_iter_second_admm):
