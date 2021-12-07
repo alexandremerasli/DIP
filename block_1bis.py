@@ -33,6 +33,7 @@ from ray import tune
 # Math
 import numpy as np
 import matplotlib.pyplot as plt
+from skimage.restoration import denoise_bilateral
 
 # Local files to import
 from utils_func import *
@@ -92,9 +93,6 @@ def admm_loop(config, args, root):
     net = config["net"]
     np.save(subroot + 'Config/config' + suffix + '.npy', config) # Save this configuration of hyperparameters, and reload it at the beginning of block 2 thanks to suffix (passed in subprocess call argumentsZ)
 
-    # Define command line to run ADMM with CASToR
-    castor_command_line_x = castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix)
-
     """
     Initialization : variables
     """
@@ -150,7 +148,7 @@ def admm_loop(config, args, root):
     image_init_path_without_extension = '1_im_value_cropped'
     #image_init_path_without_extension = 'BSREM_it30_REF_cropped'
     
-    f_init = fijii_np(subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped.img',shape=(PETImage_shape))
+    #f_init = fijii_np(subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped.img',shape=(PETImage_shape))
     #f_init = fijii_np(subroot+'Comparison/MLEM/MLEM_converge_avec_post_filtre.img',shape=(PETImage_shape))
     f_init = np.ones((PETImage_shape[0],PETImage_shape[1]), dtype='<f')
     save_img(f_init,subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(-1) + suffix + '.img') # saving DIP output
@@ -163,6 +161,12 @@ def admm_loop(config, args, root):
     for i in range(max_iter):
         print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Outer iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', i)
         start_time_outer_iter = time.time()
+        
+        # Define command line to run ADMM with CASToR
+        if (i==0): # For first iteration, put rho to zero
+            castor_command_line_x = castor_admm_command_line(PETImage_shape_str, alpha, 0, suffix)
+        else:
+            castor_command_line_x = castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix)
         
         # Reconstruction with CASToR (first equation of ADMM)
         x_label = castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension) # without ADMMLim file
@@ -181,6 +185,13 @@ def admm_loop(config, args, root):
         print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
         f = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
 
+
+
+        # Bilateral filter
+        f_norm, maxi, mini = norm_imag(f)
+        im_bilateral = denoise_bilateral(f_norm, sigma_color=0.05, sigma_spatial=15)
+
+
         # Metrics for NN output
         compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
 
@@ -195,6 +206,7 @@ def admm_loop(config, args, root):
         if ((max_iter>=10) and (i%(max_iter // 10) == 0) or (max_iter<10)):
             write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",i) # Showing all images with same contrast to compare them together
             write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output, FULL CONTRAST)",i,full_contrast=True) # Showing each image with contrast = 1
+            write_image_tensorboard(writer,im_bilateral,"Bilateral over ADMM iterations (" + net + "output, FULL CONTRAST)",i,full_contrast=True) # Showing each image with contrast = 1
         
         # Display CRC vs STD curve in tensorboard
         if (i>max_iter - min(max_iter,10)):
@@ -274,31 +286,36 @@ def admm_loop(config, args, root):
 
 # Configuration dictionnary for hyperparameters to tune
 config = {
-    "lr" : tune.grid_search([0.0001,0.001,0.01]),
+    #"lr" : tune.grid_search([0.0001,0.001,0.01]),
+    "lr" : tune.grid_search([0.001]),
     #"sub_iter_DIP" : tune.grid_search([10,30,50]),
-    "sub_iter_DIP" : tune.grid_search([10,50,100,200]),
+    #"sub_iter_DIP" : tune.grid_search([10,50,100,200]),
+    #"sub_iter_DIP" : tune.grid_search([5,10,20]),
+    "sub_iter_DIP" : tune.grid_search([100]),
     #"sub_iter_DIP" : tune.grid_search([50,100,200,500]),
-    "sub_iter_MAP" : tune.grid_search([2]), # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
-    "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DIP_VAE)
+    "sub_iter_MAP" : tune.grid_search([10,20]), # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
+    "nb_iter_second_admm": tune.grid_search([10]), # Number of ADMM iterations (ADMM before NN)
+    "net" : tune.grid_search(['DD','DIP']), # Network to use (DIP,DD,DIP_VAE)
     #"rho" : tune.grid_search([5e-4,3e-3,6e-2,1e-2]),
-    "rho" : tune.grid_search([3e-3]),
+    "rho" : tune.grid_search([3e-4]),
     #"rho" : tune.grid_search([1e-6]), # Trying to reproduce MLEM result as rho close to 0
-    "alpha" : tune.grid_search([0.05]),
+    "alpha" : tune.grid_search([0.005,0.05,0.5]),
     "opti_DIP" : tune.grid_search(['Adam']),
     #"opti_DIP" : tune.grid_search(['LBFGS']),
     "mlem_sequence" : tune.grid_search([False]),
-    "d_DD" : tune.grid_search([6]), # not below 6, otherwise 128 is too little as output size
+    "d_DD" : tune.grid_search([4]), # not below 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([False])
 }
 #'''
 config = {
     "lr" : tune.grid_search([0.01]), # 0.01 for DIP, 0.001 for DD
-    "sub_iter_DIP" : tune.grid_search([80]), # 10 for DIP, 100 for DD
-    "sub_iter_MAP" : tune.grid_search([2]), # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
+    "sub_iter_DIP" : tune.grid_search([100]), # 10 for DIP, 100 for DD
+    "sub_iter_MAP" : tune.grid_search([10]), # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
+    "nb_iter_second_admm": tune.grid_search([10]), # Number of ADMM iterations (ADMM before NN)
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DIP_VAE)
     "rho" : tune.grid_search([0.0003]),
-    "alpha" : tune.grid_search([1]),
+    "alpha" : tune.grid_search([0.005]),
     "opti_DIP" : tune.grid_search(['Adam']),
     "mlem_sequence" : tune.grid_search([False]),
     "d_DD" : tune.grid_search([4]), # not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
@@ -321,7 +338,7 @@ args = parser.parse_args()
 # For VS Code (without command line)
 if (args.proc is None): # Must check if all args are None
     args.proc = 'CPU'
-    args.max_iter = 30 # Outer iterations
+    args.max_iter = 20 # Outer iterations
     args.finetuning = 'last' # Finetuning or not for the DIP optimizations (block 2)
     
 config_combination = 1
