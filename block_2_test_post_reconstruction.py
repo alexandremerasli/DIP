@@ -22,6 +22,7 @@ import sys
 import warnings
 from datetime import datetime
 from functools import partial
+from matplotlib import image
 from ray import tune
 
 # Math
@@ -37,7 +38,7 @@ from utils_func import *
 def post_reconstruction(config,root):
     admm_it = 1 # Set it to 1, 0 is for ADMM reconstruction with hard coded values
     test = 24 # Label of the experiment
-    finetuning = 'False' # Finetuning (with best model or last saved model for checkpoint) or not for the DIP optimizations
+    finetuning = 'last' # Finetuning (with last saved model for checkpoint) or not for the DIP optimization
     # PETImage_shape_str = sys.argv[6] # PET input dimensions (string, tF)
     # suffix =  'TEST_post_reconstruction_' + suffix_func(config) # suffix to make difference between raytune runs (different hyperparameters)
 
@@ -53,7 +54,7 @@ def post_reconstruction(config,root):
     # opti_DIP = config["opti_DIP"]
 
     # Define PET input dimensions according to input data dimensions
-    PETImage_shape_str = read_input_dim()
+    PETImage_shape_str = read_input_dim(subroot+'Data/castor_output_it60.hdr')
     PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
 
     # Metrics arrays
@@ -69,6 +70,7 @@ def post_reconstruction(config,root):
 
     #Loading Ground Truth image to compute metrics
     image_gt = fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape))
+
 
     ## Loading RAW stack of images
     # Loading DIP input (we do not have CT-map, so random image created in block 1)
@@ -92,11 +94,11 @@ def post_reconstruction(config,root):
     torch.save(image_net_input_torch,subroot + 'Data/initialization/image_net_input_torch.pt')
 
     image_net_input_torch = torch.load(subroot + 'Data/initialization/image_net_input_torch.pt')# Here we CAN create random input as this script is only run once
-
+    
     # Loading DIP x_label (corrupted image) from block1
-    image_corrupt = fijii_np(subroot+'Comparison/MLEM/MLEM_converge_avec_post_filtre.img',shape=(PETImage_shape))
+    image_corrupt = fijii_np(subroot+'Comparison/im_corrupt_beginning.img',shape=(PETImage_shape))
     #image_corrupt = fijii_np(subroot+'Comparison/MLEM/MLEM_converge_sans_post_filtre.img',shape=(PETImage_shape)) # Does not "denoise" so well
-    #image_corrupt = fijii_np(subroot+'Comparison/BSREM/BSREM_it30_REF.img',shape=(PETImage_shape))
+    #image_corrupt = fijii_np(subroot+'Data/initialization/BSREM_it30_REF_cropped.img',shape=(PETImage_shape))
     #image_corrupt = fijii_np(subroot+'Comparison/MLEM/MLEM_it2.img',shape=(PETImage_shape))
 
     # Normalization of x_label image
@@ -121,8 +123,10 @@ def post_reconstruction(config,root):
         model, model_class = choose_net(net, config)
 
         checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
-        checkpoint_simple_path_exp = '' # We do not need its value in this script
-        
+        checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(test)  + '/' + suffix_func(config) + '/'
+
+        model = load_model(image_net_input_torch, config, finetuning, admm_it, model, model_class, subroot, checkpoint_simple_path_exp, training=True)
+
         # Start training
         print('Starting optimization, iteration',admm_it)
         trainer = create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, checkpoint_simple_path, test, checkpoint_simple_path_exp,name=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
@@ -131,25 +135,51 @@ def post_reconstruction(config,root):
 
         return model
 
-    model = train_process(config, finetuning, processing_unit, sub_iter_DIP, admm_it, image_net_input_torch, image_corrupt_torch)
+    # Initializing first output
+    os.system('rm -rf ' + subroot+'Block2/checkpoint/'+format(test)  + '/' + suffix_func(config) + '/' + '/last.ckpt') # Otherwise, pl will use checkpoint from other run
+    #sys.exit()
+    model = train_process(config, finetuning, processing_unit, 1, -1, image_net_input_torch, image_corrupt_torch) # Not useful to make iterations, we just want to initialize writer. admm_it must be set to -1, otherwise seeking for a checkpoint file...
+    # Saving variables
+    if (net == 'DIP_VAE'):
+        out, mu, logvar, z = model(image_net_input_torch)
+    else:
+        out = model(image_net_input_torch)
 
-    """
-    Saving variables and model
-    """
-
+    # Destandardize like at the beginning
+    out_destand = destand_imag(out, mean_label, std_label)
+    # Saving image output
+    net_outputs_path = subroot+'Block2/out_cnn/' + format(test) + '/out_' + net + '_post_reco_epoch=' + format(0) + suffix_func(config) + '.img'
+    save_img(out_destand, net_outputs_path)
+    # Squeeze image by loading it
+    out_destand = fijii_np(net_outputs_path,shape=(PETImage_shape)) # loading DIP output
+    
     writer = model.logger.experiment # Assess to new variable, otherwise error : weakly-referenced object ...
     write_image_tensorboard(writer,image_corrupt,"Corrupted image to fit") # Showing corrupted image
-    write_image_tensorboard(writer,image_corrupt,"Corrupted image to fit (FULL CONTRAST)",full_contrast=True) # Showing corrupted image with contrast = 1
-    for epoch in range(0,sub_iter_DIP,sub_iter_DIP//10):
-        # Load saved (STANDARDIZED) images
-        net_outputs_path = subroot+'Block2/out_cnn/' + format(test) + '/out_' + net + '_post_reco_epoch=' + format(epoch) + suffix_func(config) + '.img'
-        out = fijii_np(net_outputs_path,shape=(PETImage_shape))
-        # Destandardize like at the beginning
-        out_destand = destand_numpy_imag(out, mean_label, std_label)
-        # Metrics for NN output
-        compute_metrics(out_destand,image_gt,epoch,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
-        # Saving (now DESTANDARDIZED) image output
-        save_img(out_destand, net_outputs_path)
+    for epoch in range(0,sub_iter_DIP,sub_iter_DIP//10):      
+        write_image_tensorboard(writer,image_net_input,"DIP input (FULL CONTRAST)",epoch,full_contrast=True) # DIP input in tensorboard
+
+        if (epoch > 0):
+            # Train model using previously trained network (at iteration before)
+            model = train_process(config, finetuning, processing_unit, sub_iter_DIP//10, admm_it, image_net_input_torch, image_corrupt_torch)
+
+            # Saving variables
+            if (net == 'DIP_VAE'):
+                out, mu, logvar, z = model(image_net_input_torch)
+            else:
+                out = model(image_net_input_torch)
+
+            # Destandardize like at the beginning
+            out_destand = destand_imag(out, mean_label, std_label)
+            # Saving image output
+            net_outputs_path = subroot+'Block2/out_cnn/' + format(test) + '/out_' + net + '_post_reco_epoch=' + format(epoch) + suffix_func(config) + '.img'
+            save_img(out_destand, net_outputs_path)
+            # Squeeze image by loading it
+            out_destand = fijii_np(net_outputs_path,shape=(PETImage_shape)) # loading DIP output
+            # Metrics for NN output
+            compute_metrics(PETImage_shape,out_destand,image_gt,epoch,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
+            # Saving (now DESTANDARDIZED) image output
+            save_img(out_destand, net_outputs_path)
+
         # Write images over epochs
         write_image_tensorboard(writer,out_destand,"Image over epochs (" + net + "output)",epoch) # Showing all images with same contrast to compare them together
         write_image_tensorboard(writer,out_destand,"Image over epochs (" + net + "output, FULL CONTRAST)",epoch,full_contrast=True) # Showing each image with contrast = 1
@@ -161,8 +191,8 @@ def post_reconstruction(config,root):
 Receiving variables from block 1 part and initializing variables
 """
 
-net = 'DD' # Network architecture
-processing_unit = 'GPU' # Processing unit (CPU or GPU)
+net = 'DIP' # Network architecture
+processing_unit = 'CPU' # Processing unit (CPU or GPU)
 
 if (net=='DIP'):
     # Configuration dictionnary for hyperparameters to tune
@@ -216,18 +246,18 @@ config = {
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([True])
 }
-'''
+#'''
 config = {
-    "lr" : tune.grid_search([0.001]),
-    "sub_iter_DIP" : tune.grid_search([200]),
-    "rho" : tune.grid_search([0.003]),
+    "lr" : tune.grid_search([0.0041]), # 0.01 for DIP, 0.001 for DD
+    "sub_iter_DIP" : tune.grid_search([500]), # 10 for DIP, 100 for DD
+    "rho" : tune.grid_search([0.0003]),
     "opti_DIP" : tune.grid_search(['Adam']),
-    "mlem_sequence" : tune.grid_search([None]), # None means we are in post reconstruction mode
-    "d_DD" : tune.grid_search([6]), # not below 6, otherwise 128 is too little as output size
+    "mlem_sequence" : tune.grid_search([False]),
+    "d_DD" : tune.grid_search([4]), # not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([False])
 }
-'''
+#'''
 
 if processing_unit == 'CPU':
     resources_per_trial = {"cpu": 1, "gpu": 0}

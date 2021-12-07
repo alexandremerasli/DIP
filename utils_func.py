@@ -79,8 +79,8 @@ def stand_imag(image_corrupt):
     image_corrupt_std = image_center / std
 
     #return norm_positive_imag(image_corrupt)
-    return norm_imag(image_corrupt)
-    return image_corrupt_std.detach(),mean,std
+    #return norm_imag(image_corrupt)
+    return image_corrupt_std,mean,std
 
 def destand_imag(image, mean, std):
     image_np = image.detach().numpy()
@@ -88,7 +88,7 @@ def destand_imag(image, mean, std):
 
 def destand_numpy_imag(image, mean, std):
     #return denorm_positive_imag(image, 0, std)
-    return denorm_imag(image, mean, std)
+    #return denorm_imag(image, mean, std)
     return image * std + mean
 
 def save_img(img,name):
@@ -320,8 +320,10 @@ def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, c
         #if (torch.cuda.device_count() > 1):
         #    accelerator = 'dp'
 
-    if (admm_it == 0):
+    if (admm_it == 0): # First ADMM iteration in block 1
         sub_iter_DIP = 1000 if net.startswith('DD') else 200
+    elif (admm_it == -1): # First ADMM iteration in block2 test post reconstruction
+        sub_iter_DIP = 1 if net.startswith('DD') else 1
 
     if (finetuning == 'False'): # Do not save and use checkpoints (still save hparams and event files for now ...)
         logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(test), name=name) # Store checkpoints in checkpoint_simple_path path
@@ -390,8 +392,8 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
     only_x = False # Freezing u and v computation, just updating x if True
     start_time_block1 = time.time()
     mlem_sequence = config['mlem_sequence']
-    nb_iter_second_admm = 10
-
+    nb_iter_second_admm = config["nb_iter_second_admm"]
+    
     # Save image f-mu in .img and .hdr format - block 1
     subroot_output_path = (subroot + 'Block1/' + suffix)
     path_before_eq_22 = (subroot_output_path + '/before_eq22/')
@@ -447,10 +449,10 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
         
     # Choose number of argmax iteration for (second) x computation
     if (mlem_sequence):
-        it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, too many subsets for 2D, but maybe ok for 3D
-        #it = ' -it 16:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, 2D
+        #it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, too many subsets for 2D, but maybe ok for 3D
+        it = ' -it 16:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, 2D
     else:
-        it = ' -it ' + str(sub_iter_MAP) + ':1' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
+        it = ' -it ' + str(sub_iter_MAP) + ':1' # Only 2 iterations (Gong) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
         #it = ' -it ' + '5:14' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
 
     # Second ADMM computation
@@ -463,7 +465,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
             elif (i >= 1):
                 initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
                 # Trying to initialize ADMMLim
-                initialimage = ' -img ' + subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
+                #initialimage = ' -img ' + subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
                 initialimage = ' -img ' + subroot + 'Data/initialization/' + '1_im_value_cropped.hdr'
                 if (only_x):
                     initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
