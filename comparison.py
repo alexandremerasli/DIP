@@ -6,14 +6,13 @@ from torch.utils.tensorboard import SummaryWriter
 # Useful
 import os
 import argparse
-import sys
 
 # Math
 import numpy as np
 import matplotlib.pyplot as plt
 
 # Local files to import
-from utils_func import * # subroot is defined here
+from utils_func import read_input_dim, input_dim_str_to_list, fijii_np, compute_metrics, write_image_tensorboard, subroot
 
 ## Arguments for linux command to launch script
 # Creating arguments
@@ -86,9 +85,9 @@ for i in range(max_iter):
         penalty = ''
         penaltyStrength = ''
     else:
-        opti = ' -opti ' + optimizer + ':' + subroot + 'Comparison/' + 'BSREM.conf'
+        opti = ' -opti ' + optimizer + ':' + subroot + 'Comparison/BSREM/' + 'BSREM.conf'
         conv = ''
-        penalty = ' -pnlt MRF:' + subroot + 'Comparison/' + 'MRF.conf'
+        penalty = ' -pnlt MRF:' + subroot + 'Comparison/BSREM/' + 'MRF.conf'
         penaltyStrength = ' -pnlt-beta ' + str(beta[i])
 
     output_path = ' -dout ' + subroot + 'Comparison/' + optimizer # Output path for CASTOR framework
@@ -101,6 +100,7 @@ for i in range(max_iter):
 
     os.system(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv + psf + ' -fov-out 95')
 
+    '''
     # load MLEM previously computed image 
     image_optimizer = fijii_np(subroot+'Comparison/' + optimizer + '/' + optimizer + '_it' + str(nb_iter) + '.img', shape=(PETImage_shape))
 
@@ -121,8 +121,10 @@ for i in range(max_iter):
         writer.flush()
         writer.add_figure('CRC in hot region vs IR in background', plt.gcf(),global_step=i,close=True)
         writer.close()
+    
+    '''
 
 import subprocess
 root = os.getcwd()
 test = 24
-successful_process = subprocess.call(["python3", root+"/show_castor_results.py", optimizer, str(nb_iter), str(test)]) # Showing results in tensorboard
+successful_process = subprocess.call(["python3", root+"/show_castor_results.py", optimizer, str(nb_iter), str(test),str("no suffix here")]) # Showing results in tensorboard

@@ -1,3 +1,6 @@
+# Pytorch
+from torch.utils.tensorboard import SummaryWriter
+
 # Useful
 from pathlib import Path
 import os
@@ -26,31 +29,55 @@ def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path,subdir,i,k
 if __name__ == "__main__":
 
     config = {
-    "rho" : 0.0003,
+    "rho" : 0.00003,
     "alpha" : 0.05, # Put alpha = 1 if True, otherwise too slow. alpha smaller if False
     "image_init_path_without_extension" : '1_im_value_cropped',
-    "nb_subsets" : 21,
-    "nb_iter_MAP" : 100,
-    "penalty" : 'MRF'
+    "nb_iter" : 200, # Number of outer iterations
+    #"penalty" : 'MRF'
+    "penalty" : 'DIP_ADMM'
     }
+
+    # Metrics arrays
+
+    beta = [0.0001,0.001,0.01,0.1,1,10]
+    beta = [0.01,0.03,0.05,0.07,0.09]
+    beta = [0.03,0.035,0.04,0.045,0.05]
+    beta = [0.04]
+
+    optimizer = 'ADMMLim'
+    nb_iter = config["nb_iter"]
+    max_iter = len(beta)
+
+    PSNR_recon = np.zeros(nb_iter)
+    PSNR_norm_recon = np.zeros(nb_iter)
+    MSE_recon = np.zeros(nb_iter)
+    MA_cold_recon = np.zeros(nb_iter)
+    CRC_hot_recon = np.zeros(nb_iter)
+    CRC_bkg_recon = np.zeros(nb_iter)
+    IR_bkg_recon = np.zeros(nb_iter)
+    bias_cold_recon = np.zeros(nb_iter)
+    bias_hot_recon = np.zeros(nb_iter)
+
+    writer = SummaryWriter()
 
     ## Arguments for linux command to launch script
     # Creating arguments
     parser = argparse.ArgumentParser(description='ADMM from Lim et al. computation')
-    parser.add_argument('--max_iter', type=int, dest='max_iter', help='number of outer iterations')
+    parser.add_argument('--nb_iter_x', type=int, dest='nb_iter_x', help='number of x iterations')
  
     # Retrieving arguments in this python script
     args = parser.parse_args()
 
     # For VS Code (without command line)
-    if (args.max_iter is None): # Must check if all args are None
-        args.max_iter = '10'
+    if (args.nb_iter_x is None): # Must check if all args are None
+        args.nb_iter_x = '1' # Lim et al. does only 1 iteration
+        args.nb_subsets = '1' # Lim et al. does not use subsets, so put number of subsets to 1
 
     # Variables from config dictionnary
     image_init_path_without_extension = config["image_init_path_without_extension"] # Path to initial image for CASToR ADMM reconstruction
     rho = config["rho"] # Penalty strength
     alpha = config["alpha"] # ADMM parameter
-    it = ' -it ' + str(args.max_iter) + ':' + str(config["nb_subsets"])
+    it = ' -it ' + str(args.nb_iter_x) + ':' + str(args.nb_subsets)
     penalty = ' -pnlt ' + config["penalty"]
     only_x = False # Freezing u and v computation, just updating x if True
 
@@ -72,6 +99,9 @@ if __name__ == "__main__":
     # Define PET input dimensions according to input data dimensions
     PETImage_shape_str = utils_func.read_input_dim(subroot+'Data/castor_output_it60.hdr')
     PETImage_shape = utils_func.input_dim_str_to_list(PETImage_shape_str)
+
+    #Loading Ground Truth image to compute metrics
+    image_gt = utils_func.fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape))
 
     # Initialize u^0 (u^-1 in CASToR)
     copy(subroot + 'Data/initialization/0_sino_value.hdr', full_output_path_k_next + '_u.hdr')
@@ -95,7 +125,7 @@ if __name__ == "__main__":
 
     # Compute one ADMM iteration (x, v, u)
     print('xxxxxxxxxxxxxxxxxxxxx')
-    for k in range(-1,config["nb_iter_MAP"]):
+    for k in range(-1,config["nb_iter"]):
         # Initialize variables for command line
         if (k == -1):
             if (i == 0):   # choose initial image for CASToR reconstruction
@@ -113,3 +143,31 @@ if __name__ == "__main__":
         # Compute one ADMM iteration (x, v, u)
         x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
         compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k,only_x,subroot,subroot_output_path)
+
+    '''
+    # load MLEM previously computed image 
+    image_optimizer = utils_func.fijii_np(subroot+'Comparison/' + optimizer + '/' + optimizer + '_it' + str(nb_iter) + '.img', shape=(PETImage_shape))
+
+
+    # compute metrics varying beta (if BSREM)
+    utils_func.compute_metrics(PETImage_shape,image_optimizer,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
+
+    # write image varying beta (if BSREM)
+    utils_func.write_image_tensorboard(writer,image_optimizer,"Final image computed with " + optimizer,i) # image in tensorboard
+
+    # Display CRC vs STD curve in tensorboard
+    if (i>nb_iter - min(nb_iter,10)):
+        # Creating matplotlib figure
+        plt.plot(IR_bkg_recon,CRC_hot_recon,linestyle='None',marker='x')
+        plt.xlabel('IR')
+        plt.ylabel('CRC')
+        # Adding this figure to tensorboard
+        writer.flush()
+        writer.add_figure('CRC in hot region vs IR in background', plt.gcf(),global_step=i,close=True)
+        writer.close()
+    '''
+
+    import subprocess
+    root = os.getcwd()
+    test = 24
+    successful_process = subprocess.call(["python3", root+"/show_castor_results.py", optimizer, str(nb_iter), str(test),suffix]) # Showing results in tensorboard

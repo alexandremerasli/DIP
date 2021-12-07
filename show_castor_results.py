@@ -21,10 +21,11 @@ import numpy as np
 # Local files to import
 from utils_func import *
 
-if (len(sys.argv) - 1 == 3):
+if (len(sys.argv) - 1 == 4):
     opti = sys.argv[1] # CASToR optimizer
     max_iter = int(sys.argv[2]) # Number of outer iterations
     test = int(sys.argv[3]) # Label of the experiment
+    suffix = sys.argv[4] # Suffix containing hyperparameters configuration (for ADMMLim)
 else:
     ## Arguments for linux command to launch script
     # Creating arguments
@@ -40,7 +41,7 @@ else:
         max_iter = int(args.max_iter)
         test = int(args.test)
     else: # For VS Code (without command line)
-        opti = 'BSREM' # CASToR optimizer
+        opti = 'ADMMLim' # CASToR optimizer
         max_iter = 10 # Optimizer number of iterations
         test = 24
 
@@ -69,7 +70,10 @@ image_gt = fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape
 
 for i in range(1,max_iter):
     print(i)
-    f = fijii_np(subroot+'Comparison/' + opti + '/' + opti + '_it' + format(i) + '.img',shape=(PETImage_shape)) # loading optimizer output
+    if (opti == 'ADMMLim'):
+        f = fijii_np(subroot+'Comparison/' + opti + '/' + suffix + '/ADMM/0_' + format(i) + '_it1'  + '.img',shape=(PETImage_shape)) # loading optimizer output
+    else:
+        f = fijii_np(subroot+'Comparison/' + opti + '/' + opti + '_it' + format(i) + '.img',shape=(PETImage_shape)) # loading optimizer output
 
     # Metrics for NN output
     compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
