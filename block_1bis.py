@@ -91,6 +91,7 @@ def admm_loop(config, args, root):
     alpha = config["alpha"]
     sub_iter_MAP = config["sub_iter_MAP"]
     net = config["net"]
+    scaling_input = config["scaling"]
     np.save(subroot + 'Config/config' + suffix + '.npy', config) # Save this configuration of hyperparameters, and reload it at the beginning of block 2 thanks to suffix (passed in subprocess call argumentsZ)
 
     """
@@ -127,7 +128,7 @@ def admm_loop(config, args, root):
     # Loading DIP input (we do not have CT-map, so random image created in block 1)
     image_net_input = load_input(net,PETImage_shape,config) # Normalization of DIP input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1
     # image_net_input_norm, maxe_input = norm_imag(image_net_input) # Normalization of DIP input
-    image_net_input_norm,mean_im,std_im = stand_imag(image_net_input) # Standardization of DIP input
+    image_net_input_norm,mean_im,std_im = rescale_imag(image_net_input,scaling_input) # Rescale of DIP input
     # DIP input image, numpy --> torch
     image_net_input_torch = torch.Tensor(image_net_input_norm)
     # Adding dimensions to fit network architecture
@@ -164,9 +165,9 @@ def admm_loop(config, args, root):
         
         # Define command line to run ADMM with CASToR
         if (i==0): # For first iteration, put rho to zero
-            castor_command_line_x = castor_admm_command_line(PETImage_shape_str, alpha, 0, suffix)
+            castor_command_line_x = castor_admm_command_line(PETImage_shape_str, alpha, 0)
         else:
-            castor_command_line_x = castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix)
+            castor_command_line_x = castor_admm_command_line(PETImage_shape_str, alpha, rho)
         
         # Reconstruction with CASToR (first equation of ADMM)
         x_label = castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension) # without ADMMLim file
@@ -263,9 +264,9 @@ def admm_loop(config, args, root):
         image_net_input_torch = torch.load(subroot + 'Data/initialization/image_net_input_torch.pt') # DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1. JUST LOAD IT FROM BLOCK 1
 
         for i in range(n_posterior_samples):
-            # Generate one destandardized NN output
-            out_destand = generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finetuning, max_iter, test, suffix, subroot)
-            list_samples.append(np.squeeze(out_destand))
+            # Generate one descaled NN output
+            out_descale = generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finetuning, max_iter, test, suffix, subroot)
+            list_samples.append(np.squeeze(out_descale))
             
         for i in range(n_posterior_samples):
             x_avg += list_samples[i] / n_posterior_samples
@@ -305,7 +306,8 @@ config = {
     "mlem_sequence" : tune.grid_search([False]),
     "d_DD" : tune.grid_search([4]), # not below 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
-    "skip_connections" : tune.grid_search([False])
+    "skip_connections" : tune.grid_search([False]),
+    "scaling" : tune.grid_search(['standardization','normalization','nothing'])
 }
 #'''
 config = {
@@ -320,7 +322,8 @@ config = {
     "mlem_sequence" : tune.grid_search([False]),
     "d_DD" : tune.grid_search([4]), # not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
-    "skip_connections" : tune.grid_search([True])
+    "skip_connections" : tune.grid_search([1]),
+    "scaling" : tune.grid_search(['standardization'])
 }
 #'''
 

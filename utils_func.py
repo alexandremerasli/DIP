@@ -35,14 +35,7 @@ def fijii_np(path,shape,type='<f'):
     image = data.reshape(shape)
     return image
 
-'''
-def norm_imag(image_corrupt):
-    """ Normalization of the 3D input - output [0..1] and the normalization value for each slide"""
-    image_corrupt_norm = np.zeros((image_corrupt.shape[0],image_corrupt.shape[1]), dtype=np.float32)
-    maxi=np.amax(image_corrupt)
-    image_corrupt_norm = image_corrupt / maxi
-    return image_corrupt_norm,maxi
-'''
+
 def norm_imag(img):
     """ Normalization of the 3D input - output [0..1] and the normalization value for each slide"""
     if (np.max(img) - np.min(img)) != 0:
@@ -50,12 +43,17 @@ def norm_imag(img):
     else:
         return img, np.min(img), np.max(img)
 
-def denorm_imag(img, mini, maxi):
-    """ Normalization of the 3D input - output [0..1] and the normalization value for each slide"""
+def denorm_imag(image, mini, maxi):
+    """ Denormalization of the 3D input - output [0..1] and the normalization value for each slide"""
+    image_np = image.detach().numpy()
+    return denorm_numpy_imag(image_np, mini, maxi)
+
+def denorm_numpy_imag(img, mini, maxi):
     if (maxi - mini) != 0:
         return img * (maxi - mini) + mini
     else:
         return img
+
 
 def norm_positive_imag(img):
     """ Normalization of the 3D input - output [0..1] and the normalization value for each slide"""
@@ -64,22 +62,24 @@ def norm_positive_imag(img):
     else:
         return img, 0, np.max(img)
 
-def denorm_positive_imag(img, mini, maxi):
+def denorm_positive_imag(image, mini, maxi):
     """ Normalization of the 3D input - output [0..1] and the normalization value for each slide"""
+    image_np = image.detach().numpy()
+    return denorm_numpy_imag(image_np, mini, maxi)
+
+def denorm_positive_numpy_imag(img, mini, maxi):
     if (maxi - mini) != 0:
         return img * maxi 
     else:
         return img
 
+
 def stand_imag(image_corrupt):
-    """ Normalization of the 3D input - output with mean 0 and std 1 for each slide"""
+    """ Standardization of the 3D input - output with mean 0 and std 1 for each slide"""
     mean=np.mean(image_corrupt)
     std=np.std(image_corrupt)
     image_center = image_corrupt - mean
     image_corrupt_std = image_center / std
-
-    #return norm_positive_imag(image_corrupt)
-    #return norm_imag(image_corrupt)
     return image_corrupt_std,mean,std
 
 def destand_imag(image, mean, std):
@@ -87,9 +87,33 @@ def destand_imag(image, mean, std):
     return destand_numpy_imag(image_np, mean, std)
 
 def destand_numpy_imag(image, mean, std):
-    #return denorm_positive_imag(image, 0, std)
-    #return denorm_imag(image, mean, std)
     return image * std + mean
+
+
+
+
+def rescale_imag(image_corrupt, scaling='standardization'):
+    """ Normalization of the 3D input - output with mean 0 and std 1 for each slide"""
+    if (scaling == 'standardization'):
+        return stand_imag(image_corrupt)
+    elif (scaling == 'normalization'):
+        return norm_positive_imag(image_corrupt)
+    elif (scaling == 'positive_normalization'):
+        return norm_imag(image_corrupt)
+    else: # No scaling required
+        return image_corrupt
+
+def descale_imag(image, param_scale1, param_scale2, scaling='standardization'):
+    if (scaling == 'standardization'):
+        return destand_imag(image, param_scale1, param_scale2)
+    elif (scaling == 'normalization'):
+        return denorm_imag(image, param_scale1, param_scale2)
+    elif (scaling == 'positive_normalization'):
+        return denorm_positive_imag(image, param_scale1, param_scale2)
+    else: # No scaling required
+        return image
+
+
 
 def save_img(img,name):
     fp=open(name,'wb')
@@ -384,8 +408,8 @@ def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finet
     #image_corrupt_norm_scale, mini, maxe = norm_imag(image_corrupt)
     image_corrupt_norm,mean_label,std_label= stand_imag(image_corrupt)
 
-    # Destandardize like at the beginning and add it to list of samples
-    out_destand = destand_imag(out, mean_label, std_label)
+    # Reverse scaling like at the beginning and add it to list of samples
+    out_destand = descale_imag(out, mean_label, std_label, config["scaling"])
     return out_destand
 
 def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
@@ -433,7 +457,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
     # Compute one ADMM iteration (x, v, u) when only initializing x
     x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty #+ u_for_additional_data + v_for_additional_data # we need f-mu so that ADMM optimizer works, even if we will not use it...
     print('vvvvvvvvvvv0000000000')
-    ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,only_x,subroot,subroot_output_path)
+    ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,only_x,subroot_output_path)
 
     '''
     successful_process = subprocess.call(["python3", root+"/ADMMLim.py", str(i), castor_command_line_x, subroot, str(sub_iter_MAP), str(test), suffix, PETImage_shape_str, image_init_path_without_extension, net])
@@ -488,7 +512,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
 
         # Compute one ADMM iteration (x, v, u)
         x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage
-        ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,only_x,subroot,subroot_output_path=subroot_output_path)
+        ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,only_x,subroot_output_path=subroot_output_path)
 
     print("--- %s seconds - second ADMM (CASToR) iteration ---" % (time.time() - start_time_block1))
 
@@ -510,7 +534,7 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
 
     return x_label
 
-def castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix, only_Lim=False, pnlt=''):
+def castor_admm_command_line(PETImage_shape_str, alpha, rho, only_Lim=False, pnlt=''):
     # castor-recon command line
     header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
 
@@ -530,7 +554,7 @@ def castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix, only_Lim=Fa
     opti_like = ' -opti-fom'
     opti_like = ''
 
-    castor_command_line_x = executable + dim + vox + header_file + vb + th + proj + opti_like + pnlt + pnlt_beta + opti # opti must be the last one to be able to change suffix_extended in for loop in ADMM
+    castor_command_line_x = executable + dim + vox + header_file + vb + th + proj + opti + opti_like + pnlt + pnlt_beta
     return castor_command_line_x
 
 # Do not run code if utils_func.py functions are imported in an other file

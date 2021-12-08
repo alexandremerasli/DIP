@@ -51,6 +51,7 @@ config = np.load(subroot + 'Config/config' + suffix + '.npy',allow_pickle='TRUE'
 sub_iter_DIP = config["sub_iter_DIP"]
 # rho = config["rho"]
 # opti_DIP = config["opti_DIP"]
+scaling_input = config["scaling"]
 
 # Defining PET input dimensions
 PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
@@ -63,7 +64,7 @@ image_net_input_torch = torch.load(subroot + 'Data/initialization/image_net_inpu
 image_corrupt = fijii_np(subroot+'Block2/x_label/' + format(test)+'/'+ format(admm_it) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
 # Normalization of x_label image
 # image_corrupt_norm_scale, maxe = norm_imag(image_corrupt) # Normalization of x_label image
-image_corrupt_norm,mean_label,std_label= stand_imag(image_corrupt) # Standardization of x_label image
+image_corrupt_norm,mean_label,std_label= rescale_imag(image_corrupt) # Scaling of x_label image
 
 ## Transforming numpy variables to torch tensors
 
@@ -152,7 +153,7 @@ else:
     out = model(image_net_input_torch)
 
 # Destandardize like at the beginning
-out_destand = destand_imag(out, mean_label, std_label)
+out_destand = descale_imag(out, mean_label, std_label, scaling_input)
 # Saving image output
 save_img(out_destand, subroot+'Block2/out_cnn/' + format(test) + '/out_' + net + '' + format(admm_it) + suffix + '.img')
 
