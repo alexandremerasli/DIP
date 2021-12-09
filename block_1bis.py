@@ -33,7 +33,6 @@ from ray import tune
 # Math
 import numpy as np
 import matplotlib.pyplot as plt
-from skimage.restoration import denoise_bilateral
 
 # Local files to import
 from utils_func import *
@@ -124,10 +123,9 @@ def admm_loop(config, args, root):
     ## Loading images (NN input, first DIP output, GT)
     # Loading DIP input
     # Creating random image input for DIP while we do not have CT, but need to be removed after
-    create_random_input(net,PETImage_shape,config) # to be removed when CT will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
+    create_input(net,PETImage_shape,config) # to be removed when CT will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
     # Loading DIP input (we do not have CT-map, so random image created in block 1)
-    image_net_input = load_input(net,PETImage_shape,config) # Normalization of DIP input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1
-    # image_net_input_norm, maxe_input = norm_imag(image_net_input) # Normalization of DIP input
+    image_net_input = load_input(net,PETImage_shape,config) # Normalization of DIP input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
     image_net_input_norm,mean_im,std_im = rescale_imag(image_net_input,scaling_input) # Rescale of DIP input
     # DIP input image, numpy --> torch
     image_net_input_torch = torch.Tensor(image_net_input_norm)
@@ -175,8 +173,8 @@ def admm_loop(config, args, root):
         # Write image over ADMM iterations
         if ((max_iter>=10) and (i%(max_iter // 10) == 0) or True):
 
-            write_image_tensorboard(writer,x_label,"Corrupted image (x_label) over ADMM iterations",i) # Showing all corrupted images with same contrast to compare them together
-            write_image_tensorboard(writer,x_label,"Corrupted image (x_label) over ADMM iterations (FULL CONTRAST)",i,full_contrast=True) # Showing each corrupted image with contrast = 1
+            write_image_tensorboard(writer,x_label,"Corrupted image (x_label) over ADMM iterations",suffix,i) # Showing all corrupted images with same contrast to compare them together
+            write_image_tensorboard(writer,x_label,"Corrupted image (x_label) over ADMM iterations (FULL CONTRAST)",suffix,i,full_contrast=True) # Showing each corrupted image with contrast = 1
         
         # Block 2 - CNN - 10 iterations
         start_time_block2= time.time()
@@ -186,13 +184,6 @@ def admm_loop(config, args, root):
         print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
         f = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
 
-
-
-        # Bilateral filter
-        f_norm, maxi, mini = norm_imag(f)
-        im_bilateral = denoise_bilateral(f_norm, sigma_color=0.05, sigma_spatial=15)
-
-
         # Metrics for NN output
         compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
 
@@ -200,14 +191,13 @@ def admm_loop(config, args, root):
         mu = x_label- f
         save_img(mu,subroot+'Block2/mu/'+ format(test)+'/mu_' + format(i) + suffix + '.img') # saving mu
 
-        write_image_tensorboard(writer,mu,"mu(FULL CONTRAST)",i,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
+        write_image_tensorboard(writer,mu,"mu(FULL CONTRAST)",suffix,i,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
         print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))
 
         # Write image over ADMM iterations
         if ((max_iter>=10) and (i%(max_iter // 10) == 0) or (max_iter<10)):
-            write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",i) # Showing all images with same contrast to compare them together
-            write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output, FULL CONTRAST)",i,full_contrast=True) # Showing each image with contrast = 1
-            write_image_tensorboard(writer,im_bilateral,"Bilateral over ADMM iterations (" + net + "output, FULL CONTRAST)",i,full_contrast=True) # Showing each image with contrast = 1
+            write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",suffix,i) # Showing all images with same contrast to compare them together
+            write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output, FULL CONTRAST)",suffix,i,full_contrast=True) # Showing each image with contrast = 1
         
         # Display CRC vs STD curve in tensorboard
         if (i>max_iter - min(max_iter,10)):
@@ -276,14 +266,14 @@ def admm_loop(config, args, root):
         compute_metrics(x_avg,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,write_tensorboard=False)
 
     # Display images in tensorboard
-    write_image_tensorboard(writer,f_init,"initialization of DIP output (f_0)") # initialization of DIP output in tensorboard
+    write_image_tensorboard(writer,f_init,"initialization of DIP output (f_0)",suffix) # initialization of DIP output in tensorboard
     #write_image_tensorboard(writer,image_init,"initialization of CASToR MAP reconstruction (x_0)") # initialization of CASToR MAP reconstruction in tensorboard
     write_image_tensorboard(writer,image_net_input,"DIP input") # DIP input in tensorboard
     write_image_tensorboard(writer,image_gt,"Ground Truth") # Ground truth image in tensorboard
 
     if (net == 'DIP_VAE'):
-        write_image_tensorboard(writer,x_avg,"Final averaged image (average over DIP outputs)") # Final averaged image in tensorboard
-        write_image_tensorboard(writer,x_var,"Uncertainty image (VARIANCE over DIP outputs)") # Uncertainty image in tensorboard
+        write_image_tensorboard(writer,x_avg,"Final averaged image (average over DIP outputs)",suffix) # Final averaged image in tensorboard
+        write_image_tensorboard(writer,x_var,"Uncertainty image (VARIANCE over DIP outputs)",suffix) # Uncertainty image in tensorboard
 
 # Configuration dictionnary for hyperparameters to tune
 config = {
@@ -307,7 +297,8 @@ config = {
     "d_DD" : tune.grid_search([4]), # not below 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([False]),
-    "scaling" : tune.grid_search(['standardization','normalization','nothing'])
+    "scaling" : tune.grid_search(['standardization','normalization','nothing']),
+    "input" : tune.grid_search(['random'])
 }
 #'''
 config = {
@@ -322,8 +313,9 @@ config = {
     "mlem_sequence" : tune.grid_search([False]),
     "d_DD" : tune.grid_search([4]), # not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
-    "skip_connections" : tune.grid_search([1]),
-    "scaling" : tune.grid_search(['standardization'])
+    "skip_connections" : tune.grid_search([0,1,2,3]),
+    "scaling" : tune.grid_search(['standardization']),
+    "input" : tune.grid_search(['CT'])
 }
 #'''
 

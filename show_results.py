@@ -64,18 +64,18 @@ for i in range(max_iter):
     f = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
 
     # Metrics for NN output
-    compute_metrics(f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
+    compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
 
     # Display images in tensorboard
-    #write_image_tensorboard(writer,image_init,"initialization of DIP output") # DIP input in tensorboard
-    #write_image_tensorboard(writer,image_net_input,"DIP input") # Initialization of DIP output in tensorboard
-    write_image_tensorboard(writer,image_gt,"Ground Truth") # Ground truth image in tensorboard
+    #write_image_tensorboard(writer,image_init,"initialization of DIP output",suffix) # DIP input in tensorboard
+    #write_image_tensorboard(writer,image_net_input,"DIP input",suffix) # Initialization of DIP output in tensorboard
+    write_image_tensorboard(writer,image_gt,"Ground Truth",suffix) # Ground truth image in tensorboard
 
     # Write image over ADMM iterations
     if ((max_iter>=10) and (i%(max_iter // 10) == 0)):
 
-        write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",i) # Showing all images with same contrast to compare them together
-        write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output, FULL CONTRAST)",i,full_contrast=True) # Showing each image with contrast = 1
+        write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",suffix,i) # Showing all images with same contrast to compare them together
+        write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output, FULL CONTRAST)",suffix,i,full_contrast=True) # Showing each image with contrast = 1
     
 
 writer.close()

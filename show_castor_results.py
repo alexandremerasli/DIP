@@ -41,9 +41,12 @@ else:
         max_iter = int(args.max_iter)
         test = int(args.test)
     else: # For VS Code (without command line)
-        opti = 'ADMMLim' # CASToR optimizer
-        max_iter = 10 # Optimizer number of iterations
+        opti = 'BSREM' # CASToR optimizer
+        max_iter = 30 # Optimizer number of iterations
         test = 24
+
+if (opti != 'ADMMLim'):
+    suffix = ""
 
 # Useful variables
 root=os.getcwd() # We do not use raytune, so it is local directory
@@ -79,15 +82,15 @@ for i in range(1,max_iter):
     compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
 
     # Display images in tensorboard
-    #write_image_tensorboard(writer,image_init,"initialization of DIP output") # DIP input in tensorboard
-    #write_image_tensorboard(writer,image_net_input,"DIP input") # Initialization of DIP output in tensorboard
-    write_image_tensorboard(writer,image_gt,"Ground Truth") # Ground truth image in tensorboard
+    #write_image_tensorboard(writer,image_init,"initialization of DIP output",suffix) # DIP input in tensorboard
+    #write_image_tensorboard(writer,image_net_input,"DIP input",suffix) # Initialization of DIP output in tensorboard
+    write_image_tensorboard(writer,image_gt,"Ground Truth",suffix) # Ground truth image in tensorboard
 
     # Write image over ADMM iterations
     if ((max_iter>=10) and (i%(max_iter // 10) == 0)):
 
-        write_image_tensorboard(writer,f,"Image over " + opti + " iterations",i) # Showing all images with same contrast to compare them together
-        write_image_tensorboard(writer,f,"Image over " + opti + " iterations (FULL CONTRAST)",i,full_contrast=True) # Showing each image with contrast = 1
+        write_image_tensorboard(writer,f,"Image over " + opti + " iterations",suffix,i) # Showing all images with same contrast to compare them together
+        write_image_tensorboard(writer,f,"Image over " + opti + " iterations (FULL CONTRAST)",suffix,i,full_contrast=True) # Showing each image with contrast = 1
     
 
 writer.close()

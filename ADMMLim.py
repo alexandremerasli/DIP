@@ -1,6 +1,3 @@
-# Pytorch
-from torch.utils.tensorboard import SummaryWriter
-
 # Useful
 from pathlib import Path
 import os
@@ -11,7 +8,7 @@ import argparse
 # Local files to import
 import utils_func
 
-def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path,subdir,i,k,only_x,subroot,subroot_output_path):
+def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path,subdir,i,k,only_x,subroot_output_path):
     # Compute x,u,v
     os.system(x_reconstruction_command_line)
     # Write x hdr file
@@ -29,12 +26,12 @@ def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path,subdir,i,k
 if __name__ == "__main__":
 
     config = {
-    "rho" : 0.00003,
-    "alpha" : 0.05, # Put alpha = 1 if True, otherwise too slow. alpha smaller if False
+    "rho" : 0.05,
+    "alpha" : 0.005, # Put alpha = 1 if True, otherwise too slow. alpha smaller if False
     "image_init_path_without_extension" : '1_im_value_cropped',
-    "nb_iter" : 200, # Number of outer iterations
-    #"penalty" : 'MRF'
-    "penalty" : 'DIP_ADMM'
+    "nb_iter" : 10, # Number of outer iterations
+    "penalty" : 'MRF'
+    #"penalty" : 'DIP_ADMM'
     }
 
     # Metrics arrays
@@ -58,8 +55,6 @@ if __name__ == "__main__":
     bias_cold_recon = np.zeros(nb_iter)
     bias_hot_recon = np.zeros(nb_iter)
 
-    writer = SummaryWriter()
-
     ## Arguments for linux command to launch script
     # Creating arguments
     parser = argparse.ArgumentParser(description='ADMM from Lim et al. computation')
@@ -70,16 +65,8 @@ if __name__ == "__main__":
 
     # For VS Code (without command line)
     if (args.nb_iter_x is None): # Must check if all args are None
-        args.nb_iter_x = '1' # Lim et al. does only 1 iteration
+        args.nb_iter_x = '10' # Lim et al. does only 1 iteration
         args.nb_subsets = '1' # Lim et al. does not use subsets, so put number of subsets to 1
-
-    # Variables from config dictionnary
-    image_init_path_without_extension = config["image_init_path_without_extension"] # Path to initial image for CASToR ADMM reconstruction
-    rho = config["rho"] # Penalty strength
-    alpha = config["alpha"] # ADMM parameter
-    it = ' -it ' + str(args.nb_iter_x) + ':' + str(args.nb_subsets)
-    penalty = ' -pnlt ' + config["penalty"]
-    only_x = False # Freezing u and v computation, just updating x if True
 
     # Path variables
     root = os.getcwd() # Directory root
@@ -92,6 +79,16 @@ if __name__ == "__main__":
     subdir = 'ADMM'
     Path(subroot+'Comparison/ADMMLim/').mkdir(parents=True, exist_ok=True) # CASTor path
     Path(subroot+'Comparison/ADMMLim/' + suffix + '/ADMM').mkdir(parents=True, exist_ok=True) # CASToR path
+
+    # Variables from config dictionnary
+    image_init_path_without_extension = config["image_init_path_without_extension"] # Path to initial image for CASToR ADMM reconstruction
+    rho = config["rho"] # Penalty strength
+    alpha = config["alpha"] # ADMM parameter
+    it = ' -it ' + str(args.nb_iter_x) + ':' + str(args.nb_subsets)
+    penalty = ' -pnlt ' + config["penalty"]
+    #if config["penalty"] == "MRF":
+    #    penalty += ':' + subroot + 'Comparison/BSREM/' + 'MRF.conf'
+    only_x = False # Freezing u and v computation, just updating x if True
 
     # Save this configuration of hyperparameters, and reload with suffix
     np.save(subroot + 'Config/config' + suffix + '.npy', config)
@@ -108,7 +105,7 @@ if __name__ == "__main__":
     utils_func.write_hdr([i,-1],subdir,'u',subroot_output_path,matrix_type='sino')
 
     # Define command line to run ADMM with CASToR, to compute v^0
-    castor_command_line_x = utils_func.castor_admm_command_line(PETImage_shape_str, alpha, rho, suffix ,True, penalty)
+    castor_command_line_x = utils_func.castor_admm_command_line(PETImage_shape_str, alpha, rho ,True, penalty)
     initialimage = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
     f_mu_for_penalty = ' -multimodal ' + subroot + 'Data/initialization/BSREM_it30_REF_cropped.hdr'
     x_for_init_v = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
@@ -120,7 +117,7 @@ if __name__ == "__main__":
         copy(subroot + 'Data/initialization/0_sino_value.hdr', subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(-1) + '_u.img')
     x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
     print('vvvvvvvvvvv0000000000')
-    compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k-1,only_x,subroot,subroot_output_path)
+    compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k-1,only_x,subroot_output_path)
     utils_func.write_hdr([i,k+1],'ADMM','v',subroot_output_path,matrix_type='sino')
 
     # Compute one ADMM iteration (x, v, u)
@@ -142,30 +139,7 @@ if __name__ == "__main__":
 
         # Compute one ADMM iteration (x, v, u)
         x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
-        compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k,only_x,subroot,subroot_output_path)
-
-    '''
-    # load MLEM previously computed image 
-    image_optimizer = utils_func.fijii_np(subroot+'Comparison/' + optimizer + '/' + optimizer + '_it' + str(nb_iter) + '.img', shape=(PETImage_shape))
-
-
-    # compute metrics varying beta (if BSREM)
-    utils_func.compute_metrics(PETImage_shape,image_optimizer,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
-
-    # write image varying beta (if BSREM)
-    utils_func.write_image_tensorboard(writer,image_optimizer,"Final image computed with " + optimizer,i) # image in tensorboard
-
-    # Display CRC vs STD curve in tensorboard
-    if (i>nb_iter - min(nb_iter,10)):
-        # Creating matplotlib figure
-        plt.plot(IR_bkg_recon,CRC_hot_recon,linestyle='None',marker='x')
-        plt.xlabel('IR')
-        plt.ylabel('CRC')
-        # Adding this figure to tensorboard
-        writer.flush()
-        writer.add_figure('CRC in hot region vs IR in background', plt.gcf(),global_step=i,close=True)
-        writer.close()
-    '''
+        compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k,only_x,subroot_output_path)
 
     import subprocess
     root = os.getcwd()

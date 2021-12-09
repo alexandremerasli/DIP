@@ -70,12 +70,11 @@ def post_reconstruction(config,root):
     #Loading Ground Truth image to compute metrics
     image_gt = fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape))
 
-
     ## Loading RAW stack of images
     # Loading DIP input (we do not have CT-map, so random image created in block 1)
     # Creating random image input for DIP while we do not have CT, but need to be removed after
-    create_random_input(net,PETImage_shape,config) # to be removed when CT will be used instead of random input. Here we CAN create random input as this script is only run once
-    image_net_input = load_input(net,PETImage_shape,config) # Normalization of DIP input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1
+    create_input(net,PETImage_shape,config) # to be removed when CT will be used instead of random input. Here we CAN create random input as this script is only run once
+    image_net_input = load_input(net,PETImage_shape,config) # Normalization of DIP input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1   
     # image_net_input_norm, maxe_input = norm_imag(image_net_input) # Normalization of DIP input
     image_net_input_norm,mean_im,std_im = rescale_imag(image_net_input,scaling_input) # Scaling of DIP input
     # DIP input image, numpy --> torch
@@ -136,7 +135,6 @@ def post_reconstruction(config,root):
 
     # Initializing first output
     os.system('rm -rf ' + subroot+'Block2/checkpoint/'+format(test)  + '/' + suffix_func(config) + '/' + '/last.ckpt') # Otherwise, pl will use checkpoint from other run
-    #sys.exit()
     model = train_process(config, finetuning, processing_unit, 1, -1, image_net_input_torch, image_corrupt_torch) # Not useful to make iterations, we just want to initialize writer. admm_it must be set to -1, otherwise seeking for a checkpoint file...
     # Saving variables
     if (net == 'DIP_VAE'):
@@ -151,11 +149,10 @@ def post_reconstruction(config,root):
     save_img(out_descale, net_outputs_path)
     # Squeeze image by loading it
     out_descale = fijii_np(net_outputs_path,shape=(PETImage_shape)) # loading DIP output
-    
     writer = model.logger.experiment # Assess to new variable, otherwise error : weakly-referenced object ...
-    write_image_tensorboard(writer,image_corrupt,"Corrupted image to fit") # Showing corrupted image
+    write_image_tensorboard(writer,image_corrupt,"Corrupted image to fit",suffix_func(config)) # Showing corrupted image
     for epoch in range(0,sub_iter_DIP,sub_iter_DIP//10):      
-        write_image_tensorboard(writer,image_net_input,"DIP input (FULL CONTRAST)",epoch,full_contrast=True) # DIP input in tensorboard
+        write_image_tensorboard(writer,image_net_input,"DIP input (FULL CONTRAST)",suffix_func(config),epoch,full_contrast=True) # DIP input in tensorboard
 
         if (epoch > 0):
             # Train model using previously trained network (at iteration before)
@@ -180,8 +177,8 @@ def post_reconstruction(config,root):
             save_img(out_descale, net_outputs_path)
 
         # Write images over epochs
-        write_image_tensorboard(writer,out_descale,"Image over epochs (" + net + "output)",epoch) # Showing all images with same contrast to compare them together
-        write_image_tensorboard(writer,out_descale,"Image over epochs (" + net + "output, FULL CONTRAST)",epoch,full_contrast=True) # Showing each image with contrast = 1
+        write_image_tensorboard(writer,out_descale,"Image over epochs (" + net + "output)",suffix_func(config),epoch) # Showing all images with same contrast to compare them together
+        write_image_tensorboard(writer,out_descale,"Image over epochs (" + net + "output, FULL CONTRAST)",suffix_func(config),epoch,full_contrast=True) # Showing each image with contrast = 1
         writer.close()
 
     print('Finish')
@@ -243,18 +240,22 @@ config = {
     "mlem_sequence" : tune.grid_search([None]), # None means post reconstruction mode
     "d_DD" : tune.grid_search([6]), # not below 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
-    "skip_connections" : tune.grid_search([True])
+    "skip_connections" : tune.grid_search([True]),
+    "scaling" : tune.grid_search(['standardization']),
+    "input" : tune.grid_search(['random','CT','uniform'])
 }
 #'''
 config = {
     "lr" : tune.grid_search([0.0041]), # 0.01 for DIP, 0.001 for DD
-    "sub_iter_DIP" : tune.grid_search([200]), # 10 for DIP, 100 for DD
+    "sub_iter_DIP" : tune.grid_search([10]), # 10 for DIP, 100 for DD
     "rho" : tune.grid_search([0.0003]),
     "opti_DIP" : tune.grid_search(['Adam']),
     "mlem_sequence" : tune.grid_search([False]),
     "d_DD" : tune.grid_search([4]), # not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
-    "skip_connections" : tune.grid_search([0,1,2,3])
+    "skip_connections" : tune.grid_search([1]),
+    "scaling" : tune.grid_search(['standardization']),
+    "input" : tune.grid_search(['CT'])
 }
 #'''
 

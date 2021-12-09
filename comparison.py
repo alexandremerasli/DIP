@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Local files to import
-from utils_func import read_input_dim, input_dim_str_to_list, fijii_np, compute_metrics, write_image_tensorboard, subroot
+from utils_func import read_input_dim, input_dim_str_to_list, fijii_np, subroot
 
 ## Arguments for linux command to launch script
 # Creating arguments
@@ -99,30 +99,6 @@ for i in range(max_iter):
     opti_like = ' -opti-fom'
 
     os.system(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv + psf + ' -fov-out 95')
-
-    '''
-    # load MLEM previously computed image 
-    image_optimizer = fijii_np(subroot+'Comparison/' + optimizer + '/' + optimizer + '_it' + str(nb_iter) + '.img', shape=(PETImage_shape))
-
-
-    # compute metrics varying beta (if BSREM)
-    compute_metrics(PETImage_shape,image_optimizer,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
-
-    # write image varying beta (if BSREM)
-    write_image_tensorboard(writer,image_optimizer,"Final image computed with " + optimizer,i) # image in tensorboard
-
-    # Display CRC vs STD curve in tensorboard
-    if (i>max_iter - min(max_iter,10)):
-        # Creating matplotlib figure
-        plt.plot(IR_bkg_recon,CRC_hot_recon,linestyle='None',marker='x')
-        plt.xlabel('IR')
-        plt.ylabel('CRC')
-        # Adding this figure to tensorboard
-        writer.flush()
-        writer.add_figure('CRC in hot region vs IR in background', plt.gcf(),global_step=i,close=True)
-        writer.close()
-    
-    '''
 
 import subprocess
 root = os.getcwd()

@@ -168,15 +168,14 @@ def find_nan(image):
     return image
 
 def points_in_circle(center_y,center_x,radius,PETImage_shape,inner_circle=True): # x and y are inverted in an array compared to coordinates
-    liste = []   
-    center_x = int(PETImage_shape[0]/2 + center_x)
-    center_y = int(PETImage_shape[1]/2 + center_y)
-    radius = int(radius)
-    if (inner_circle): # only looking inside the circle, not on the border
-        radius -= 2
-    for x, y in product(range(int(radius) + 1 + max(center_x,center_y)), repeat=2):
-        if (x-center_x)**2 + (y-center_y)**2 <= radius**2:
-            liste.append((x,y))
+    liste = [] 
+
+    center_x += int(PETImage_shape[0]/2)
+    center_y += int(PETImage_shape[1]/2)
+    for x in range(0,PETImage_shape[0]):
+        for y in range(0,PETImage_shape[1]):
+            if (x+0.5-center_x)**2 + (y+0.5-center_y)**2 <= radius**2:
+                liste.append((x,y))
 
     return liste
 
@@ -189,23 +188,27 @@ def coord_to_value_array(coord_arr,arr):
 
 def compute_metrics(PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=None,write_tensorboard=False):
 
+    # Select only phantom ROI, not whole reconstructed image
+    phantom_ROI = points_in_circle(0/4,0/4,150/4,PETImage_shape)
     f_metric = find_nan(image_recon)
-    image_gt_norm,mini_gt_input,maxe_gt_input = norm_imag(image_gt)
+    image_gt_norm,mini_gt_input,maxe_gt_input = norm_imag(image_gt[phantom_ROI])
 
-    # print metrics
+    # Print metrics
     print('Metrics for iteration',i)
 
-    f_metric_norm,mini_f_metrics,maxe_f_metrics = norm_imag(f_metric) # normalizing DIP output
-    print('Dif for PSNR calculation',np.amax(f_metric) - np.amin(f_metric),' , must be as small as possible')
+    f_metric_norm,mini_f_metrics,maxe_f_metrics = norm_imag(f_metric[phantom_ROI]) # normalizing DIP output
+    print('Dif for PSNR calculation',np.amax(f_metric[phantom_ROI]) - np.amin(f_metric[phantom_ROI]),' , must be as small as possible')
 
     # PSNR calculation
-    PSNR_recon[i] = peak_signal_noise_ratio(image_gt, f_metric, data_range=np.amax(f_metric) - np.amin(f_metric)) # PSNR with true values
+    PSNR_recon[i] = peak_signal_noise_ratio(image_gt[phantom_ROI], f_metric[phantom_ROI], data_range=np.amax(f_metric[phantom_ROI]) - np.amin(f_metric[phantom_ROI])) # PSNR with true values
     PSNR_norm_recon[i] = peak_signal_noise_ratio(image_gt_norm,f_metric_norm) # PSNR with scaled values [0-1]
     print('PSNR calculation', PSNR_norm_recon[i],' , must be as high as possible')
 
     # MSE calculation
     MSE_recon[i] = np.mean((image_gt - f_metric)**2)
     print('MSE gt', MSE_recon[i],' , must be as small as possible')
+    MSE_recon[i] = np.mean((image_gt[phantom_ROI] - f_metric[phantom_ROI])**2)
+    print('MSE phantom gt', MSE_recon[i],' , must be as small as possible')
 
     # Contrast Recovery Coefficient calculation    
     # Mean activity in cold cylinder calculation (-c -40. -40. 0. 40. 4. 0.)
@@ -229,10 +232,9 @@ def compute_metrics(PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_
     print('FOV bias in hot region',bias_hot_recon[i],' , must be as small as possible')
 
     # Mean Concentration Recovery coefficient (CRCmean) in background calculation (-c 0. 0. 0. 150. 4. 100)
-    #bkg_ROI = points_in_circle(0/4,0/4,150/4,PETImage_shape)
-    #m0_bkg = (np.sum(coord_to_value_array(bkg_ROI,f_metric)) - np.sum([coord_to_value_array(cold_ROI,f_metric),coord_to_value_array(hot_ROI,f_metric)])) / (len(bkg_ROI) - (len(cold_ROI) + len(hot_ROI)))
+    #m0_bkg = (np.sum(coord_to_value_array(bkg_ROI,f_metric[phantom_ROI])) - np.sum([coord_to_value_array(cold_ROI,f_metric[phantom_ROI]),coord_to_value_array(hot_ROI,f_metric[phantom_ROI])])) / (len(bkg_ROI) - (len(cold_ROI) + len(hot_ROI)))
     #CRC_bkg_recon[i] = m0_bkg / 100.   
-    bkg_ROI = points_in_circle(0/4,100/4,40/4,PETImage_shape)
+    bkg_ROI = list(set(phantom_ROI) - set(cold_ROI) - set(hot_ROI))
     bkg_ROI_act = coord_to_value_array(bkg_ROI,f_metric)
     CRC_bkg_recon[i] = np.mean(bkg_ROI_act) / 100.
     IR_bkg_recon[i] = np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)
@@ -248,6 +250,29 @@ def compute_metrics(PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_
         writer.add_scalar('FOV bias in hot region (best : 0)', bias_hot_recon[i],i)
         writer.add_scalar('Mean Concentration Recovery coefficient in background (best : 1)', CRC_bkg_recon[i],i)
         writer.add_scalar('Image roughness in the background (best : 0)', IR_bkg_recon[i],i)
+
+        #'''
+        mask = np.zeros_like(image_gt)
+        ROI = cold_ROI
+        for i in range(len(ROI)):
+            coord = ROI[i]
+            mask[coord] = 1000
+        write_image_tensorboard(writer,mask+image_gt,"mask","",i=0,full_contrast=True)
+
+        mask = np.zeros_like(image_gt)
+        ROI = hot_ROI
+        for i in range(len(ROI)):
+            coord = ROI[i]
+            mask[coord] = 1000
+        write_image_tensorboard(writer,mask+image_gt,"mask2","",i=0,full_contrast=True)
+
+        mask = np.zeros_like(image_gt)
+        ROI = bkg_ROI
+        for i in range(len(ROI)):
+            coord = ROI[i]
+            mask[coord] = 1000
+        write_image_tensorboard(writer,mask+image_gt,"mask3","",i=0,full_contrast=True)
+        #'''
 
 def choose_net(net, config):
     if (net == 'DIP'):
@@ -265,26 +290,52 @@ def choose_net(net, config):
             model_class = DD_AE_2D_lightning #Loading Deep Decoder architecture
     return model, model_class
 
-def create_random_input(net,PETImage_shape,config): #CT map for high-count data, but not CT yet...
+def create_input(net,PETImage_shape,config): #CT map for high-count data, but not CT yet...
+    constant_uniform = 0.0001
     if (net == 'DIP' or net == 'DIP_VAE'):
-        im_input = np.random.normal(0,1,PETImage_shape[0]*PETImage_shape[1]).astype('float32') # initializing input image with random image (for DIP)
+        if config["input"] == "random":
+            im_input = np.random.normal(0,1,PETImage_shape[0]*PETImage_shape[1]).astype('float32') # initializing input image with random image (for DIP)
+        elif config["input"] == "uniform":
+            im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1])).astype('float32') # initializing input image with random image (for DIP)
+        else:
+            return "CT input, do not need to create input"
         im_input = im_input.reshape(PETImage_shape) # reshaping (for DIP)
     else:
         if (net == 'DD'):
             input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
-            im_input = np.random.normal(0,1,config["k_DD"]*input_size_DD*input_size_DD).astype('float32') # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+            if config["input"] == "random":
+                im_input = np.random.normal(0,1,config["k_DD"]*input_size_DD*input_size_DD).astype('float32') # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+            elif config["input"] == "uniform":
+                im_input = constant_uniform*np.ones((config["k_DD"],input_size_DD,input_size_DD)).astype('float32') # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+            else:
+                return "CT input, do not need to create input"
             im_input = im_input.reshape(config["k_DD"],input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
             
         elif (net == 'DD_AE'):
             input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
-            im_input = np.random.normal(0,1,input_size_DD*input_size_DD).astype('float32') # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+
+            input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
+            if config["input"] == "random":
+                im_input = np.random.normal(0,1,input_size_DD*input_size_DD).astype('float32') # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+            elif config["input"] == "uniform":
+                im_input = constant_uniform*np.ones((input_size_DD,input_size_DD)).astype('float32') # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+            else:
+                return "CT input, do not need to create input"
             im_input = im_input.reshape(input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if auto encoder based on Deep Decoder
 
-    file_path = (subroot+'Data/initialization/random_input.img')
+    if config["input"] == "random":
+        file_path = (subroot+'Data/initialization/random_input.img')
+    elif config["input"] == "uniform":
+        file_path = (subroot+'Data/initialization/uniform_input.img')
     save_img(im_input,file_path)
 
 def load_input(net,PETImage_shape,config):
-    file_path = (subroot+'Data/initialization/random_input.img') #CT map, but not CT yet...
+    if config["input"] == "random":
+        file_path = (subroot+'Data/initialization/random_input.img')
+    elif config["input"] == "CT":
+        file_path = (subroot+'Data/phantom/phantom_atn.img') #CT map, but not CT yet, attenuation for now...
+    elif config["input"] == "uniform":
+        file_path = (subroot+'Data/initialization/uniform_input.img')
     if (net == 'DD'):
         input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
         PETImage_shape = (config['k_DD'],input_size_DD,input_size_DD) # if original Deep Decoder (i.e. only with decoder part)
@@ -317,7 +368,7 @@ def read_input_dim(file_path):
 def input_dim_str_to_list(PETImage_shape_str):
     return [int(e.strip()) for e in PETImage_shape_str.split(',')][:-1]
 
-def write_image_tensorboard(writer,image,name,i=0,full_contrast=False):
+def write_image_tensorboard(writer,image,name,suffix,i=0,full_contrast=False):
     # Creating matplotlib figure with colorbar
     if (len(image.shape) != 2):
         print('image is ' + str(len(image.shape)) + 'D, plotting only 2D slice')
@@ -327,6 +378,9 @@ def write_image_tensorboard(writer,image,name,i=0,full_contrast=False):
     else:
         plt.imshow(image, cmap='gray_r',vmin=0,vmax=500) # Showing all images with same contrast
     plt.colorbar()
+    from textwrap import wrap
+    wrapped_title = "\n".join(wrap(suffix, 50))
+    plt.title(wrapped_title,fontsize=12)
     #plt.axis('off')
     # Adding this figure to tensorboard
     writer.add_figure(name,plt.gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
@@ -377,8 +431,8 @@ def load_model(image_net_input_torch, config, finetuning, admm_it, model, model_
         #from torch.utils.tensorboard import SummaryWriter
         #writer = SummaryWriter()
         #out = model(image_net_input_torch)
-        #write_image_tensorboard(writer,out.detach().numpy(),"high statistics output)") # Showing all corrupted images with same contrast to compare them together
-        #write_image_tensorboard(writer,out.detach().numpy(),"high statistics (" + "output, FULL CONTRAST)",0,full_contrast=True) # Showing each corrupted image with contrast = 1
+        #write_image_tensorboard(writer,out.detach().numpy(),"high statistics output)",suffix) # Showing all corrupted images with same contrast to compare them together
+        #write_image_tensorboard(writer,out.detach().numpy(),"high statistics (" + "output, suffix,FULL CONTRAST)",0,full_contrast=True) # Showing each corrupted image with contrast = 1
     
         # Set first network iterations to have convergence, as if we do post processing
         # model = model_class.load_from_checkpoint(os.path.join(subroot,'post_reco'+net+'.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
@@ -507,8 +561,8 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
 
         x = fijii_np(full_output_path_k + '_x.img', shape=(PETImage_shape[0],PETImage_shape[1]))
         if (k>=0):
-            write_image_tensorboard(writer,x,"x in second ADMM over iterations", k+i*nb_iter_second_admm) # Showing all corrupted images with same contrast to compare them together
-            write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)", k+i*nb_iter_second_admm,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
+            write_image_tensorboard(writer,x,"x in second ADMM over iterations",suffix, k+i*nb_iter_second_admm) # Showing all corrupted images with same contrast to compare them together
+            write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)",suffix, k+i*nb_iter_second_admm,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
 
         # Compute one ADMM iteration (x, v, u)
         x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage
