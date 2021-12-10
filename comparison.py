@@ -29,7 +29,7 @@ if (args.opti is not None): # Must check if all args are None
     beta = args.beta # penalty strength (beta)
 else: # For VS Code (without command line)
     optimizer = 'BSREM' # CASToR optimizer
-    nb_iter = 10 # number of optimizer iterations
+    nb_iter = 30 # number of optimizer iterations
     beta = 0.04 # penalty strength (beta)
 
 # Define PET input dimensions according to input data dimensions

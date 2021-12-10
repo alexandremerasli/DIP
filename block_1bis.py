@@ -90,6 +90,8 @@ def admm_loop(config, args, root):
     alpha = config["alpha"]
     sub_iter_MAP = config["sub_iter_MAP"]
     net = config["net"]
+    if config["input"] == 'uniform': # Do not standardize or normalize if uniform, otherwise NaNs
+        config["scaling"] = "nothing"
     scaling_input = config["scaling"]
     np.save(subroot + 'Config/config' + suffix + '.npy', config) # Save this configuration of hyperparameters, and reload it at the beginning of block 2 thanks to suffix (passed in subprocess call argumentsZ)
 
@@ -125,10 +127,10 @@ def admm_loop(config, args, root):
     # Creating random image input for DIP while we do not have CT, but need to be removed after
     create_input(net,PETImage_shape,config) # to be removed when CT will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
     # Loading DIP input (we do not have CT-map, so random image created in block 1)
-    image_net_input = load_input(net,PETImage_shape,config) # Normalization of DIP input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
-    image_net_input_norm,mean_im,std_im = rescale_imag(image_net_input,scaling_input) # Rescale of DIP input
+    image_net_input = load_input(net,PETImage_shape,config) # Scaling of DIP input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
+    image_net_input_scale = rescale_imag(image_net_input,scaling_input)[0] # Rescale of DIP input
     # DIP input image, numpy --> torch
-    image_net_input_torch = torch.Tensor(image_net_input_norm)
+    image_net_input_torch = torch.Tensor(image_net_input_scale)
     # Adding dimensions to fit network architecture
     if (net == 'DIP' or net == 'DIP_VAE'):
         image_net_input_torch = image_net_input_torch.view(1,1,PETImage_shape[0],PETImage_shape[1]) # For DIP
@@ -268,8 +270,8 @@ def admm_loop(config, args, root):
     # Display images in tensorboard
     write_image_tensorboard(writer,f_init,"initialization of DIP output (f_0)",suffix) # initialization of DIP output in tensorboard
     #write_image_tensorboard(writer,image_init,"initialization of CASToR MAP reconstruction (x_0)") # initialization of CASToR MAP reconstruction in tensorboard
-    write_image_tensorboard(writer,image_net_input,"DIP input") # DIP input in tensorboard
-    write_image_tensorboard(writer,image_gt,"Ground Truth") # Ground truth image in tensorboard
+    write_image_tensorboard(writer,image_net_input,"DIP input",suffix) # DIP input in tensorboard
+    write_image_tensorboard(writer,image_gt,"Ground Truth",suffix) # Ground truth image in tensorboard
 
     if (net == 'DIP_VAE'):
         write_image_tensorboard(writer,x_avg,"Final averaged image (average over DIP outputs)",suffix) # Final averaged image in tensorboard
@@ -329,11 +331,10 @@ parser.add_argument('--finetuning', type=str, dest='finetuning', help='finetunin
 # Retrieving arguments in this python script
 args = parser.parse_args()
 
-
 # For VS Code (without command line)
 if (args.proc is None): # Must check if all args are None
     args.proc = 'CPU'
-    args.max_iter = 20 # Outer iterations
+    args.max_iter = 10 # Outer iterations
     args.finetuning = 'last' # Finetuning or not for the DIP optimizations (block 2)
     
 config_combination = 1

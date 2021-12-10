@@ -9,7 +9,7 @@ image_net_input : DIP input
 image_corrupt : DIP label
 x : image x at iteration i
 x_init : initial image for MLEM reconstruction
-variable_norm : normalized (or standardized) variable
+variable_scaled : normalized, standardized (or nothing) variable
 variable_torch : torch representation of variable
 
 """
@@ -50,6 +50,8 @@ def post_reconstruction(config,root):
     sub_iter_DIP = config["sub_iter_DIP"]
     # rho = config["rho"]
     # opti_DIP = config["opti_DIP"]
+    if config["input"] == 'uniform': # Do not standardize or normalize if uniform, otherwise NaNs
+        config["scaling"] = "nothing"
     scaling_input = config["scaling"]
 
     # Define PET input dimensions according to input data dimensions
@@ -74,11 +76,10 @@ def post_reconstruction(config,root):
     # Loading DIP input (we do not have CT-map, so random image created in block 1)
     # Creating random image input for DIP while we do not have CT, but need to be removed after
     create_input(net,PETImage_shape,config) # to be removed when CT will be used instead of random input. Here we CAN create random input as this script is only run once
-    image_net_input = load_input(net,PETImage_shape,config) # Normalization of DIP input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1   
-    # image_net_input_norm, maxe_input = norm_imag(image_net_input) # Normalization of DIP input
-    image_net_input_norm,mean_im,std_im = rescale_imag(image_net_input,scaling_input) # Scaling of DIP input
+    image_net_input = load_input(net,PETImage_shape,config) # Scaling of DIP input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1   
+    image_net_input_scale = rescale_imag(image_net_input,scaling_input)[0] # Scaling of DIP input
     # DIP input image, numpy --> torch
-    image_net_input_torch = torch.Tensor(image_net_input_norm)
+    image_net_input_torch = torch.Tensor(image_net_input_scale)
     # Adding dimensions to fit network architecture
     if (net == 'DIP' or net == 'DIP_VAE'):
         image_net_input_torch = image_net_input_torch.view(1,1,PETImage_shape[0],PETImage_shape[1]) # For DIP
@@ -99,15 +100,14 @@ def post_reconstruction(config,root):
     #image_corrupt = fijii_np(subroot+'Data/initialization/BSREM_it30_REF_cropped.img',shape=(PETImage_shape))
     #image_corrupt = fijii_np(subroot+'Comparison/MLEM/MLEM_it2.img',shape=(PETImage_shape))
 
-    # Normalization of x_label image
-    # image_corrupt_norm_scale, maxe = norm_imag(image_corrupt) # Normalization of x_label image
-    image_corrupt_norm,mean_label,std_label= rescale_imag(image_corrupt) # Scaling of x_label image
+    # Scaling of x_label image
+    image_net_input_scale,param1_scale_im_corrupt,param2_scale_im_corrupt = rescale_imag(image_corrupt) # Scaling of x_label image
 
     ## Transforming numpy variables to torch tensors
 
 
     # Corrupted image x_label, numpy --> torch
-    image_corrupt_torch = torch.Tensor(image_corrupt_norm)
+    image_corrupt_torch = torch.Tensor(image_net_input_scale)
     # Adding dimensions to fit network architecture
     image_corrupt_torch = image_corrupt_torch.view(1,1,PETImage_shape[0],PETImage_shape[1])
 
@@ -143,7 +143,7 @@ def post_reconstruction(config,root):
         out = model(image_net_input_torch)
 
     # Descaling like at the beginning
-    out_descale = descale_imag(out, mean_label, std_label, scaling_input)
+    out_descale = descale_imag(out,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input)
     # Saving image output
     net_outputs_path = subroot+'Block2/out_cnn/' + format(test) + '/out_' + net + '_post_reco_epoch=' + format(0) + suffix_func(config) + '.img'
     save_img(out_descale, net_outputs_path)
@@ -165,7 +165,7 @@ def post_reconstruction(config,root):
                 out = model(image_net_input_torch)
 
             # Descale like at the beginning
-            out_descale = descale_imag(out, mean_label, std_label, scaling_input)
+            out_descale = descale_imag(out,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input)
             # Saving image output
             net_outputs_path = subroot+'Block2/out_cnn/' + format(test) + '/out_' + net + '_post_reco_epoch=' + format(epoch) + suffix_func(config) + '.img'
             save_img(out_descale, net_outputs_path)
@@ -246,16 +246,18 @@ config = {
 }
 #'''
 config = {
-    "lr" : tune.grid_search([0.0041]), # 0.01 for DIP, 0.001 for DD
-    "sub_iter_DIP" : tune.grid_search([10]), # 10 for DIP, 100 for DD
+    "lr" : tune.grid_search([0.041]), # 0.01 for DIP, 0.001 for DD
+    "sub_iter_DIP" : tune.grid_search([5000]), # 10 for DIP, 100 for DD
     "rho" : tune.grid_search([0.0003]),
     "opti_DIP" : tune.grid_search(['Adam']),
     "mlem_sequence" : tune.grid_search([False]),
     "d_DD" : tune.grid_search([4]), # not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
-    "skip_connections" : tune.grid_search([1]),
+    "skip_connections" : tune.grid_search([0]),
     "scaling" : tune.grid_search(['standardization']),
-    "input" : tune.grid_search(['CT'])
+    "input" : tune.grid_search(['uniform'])
+    #"scaling" : tune.grid_search(['standardization']),
+    #"input" : tune.grid_search(['CT'])
 }
 #'''
 

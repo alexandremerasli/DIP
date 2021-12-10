@@ -86,8 +86,8 @@ if __name__ == "__main__":
     alpha = config["alpha"] # ADMM parameter
     it = ' -it ' + str(args.nb_iter_x) + ':' + str(args.nb_subsets)
     penalty = ' -pnlt ' + config["penalty"]
-    #if config["penalty"] == "MRF":
-    #    penalty += ':' + subroot + 'Comparison/BSREM/' + 'MRF.conf'
+    if config["penalty"] == "MRF":
+        penalty += ':' + subroot + 'Comparison/ADMMLim/' + 'MRF.conf'
     only_x = False # Freezing u and v computation, just updating x if True
 
     # Save this configuration of hyperparameters, and reload with suffix

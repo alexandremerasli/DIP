@@ -37,14 +37,14 @@ def fijii_np(path,shape,type='<f'):
 
 
 def norm_imag(img):
-    """ Normalization of the 3D input - output [0..1] and the normalization value for each slide"""
+    """ Normalization of input - output [0..1] and the normalization value for each slide"""
     if (np.max(img) - np.min(img)) != 0:
         return (img - np.min(img)) / (np.max(img) - np.min(img)), np.min(img), np.max(img)
     else:
         return img, np.min(img), np.max(img)
 
 def denorm_imag(image, mini, maxi):
-    """ Denormalization of the 3D input - output [0..1] and the normalization value for each slide"""
+    """ Denormalization of input - output [0..1] and the normalization value for each slide"""
     image_np = image.detach().numpy()
     return denorm_numpy_imag(image_np, mini, maxi)
 
@@ -56,18 +56,18 @@ def denorm_numpy_imag(img, mini, maxi):
 
 
 def norm_positive_imag(img):
-    """ Normalization of the 3D input - output [0..1] and the normalization value for each slide"""
+    """ Positive normalization of input - output [0..1] and the normalization value for each slide"""
     if (np.max(img) - np.min(img)) != 0:
         return img / np.max(img), np.min(img), np.max(img)
     else:
         return img, 0, np.max(img)
 
 def denorm_positive_imag(image, mini, maxi):
-    """ Normalization of the 3D input - output [0..1] and the normalization value for each slide"""
+    """ Positive normalization of input - output [0..1] and the normalization value for each slide"""
     image_np = image.detach().numpy()
     return denorm_numpy_imag(image_np, mini, maxi)
 
-def denorm_positive_numpy_imag(img, mini, maxi):
+def denorm_numpy_positive_imag(img, mini, maxi):
     if (maxi - mini) != 0:
         return img * maxi 
     else:
@@ -75,25 +75,23 @@ def denorm_positive_numpy_imag(img, mini, maxi):
 
 
 def stand_imag(image_corrupt):
-    """ Standardization of the 3D input - output with mean 0 and std 1 for each slide"""
+    """ Standardization of input - output with mean 0 and std 1 for each slide"""
     mean=np.mean(image_corrupt)
     std=np.std(image_corrupt)
     image_center = image_corrupt - mean
     image_corrupt_std = image_center / std
     return image_corrupt_std,mean,std
 
+def destand_numpy_imag(image, mean, std):
+    """ Destandardization of input - output with mean 0 and std 1 for each slide"""
+    return image * std + mean
+
 def destand_imag(image, mean, std):
     image_np = image.detach().numpy()
     return destand_numpy_imag(image_np, mean, std)
 
-def destand_numpy_imag(image, mean, std):
-    return image * std + mean
-
-
-
-
 def rescale_imag(image_corrupt, scaling='standardization'):
-    """ Normalization of the 3D input - output with mean 0 and std 1 for each slide"""
+    """ Scaling of input """
     if (scaling == 'standardization'):
         return stand_imag(image_corrupt)
     elif (scaling == 'normalization'):
@@ -101,19 +99,19 @@ def rescale_imag(image_corrupt, scaling='standardization'):
     elif (scaling == 'positive_normalization'):
         return norm_imag(image_corrupt)
     else: # No scaling required
-        return image_corrupt
+        return image_corrupt, 0
 
 def descale_imag(image, param_scale1, param_scale2, scaling='standardization'):
+    """ Descaling of input """
+    image_np = image.detach().numpy()
     if (scaling == 'standardization'):
-        return destand_imag(image, param_scale1, param_scale2)
+        return destand_numpy_imag(image_np, param_scale1, param_scale2)
     elif (scaling == 'normalization'):
-        return denorm_imag(image, param_scale1, param_scale2)
+        return denorm_numpy_imag(image_np, param_scale1, param_scale2)
     elif (scaling == 'positive_normalization'):
-        return denorm_positive_imag(image, param_scale1, param_scale2)
+        return denorm_numpy_positive_imag(image_np, param_scale1, param_scale2)
     else: # No scaling required
-        return image
-
-
+        return image_np
 
 def save_img(img,name):
     fp=open(name,'wb')
@@ -191,12 +189,12 @@ def compute_metrics(PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_
     # Select only phantom ROI, not whole reconstructed image
     phantom_ROI = points_in_circle(0/4,0/4,150/4,PETImage_shape)
     f_metric = find_nan(image_recon)
-    image_gt_norm,mini_gt_input,maxe_gt_input = norm_imag(image_gt[phantom_ROI])
+    image_gt_norm = norm_imag(image_gt[phantom_ROI])[0]
 
     # Print metrics
     print('Metrics for iteration',i)
 
-    f_metric_norm,mini_f_metrics,maxe_f_metrics = norm_imag(f_metric[phantom_ROI]) # normalizing DIP output
+    f_metric_norm = norm_imag(f_metric[phantom_ROI])[0] # normalizing DIP output
     print('Dif for PSNR calculation',np.amax(f_metric[phantom_ROI]) - np.amin(f_metric[phantom_ROI]),' , must be as small as possible')
 
     # PSNR calculation
@@ -251,29 +249,6 @@ def compute_metrics(PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_
         writer.add_scalar('Mean Concentration Recovery coefficient in background (best : 1)', CRC_bkg_recon[i],i)
         writer.add_scalar('Image roughness in the background (best : 0)', IR_bkg_recon[i],i)
 
-        #'''
-        mask = np.zeros_like(image_gt)
-        ROI = cold_ROI
-        for i in range(len(ROI)):
-            coord = ROI[i]
-            mask[coord] = 1000
-        write_image_tensorboard(writer,mask+image_gt,"mask","",i=0,full_contrast=True)
-
-        mask = np.zeros_like(image_gt)
-        ROI = hot_ROI
-        for i in range(len(ROI)):
-            coord = ROI[i]
-            mask[coord] = 1000
-        write_image_tensorboard(writer,mask+image_gt,"mask2","",i=0,full_contrast=True)
-
-        mask = np.zeros_like(image_gt)
-        ROI = bkg_ROI
-        for i in range(len(ROI)):
-            coord = ROI[i]
-            mask[coord] = 1000
-        write_image_tensorboard(writer,mask+image_gt,"mask3","",i=0,full_contrast=True)
-        #'''
-
 def choose_net(net, config):
     if (net == 'DIP'):
         model = ConvNet3D_real_lightning(config) #Loading DIP architecture
@@ -291,7 +266,7 @@ def choose_net(net, config):
     return model, model_class
 
 def create_input(net,PETImage_shape,config): #CT map for high-count data, but not CT yet...
-    constant_uniform = 0.0001
+    constant_uniform = 1
     if (net == 'DIP' or net == 'DIP_VAE'):
         if config["input"] == "random":
             im_input = np.random.normal(0,1,PETImage_shape[0]*PETImage_shape[1]).astype('float32') # initializing input image with random image (for DIP)
@@ -459,12 +434,11 @@ def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finet
 
     # Loading X_label from block1 to destandardize NN output
     image_corrupt = fijii_np(subroot+'Block2/x_label/' + format(test)+'/'+ format(admm_it - 1) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
-    #image_corrupt_norm_scale, mini, maxe = norm_imag(image_corrupt)
-    image_corrupt_norm,mean_label,std_label= stand_imag(image_corrupt)
+    image_corrupt_scale,param1_scale_im_corrupt,param2_scale_im_corrupt = rescale_imag(image_corrupt)
 
     # Reverse scaling like at the beginning and add it to list of samples
-    out_destand = descale_imag(out, mean_label, std_label, config["scaling"])
-    return out_destand
+    out_descale = descale_imag(out,param1_scale_im_corrupt,param2_scale_im_corrupt,config["scaling"])
+    return out_descale
 
 def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
     only_x = False # Freezing u and v computation, just updating x if True

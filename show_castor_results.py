@@ -8,6 +8,7 @@ Script showing previously computed results instead of running again iterations
 ## Python libraries
 
 # Pytorch
+from torch.utils import tensorboard
 from torch.utils.tensorboard import SummaryWriter
 
 # Useful
@@ -88,7 +89,7 @@ for i in range(1,max_iter):
 
     # Write image over ADMM iterations
     if ((max_iter>=10) and (i%(max_iter // 10) == 0)):
-
+        print('tensorboardaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
         write_image_tensorboard(writer,f,"Image over " + opti + " iterations",suffix,i) # Showing all images with same contrast to compare them together
         write_image_tensorboard(writer,f,"Image over " + opti + " iterations (FULL CONTRAST)",suffix,i,full_contrast=True) # Showing each image with contrast = 1
     

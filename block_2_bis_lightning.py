@@ -9,9 +9,8 @@ image_net_input : DIP input
 image_corrupt : DIP label
 x : image x at iteration i
 x_init : initial image for MLEM reconstruction
-variable_norm : normalized (or standardized) variable
+variable_scaled : normalized, standardized (or nothing) variable
 variable_torch : torch representation of variable
-
 """
 
 ## Python libraries
@@ -62,15 +61,14 @@ image_net_input_torch = torch.load(subroot + 'Data/initialization/image_net_inpu
 
 # Loading DIP x_label (corrupted image) from block1
 image_corrupt = fijii_np(subroot+'Block2/x_label/' + format(test)+'/'+ format(admm_it) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
-# Normalization of x_label image
-# image_corrupt_norm_scale, maxe = norm_imag(image_corrupt) # Normalization of x_label image
-image_corrupt_norm,mean_label,std_label= rescale_imag(image_corrupt) # Scaling of x_label image
+# Scaling of x_label image
+image_net_input_scale,param1_scale_im_corrupt,param2_scale_im_corrupt= rescale_imag(image_corrupt) # Scaling of x_label image
 
 ## Transforming numpy variables to torch tensors
 
 
 # Corrupted image x_label, numpy --> torch
-image_corrupt_torch = torch.Tensor(image_corrupt_norm)
+image_corrupt_torch = torch.Tensor(image_net_input_scale)
 # Adding dimensions to fit network architecture
 image_corrupt_torch = image_corrupt_torch.view(1,1,PETImage_shape[0],PETImage_shape[1])
 
@@ -153,8 +151,8 @@ else:
     out = model(image_net_input_torch)
 
 # Destandardize like at the beginning
-out_destand = descale_imag(out, mean_label, std_label, scaling_input)
+out_descale = descale_imag(out,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input)
 # Saving image output
-save_img(out_destand, subroot+'Block2/out_cnn/' + format(test) + '/out_' + net + '' + format(admm_it) + suffix + '.img')
+save_img(out_descale, subroot+'Block2/out_cnn/' + format(test) + '/out_' + net + '' + format(admm_it) + suffix + '.img')
 
 print('Finish')
