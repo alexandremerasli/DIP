@@ -317,7 +317,7 @@ config = {
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([0,1,2,3]),
     "scaling" : tune.grid_search(['standardization']),
-    "input" : tune.grid_search(['CT'])
+    "input" : tune.grid_search(['random'])
 }
 #'''
 

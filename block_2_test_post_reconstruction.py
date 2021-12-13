@@ -151,6 +151,7 @@ def post_reconstruction(config,root):
     out_descale = fijii_np(net_outputs_path,shape=(PETImage_shape)) # loading DIP output
     writer = model.logger.experiment # Assess to new variable, otherwise error : weakly-referenced object ...
     write_image_tensorboard(writer,image_corrupt,"Corrupted image to fit",suffix_func(config)) # Showing corrupted image
+    write_image_tensorboard(writer,image_corrupt,"Corrupted image to fit (FULL CONTRAST)",suffix_func(config),0,full_contrast=True) # Showing corrupted image
     for epoch in range(0,sub_iter_DIP,sub_iter_DIP//10):      
         write_image_tensorboard(writer,image_net_input,"DIP input (FULL CONTRAST)",suffix_func(config),epoch,full_contrast=True) # DIP input in tensorboard
 
@@ -177,8 +178,8 @@ def post_reconstruction(config,root):
             save_img(out_descale, net_outputs_path)
 
         # Write images over epochs
-        write_image_tensorboard(writer,out_descale,"Image over epochs (" + net + "output)",suffix_func(config),epoch) # Showing all images with same contrast to compare them together
-        write_image_tensorboard(writer,out_descale,"Image over epochs (" + net + "output, FULL CONTRAST)",suffix_func(config),epoch,full_contrast=True) # Showing each image with contrast = 1
+        write_image_tensorboard(writer,out_descale,"Image over epochs (" + net + "output)","",epoch) # Showing all images with same contrast to compare them together
+        write_image_tensorboard(writer,out_descale,"Image over epochs (" + net + "output, FULL CONTRAST)","",epoch,full_contrast=True) # Showing each image with contrast = 1
         writer.close()
 
     print('Finish')
@@ -246,8 +247,8 @@ config = {
 }
 #'''
 config = {
-    "lr" : tune.grid_search([0.041]), # 0.01 for DIP, 0.001 for DD
-    "sub_iter_DIP" : tune.grid_search([5000]), # 10 for DIP, 100 for DD
+    "lr" : tune.grid_search([0.0041]), # 0.01 for DIP, 0.001 for DD
+    "sub_iter_DIP" : tune.grid_search([10]), # 10 for DIP, 100 for DD
     "rho" : tune.grid_search([0.0003]),
     "opti_DIP" : tune.grid_search(['Adam']),
     "mlem_sequence" : tune.grid_search([False]),

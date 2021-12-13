@@ -343,8 +343,10 @@ def read_input_dim(file_path):
 def input_dim_str_to_list(PETImage_shape_str):
     return [int(e.strip()) for e in PETImage_shape_str.split(',')][:-1]
 
+from pathlib import Path
 def write_image_tensorboard(writer,image,name,suffix,i=0,full_contrast=False):
     # Creating matplotlib figure with colorbar
+    plt.figure()
     if (len(image.shape) != 2):
         print('image is ' + str(len(image.shape)) + 'D, plotting only 2D slice')
         image = image[:,:,0]
@@ -353,10 +355,14 @@ def write_image_tensorboard(writer,image,name,suffix,i=0,full_contrast=False):
     else:
         plt.imshow(image, cmap='gray_r',vmin=0,vmax=500) # Showing all images with same contrast
     plt.colorbar()
+    plt.axis('off')
+    # Saving this figure locally
+    
+    Path('/home/meraslia/sgld/hernan_folder/data/Algo/Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
+    plt.savefig('/home/meraslia/sgld/hernan_folder/data/Algo/Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
     from textwrap import wrap
     wrapped_title = "\n".join(wrap(suffix, 50))
     plt.title(wrapped_title,fontsize=12)
-    #plt.axis('off')
     # Adding this figure to tensorboard
     writer.add_figure(name,plt.gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
 
