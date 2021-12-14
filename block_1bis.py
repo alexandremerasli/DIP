@@ -93,6 +93,12 @@ def admm_loop(config, args, root):
     if config["input"] == 'uniform': # Do not standardize or normalize if uniform, otherwise NaNs
         config["scaling"] = "nothing"
     scaling_input = config["scaling"]
+
+    '''
+    if config["method"] == 'Gong':
+        config["scaling"] = 'positive_normalization'
+    '''
+    
     np.save(subroot + 'Config/config' + suffix + '.npy', config) # Save this configuration of hyperparameters, and reload it at the beginning of block 2 thanks to suffix (passed in subprocess call argumentsZ)
 
     """
@@ -164,13 +170,36 @@ def admm_loop(config, args, root):
         start_time_outer_iter = time.time()
         
         # Define command line to run ADMM with CASToR
-        if (i==0): # For first iteration, put rho to zero
-            castor_command_line_x = castor_admm_command_line(PETImage_shape_str, alpha, 0)
-        else:
-            castor_command_line_x = castor_admm_command_line(PETImage_shape_str, alpha, rho)
-        
+        if (config["method"] == 'Gong'):
+                header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
+
+                executable = 'castor-recon'
+                dim = ' -dim ' + PETImage_shape_str
+                vox = ' -vox 4,4,4'
+                vb = ' -vb 1'
+                th = ' -th 1'
+                proj = ' -proj incrementalSiddon'
+
+                opti = ' -opti OPTITR'
+                pnlt = ' -pnlt OPTITR'
+                pnlt_beta = ' -pnlt-beta ' + str(rho)
+
+                subroot_output_path = subroot + 'Block1/' + suffix# + '/' # Output path for CASTOR framework
+                full_output_path = ' -dout ' + subroot_output_path + '/out_eq22/'
+                input_path = ' -img ' + subroot + 'Block1/' + suffix + '/out_eq22/' # Input path for CASTOR framework
+
+                castor_command_line = executable + dim + vox + header_file + vb + th + proj + opti + pnlt + pnlt_beta + full_output_path
+        else: # Nested ADMM
+            if (i==0): # For first iteration, put rho to zero
+                castor_command_line_x = castor_admm_command_line(PETImage_shape_str, alpha, 0)
+            else:
+                castor_command_line_x = castor_admm_command_line(PETImage_shape_str, alpha, rho)
+            
         # Reconstruction with CASToR (first equation of ADMM)
-        x_label = castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension) # without ADMMLim file
+        if (config["method"] == 'Gong'):
+            x_label = castor_reconstruction_OPTITR(i, castor_command_line, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension)
+        else: # Nested ADMM
+            x_label = castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension) # without ADMMLim file
 
         # Write image over ADMM iterations
         if ((max_iter>=10) and (i%(max_iter // 10) == 0) or True):
@@ -312,12 +341,13 @@ config = {
     "rho" : tune.grid_search([0.0003]),
     "alpha" : tune.grid_search([0.005]),
     "opti_DIP" : tune.grid_search(['Adam']),
-    "mlem_sequence" : tune.grid_search([False]),
+    "mlem_sequence" : tune.grid_search([True]),
     "d_DD" : tune.grid_search([4]), # not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([0,1,2,3]),
     "scaling" : tune.grid_search(['standardization']),
-    "input" : tune.grid_search(['random'])
+    "input" : tune.grid_search(['random']),
+    "method" : tune.grid_search(['Gong'])
 }
 #'''
 

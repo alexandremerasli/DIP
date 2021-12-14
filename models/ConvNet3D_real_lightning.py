@@ -12,6 +12,7 @@ class ConvNet3D_real_lightning(pl.LightningModule):
         self.opti_DIP = config['opti_DIP']
         self.sub_iter_DIP = config['sub_iter_DIP']
         self.skip = config['skip_connections']
+        self.method = config['method']
         if (config['mlem_sequence'] is None):
             self.post_reco_mode = True
             self.suffix = self.suffix_func(config)
@@ -153,7 +154,8 @@ class ConvNet3D_real_lightning(pl.LightningModule):
         else:
             out = self.deep7(out)
 
-        #out = self.positivity(out)
+        if (self.method == 'Gong'):
+            out = self.positivity(out)
         return out
 
     def DIP_loss(self, out, image_corrupt_torch):
