@@ -43,6 +43,11 @@ def norm_imag(img):
     else:
         return img, np.min(img), np.max(img)
 
+def denorm_imag(image, mini, maxi):
+    """ Denormalization of input - output [0..1] and the normalization value for each slide"""
+    image_np = image.detach().numpy()
+    return denorm_numpy_imag(image_np, mini, maxi)
+
 def denorm_numpy_imag(img, mini, maxi):
     if (maxi - mini) != 0:
         return img * (maxi - mini) + mini
@@ -56,6 +61,11 @@ def norm_positive_imag(img):
         return img / np.max(img), np.min(img), np.max(img)
     else:
         return img, 0, np.max(img)
+
+def denorm_positive_imag(image, mini, maxi):
+    """ Positive normalization of input - output [0..1] and the normalization value for each slide"""
+    image_np = image.detach().numpy()
+    return denorm_numpy_imag(image_np, mini, maxi)
 
 def denorm_numpy_positive_imag(img, mini, maxi):
     if (maxi - mini) != 0:
@@ -75,6 +85,10 @@ def stand_imag(image_corrupt):
 def destand_numpy_imag(image, mean, std):
     """ Destandardization of input - output with mean 0 and std 1 for each slide"""
     return image * std + mean
+
+def destand_imag(image, mean, std):
+    image_np = image.detach().numpy()
+    return destand_numpy_imag(image_np, mean, std)
 
 def rescale_imag(image_corrupt, scaling='standardization'):
     """ Scaling of input """
@@ -285,18 +299,18 @@ def create_input(net,PETImage_shape,config): #CT map for high-count data, but no
             im_input = im_input.reshape(input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if auto encoder based on Deep Decoder
 
     if config["input"] == "random":
-        file_path = (subroot+'Data/initialization/random_input.img')
+        file_path = (subroot+'Data/initialization/random_input_' + net + '.img')
     elif config["input"] == "uniform":
-        file_path = (subroot+'Data/initialization/uniform_input.img')
+        file_path = (subroot+'Data/initialization/uniform_input_' + net + '.img')
     save_img(im_input,file_path)
 
 def load_input(net,PETImage_shape,config):
     if config["input"] == "random":
-        file_path = (subroot+'Data/initialization/random_input.img')
+        file_path = (subroot+'Data/initialization/random_input_' + net + '.img')
     elif config["input"] == "CT":
         file_path = (subroot+'Data/phantom/phantom_atn.img') #CT map, but not CT yet, attenuation for now...
     elif config["input"] == "uniform":
-        file_path = (subroot+'Data/initialization/uniform_input.img')
+        file_path = (subroot+'Data/initialization/uniform_input_' + net + '.img')
     if (net == 'DD'):
         input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
         PETImage_shape = (config['k_DD'],input_size_DD,input_size_DD) # if original Deep Decoder (i.e. only with decoder part)
@@ -366,7 +380,9 @@ def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, c
         #    accelerator = 'dp'
 
     if (admm_it == 0): # First ADMM iteration in block 1
-        sub_iter_DIP = 1000 if net.startswith('DD') else 200
+        #sub_iter_DIP = 1000 if net.startswith('DD') else 200
+        #sub_iter_DIP = 100 if net.startswith('DD') else 100
+        print(admm_it)
     elif (admm_it == -1): # First ADMM iteration in block2 test post reconstruction
         sub_iter_DIP = 1 if net.startswith('DD') else 1
 
@@ -554,7 +570,6 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
 
     return x_label
 
-
 def castor_reconstruction_OPTITR(i, castor_command_line, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
     start_time_block1 = time.time()
     mlem_sequence = config['mlem_sequence']
@@ -594,7 +609,7 @@ def castor_reconstruction_OPTITR(i, castor_command_line, subroot, sub_iter_MAP, 
 
         # load previously computed image with CASToR optimization transfer function
         x = fijii_np(subroot+'Block1/' + suffix + '/out_eq22/' +format(i) + '/' + format(i) +'_it' + str(sub_iter_MAP) + '.img', shape=(PETImage_shape))
-#        x = fijii_np(subroot+'Block1/' + suffix + '/during_eq22/' +format(i) + '_' + format (k+1) + '_x.img', shape=(PETImage_shape))
+        #x = fijii_np(subroot+'Block1/' + suffix + '/during_eq22/' +format(i) + '_' + format (k+1) + '_x.img', shape=(PETImage_shape))
 
     # Save image x in .img and .hdr format - block 1
     name = (subroot+'Block1/' + suffix + '/out_eq22/' + format(i) + '.img')
@@ -610,7 +625,6 @@ def castor_reconstruction_OPTITR(i, castor_command_line, subroot, sub_iter_MAP, 
     save_img(x_label, name)
 
     return x_label
-
 
 def castor_admm_command_line(PETImage_shape_str, alpha, rho, only_Lim=False, pnlt=''):
     # castor-recon command line

@@ -94,11 +94,9 @@ def admm_loop(config, args, root):
         config["scaling"] = "nothing"
     scaling_input = config["scaling"]
 
-    '''
     if config["method"] == 'Gong':
-        config["scaling"] = 'positive_normalization'
-    '''
-    
+        # config["scaling"] = 'positive_normalization' # Will still introduce bias as mu can be negative
+        config["scaling"] = "nothing"
     np.save(subroot + 'Config/config' + suffix + '.npy', config) # Save this configuration of hyperparameters, and reload it at the beginning of block 2 thanks to suffix (passed in subprocess call argumentsZ)
 
     """
@@ -134,6 +132,8 @@ def admm_loop(config, args, root):
     create_input(net,PETImage_shape,config) # to be removed when CT will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
     # Loading DIP input (we do not have CT-map, so random image created in block 1)
     image_net_input = load_input(net,PETImage_shape,config) # Scaling of DIP input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
+    #image_atn = fijii_np(subroot+'Data/phantom/phantom_atn.img',shape=(PETImage_shape))
+    #write_image_tensorboard(writer,image_atn,"Attenuation map (FULL CONTRAST)",suffix,0,full_contrast=True) # Attenuation map in tensorboard
     image_net_input_scale = rescale_imag(image_net_input,scaling_input)[0] # Rescale of DIP input
     # DIP input image, numpy --> torch
     image_net_input_torch = torch.Tensor(image_net_input_scale)
@@ -147,7 +147,7 @@ def admm_loop(config, args, root):
         elif (net == 'DD_AE'):
             input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
             image_net_input_torch = image_net_input_torch.view(1,1,input_size_DD,input_size_DD) # For Deep Decoder, if auto encoder based on Deep Decoder
-    torch.save(image_net_input_torch,subroot + 'Data/initialization/image_net_input_torch.pt')
+    torch.save(image_net_input_torch,subroot + 'Data/initialization/image_' + net + '_input_torch.pt')
 
     # Ininitializing DIP output and first image x with f_init and image_init
     image_init_path_without_extension = ''
@@ -170,6 +170,7 @@ def admm_loop(config, args, root):
         start_time_outer_iter = time.time()
         
         # Define command line to run ADMM with CASToR
+
         if (config["method"] == 'Gong'):
                 header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
 
@@ -194,7 +195,7 @@ def admm_loop(config, args, root):
                 castor_command_line_x = castor_admm_command_line(PETImage_shape_str, alpha, 0)
             else:
                 castor_command_line_x = castor_admm_command_line(PETImage_shape_str, alpha, rho)
-            
+
         # Reconstruction with CASToR (first equation of ADMM)
         if (config["method"] == 'Gong'):
             x_label = castor_reconstruction_OPTITR(i, castor_command_line, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension)
@@ -282,7 +283,7 @@ def admm_loop(config, args, root):
         list_samples = [] # list to store averaged and uncertainty images
 
         # Loading DIP input (we do not have CT-map, so random image created in block 1)
-        image_net_input_torch = torch.load(subroot + 'Data/initialization/image_net_input_torch.pt') # DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1. JUST LOAD IT FROM BLOCK 1
+        image_net_input_torch = torch.load(subroot + 'Data/initialization/image_' + net + '_input_torch.pt') # DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1. JUST LOAD IT FROM BLOCK 1
 
         for i in range(n_posterior_samples):
             # Generate one descaled NN output
@@ -329,25 +330,26 @@ config = {
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([False]),
     "scaling" : tune.grid_search(['standardization','normalization','nothing']),
-    "input" : tune.grid_search(['random'])
+    "input" : tune.grid_search(['random']),
+    "method" : tune.grid_search(['Gong'])
 }
 #'''
 config = {
     "lr" : tune.grid_search([0.01]), # 0.01 for DIP, 0.001 for DD
-    "sub_iter_DIP" : tune.grid_search([100]), # 10 for DIP, 100 for DD
+    "sub_iter_DIP" : tune.grid_search([40]), # 10 for DIP, 100 for DD
     "sub_iter_MAP" : tune.grid_search([10]), # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
     "nb_iter_second_admm": tune.grid_search([10]), # Number of ADMM iterations (ADMM before NN)
-    "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DIP_VAE)
+    "net" : tune.grid_search(['DIP','DD']), # Network to use (DIP,DD,DIP_VAE)
     "rho" : tune.grid_search([0.0003]),
     "alpha" : tune.grid_search([0.005]),
     "opti_DIP" : tune.grid_search(['Adam']),
-    "mlem_sequence" : tune.grid_search([True]),
+    "mlem_sequence" : tune.grid_search([False]),
     "d_DD" : tune.grid_search([4]), # not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
-    "skip_connections" : tune.grid_search([0,1,2,3]),
+    "skip_connections" : tune.grid_search([1]),
     "scaling" : tune.grid_search(['standardization']),
     "input" : tune.grid_search(['random']),
-    "method" : tune.grid_search(['Gong'])
+    "method" : tune.grid_search(['Gong','nested'])
 }
 #'''
 

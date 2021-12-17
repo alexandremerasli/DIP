@@ -90,9 +90,9 @@ def post_reconstruction(config,root):
         elif (net == 'DD_AE'):
             input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
             image_net_input_torch = image_net_input_torch.view(1,1,input_size_DD,input_size_DD) # For Deep Decoder, if auto encoder based on Deep Decoder
-    torch.save(image_net_input_torch,subroot + 'Data/initialization/image_net_input_torch.pt')
+    torch.save(image_net_input_torch,subroot + 'Data/initialization/image_' + net + '_input_torch.pt')
 
-    image_net_input_torch = torch.load(subroot + 'Data/initialization/image_net_input_torch.pt')# Here we CAN create random input as this script is only run once
+    image_net_input_torch = torch.load(subroot + 'Data/initialization/image_' + net + '_input_torch.pt')# Here we CAN create random input as this script is only run once
     
     # Loading DIP x_label (corrupted image) from block1
     image_corrupt = fijii_np(subroot+'Comparison/im_corrupt_beginning.img',shape=(PETImage_shape))
@@ -188,7 +188,7 @@ def post_reconstruction(config,root):
 Receiving variables from block 1 part and initializing variables
 """
 
-net = 'DIP' # Network architecture
+net = 'DD' # Network architecture
 processing_unit = 'CPU' # Processing unit (CPU or GPU)
 
 if (net=='DIP'):
@@ -248,7 +248,7 @@ config = {
 #'''
 config = {
     "lr" : tune.grid_search([0.0041]), # 0.01 for DIP, 0.001 for DD
-    "sub_iter_DIP" : tune.grid_search([10]), # 10 for DIP, 100 for DD
+    "sub_iter_DIP" : tune.grid_search([300]), # 10 for DIP, 100 for DD
     "rho" : tune.grid_search([0.0003]),
     "opti_DIP" : tune.grid_search(['Adam']),
     "mlem_sequence" : tune.grid_search([False]),
@@ -256,7 +256,7 @@ config = {
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([0]),
     "scaling" : tune.grid_search(['standardization']),
-    "input" : tune.grid_search(['uniform'])
+    "input" : tune.grid_search(['random'])
     #"scaling" : tune.grid_search(['standardization']),
     #"input" : tune.grid_search(['CT'])
 }
