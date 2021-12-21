@@ -1,12 +1,16 @@
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
+import matplotlib.pyplot as plt
+import numpy as np
+from torch.utils.tensorboard import SummaryWriter
 
 class DD_2D_lightning(pl.LightningModule):
 
     def __init__(self, config):
         super().__init__()
 
+        self.writer = SummaryWriter()
         # Defining variables from config
         self.lr = config['lr']
         self.opti_DIP = config['opti_DIP']
@@ -27,11 +31,10 @@ class DD_2D_lightning(pl.LightningModule):
         # Layers in CNN architecture
         for i in range(len(self.num_channels_up)-2):       
             self.decoder_layers.append(nn.Sequential(
-                               #nn.ReplicationPad2d(1), # if kernel size = 3
                                nn.Conv2d(self.num_channels_up[i], self.num_channels_up[i+1], 1, stride=1),
                                nn.Upsample(scale_factor=2, mode='bilinear'),
                                nn.ReLU(),
-                               nn.BatchNorm2d(self.num_channels_up[i+1])))
+                               nn.BatchNorm2d(self.num_channels_up[i+1]))) #,eps=1e-10))) # For uniform input image, default epsilon is too small which amplifies numerical instabilities 
 
         self.last_layers = nn.Sequential(nn.Conv2d(self.num_channels_up[-2], self.num_channels_up[-1], 1, stride=1))
         
@@ -39,12 +42,28 @@ class DD_2D_lightning(pl.LightningModule):
         # self.positivity = nn.SiLU() # Final SiLU, smoother than ReLU but not positive
         # self.positivity = nn.Softplus() # Final SiLU to enforce positivity of ouput image, smoother than ReLU
 
+
+    def write_image_tensorboard(self,writer,image,name,suffix,i=0,full_contrast=False):
+        # Creating matplotlib figure with colorbar
+        plt.figure()
+        if (len(image.shape) != 2):
+            print('image is ' + str(len(image.shape)) + 'D, plotting only 2D slice')
+            image = image.detach().numpy()[0,0,:,:]
+        if (full_contrast):
+            plt.imshow(image, cmap='gray_r',vmin=np.min(image),vmax=np.max(image)) # Showing each image with maximum contrast  
+        else:
+            plt.imshow(image, cmap='gray_r',vmin=0,vmax=500) # Showing all images with same contrast
+        plt.colorbar()
+        #plt.axis('off')
+        # Adding this figure to tensorboard
+        writer.add_figure(name,plt.gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
+
     def forward(self, x):
         out = x
         for i in range(len(self.num_channels_up)-2):
             out = self.decoder_layers[i](out)
         out = self.last_layers(out)
-        
+        #self.write_image_tensorboard(self.writer,out,"TEST (" + 'DD' + "output, FULL CONTRAST)","",0,full_contrast=True) # Showing each image with contrast = 1
         if (self.method == 'Gong'):
             out = self.positivity(out)
         return out

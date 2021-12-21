@@ -29,7 +29,7 @@ if __name__ == "__main__":
     "rho" : 0.05,
     "alpha" : 0.005, # Put alpha = 1 if True, otherwise too slow. alpha smaller if False
     "image_init_path_without_extension" : '1_im_value_cropped',
-    "nb_iter" : 10, # Number of outer iterations
+    "nb_iter" : 1000, # Number of outer iterations
     "penalty" : 'MRF'
     #"penalty" : 'DIP_ADMM'
     }

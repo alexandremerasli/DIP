@@ -188,7 +188,7 @@ def post_reconstruction(config,root):
 Receiving variables from block 1 part and initializing variables
 """
 
-net = 'DD' # Network architecture
+net = 'DIP' # Network architecture
 processing_unit = 'CPU' # Processing unit (CPU or GPU)
 
 if (net=='DIP'):
@@ -243,20 +243,24 @@ config = {
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([True]),
     "scaling" : tune.grid_search(['standardization']),
-    "input" : tune.grid_search(['random','CT','uniform'])
+    "input" : tune.grid_search(['random','CT','uniform']),
+    "method" : tune.grid_search(['Gong'])
 }
 #'''
 config = {
-    "lr" : tune.grid_search([0.0041]), # 0.01 for DIP, 0.001 for DD
-    "sub_iter_DIP" : tune.grid_search([300]), # 10 for DIP, 100 for DD
+    #"lr" : tune.grid_search([0.1,1]), # Bigger learning rates for L-BFGS
+    "lr" : tune.grid_search([0.041]), # Smaller learning rates for Adam
+    "sub_iter_DIP" : tune.grid_search([20]), # 10 for DIP, 100 for DD
     "rho" : tune.grid_search([0.0003]),
+    #"opti_DIP" : tune.grid_search(['LBFGS']),
     "opti_DIP" : tune.grid_search(['Adam']),
     "mlem_sequence" : tune.grid_search([False]),
     "d_DD" : tune.grid_search([4]), # not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([0]),
     "scaling" : tune.grid_search(['standardization']),
-    "input" : tune.grid_search(['random'])
+    "input" : tune.grid_search(['random']),
+    "method" : tune.grid_search(['nested'])
     #"scaling" : tune.grid_search(['standardization']),
     #"input" : tune.grid_search(['CT'])
 }

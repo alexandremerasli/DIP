@@ -356,8 +356,8 @@ def write_image_tensorboard(writer,image,name,suffix,i=0,full_contrast=False):
         plt.imshow(image, cmap='gray_r',vmin=0,vmax=500) # Showing all images with same contrast
     plt.colorbar()
     plt.axis('off')
+
     # Saving this figure locally
-    
     Path('/home/meraslia/sgld/hernan_folder/data/Algo/Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
     plt.savefig('/home/meraslia/sgld/hernan_folder/data/Algo/Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
     from textwrap import wrap
@@ -448,7 +448,38 @@ def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finet
     out_descale = descale_imag(out,param1_scale_im_corrupt,param2_scale_im_corrupt,config["scaling"])
     return out_descale
 
-def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
+def castor_command_line_func(config,PETImage_shape_str,rho,alpha,i,k,suffix):
+    if (config["method"] == 'Gong'):
+        header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
+
+        executable = 'castor-recon'
+        dim = ' -dim ' + PETImage_shape_str
+        vox = ' -vox 4,4,4'
+        vb = ' -vb 1'
+        th = ' -th 1'
+        proj = ' -proj incrementalSiddon'
+
+        opti = ' -opti OPTITR'
+        pnlt = ' -pnlt OPTITR'
+        pnlt_beta = ' -pnlt-beta ' + str(rho)
+
+        subroot_output_path = subroot + 'Block1/' + suffix# + '/' # Output path for CASTOR framework
+        full_output_path = ' -dout ' + subroot_output_path + '/out_eq22/'
+        input_path = ' -img ' + subroot + 'Block1/' + suffix + '/out_eq22/' # Input path for CASTOR framework
+
+        castor_command_line = executable + dim + vox + header_file + vb + th + proj + opti + pnlt + pnlt_beta + full_output_path
+    else: # Nested ADMM
+        if (i==0): # For first iteration, put rho to zero
+            if (k!=-1): # For first iteration, do not put both rho and alpha to zero
+                rho = 0
+        if (k==-1): # For first iteration, put alpha to zero (small value to be accepted by CASToR)
+            alpha = 0
+
+        castor_command_line = castor_admm_command_line(PETImage_shape_str, alpha, rho)
+
+    return castor_command_line
+
+def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension):
     only_x = False # Freezing u and v computation, just updating x if True
     start_time_block1 = time.time()
     mlem_sequence = config['mlem_sequence']
@@ -490,6 +521,8 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
     v_for_additional_data = ' -additional-data ' + full_output_path_k + '_v.hdr'
     u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
+    # Define command line to run ADMM with CASToR
+    castor_command_line_x = castor_command_line_func(config,PETImage_shape_str,rho,alpha,i,k,suffix)
     # Compute one ADMM iteration (x, v, u) when only initializing x
     x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty #+ u_for_additional_data + v_for_additional_data # we need f-mu so that ADMM optimizer works, even if we will not use it...
     print('vvvvvvvvvvv0000000000')
@@ -541,14 +574,17 @@ def castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MA
         v_for_additional_data = ' -additional-data ' + full_output_path_k + '_v.hdr'
         u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
-        x = fijii_np(full_output_path_k + '_x.img', shape=(PETImage_shape[0],PETImage_shape[1]))
-        if (k>=0):
-            write_image_tensorboard(writer,x,"x in second ADMM over iterations",suffix, k+i*nb_iter_second_admm) # Showing all corrupted images with same contrast to compare them together
-            write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)",suffix, k+i*nb_iter_second_admm,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
-
+        # Define command line to run ADMM with CASToR
+        castor_command_line_x = castor_command_line_func(config,PETImage_shape_str,rho,alpha,i,k,suffix)
         # Compute one ADMM iteration (x, v, u)
-        x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage
+        x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage    
+        print('xxxxxxxxxuuuuuuuuuuuvvvvvvvvv')
         ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,only_x,subroot_output_path=subroot_output_path)
+
+        x = fijii_np(full_output_path_k_next + '_x.img', shape=(PETImage_shape[0],PETImage_shape[1]))
+        if (k>=-1):
+            write_image_tensorboard(writer,x,"x in second ADMM over iterations",suffix, k+1+i*nb_iter_second_admm) # Showing all corrupted images with same contrast to compare them together
+            write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)",suffix, k+1+i*nb_iter_second_admm,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
 
     print("--- %s seconds - second ADMM (CASToR) iteration ---" % (time.time() - start_time_block1))
 
@@ -600,10 +636,6 @@ def castor_reconstruction_OPTITR(i, castor_command_line, subroot, sub_iter_MAP, 
     else:
         it = ' -it ' + str(sub_iter_MAP) + ':1' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
         os.system(castor_command_line + initialimage + full_output_path + it + f_mu_for_penalty)
-        print(initialimage)
-        print(castor_command_line + initialimage)
-        print(castor_command_line + initialimage + full_output_path + it + f_mu_for_penalty)
-        print(castor_command_line + initialimage)
 
         print("--- %s seconds - optimization transfer (CASToR) iteration ---" % (time.time() - start_time_block1))
 
@@ -637,10 +669,21 @@ def castor_admm_command_line(PETImage_shape_str, alpha, rho, only_Lim=False, pnl
     th = ' -th 1'
     proj = ' -proj incrementalSiddon'
 
+    if (rho == 0): # Special case where we do not want to penalize reconstruction (not taking into account network output)
+        # Seg fault in CASToR...
+        pnlt = ''
+        pnlt_beta = ''
+        # Not clean, but works to put rho == 0 in CASToR
+        if (~only_Lim): # DIP + ADMM reconstruction, so choose DIP_ADMM penalty from CASToR
+            pnlt = ' -pnlt DIP_ADMM'
+        pnlt_beta = ' -pnlt-beta ' + str(rho)
+    else:      
+        if (~only_Lim): # DIP + ADMM reconstruction, so choose DIP_ADMM penalty from CASToR
+            pnlt = ' -pnlt DIP_ADMM'
+        pnlt_beta = ' -pnlt-beta ' + str(rho)
+    if (alpha == 0): # Special case where we only want to fit network output (when v has not been initialized with data)
+        alpha = 1E-10 # Do not put 0, otherwise CASToR will not work
     opti = ' -opti ADMMLim' + ',' + str(alpha) + ',0.01,10.'
-    if (~only_Lim): # DIP + ADMM reconstruction, so choose DIP_ADMM penalty from CASToR
-        pnlt = ' -pnlt DIP_ADMM'
-    pnlt_beta = ' -pnlt-beta ' + str(rho)
 
     # Command line for calculating the Likelihood
     opti_like = ' -opti-fom'

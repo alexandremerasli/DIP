@@ -12,7 +12,7 @@ image_gt : ground truth image
 x_out : DIP output
 x : image x at iteration i
 image_init : initialization of image x (x_0)
-f_init : initialization of DIP output (f_0), BUT NOT theta_0
+f_init : initialization of DIP output (f_0), BUT NOT theta_0 (for Gong's method, nested ADMM do not need it)
 """
 
 ## Python libraries
@@ -96,7 +96,7 @@ def admm_loop(config, args, root):
 
     if config["method"] == 'Gong':
         # config["scaling"] = 'positive_normalization' # Will still introduce bias as mu can be negative
-        config["scaling"] = "nothing"
+        config["scaling"] = "normalization" # Will still introduce bias as mu can be negative, but this is Gong's method
     np.save(subroot + 'Config/config' + suffix + '.npy', config) # Save this configuration of hyperparameters, and reload it at the beginning of block 2 thanks to suffix (passed in subprocess call argumentsZ)
 
     """
@@ -131,10 +131,10 @@ def admm_loop(config, args, root):
     # Creating random image input for DIP while we do not have CT, but need to be removed after
     create_input(net,PETImage_shape,config) # to be removed when CT will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
     # Loading DIP input (we do not have CT-map, so random image created in block 1)
-    image_net_input = load_input(net,PETImage_shape,config) # Scaling of DIP input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
+    image_net_input = load_input(net,PETImage_shape,config) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
     #image_atn = fijii_np(subroot+'Data/phantom/phantom_atn.img',shape=(PETImage_shape))
     #write_image_tensorboard(writer,image_atn,"Attenuation map (FULL CONTRAST)",suffix,0,full_contrast=True) # Attenuation map in tensorboard
-    image_net_input_scale = rescale_imag(image_net_input,scaling_input)[0] # Rescale of DIP input
+    image_net_input_scale = rescale_imag(image_net_input,scaling_input)[0] # Rescale of network input
     # DIP input image, numpy --> torch
     image_net_input_torch = torch.Tensor(image_net_input_scale)
     # Adding dimensions to fit network architecture
@@ -150,57 +150,34 @@ def admm_loop(config, args, root):
     torch.save(image_net_input_torch,subroot + 'Data/initialization/image_' + net + '_input_torch.pt')
 
     # Ininitializing DIP output and first image x with f_init and image_init
-    image_init_path_without_extension = ''
-    #image_init = np.ones((PETImage_shape[0],PETImage_shape[1])) # initializing CASToR MAP reconstruction with uniform image with ones.
-    image_init_path_without_extension = '1_im_value_cropped'
-    #image_init_path_without_extension = 'BSREM_it30_REF_cropped'
-    
     #f_init = fijii_np(subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped.img',shape=(PETImage_shape))
     #f_init = fijii_np(subroot+'Comparison/MLEM/MLEM_converge_avec_post_filtre.img',shape=(PETImage_shape))
-    f_init = np.ones((PETImage_shape[0],PETImage_shape[1]), dtype='<f')
-    save_img(f_init,subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(-1) + suffix + '.img') # saving DIP output
+    if (config["method"] == "nested"): # Nested needs 1 to not add any prior information at the beginning, and to initialize x computation to uniform with 1
+        f_init = np.ones((PETImage_shape[0],PETImage_shape[1]), dtype='<f')
+        image_init_path_without_extension = '1_im_value_cropped'
+        # image_init_path_without_extension = 'BSREM_it30_REF_cropped' # Just for testing
+    elif (config["method"] == "Gong"): # Gong initialization with 60th iteration of MLEM (normally, DIP trained with this image as label...)
+        f_init = fijii_np(subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped.img',shape=(PETImage_shape))
+        #f_init = fijii_np(subroot + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(PETImage_shape))
+        image_init_path_without_extension = '1_im_value_cropped' # OPTITR initialization, so firts in MLEM (1 iteration) computation. Not written in Gong, but perhaps not giving any prior information
+
+    #save_img(f_init,subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(-1) + suffix + '.img') # saving DIP output
 
     #Loading Ground Truth image to compute metrics
     image_gt = fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape))
 
     f = f_init  # Initializing DIP output with f_init
-
     for i in range(max_iter):
         print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Outer iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', i)
         start_time_outer_iter = time.time()
         
-        # Define command line to run ADMM with CASToR
-
-        if (config["method"] == 'Gong'):
-                header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
-
-                executable = 'castor-recon'
-                dim = ' -dim ' + PETImage_shape_str
-                vox = ' -vox 4,4,4'
-                vb = ' -vb 1'
-                th = ' -th 1'
-                proj = ' -proj incrementalSiddon'
-
-                opti = ' -opti OPTITR'
-                pnlt = ' -pnlt OPTITR'
-                pnlt_beta = ' -pnlt-beta ' + str(rho)
-
-                subroot_output_path = subroot + 'Block1/' + suffix# + '/' # Output path for CASTOR framework
-                full_output_path = ' -dout ' + subroot_output_path + '/out_eq22/'
-                input_path = ' -img ' + subroot + 'Block1/' + suffix + '/out_eq22/' # Input path for CASTOR framework
-
-                castor_command_line = executable + dim + vox + header_file + vb + th + proj + opti + pnlt + pnlt_beta + full_output_path
-        else: # Nested ADMM
-            if (i==0): # For first iteration, put rho to zero
-                castor_command_line_x = castor_admm_command_line(PETImage_shape_str, alpha, 0)
-            else:
-                castor_command_line_x = castor_admm_command_line(PETImage_shape_str, alpha, rho)
-
         # Reconstruction with CASToR (first equation of ADMM)
         if (config["method"] == 'Gong'):
-            x_label = castor_reconstruction_OPTITR(i, castor_command_line, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension)
+            subroot_output_path = subroot + 'Block1/' + suffix# + '/' # Output path for CASTOR framework
+            input_path = ' -img ' + subroot + 'Block1/' + suffix + '/out_eq22/' # Input path for CASTOR framework
+            x_label = castor_reconstruction_OPTITR(i, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension)
         else: # Nested ADMM
-            x_label = castor_reconstruction(writer, i, castor_command_line_x, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension) # without ADMMLim file
+            x_label = castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension) # without ADMMLim file
 
         # Write image over ADMM iterations
         if ((max_iter>=10) and (i%(max_iter // 10) == 0) or True):
@@ -298,9 +275,9 @@ def admm_loop(config, args, root):
         compute_metrics(x_avg,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,write_tensorboard=False)
 
     # Display images in tensorboard
-    write_image_tensorboard(writer,f_init,"initialization of DIP output (f_0)",suffix) # initialization of DIP output in tensorboard
+    #write_image_tensorboard(writer,f_init,"initialization of DIP output (f_0) (FULL CONTRAST)",suffix,0,full_contrast=True) # initialization of DIP output in tensorboard
     #write_image_tensorboard(writer,image_init,"initialization of CASToR MAP reconstruction (x_0)") # initialization of CASToR MAP reconstruction in tensorboard
-    write_image_tensorboard(writer,image_net_input,"DIP input",suffix) # DIP input in tensorboard
+    write_image_tensorboard(writer,image_net_input,"DIP input (FULL CONTRAST)",suffix,0,full_contrast=True) # DIP input in tensorboard
     write_image_tensorboard(writer,image_gt,"Ground Truth",suffix) # Ground truth image in tensorboard
 
     if (net == 'DIP_VAE'):
@@ -336,10 +313,10 @@ config = {
 #'''
 config = {
     "lr" : tune.grid_search([0.01]), # 0.01 for DIP, 0.001 for DD
-    "sub_iter_DIP" : tune.grid_search([40]), # 10 for DIP, 100 for DD
+    "sub_iter_DIP" : tune.grid_search([100]), # 10 for DIP, 100 for DD
     "sub_iter_MAP" : tune.grid_search([10]), # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
     "nb_iter_second_admm": tune.grid_search([10]), # Number of ADMM iterations (ADMM before NN)
-    "net" : tune.grid_search(['DIP','DD']), # Network to use (DIP,DD,DIP_VAE)
+    "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DIP_VAE)
     "rho" : tune.grid_search([0.0003]),
     "alpha" : tune.grid_search([0.005]),
     "opti_DIP" : tune.grid_search(['Adam']),
@@ -348,8 +325,8 @@ config = {
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([1]),
     "scaling" : tune.grid_search(['standardization']),
-    "input" : tune.grid_search(['random']),
-    "method" : tune.grid_search(['Gong','nested'])
+    "input" : tune.grid_search(['CT']),
+    "method" : tune.grid_search(['nested'])
 }
 #'''
 
