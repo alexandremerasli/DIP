@@ -10,6 +10,10 @@ data/Algo/Data/initialization/image_DIP_input_torch.pt
 data/Algo/Data/initialization/image_DD_input_torch.pt
 data/Algo/Data/initialization/image_DD_AE_input_torch.pt
 data/Algo/Data/initialization/image_VAE_DIP_input_torch.pt
+data/Algo/Data/initialization/uniform_input_DIP.img
+data/Algo/Data/initialization/uniform_input_DD.img
+data/Algo/Data/initialization/uniform_input_DD_AE.img
+data/Algo/Data/initialization/random_input_VAE_DIP.img
 data/Algo/Data/initialization/random_input_DIP.img
 data/Algo/Data/initialization/random_input_DD.img
 data/Algo/Data/initialization/random_input_DD_AE.img

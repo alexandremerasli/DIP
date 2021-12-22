@@ -119,8 +119,6 @@ def admm_loop(config, args, root):
     CRC_hot_recon = np.zeros(max_iter)
     CRC_bkg_recon = np.zeros(max_iter)
     IR_bkg_recon = np.zeros(max_iter)
-    bias_cold_recon = np.zeros(max_iter)
-    bias_hot_recon = np.zeros(max_iter)
 
     """
     CASTOR framework
@@ -194,7 +192,7 @@ def admm_loop(config, args, root):
         f = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
 
         # Metrics for NN output
-        compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
+        compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,writer=writer,write_tensorboard=True)
 
         # Block 3 - equation 15 - mu
         mu = x_label- f
@@ -272,7 +270,7 @@ def admm_loop(config, args, root):
             x_var = (list_samples[i] - x_avg)**2 / n_posterior_samples
         
         # Computing metrics to compare averaging vae outputs with single output
-        compute_metrics(x_avg,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,write_tensorboard=False)
+        compute_metrics(x_avg,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,write_tensorboard=False)
 
     # Display images in tensorboard
     #write_image_tensorboard(writer,f_init,"initialization of DIP output (f_0) (FULL CONTRAST)",suffix,0,full_contrast=True) # initialization of DIP output in tensorboard
@@ -325,7 +323,7 @@ config = {
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([1]),
     "scaling" : tune.grid_search(['standardization']),
-    "input" : tune.grid_search(['CT']),
+    "input" : tune.grid_search(['BSREM','CT']),
     "method" : tune.grid_search(['nested'])
 }
 #'''

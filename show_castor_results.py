@@ -66,8 +66,6 @@ MA_cold_recon = np.zeros(max_iter)
 CRC_hot_recon = np.zeros(max_iter)
 CRC_bkg_recon = np.zeros(max_iter)
 IR_bkg_recon = np.zeros(max_iter)
-bias_cold_recon = np.zeros(max_iter)
-bias_hot_recon = np.zeros(max_iter)
 
 #Loading Ground Truth image to compute metrics
 image_gt = fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape))
@@ -80,7 +78,7 @@ for i in range(1,max_iter):
         f = fijii_np(subroot+'Comparison/' + opti + '/' + opti + '_it' + format(i) + '.img',shape=(PETImage_shape)) # loading optimizer output
 
     # Metrics for NN output
-    compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
+    compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,writer=writer,write_tensorboard=True)
 
     # Display images in tensorboard
     #write_image_tensorboard(writer,image_init,"initialization of DIP output",suffix) # DIP input in tensorboard
@@ -89,7 +87,6 @@ for i in range(1,max_iter):
 
     # Write image over ADMM iterations
     if ((max_iter>=10) and (i%(max_iter // 10) == 0)):
-        print('tensorboardaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
         write_image_tensorboard(writer,f,"Image over " + opti + " iterations",suffix,i) # Showing all images with same contrast to compare them together
         write_image_tensorboard(writer,f,"Image over " + opti + " iterations (FULL CONTRAST)",suffix,i,full_contrast=True) # Showing each image with contrast = 1
     

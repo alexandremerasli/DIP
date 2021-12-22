@@ -52,8 +52,6 @@ if __name__ == "__main__":
     CRC_hot_recon = np.zeros(nb_iter)
     CRC_bkg_recon = np.zeros(nb_iter)
     IR_bkg_recon = np.zeros(nb_iter)
-    bias_cold_recon = np.zeros(nb_iter)
-    bias_hot_recon = np.zeros(nb_iter)
 
     ## Arguments for linux command to launch script
     # Creating arguments

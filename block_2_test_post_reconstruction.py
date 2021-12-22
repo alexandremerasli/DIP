@@ -66,8 +66,6 @@ def post_reconstruction(config,root):
     CRC_hot_recon = np.zeros(sub_iter_DIP)
     CRC_bkg_recon = np.zeros(sub_iter_DIP)
     IR_bkg_recon = np.zeros(sub_iter_DIP)
-    bias_cold_recon = np.zeros(sub_iter_DIP)
-    bias_hot_recon = np.zeros(sub_iter_DIP)
 
     #Loading Ground Truth image to compute metrics
     image_gt = fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape))
@@ -154,7 +152,6 @@ def post_reconstruction(config,root):
     write_image_tensorboard(writer,image_corrupt,"Corrupted image to fit (FULL CONTRAST)",suffix_func(config),0,full_contrast=True) # Showing corrupted image
     for epoch in range(0,sub_iter_DIP,sub_iter_DIP//10):      
         write_image_tensorboard(writer,image_net_input,"DIP input (FULL CONTRAST)",suffix_func(config),epoch,full_contrast=True) # DIP input in tensorboard
-
         if (epoch > 0):
             # Train model using previously trained network (at iteration before)
             model = train_process(config, finetuning, processing_unit, sub_iter_DIP//10, admm_it, image_net_input_torch, image_corrupt_torch)
@@ -173,7 +170,7 @@ def post_reconstruction(config,root):
             # Squeeze image by loading it
             out_descale = fijii_np(net_outputs_path,shape=(PETImage_shape)) # loading DIP output
             # Metrics for NN output
-            compute_metrics(PETImage_shape,out_descale,image_gt,epoch,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=writer,write_tensorboard=True)
+            compute_metrics(PETImage_shape,out_descale,image_gt,epoch,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,writer=writer,write_tensorboard=True)
             # Saving (now DESCALED) image output
             save_img(out_descale, net_outputs_path)
 
@@ -250,7 +247,7 @@ config = {
 config = {
     #"lr" : tune.grid_search([0.1,1]), # Bigger learning rates for L-BFGS
     "lr" : tune.grid_search([0.041]), # Smaller learning rates for Adam
-    "sub_iter_DIP" : tune.grid_search([20]), # 10 for DIP, 100 for DD
+    "sub_iter_DIP" : tune.grid_search([100]), # 10 for DIP, 100 for DD
     "rho" : tune.grid_search([0.0003]),
     #"opti_DIP" : tune.grid_search(['LBFGS']),
     "opti_DIP" : tune.grid_search(['Adam']),
@@ -259,7 +256,7 @@ config = {
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([0]),
     "scaling" : tune.grid_search(['standardization']),
-    "input" : tune.grid_search(['random']),
+    "input" : tune.grid_search(['CT']),
     "method" : tune.grid_search(['nested'])
     #"scaling" : tune.grid_search(['standardization']),
     #"input" : tune.grid_search(['CT'])

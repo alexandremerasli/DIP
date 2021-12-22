@@ -184,8 +184,8 @@ def coord_to_value_array(coord_arr,arr):
         l[i] = arr[coord]
     return l
 
-def compute_metrics(PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,bias_cold_recon,bias_hot_recon,writer=None,write_tensorboard=False):
-
+def compute_metrics(PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,writer=None,write_tensorboard=False):
+    # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing backround ROI, because we want to exclude those regions from big cylinder
     # Select only phantom ROI, not whole reconstructed image
     phantom_ROI = points_in_circle(0/4,0/4,150/4,PETImage_shape)
     f_metric = find_nan(image_recon)
@@ -210,29 +210,29 @@ def compute_metrics(PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_
 
     # Contrast Recovery Coefficient calculation    
     # Mean activity in cold cylinder calculation (-c -40. -40. 0. 40. 4. 0.)
-    cold_ROI = points_in_circle(-40/4,-40/4,40/4,PETImage_shape)
+    cold_ROI = points_in_circle(-40/4,-40/4,40/4-1,PETImage_shape)
     cold_ROI_act = coord_to_value_array(cold_ROI,f_metric)
     MA_cold_recon[i] = np.mean(cold_ROI_act)
     #IR_cold_recon[i] = np.std(cold_ROI_act) / MA_cold_recon[i]
-    bias_cold_recon[i] = MA_cold_recon[i] - 1.
     print('Mean activity in cold cylinder', MA_cold_recon[i],' , must be close to 0')
     #print('Image roughness in the cold cylinder', IR_cold_recon[i])
-    print('FOV bias in cold region',bias_cold_recon[i],' , must be as small as possible')
 
     # Mean Concentration Recovery coefficient (CRCmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
-    hot_ROI = points_in_circle(50/4,10/4,20/4,PETImage_shape)
+    hot_ROI = points_in_circle(50/4,10/4,20/4-1,PETImage_shape)
     hot_ROI_act = coord_to_value_array(hot_ROI,f_metric)
     CRC_hot_recon[i] = np.mean(hot_ROI_act) / 400.
     #IR_hot_recon[i] = np.std(hot_ROI_act) / np.mean(hot_ROI_act)
-    bias_hot_recon[i] = CRC_hot_recon[i] - 1.
     print('Mean Concentration Recovery coefficient in hot cylinder', CRC_hot_recon[i],' , must be close to 1')
     #print('Image roughness in the hot cylinder', IR_hot_recon[i])
-    print('FOV bias in hot region',bias_hot_recon[i],' , must be as small as possible')
 
     # Mean Concentration Recovery coefficient (CRCmean) in background calculation (-c 0. 0. 0. 150. 4. 100)
     #m0_bkg = (np.sum(coord_to_value_array(bkg_ROI,f_metric[phantom_ROI])) - np.sum([coord_to_value_array(cold_ROI,f_metric[phantom_ROI]),coord_to_value_array(hot_ROI,f_metric[phantom_ROI])])) / (len(bkg_ROI) - (len(cold_ROI) + len(hot_ROI)))
-    #CRC_bkg_recon[i] = m0_bkg / 100.   
-    bkg_ROI = list(set(phantom_ROI) - set(cold_ROI) - set(hot_ROI))
+    #CRC_bkg_recon[i] = m0_bkg / 100.
+    #         
+    cold_ROI_bkg = points_in_circle(-40/4,-40/4,40/4+1,PETImage_shape)
+    hot_ROI_bkg = points_in_circle(50/4,10/4,20/4+1,PETImage_shape)
+    phantom_ROI_bkg = points_in_circle(0/4,0/4,150/4-1,PETImage_shape)   
+    bkg_ROI = list(set(phantom_ROI_bkg) - set(cold_ROI_bkg) - set(hot_ROI_bkg))
     bkg_ROI_act = coord_to_value_array(bkg_ROI,f_metric)
     CRC_bkg_recon[i] = np.mean(bkg_ROI_act) / 100.
     IR_bkg_recon[i] = np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)
@@ -241,13 +241,11 @@ def compute_metrics(PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_
 
     if (write_tensorboard):
         print("Metrics saved in tensorboard")
-        writer.add_scalar('MSE gt (best : 0)', MSE_recon[i],i)
-        writer.add_scalar('Mean activity in cold cylinder (best : 0)', MA_cold_recon[i],i)
-        writer.add_scalar('FOV bias in cold region (best : 0)', bias_cold_recon[i],i)
-        writer.add_scalar('Mean Concentration Recovery coefficient in hot cylinder (best : 1)', CRC_hot_recon[i],i)
-        writer.add_scalar('FOV bias in hot region (best : 0)', bias_hot_recon[i],i)
-        writer.add_scalar('Mean Concentration Recovery coefficient in background (best : 1)', CRC_bkg_recon[i],i)
-        writer.add_scalar('Image roughness in the background (best : 0)', IR_bkg_recon[i],i)
+        writer.add_scalars('MSE gt (best : 0)', {'MSE':  MSE_recon[i], 'best': 0,}, i)
+        writer.add_scalars('Mean activity in cold cylinder (best : 0)', {'mean_cold':  MA_cold_recon[i], 'best': 0,}, i)
+        writer.add_scalars('Mean Concentration Recovery coefficient in hot cylinder (best : 1)', {'CRC_hot':  CRC_hot_recon[i], 'best': 1,}, i)
+        writer.add_scalars('Mean Concentration Recovery coefficient in background (best : 1)', {'CRC_bkg':  CRC_bkg_recon[i], 'best': 1,}, i)
+        writer.add_scalars('Image roughness in the background (best : 0)', {'IR':  IR_bkg_recon[i], 'best': 0,}, i)
 
 def choose_net(net, config):
     if (net == 'DIP'):
@@ -309,6 +307,8 @@ def load_input(net,PETImage_shape,config):
         file_path = (subroot+'Data/initialization/random_input_' + net + '.img')
     elif config["input"] == "CT":
         file_path = (subroot+'Data/phantom/phantom_atn.img') #CT map, but not CT yet, attenuation for now...
+    elif config["input"] == "BSREM":
+        file_path = (subroot+'Data/initialization/BSREM_it30_REF_cropped.img') #
     elif config["input"] == "uniform":
         file_path = (subroot+'Data/initialization/uniform_input_' + net + '.img')
     if (net == 'DD'):
@@ -549,7 +549,7 @@ def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix
         #it = ' -it ' + '5:14' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
 
     # Second ADMM computation
-    for k in range(-1,nb_iter_second_admm):
+    for k in range(-1,nb_iter_second_admm): # iteration -1 is to initialize v fitting data
         # Initialize variables for command line
         if (k == -1):
             if (i == 0):   # choose initial image for CASToR reconstruction

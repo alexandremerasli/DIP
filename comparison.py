@@ -59,8 +59,6 @@ MA_cold_recon = np.zeros(max_iter)
 CRC_hot_recon = np.zeros(max_iter)
 CRC_bkg_recon = np.zeros(max_iter)
 IR_bkg_recon = np.zeros(max_iter)
-bias_cold_recon = np.zeros(max_iter)
-bias_hot_recon = np.zeros(max_iter)
 
 writer = SummaryWriter()
 
