@@ -28,7 +28,8 @@ config = {
     "mlem_sequence" : False,
     "d_DD" : 6,
     "k_DD" : 32,
-    "skip_connections" : False
+    "skip_connections" : False,
+    "image" : "image0"
 }
 
 # For VS Code (without command line)
@@ -43,7 +44,7 @@ subroot = root + '/data/Algo/'  # Directory root
 writer = SummaryWriter()
 
 # Define PET input dimensions according to input data dimensions
-PETImage_shape_str = read_input_dim()
+PETImage_shape_str = read_input_dim(subroot+'Data/database_v2/' + config["image"] + '/' + config["image"] + '.hdr')
 PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
 
 # Metrics arrays
@@ -56,24 +57,24 @@ CRC_bkg_recon = np.zeros(max_iter)
 IR_bkg_recon = np.zeros(max_iter)
 
 #Loading Ground Truth image to compute metrics
-image_gt = fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape))
+image_gt = fijii_np(subroot+'Data/database_v2/' + config["image"] + '/' + config["image"] + '.raw',shape=(PETImage_shape))
 
 for i in range(max_iter):
     f = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
 
     # Metrics for NN output
-    compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,writer=writer,write_tensorboard=True)
+    compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,config["image"],writer=writer,write_tensorboard=True)
 
     # Display images in tensorboard
-    #write_image_tensorboard(writer,image_init,"initialization of DIP output",suffix) # DIP input in tensorboard
-    #write_image_tensorboard(writer,image_net_input,"DIP input",suffix) # Initialization of DIP output in tensorboard
-    write_image_tensorboard(writer,image_gt,"Ground Truth",suffix) # Ground truth image in tensorboard
+    #write_image_tensorboard(writer,image_init,"initialization of DIP output",suffix,image_gt) # DIP input in tensorboard
+    #write_image_tensorboard(writer,image_net_input,"DIP input",suffix,image_gt) # Initialization of DIP output in tensorboard
+    write_image_tensorboard(writer,image_gt,"Ground Truth",suffix,image_gt) # Ground truth image in tensorboard
 
     # Write image over ADMM iterations
     if ((max_iter>=10) and (i%(max_iter // 10) == 0)):
 
-        write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",suffix,i) # Showing all images with same contrast to compare them together
-        write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output, FULL CONTRAST)",suffix,i,full_contrast=True) # Showing each image with contrast = 1
+        write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",suffix,image_gt,i) # Showing all images with same contrast to compare them together
+        write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output, FULL CONTRAST)",suffix,image_gt,i,full_contrast=True) # Showing each image with contrast = 1
     
 
 writer.close()

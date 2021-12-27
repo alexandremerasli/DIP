@@ -22,11 +22,12 @@ import numpy as np
 # Local files to import
 from utils_func import *
 
-if (len(sys.argv) - 1 == 4):
+if (len(sys.argv) - 1 == 5):
     opti = sys.argv[1] # CASToR optimizer
     max_iter = int(sys.argv[2]) # Number of outer iterations
     test = int(sys.argv[3]) # Label of the experiment
     suffix = sys.argv[4] # Suffix containing hyperparameters configuration (for ADMMLim)
+    image = sys.argv[5] # Image (phantom) to choose
 else:
     ## Arguments for linux command to launch script
     # Creating arguments
@@ -34,6 +35,7 @@ else:
     parser.add_argument('--opti', type=str, dest='opti', help='CASToR optimizer')
     parser.add_argument('--max_iter', type=int, dest='max_iter', help='number of outer iterations')
     parser.add_argument('--test', type=str, dest='test', help='Label of experiment')
+    parser.add_argument('--image', type=str, dest='image', help='phantom image from database')
 
     # Retrieving arguments in this python script
     args = parser.parse_args()
@@ -41,10 +43,12 @@ else:
         opti = args.opti
         max_iter = int(args.max_iter)
         test = int(args.test)
+        image = args.image # phantom image from database
     else: # For VS Code (without command line)
-        opti = 'BSREM' # CASToR optimizer
-        max_iter = 30 # Optimizer number of iterations
+        opti = 'MLEM' # CASToR optimizer
+        max_iter = 10 # Optimizer number of iterations
         test = 24
+        image = "image0"
 
 if (opti != 'ADMMLim'):
     suffix = ""
@@ -55,7 +59,7 @@ subroot = root + '/data/Algo/'  # Directory root
 writer = SummaryWriter()
 
 # Define PET input dimensions according to input data dimensions
-PETImage_shape_str = read_input_dim(subroot+'Data/castor_output_it60.hdr')
+PETImage_shape_str = read_input_dim(subroot+'Data/database_v2/' + image + '/' + image + '.hdr')
 PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
 
 # Metrics arrays
@@ -68,7 +72,7 @@ CRC_bkg_recon = np.zeros(max_iter)
 IR_bkg_recon = np.zeros(max_iter)
 
 #Loading Ground Truth image to compute metrics
-image_gt = fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape))
+image_gt = fijii_np(subroot+'Data/database_v2/' + image + '/' + image + '.raw',shape=(PETImage_shape))
 
 for i in range(1,max_iter):
     print(i)
@@ -78,17 +82,17 @@ for i in range(1,max_iter):
         f = fijii_np(subroot+'Comparison/' + opti + '/' + opti + '_it' + format(i) + '.img',shape=(PETImage_shape)) # loading optimizer output
 
     # Metrics for NN output
-    compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,writer=writer,write_tensorboard=True)
+    compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,image,writer=writer,write_tensorboard=True)
 
     # Display images in tensorboard
-    #write_image_tensorboard(writer,image_init,"initialization of DIP output",suffix) # DIP input in tensorboard
-    #write_image_tensorboard(writer,image_net_input,"DIP input",suffix) # Initialization of DIP output in tensorboard
-    write_image_tensorboard(writer,image_gt,"Ground Truth",suffix) # Ground truth image in tensorboard
+    #write_image_tensorboard(writer,image_init,"initialization of DIP output",suffix,image_gt) # DIP input in tensorboard
+    #write_image_tensorboard(writer,image_net_input,"DIP input",suffix,image_gt) # Initialization of DIP output in tensorboard
+    write_image_tensorboard(writer,image_gt,"Ground Truth",suffix,image_gt) # Ground truth image in tensorboard
 
     # Write image over ADMM iterations
     if ((max_iter>=10) and (i%(max_iter // 10) == 0)):
-        write_image_tensorboard(writer,f,"Image over " + opti + " iterations",suffix,i) # Showing all images with same contrast to compare them together
-        write_image_tensorboard(writer,f,"Image over " + opti + " iterations (FULL CONTRAST)",suffix,i,full_contrast=True) # Showing each image with contrast = 1
+        write_image_tensorboard(writer,f,"Image over " + opti + " iterations",suffix,image_gt,i) # Showing all images with same contrast to compare them together
+        write_image_tensorboard(writer,f,"Image over " + opti + " iterations (FULL CONTRAST)",suffix,image_gt,i,full_contrast=True) # Showing each image with contrast = 1
     
 
 writer.close()

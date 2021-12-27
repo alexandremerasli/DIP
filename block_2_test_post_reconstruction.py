@@ -55,7 +55,7 @@ def post_reconstruction(config,root):
     scaling_input = config["scaling"]
 
     # Define PET input dimensions according to input data dimensions
-    PETImage_shape_str = read_input_dim(subroot+'Data/castor_output_it60.hdr')
+    PETImage_shape_str = read_input_dim(subroot+'Data/database_v2/' + config["image"] + '/' + config["image"] + '.hdr')
     PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
 
     # Metrics arrays
@@ -68,7 +68,7 @@ def post_reconstruction(config,root):
     IR_bkg_recon = np.zeros(sub_iter_DIP)
 
     #Loading Ground Truth image to compute metrics
-    image_gt = fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape))
+    image_gt = fijii_np(subroot+'Data/database_v2/' + config["image"] + '/' + config["image"] + '.raw',shape=(PETImage_shape))
 
     ## Loading RAW stack of images
     # Loading DIP input (we do not have CT-map, so random image created in block 1)
@@ -148,10 +148,10 @@ def post_reconstruction(config,root):
     # Squeeze image by loading it
     out_descale = fijii_np(net_outputs_path,shape=(PETImage_shape)) # loading DIP output
     writer = model.logger.experiment # Assess to new variable, otherwise error : weakly-referenced object ...
-    write_image_tensorboard(writer,image_corrupt,"Corrupted image to fit",suffix_func(config)) # Showing corrupted image
-    write_image_tensorboard(writer,image_corrupt,"Corrupted image to fit (FULL CONTRAST)",suffix_func(config),0,full_contrast=True) # Showing corrupted image
+    write_image_tensorboard(writer,image_corrupt,"Corrupted image to fit",suffix_func(config),image_gt) # Showing corrupted image
+    write_image_tensorboard(writer,image_corrupt,"Corrupted image to fit (FULL CONTRAST)",suffix_func(config),image_gt,0,full_contrast=True) # Showing corrupted image
     for epoch in range(0,sub_iter_DIP,sub_iter_DIP//10):      
-        write_image_tensorboard(writer,image_net_input,"DIP input (FULL CONTRAST)",suffix_func(config),epoch,full_contrast=True) # DIP input in tensorboard
+        write_image_tensorboard(writer,image_net_input,"DIP input (FULL CONTRAST)",suffix_func(config),image_gt,epoch,full_contrast=True) # DIP input in tensorboard
         if (epoch > 0):
             # Train model using previously trained network (at iteration before)
             model = train_process(config, finetuning, processing_unit, sub_iter_DIP//10, admm_it, image_net_input_torch, image_corrupt_torch)
@@ -170,13 +170,13 @@ def post_reconstruction(config,root):
             # Squeeze image by loading it
             out_descale = fijii_np(net_outputs_path,shape=(PETImage_shape)) # loading DIP output
             # Metrics for NN output
-            compute_metrics(PETImage_shape,out_descale,image_gt,epoch,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,writer=writer,write_tensorboard=True)
+            compute_metrics(PETImage_shape,out_descale,image_gt,epoch,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,config["image"],writer=writer,write_tensorboard=True)
             # Saving (now DESCALED) image output
             save_img(out_descale, net_outputs_path)
 
         # Write images over epochs
-        write_image_tensorboard(writer,out_descale,"Image over epochs (" + net + "output)","",epoch) # Showing all images with same contrast to compare them together
-        write_image_tensorboard(writer,out_descale,"Image over epochs (" + net + "output, FULL CONTRAST)","",epoch,full_contrast=True) # Showing each image with contrast = 1
+        write_image_tensorboard(writer,out_descale,"Image over epochs (" + net + "output)","",image_gt,epoch) # Showing all images with same contrast to compare them together
+        write_image_tensorboard(writer,out_descale,"Image over epochs (" + net + "output, FULL CONTRAST)","",image_gt,epoch,full_contrast=True) # Showing each image with contrast = 1
         writer.close()
 
     print('Finish')
@@ -257,9 +257,8 @@ config = {
     "skip_connections" : tune.grid_search([0]),
     "scaling" : tune.grid_search(['standardization']),
     "input" : tune.grid_search(['CT']),
-    "method" : tune.grid_search(['nested'])
-    #"scaling" : tune.grid_search(['standardization']),
-    #"input" : tune.grid_search(['CT'])
+    "method" : tune.grid_search(['nested']),
+    "image" : tune.grid_search(['image0'])
 }
 #'''
 

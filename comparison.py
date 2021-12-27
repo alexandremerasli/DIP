@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser(description='DIP + ADMM computation')
 parser.add_argument('--opti', type=str, dest='opti', help='optimizer to use in CASToR')
 parser.add_argument('--nb_iter', type=str, dest='nb_iter', help='number of optimizer iterations')
 parser.add_argument('--beta', type=str, dest='beta', help='penalty strength (beta)')
+parser.add_argument('--image', type=str, dest='image', help='phantom image from database')
 
 # Retrieving arguments in this python script
 args = parser.parse_args()
@@ -27,17 +28,19 @@ if (args.opti is not None): # Must check if all args are None
     optimizer = args.opti # CASToR optimizer
     nb_iter = args.nb_iter # number of optimizer iterations
     beta = args.beta # penalty strength (beta)
+    image = args.image # phantom image from database
 else: # For VS Code (without command line)
     optimizer = 'BSREM' # CASToR optimizer
-    nb_iter = 30 # number of optimizer iterations
+    nb_iter = 10 # number of optimizer iterations
     beta = 0.04 # penalty strength (beta)
+    image = "image0"
 
 # Define PET input dimensions according to input data dimensions
-PETImage_shape_str = read_input_dim(subroot+'Data/castor_output_it60.hdr')
+PETImage_shape_str = read_input_dim(subroot+'Data/database_v2/' + image + '/' + image + '.hdr')
 PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
 
 #Loading Ground Truth image to compute metrics
-image_gt = fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape))
+image_gt = fijii_np(subroot+'Data/database_v2/' + image + '/' + image + '.raw',shape=(PETImage_shape))
 
 ## Computing metrics for (must add post smoothing for MLEM) reconstruction
 
@@ -65,7 +68,7 @@ writer = SummaryWriter()
 for i in range(max_iter):
 
     # castor-recon command line
-    header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
+    header_file = ' -df ' + subroot + 'Data/database_v2/' + image + '/data' + image[-1] + '/data' + image[-1]  + '.cdh' # PET data path
 
     executable = 'castor-recon'
     dim = ' -dim ' + PETImage_shape_str
@@ -89,16 +92,16 @@ for i in range(max_iter):
         penaltyStrength = ' -pnlt-beta ' + str(beta[i])
 
     output_path = ' -dout ' + subroot + 'Comparison/' + optimizer # Output path for CASTOR framework
-    initialimage = ' -img ' + subroot + 'Data/castor_output_it60.hdr'
+    initialimage = ' -img ' + subroot+'Data/database_v2/' + image + '/' + image + '.hdr'
     initialimage = ''
 
     # Command line for calculating the Likelihood
     vb_like = ' -vb 0'
     opti_like = ' -opti-fom'
 
-    os.system(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv + psf + ' -fov-out 95')
+    os.system(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv + psf) # + ' -fov-out 95')
 
 import subprocess
 root = os.getcwd()
 test = 24
-successful_process = subprocess.call(["python3", root+"/show_castor_results.py", optimizer, str(nb_iter), str(test),str("no suffix here")]) # Showing results in tensorboard
+successful_process = subprocess.call(["python3", root+"/show_castor_results.py", optimizer, str(nb_iter), str(test),str("no suffix here"),image]) # Showing results in tensorboard

@@ -7,8 +7,8 @@ Created on Fri Apr  3 17:19:59 2020
 @author: hernan (2020) then alexandre (2021)
 
 Variables :
-image_sens : sensitivity image
 image_gt : ground truth image
+image_atn : attenuation image (future CT image)
 x_out : DIP output
 x : image x at iteration i
 image_init : initialization of image x (x_0)
@@ -78,7 +78,7 @@ def admm_loop(config, args, root):
     Path(subroot+'Data/initialization').mkdir(parents=True, exist_ok=True)
 
     # Define PET input dimensions according to input data dimensions
-    PETImage_shape_str = read_input_dim(subroot+'Data/castor_output_it60.hdr')
+    PETImage_shape_str = read_input_dim(subroot+'Data/database_v2/' + config["image"] + '/' + config["image"] + '.hdr')
     PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
 
     """
@@ -111,6 +111,25 @@ def admm_loop(config, args, root):
 
     writer = SummaryWriter()
 
+    # Define ROIs for image0 phantom, otherwise it is already done in the database
+    if (config["image"] == "image0"):
+        define_ROI_image0(PETImage_shape)
+    # Launch short MLEM reconstruction
+    path_mlem_init = subroot + 'Data/MLEM_reco_for_init/' + config["image"]
+    my_file = Path(path_mlem_init + '/' + config["image"] + '/' + config["image"] + '_it1.img')
+    if (~my_file.is_file()):
+        header_file = ' -df ' + subroot + 'Data/database_v2/' + config["image"] + '/data' + config["image"][-1] + '/data' + config["image"][-1]  + '.cdh' # PET data path
+        executable = 'castor-recon'
+        optimizer = 'MLEM'
+        output_path = ' -dout ' + path_mlem_init # Output path for CASTOR framework
+        dim = ' -dim ' + PETImage_shape_str
+        vox = ' -vox 4,4,4'
+        vb = ' -vb 0'
+        it = ' -it 1:1'
+        opti = ' -opti ' + optimizer
+        print(executable + dim + vox + output_path + header_file + vb + it + opti)
+        os.system(executable + dim + vox + output_path + header_file + vb + it + opti) # + ' -fov-out 95')
+
     # Metrics arrays
     PSNR_recon = np.zeros(max_iter)
     PSNR_norm_recon = np.zeros(max_iter)
@@ -130,8 +149,8 @@ def admm_loop(config, args, root):
     create_input(net,PETImage_shape,config) # to be removed when CT will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
     # Loading DIP input (we do not have CT-map, so random image created in block 1)
     image_net_input = load_input(net,PETImage_shape,config) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
-    #image_atn = fijii_np(subroot+'Data/phantom/phantom_atn.img',shape=(PETImage_shape))
-    #write_image_tensorboard(writer,image_atn,"Attenuation map (FULL CONTRAST)",suffix,0,full_contrast=True) # Attenuation map in tensorboard
+    #image_atn = fijii_np(subroot+'Data/database_v2/' + config["image"] + '/' + config["image"] + '_atn.raw',shape=(PETImage_shape))
+    #write_image_tensorboard(writer,image_atn,"Attenuation map (FULL CONTRAST)",suffix,image_gt,0,full_contrast=True) # Attenuation map in tensorboard
     image_net_input_scale = rescale_imag(image_net_input,scaling_input)[0] # Rescale of network input
     # DIP input image, numpy --> torch
     image_net_input_torch = torch.Tensor(image_net_input_scale)
@@ -162,7 +181,7 @@ def admm_loop(config, args, root):
     #save_img(f_init,subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(-1) + suffix + '.img') # saving DIP output
 
     #Loading Ground Truth image to compute metrics
-    image_gt = fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape))
+    image_gt = fijii_np(subroot+'Data/database_v2/' + config["image"] + '/' + config["image"] + '.raw',shape=(PETImage_shape))
 
     f = f_init  # Initializing DIP output with f_init
     for i in range(max_iter):
@@ -175,13 +194,13 @@ def admm_loop(config, args, root):
             input_path = ' -img ' + subroot + 'Block1/' + suffix + '/out_eq22/' # Input path for CASTOR framework
             x_label = castor_reconstruction_OPTITR(i, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension)
         else: # Nested ADMM
-            x_label = castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension) # without ADMMLim file
+            x_label = castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension) # without ADMMLim file
 
         # Write image over ADMM iterations
         if ((max_iter>=10) and (i%(max_iter // 10) == 0) or True):
 
-            write_image_tensorboard(writer,x_label,"Corrupted image (x_label) over ADMM iterations",suffix,i) # Showing all corrupted images with same contrast to compare them together
-            write_image_tensorboard(writer,x_label,"Corrupted image (x_label) over ADMM iterations (FULL CONTRAST)",suffix,i,full_contrast=True) # Showing each corrupted image with contrast = 1
+            write_image_tensorboard(writer,x_label,"Corrupted image (x_label) over ADMM iterations",suffix,image_gt,i) # Showing all corrupted images with same contrast to compare them together
+            write_image_tensorboard(writer,x_label,"Corrupted image (x_label) over ADMM iterations (FULL CONTRAST)",suffix,image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
         
         # Block 2 - CNN - 10 iterations
         start_time_block2= time.time()
@@ -192,19 +211,19 @@ def admm_loop(config, args, root):
         f = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
 
         # Metrics for NN output
-        compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,writer=writer,write_tensorboard=True)
+        compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,config["image"],writer=writer,write_tensorboard=True)
 
         # Block 3 - equation 15 - mu
         mu = x_label- f
         save_img(mu,subroot+'Block2/mu/'+ format(test)+'/mu_' + format(i) + suffix + '.img') # saving mu
 
-        write_image_tensorboard(writer,mu,"mu(FULL CONTRAST)",suffix,i,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
+        write_image_tensorboard(writer,mu,"mu(FULL CONTRAST)",suffix,image_gt,i,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
         print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))
 
         # Write image over ADMM iterations
         if ((max_iter>=10) and (i%(max_iter // 10) == 0) or (max_iter<10)):
-            write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",suffix,i) # Showing all images with same contrast to compare them together
-            write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output, FULL CONTRAST)",suffix,i,full_contrast=True) # Showing each image with contrast = 1
+            write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output)",suffix,image_gt,i) # Showing all images with same contrast to compare them together
+            write_image_tensorboard(writer,f,"Image over ADMM iterations (" + net + "output, FULL CONTRAST)",suffix,image_gt,i,full_contrast=True) # Showing each image with contrast = 1
         
         # Display CRC vs STD curve in tensorboard
         if (i>max_iter - min(max_iter,10)):
@@ -270,17 +289,17 @@ def admm_loop(config, args, root):
             x_var = (list_samples[i] - x_avg)**2 / n_posterior_samples
         
         # Computing metrics to compare averaging vae outputs with single output
-        compute_metrics(x_avg,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,write_tensorboard=False)
+        compute_metrics(x_avg,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,config["image"],write_tensorboard=False)
 
     # Display images in tensorboard
-    #write_image_tensorboard(writer,f_init,"initialization of DIP output (f_0) (FULL CONTRAST)",suffix,0,full_contrast=True) # initialization of DIP output in tensorboard
-    #write_image_tensorboard(writer,image_init,"initialization of CASToR MAP reconstruction (x_0)") # initialization of CASToR MAP reconstruction in tensorboard
-    write_image_tensorboard(writer,image_net_input,"DIP input (FULL CONTRAST)",suffix,0,full_contrast=True) # DIP input in tensorboard
-    write_image_tensorboard(writer,image_gt,"Ground Truth",suffix) # Ground truth image in tensorboard
+    #write_image_tensorboard(writer,f_init,"initialization of DIP output (f_0) (FULL CONTRAST)",suffix,image_gt,0,full_contrast=True) # initialization of DIP output in tensorboard
+    #write_image_tensorboard(writer,image_init,"initialization of CASToR MAP reconstruction (x_0)",suffix,,image_gt) # initialization of CASToR MAP reconstruction in tensorboard
+    write_image_tensorboard(writer,image_net_input,"DIP input (FULL CONTRAST)",suffix,image_gt,0,full_contrast=True) # DIP input in tensorboard
+    write_image_tensorboard(writer,image_gt,"Ground Truth",suffix,image_gt) # Ground truth image in tensorboard
 
     if (net == 'DIP_VAE'):
-        write_image_tensorboard(writer,x_avg,"Final averaged image (average over DIP outputs)",suffix) # Final averaged image in tensorboard
-        write_image_tensorboard(writer,x_var,"Uncertainty image (VARIANCE over DIP outputs)",suffix) # Uncertainty image in tensorboard
+        write_image_tensorboard(writer,x_avg,"Final averaged image (average over DIP outputs)",suffix,image_gt) # Final averaged image in tensorboard
+        write_image_tensorboard(writer,x_var,"Uncertainty image (VARIANCE over DIP outputs)",suffix,image_gt) # Uncertainty image in tensorboard
 
 # Configuration dictionnary for hyperparameters to tune
 config = {
@@ -311,7 +330,7 @@ config = {
 #'''
 config = {
     "lr" : tune.grid_search([0.01]), # 0.01 for DIP, 0.001 for DD
-    "sub_iter_DIP" : tune.grid_search([100]), # 10 for DIP, 100 for DD
+    "sub_iter_DIP" : tune.grid_search([10]), # 10 for DIP, 100 for DD
     "sub_iter_MAP" : tune.grid_search([10]), # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
     "nb_iter_second_admm": tune.grid_search([10]), # Number of ADMM iterations (ADMM before NN)
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DIP_VAE)
@@ -323,8 +342,9 @@ config = {
     "k_DD" : tune.grid_search([32]),
     "skip_connections" : tune.grid_search([1]),
     "scaling" : tune.grid_search(['standardization']),
-    "input" : tune.grid_search(['BSREM','CT']),
-    "method" : tune.grid_search(['nested'])
+    "input" : tune.grid_search(['random']),
+    "method" : tune.grid_search(['nested']),
+    "image" : tune.grid_search(['image0'])
 }
 #'''
 

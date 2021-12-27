@@ -118,7 +118,7 @@ def save_img(img,name):
     img.tofile(fp)
     print('Succesfully save in:', name)
 
-def write_hdr(L,subpath,variable_name='',subroot_output_path='',matrix_type='img'):
+def write_hdr(L,subpath,config,variable_name='',subroot_output_path='',matrix_type='img'):
     """ write a header for the optimization transfer solution (it's use as CASTOR input)"""
     if (len(L) == 1):
         i = L[0]
@@ -134,13 +134,13 @@ def write_hdr(L,subpath,variable_name='',subroot_output_path='',matrix_type='img
         else:
             ref_numbers = format(i)
     filename = subroot_output_path + '/'+ subpath + '/' + ref_numbers +'.hdr'
-    with open(subroot+'Data/castor_output_it60.hdr') as f:
+    with open(subroot + 'Data/MLEM_reco_for_init/' + config["image"] + '/' + config["image"] + '_it1.hdr') as f:
         with open(filename, "w") as f1:
             for line in f:
-                if line.strip() == ('!name of data file := castor_output_it60.img'):
+                if line.strip() == ('!name of data file := ' + config["image"] + '_it1.img'):
                     f1.write('!name of data file := '+ ref_numbers +'.img')
                     f1.write('\n') 
-                elif line.strip() == ('patient name := castor_output_it60'):
+                elif line.strip() == ('patient name := ' + config["image"] + '_it1'):
                     f1.write('patient name := ' + ref_numbers)
                     f1.write('\n') 
                 else:
@@ -177,63 +177,89 @@ def points_in_circle(center_y,center_x,radius,PETImage_shape,inner_circle=True):
 
     return liste
 
-def coord_to_value_array(coord_arr,arr):
-    l = np.zeros(len(coord_arr))   
-    for i in range(len(coord_arr)):
-        coord = coord_arr[i]
-        l[i] = arr[coord]
-    return l
-
-def compute_metrics(PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,writer=None,write_tensorboard=False):
-    # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing backround ROI, because we want to exclude those regions from big cylinder
-    # Select only phantom ROI, not whole reconstructed image
+def define_ROI_image0(PETImage_shape):
     phantom_ROI = points_in_circle(0/4,0/4,150/4,PETImage_shape)
+    cold_ROI = points_in_circle(-40/4,-40/4,40/4-1,PETImage_shape)
+    hot_ROI = points_in_circle(50/4,10/4,20/4-1,PETImage_shape)
+         
+    cold_ROI_bkg = points_in_circle(-40/4,-40/4,40/4+1,PETImage_shape)
+    hot_ROI_bkg = points_in_circle(50/4,10/4,20/4+1,PETImage_shape)
+    phantom_ROI_bkg = points_in_circle(0/4,0/4,150/4-1,PETImage_shape)
+    bkg_ROI = list(set(phantom_ROI_bkg) - set(cold_ROI_bkg) - set(hot_ROI_bkg))
+
+    cold_mask = np.zeros(PETImage_shape, dtype='<f')
+    tumor_mask = np.zeros(PETImage_shape, dtype='<f')
+    phantom_mask = np.zeros(PETImage_shape, dtype='<f')
+    bkg_mask = np.zeros(PETImage_shape, dtype='<f')
+
+    ROI_list = [cold_ROI, hot_ROI, phantom_ROI, bkg_ROI]
+    mask_list = [cold_mask, tumor_mask, phantom_mask, bkg_mask]
+    for i in range(len(ROI_list)):
+        ROI = ROI_list[i]
+        mask = mask_list[i]
+        for couple in ROI:
+            #mask[int(couple[0] - PETImage_shape[0]/2)][int(couple[1] - PETImage_shape[1]/2)] = 1
+            mask[couple] = 1
+
+    # Storing into file instead of defining them at each metrics computation
+    save_img(cold_mask, subroot+'Data/database_v2/' + "image0" + '/' + "cold_mask0" + '.raw')
+    save_img(tumor_mask, subroot+'Data/database_v2/' + "image0" + '/' + "tumor_mask0" + '.raw')
+    save_img(phantom_mask, subroot+'Data/database_v2/' + "image0" + '/' + "phantom_mask0" + '.raw')
+    save_img(bkg_mask, subroot+'Data/database_v2/' + "image0" + '/' + "background_mask0" + '.raw')
+
+def compute_metrics(PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
+    # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing backround ROI, because we want to exclude those regions from big cylinder
+    
+    # Select only phantom ROI, not whole reconstructed image
+    path_phantom_ROI = subroot+'Data/database_v2/' + image + '/' + "phantom_mask" + image[-1] + '.raw'
+    my_file = Path(path_phantom_ROI)
+    if (my_file.is_file()):
+        phantom_ROI = fijii_np(path_phantom_ROI, shape=(PETImage_shape))
+    else:
+        phantom_ROI = fijii_np(subroot+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape))
     f_metric = find_nan(image_recon)
-    image_gt_norm = norm_imag(image_gt[phantom_ROI])[0]
+    image_gt_norm = norm_imag(image_gt*phantom_ROI)[0]
 
     # Print metrics
     print('Metrics for iteration',i)
 
-    f_metric_norm = norm_imag(f_metric[phantom_ROI])[0] # normalizing DIP output
-    print('Dif for PSNR calculation',np.amax(f_metric[phantom_ROI]) - np.amin(f_metric[phantom_ROI]),' , must be as small as possible')
+    f_metric_norm = norm_imag(f_metric*phantom_ROI)[0] # normalizing DIP output
+    print('Dif for PSNR calculation',np.amax(f_metric*phantom_ROI) - np.amin(f_metric*phantom_ROI),' , must be as small as possible')
 
     # PSNR calculation
-    PSNR_recon[i] = peak_signal_noise_ratio(image_gt[phantom_ROI], f_metric[phantom_ROI], data_range=np.amax(f_metric[phantom_ROI]) - np.amin(f_metric[phantom_ROI])) # PSNR with true values
+    PSNR_recon[i] = peak_signal_noise_ratio(image_gt*phantom_ROI, f_metric*phantom_ROI, data_range=np.amax(f_metric*phantom_ROI) - np.amin(f_metric*phantom_ROI)) # PSNR with true values
     PSNR_norm_recon[i] = peak_signal_noise_ratio(image_gt_norm,f_metric_norm) # PSNR with scaled values [0-1]
     print('PSNR calculation', PSNR_norm_recon[i],' , must be as high as possible')
 
     # MSE calculation
     MSE_recon[i] = np.mean((image_gt - f_metric)**2)
     print('MSE gt', MSE_recon[i],' , must be as small as possible')
-    MSE_recon[i] = np.mean((image_gt[phantom_ROI] - f_metric[phantom_ROI])**2)
+    MSE_recon[i] = np.mean((image_gt*phantom_ROI - f_metric*phantom_ROI)**2)
     print('MSE phantom gt', MSE_recon[i],' , must be as small as possible')
 
     # Contrast Recovery Coefficient calculation    
     # Mean activity in cold cylinder calculation (-c -40. -40. 0. 40. 4. 0.)
-    cold_ROI = points_in_circle(-40/4,-40/4,40/4-1,PETImage_shape)
-    cold_ROI_act = coord_to_value_array(cold_ROI,f_metric)
+    cold_ROI = fijii_np(subroot+'Data/database_v2/' + image + '/' + "cold_mask" + image[-1] + '.raw', shape=(PETImage_shape))
+    cold_ROI_act = f_metric[cold_ROI==1]
     MA_cold_recon[i] = np.mean(cold_ROI_act)
     #IR_cold_recon[i] = np.std(cold_ROI_act) / MA_cold_recon[i]
     print('Mean activity in cold cylinder', MA_cold_recon[i],' , must be close to 0')
     #print('Image roughness in the cold cylinder', IR_cold_recon[i])
 
     # Mean Concentration Recovery coefficient (CRCmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
-    hot_ROI = points_in_circle(50/4,10/4,20/4-1,PETImage_shape)
-    hot_ROI_act = coord_to_value_array(hot_ROI,f_metric)
+    hot_ROI = fijii_np(subroot+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw', shape=(PETImage_shape))
+    hot_ROI_act = f_metric[hot_ROI==1]
     CRC_hot_recon[i] = np.mean(hot_ROI_act) / 400.
     #IR_hot_recon[i] = np.std(hot_ROI_act) / np.mean(hot_ROI_act)
     print('Mean Concentration Recovery coefficient in hot cylinder', CRC_hot_recon[i],' , must be close to 1')
     #print('Image roughness in the hot cylinder', IR_hot_recon[i])
 
     # Mean Concentration Recovery coefficient (CRCmean) in background calculation (-c 0. 0. 0. 150. 4. 100)
-    #m0_bkg = (np.sum(coord_to_value_array(bkg_ROI,f_metric[phantom_ROI])) - np.sum([coord_to_value_array(cold_ROI,f_metric[phantom_ROI]),coord_to_value_array(hot_ROI,f_metric[phantom_ROI])])) / (len(bkg_ROI) - (len(cold_ROI) + len(hot_ROI)))
+    #m0_bkg = (np.sum(coord_to_value_array(bkg_ROI,f_metric*phantom_ROI)) - np.sum([coord_to_value_array(cold_ROI,f_metric*phantom_ROI),coord_to_value_array(hot_ROI,f_metric*phantom_ROI)])) / (len(bkg_ROI) - (len(cold_ROI) + len(hot_ROI)))
     #CRC_bkg_recon[i] = m0_bkg / 100.
     #         
-    cold_ROI_bkg = points_in_circle(-40/4,-40/4,40/4+1,PETImage_shape)
-    hot_ROI_bkg = points_in_circle(50/4,10/4,20/4+1,PETImage_shape)
-    phantom_ROI_bkg = points_in_circle(0/4,0/4,150/4-1,PETImage_shape)   
-    bkg_ROI = list(set(phantom_ROI_bkg) - set(cold_ROI_bkg) - set(hot_ROI_bkg))
-    bkg_ROI_act = coord_to_value_array(bkg_ROI,f_metric)
+    bkg_ROI = fijii_np(subroot+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape))
+    bkg_ROI_act = f_metric[bkg_ROI==1]
     CRC_bkg_recon[i] = np.mean(bkg_ROI_act) / 100.
     IR_bkg_recon[i] = np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)
     print('Mean Concentration Recovery coefficient in background', CRC_bkg_recon[i],' , must be close to 1')
@@ -306,7 +332,7 @@ def load_input(net,PETImage_shape,config):
     if config["input"] == "random":
         file_path = (subroot+'Data/initialization/random_input_' + net + '.img')
     elif config["input"] == "CT":
-        file_path = (subroot+'Data/phantom/phantom_atn.img') #CT map, but not CT yet, attenuation for now...
+        file_path = (subroot+'Data/database_v2/' + config["image"] + '/' + config["image"] + '_atn.raw') #CT map, but not CT yet, attenuation for now...
     elif config["input"] == "BSREM":
         file_path = (subroot+'Data/initialization/BSREM_it30_REF_cropped.img') #
     elif config["input"] == "uniform":
@@ -344,7 +370,7 @@ def input_dim_str_to_list(PETImage_shape_str):
     return [int(e.strip()) for e in PETImage_shape_str.split(',')][:-1]
 
 from pathlib import Path
-def write_image_tensorboard(writer,image,name,suffix,i=0,full_contrast=False):
+def write_image_tensorboard(writer,image,name,suffix,image_gt,i=0,full_contrast=False):
     # Creating matplotlib figure with colorbar
     plt.figure()
     if (len(image.shape) != 2):
@@ -353,9 +379,9 @@ def write_image_tensorboard(writer,image,name,suffix,i=0,full_contrast=False):
     if (full_contrast):
         plt.imshow(image, cmap='gray_r',vmin=np.min(image),vmax=np.max(image)) # Showing each image with maximum contrast  
     else:
-        plt.imshow(image, cmap='gray_r',vmin=0,vmax=500) # Showing all images with same contrast
+        plt.imshow(image, cmap='gray_r',vmin=0,vmax=1.25*np.max(image_gt)) # Showing all images with same contrast
     plt.colorbar()
-    plt.axis('off')
+    #plt.axis('off')
 
     # Saving this figure locally
     Path('/home/meraslia/sgld/hernan_folder/data/Algo/Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
@@ -414,8 +440,8 @@ def load_model(image_net_input_torch, config, finetuning, admm_it, model, model_
         #from torch.utils.tensorboard import SummaryWriter
         #writer = SummaryWriter()
         #out = model(image_net_input_torch)
-        #write_image_tensorboard(writer,out.detach().numpy(),"high statistics output)",suffix) # Showing all corrupted images with same contrast to compare them together
-        #write_image_tensorboard(writer,out.detach().numpy(),"high statistics (" + "output, suffix,FULL CONTRAST)",0,full_contrast=True) # Showing each corrupted image with contrast = 1
+        #write_image_tensorboard(writer,out.detach().numpy(),"high statistics output)",suffix,image_gt) # Showing all corrupted images with same contrast to compare them together
+        #write_image_tensorboard(writer,out.detach().numpy(),"high statistics (" + "output, suffix,image_gt,FULL CONTRAST)",0,full_contrast=True) # Showing each corrupted image with contrast = 1
     
         # Set first network iterations to have convergence, as if we do post processing
         # model = model_class.load_from_checkpoint(os.path.join(subroot,'post_reco'+net+'.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
@@ -450,7 +476,7 @@ def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finet
 
 def castor_command_line_func(config,PETImage_shape_str,rho,alpha,i,k,suffix):
     if (config["method"] == 'Gong'):
-        header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
+        header_file = ' -df ' + subroot + 'Data/database_v2/' + config["image"] + '/data' + config["image"][-1] + '/data' + config["image"][-1]  + '.cdh' # PET data path
 
         executable = 'castor-recon'
         dim = ' -dim ' + PETImage_shape_str
@@ -475,11 +501,11 @@ def castor_command_line_func(config,PETImage_shape_str,rho,alpha,i,k,suffix):
         if (k==-1): # For first iteration, put alpha to zero (small value to be accepted by CASToR)
             alpha = 0
 
-        castor_command_line = castor_admm_command_line(PETImage_shape_str, alpha, rho)
+        castor_command_line = castor_admm_command_line(PETImage_shape_str, alpha, rho, config)
 
     return castor_command_line
 
-def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension):
+def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension):
     only_x = False # Freezing u and v computation, just updating x if True
     start_time_block1 = time.time()
     mlem_sequence = config['mlem_sequence']
@@ -490,16 +516,16 @@ def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix
     path_before_eq_22 = (subroot_output_path + '/before_eq22/')
     path_during_eq_22 = (subroot_output_path + '/during_eq22/')
     save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
-    write_hdr([i],'before_eq22','f_mu',subroot_output_path)
+    write_hdr([i],'before_eq22',config,'f_mu',subroot_output_path)
 
     # x^0
     copy(subroot + 'Data/initialization/' + image_init_path_without_extension + '.img', path_during_eq_22 + format(i) + '_-1_x.img')
-    write_hdr([i,-1],'during_eq22','x',subroot_output_path)
+    write_hdr([i,-1],'during_eq22',config,'x',subroot_output_path)
 
     # Compute u^0 (u^-1 in CASToR) and store it with zeros, and save in .hdr format - block 1            
     u_0 = 0*np.ones((344,252)) # initialize u_0 to zeros
     save_img(u_0,path_during_eq_22 + format(i) + '_-1_u.img')
-    write_hdr([i,-1],'during_eq22','u',subroot_output_path,matrix_type='sino')
+    write_hdr([i,-1],'during_eq22',config,'u',subroot_output_path,matrix_type='sino')
     
     # Compute v^0 (v^-1 in CASToR) with ADMM_spec_init_v optimizer and save in .hdr format - block 1
     if (i == 0):   # choose initial image for CASToR reconstruction
@@ -526,7 +552,7 @@ def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix
     # Compute one ADMM iteration (x, v, u) when only initializing x
     x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty #+ u_for_additional_data + v_for_additional_data # we need f-mu so that ADMM optimizer works, even if we will not use it...
     print('vvvvvvvvvvv0000000000')
-    ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,only_x,subroot_output_path)
+    ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,config,only_x,subroot_output_path)
 
     '''
     successful_process = subprocess.call(["python3", root+"/ADMMLim.py", str(i), castor_command_line_x, subroot, str(sub_iter_MAP), str(test), suffix, PETImage_shape_str, image_init_path_without_extension, net])
@@ -538,7 +564,7 @@ def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix
 
     # When only initializing x, u computation is only the forward model Ax, thus exactly what we want to initialize v
     copy(path_during_eq_22 + base_name_k_next + '_u.img', path_during_eq_22 + format(i) + '_-1_v.img')
-    write_hdr([i,-1],'during_eq22','v',subroot_output_path,matrix_type='sino')
+    write_hdr([i,-1],'during_eq22',config,'v',subroot_output_path,matrix_type='sino')
         
     # Choose number of argmax iteration for (second) x computation
     if (mlem_sequence):
@@ -579,12 +605,12 @@ def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix
         # Compute one ADMM iteration (x, v, u)
         x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage    
         print('xxxxxxxxxuuuuuuuuuuuvvvvvvvvv')
-        ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,only_x,subroot_output_path=subroot_output_path)
+        ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,config,only_x,subroot_output_path=subroot_output_path)
 
         x = fijii_np(full_output_path_k_next + '_x.img', shape=(PETImage_shape[0],PETImage_shape[1]))
         if (k>=-1):
-            write_image_tensorboard(writer,x,"x in second ADMM over iterations",suffix, k+1+i*nb_iter_second_admm) # Showing all corrupted images with same contrast to compare them together
-            write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)",suffix, k+1+i*nb_iter_second_admm,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
+            write_image_tensorboard(writer,x,"x in second ADMM over iterations",suffix,image_gt, k+1+i*nb_iter_second_admm) # Showing all corrupted images with same contrast to compare them together
+            write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)",suffix,image_gt, k+1+i*nb_iter_second_admm,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
 
     print("--- %s seconds - second ADMM (CASToR) iteration ---" % (time.time() - start_time_block1))
 
@@ -594,7 +620,7 @@ def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix
     # Save image x in .img and .hdr format - block 1
     name = (subroot+'Block1/' + suffix + '/out_eq22/' + format(i) + '.img')
     save_img(x, name)
-    write_hdr([i],'out_eq22','',subroot_output_path)
+    write_hdr([i],'out_eq22',config,'',subroot_output_path)
 
     # Save x_label for load into block 2 - CNN as corrupted image (x_label)
     x_label = x + mu
@@ -614,7 +640,7 @@ def castor_reconstruction_OPTITR(i, castor_command_line, subroot, sub_iter_MAP, 
     path_before_eq_22 = (subroot_output_path + '/before_eq22/')
     path_during_eq_22 = (subroot_output_path + '/during_eq22/')
     save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
-    write_hdr([i],'before_eq22','f_mu',subroot_output_path)
+    write_hdr([i],'before_eq22',config,'f_mu',subroot_output_path)
     f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'
 
     if i==0:   # choose initial image for CASToR reconstruction
@@ -646,7 +672,7 @@ def castor_reconstruction_OPTITR(i, castor_command_line, subroot, sub_iter_MAP, 
     # Save image x in .img and .hdr format - block 1
     name = (subroot+'Block1/' + suffix + '/out_eq22/' + format(i) + '.img')
     save_img(x, name)
-    write_hdr([i],'out_eq22','',subroot_output_path)
+    write_hdr([i],'out_eq22',config,'',subroot_output_path)
 
     # Save x_label for load into block 2 - CNN as corrupted image (x_label)
     x_label = x + mu
@@ -658,9 +684,9 @@ def castor_reconstruction_OPTITR(i, castor_command_line, subroot, sub_iter_MAP, 
 
     return x_label
 
-def castor_admm_command_line(PETImage_shape_str, alpha, rho, only_Lim=False, pnlt=''):
+def castor_admm_command_line(PETImage_shape_str, alpha, rho, config, only_Lim=False, pnlt=''):
     # castor-recon command line
-    header_file = ' -df ' + subroot + 'Data/data_eff10/data_eff10.cdh' # PET data path
+    header_file = ' -df ' + subroot + 'Data/database_v2/' + config["image"] + '/data' + config["image"][-1] + '/data' + config["image"][-1]  + '.cdh' # PET data path
 
     executable = 'castor-recon'
     dim = ' -dim ' + PETImage_shape_str

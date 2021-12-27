@@ -8,19 +8,19 @@ import argparse
 # Local files to import
 import utils_func
 
-def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path,subdir,i,k,only_x,subroot_output_path):
+def compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path,subdir,i,k,config,only_x,subroot_output_path):
     # Compute x,u,v
     os.system(x_reconstruction_command_line)
     # Write x hdr file
-    utils_func.write_hdr([i,k+1],subdir,'x',subroot_output_path=subroot_output_path)
+    utils_func.write_hdr([i,k+1],subdir,config,'x',subroot_output_path=subroot_output_path)
     # Write v hdr file and change v file if only x computation is needed
     if (only_x):
         copy(subroot_output_path + subdir + format(i) + '_' + format(-1) + '_v.img',full_output_path + '_v.img')
-    utils_func.write_hdr([i,k+1],subdir,'v',subroot_output_path=subroot_output_path,matrix_type='sino')
+    utils_func.write_hdr([i,k+1],subdir,config,'v',subroot_output_path=subroot_output_path,matrix_type='sino')
     # Write u hdr file and change u file if only x computation is needed
     if (only_x):
         copy(subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(-1) + '_u.img',full_output_path + '_u.img')
-    utils_func.write_hdr([i,k+1],subdir,'u',subroot_output_path=subroot_output_path,matrix_type='sino')
+    utils_func.write_hdr([i,k+1],subdir,config,'u',subroot_output_path=subroot_output_path,matrix_type='sino')
 
 # Do not run code if compute_x_v_u_ADMM function is imported in an other file
 if __name__ == "__main__":
@@ -30,7 +30,8 @@ if __name__ == "__main__":
     "alpha" : 0.005, # Put alpha = 1 if True, otherwise too slow. alpha smaller if False
     "image_init_path_without_extension" : '1_im_value_cropped',
     "nb_iter" : 1000, # Number of outer iterations
-    "penalty" : 'MRF'
+    "penalty" : 'MRF',
+    "image" : 'image0'
     #"penalty" : 'DIP_ADMM'
     }
 
@@ -92,18 +93,18 @@ if __name__ == "__main__":
     np.save(subroot + 'Config/config' + suffix + '.npy', config)
 
     # Define PET input dimensions according to input data dimensions
-    PETImage_shape_str = utils_func.read_input_dim(subroot+'Data/castor_output_it60.hdr')
+    PETImage_shape_str = utils_func.read_input_dim(subroot+'Data/database_v2/' + config["image"] + '/' + config["image"] + '.hdr')
     PETImage_shape = utils_func.input_dim_str_to_list(PETImage_shape_str)
 
     #Loading Ground Truth image to compute metrics
-    image_gt = utils_func.fijii_np(subroot+'Data/phantom/phantom_act.img',shape=(PETImage_shape))
+    image_gt = utils_func.fijii_np(subroot+'Data/database_v2/' + config["image"] + '/' + config["image"] + '.raw',shape=(PETImage_shape))
 
     # Initialize u^0 (u^-1 in CASToR)
     copy(subroot + 'Data/initialization/0_sino_value.hdr', full_output_path_k_next + '_u.hdr')
-    utils_func.write_hdr([i,-1],subdir,'u',subroot_output_path,matrix_type='sino')
+    utils_func.write_hdr([i,-1],subdir,config,'u',subroot_output_path,matrix_type='sino')
 
     # Define command line to run ADMM with CASToR, to compute v^0
-    castor_command_line_x = utils_func.castor_admm_command_line(PETImage_shape_str, alpha, rho ,True, penalty)
+    castor_command_line_x = utils_func.castor_admm_command_line(PETImage_shape_str, alpha, rho, config ,True, penalty)
     initialimage = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
     f_mu_for_penalty = ' -multimodal ' + subroot + 'Data/initialization/BSREM_it30_REF_cropped.hdr'
     x_for_init_v = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
@@ -115,8 +116,8 @@ if __name__ == "__main__":
         copy(subroot + 'Data/initialization/0_sino_value.hdr', subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(-1) + '_u.img')
     x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
     print('vvvvvvvvvvv0000000000')
-    compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k-1,only_x,subroot_output_path)
-    utils_func.write_hdr([i,k+1],'ADMM','v',subroot_output_path,matrix_type='sino')
+    compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k-1,config,only_x,subroot_output_path)
+    utils_func.write_hdr([i,k+1],'ADMM',config,'v',subroot_output_path,matrix_type='sino')
 
     # Compute one ADMM iteration (x, v, u)
     print('xxxxxxxxxxxxxxxxxxxxx')
@@ -137,7 +138,7 @@ if __name__ == "__main__":
 
         # Compute one ADMM iteration (x, v, u)
         x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
-        compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k,only_x,subroot_output_path)
+        compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k,config,only_x,subroot_output_path)
 
     import subprocess
     root = os.getcwd()
