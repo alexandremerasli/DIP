@@ -18,6 +18,7 @@ data/Algo/Data/initialization/random_input_DIP.img
 data/Algo/Data/initialization/random_input_DD.img
 data/Algo/Data/initialization/random_input_DD_AE.img
 data/Algo/Data/initialization/random_input_VAE_DIP.img
+data/Algo/Data/MLEM_reco_for_init/
 env/
 
 data/Algo/Data/ADMMLim_*

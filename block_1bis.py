@@ -35,7 +35,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Local files to import
-from utils_func import *
+from utils.utils_func import *
 
 def admm_loop(config, args, root):
 
@@ -330,7 +330,7 @@ config = {
 #'''
 config = {
     "lr" : tune.grid_search([0.01]), # 0.01 for DIP, 0.001 for DD
-    "sub_iter_DIP" : tune.grid_search([10]), # 10 for DIP, 100 for DD
+    "sub_iter_DIP" : tune.grid_search([100]), # 10 for DIP, 100 for DD
     "sub_iter_MAP" : tune.grid_search([10]), # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
     "nb_iter_second_admm": tune.grid_search([10]), # Number of ADMM iterations (ADMM before NN)
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DIP_VAE)

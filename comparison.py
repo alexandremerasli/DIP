@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Local files to import
-from utils_func import read_input_dim, input_dim_str_to_list, fijii_np, subroot
+from utils.utils_func import read_input_dim, input_dim_str_to_list, fijii_np, subroot
 
 ## Arguments for linux command to launch script
 # Creating arguments
@@ -32,7 +32,11 @@ if (args.opti is not None): # Must check if all args are None
 else: # For VS Code (without command line)
     optimizer = 'BSREM' # CASToR optimizer
     nb_iter = 10 # number of optimizer iterations
-    beta = 0.04 # penalty strength (beta)
+    #beta = 0.04 # penalty strength (beta)
+    #beta = [0.0001,0.001,0.01,0.1,1,10]
+    #beta = [0.01,0.03,0.05,0.07,0.09]
+    beta = [0.03,0.035,0.04,0.045,0.05]
+    #beta = [0.04]
     image = "image0"
 
 # Define PET input dimensions according to input data dimensions
@@ -46,10 +50,6 @@ image_gt = fijii_np(subroot+'Data/database_v2/' + image + '/' + image + '.raw',s
 
 # Metrics arrays
 
-beta = [0.0001,0.001,0.01,0.1,1,10]
-beta = [0.01,0.03,0.05,0.07,0.09]
-beta = [0.03,0.035,0.04,0.045,0.05]
-beta = [0.04]
 if (optimizer == 'MLEM'):
     max_iter = 1
 elif (optimizer == 'BSREM'):

@@ -244,7 +244,7 @@ class ConvNet3D_VAE_lightning(pl.LightningModule):
         return optimizer
 
     def post_reco(self,out):
-        from utils_func import save_img
+        from utils.utils_func import save_img
         if ((self.current_epoch%(self.sub_iter_DIP // 10) == 0)):
             out_np = out.detach().numpy()[0,0,:,:]
             subroot = 'data/Algo/'

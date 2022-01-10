@@ -17,7 +17,7 @@ import os
 import numpy as np
 
 # Local files to import
-from utils_func import *
+from utils.utils_func import *
 
 # Configuration dictionnary for hyperparameters to tune
 config = {

@@ -31,7 +31,7 @@ import torch
 from torchsummary import summary
 
 # Local files to import
-from utils_func import *
+from utils.utils_func import *
 
 def post_reconstruction(config,root):
     admm_it = 1 # Set it to 1, 0 is for ADMM reconstruction with hard coded values
@@ -99,17 +99,17 @@ def post_reconstruction(config,root):
     #image_corrupt = fijii_np(subroot+'Comparison/MLEM/MLEM_it2.img',shape=(PETImage_shape))
 
     # Scaling of x_label image
-    image_net_input_scale,param1_scale_im_corrupt,param2_scale_im_corrupt = rescale_imag(image_corrupt) # Scaling of x_label image
+    image_corrupt_input_scale,param1_scale_im_corrupt,param2_scale_im_corrupt = rescale_imag(image_corrupt,scaling_input) # Scaling of x_label image
 
     ## Transforming numpy variables to torch tensors
 
 
     # Corrupted image x_label, numpy --> torch
-    image_corrupt_torch = torch.Tensor(image_net_input_scale)
+    image_corrupt_torch = torch.Tensor(image_corrupt_input_scale)
     # Adding dimensions to fit network architecture
     image_corrupt_torch = image_corrupt_torch.view(1,1,PETImage_shape[0],PETImage_shape[1])
 
-    def train_process(config, finetuning, processing_unit, sub_iter_DIP, admm_it, image_net_input_torch, image_corrupt_torch):
+    def train_process(config, finetuning, processing_unit, sub_iter_DIP, admm_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, test):
         # Implements Dataset
         train_dataset = torch.utils.data.TensorDataset(image_net_input_torch, image_corrupt_torch)
         # train_dataset = Dataset(image_net_input_torch, image_corrupt_torch)
@@ -133,7 +133,7 @@ def post_reconstruction(config,root):
 
     # Initializing first output
     os.system('rm -rf ' + subroot+'Block2/checkpoint/'+format(test)  + '/' + suffix_func(config) + '/' + '/last.ckpt') # Otherwise, pl will use checkpoint from other run
-    model = train_process(config, finetuning, processing_unit, 1, -1, image_net_input_torch, image_corrupt_torch) # Not useful to make iterations, we just want to initialize writer. admm_it must be set to -1, otherwise seeking for a checkpoint file...
+    model = train_process(config, finetuning, processing_unit, 1, -1, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, test) # Not useful to make iterations, we just want to initialize writer. admm_it must be set to -1, otherwise seeking for a checkpoint file...
     # Saving variables
     if (net == 'DIP_VAE'):
         out, mu, logvar, z = model(image_net_input_torch)
@@ -154,7 +154,7 @@ def post_reconstruction(config,root):
         write_image_tensorboard(writer,image_net_input,"DIP input (FULL CONTRAST)",suffix_func(config),image_gt,epoch,full_contrast=True) # DIP input in tensorboard
         if (epoch > 0):
             # Train model using previously trained network (at iteration before)
-            model = train_process(config, finetuning, processing_unit, sub_iter_DIP//10, admm_it, image_net_input_torch, image_corrupt_torch)
+            model = train_process(config, finetuning, processing_unit, sub_iter_DIP//10, admm_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, test)
 
             # Saving variables
             if (net == 'DIP_VAE'):

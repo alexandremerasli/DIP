@@ -27,7 +27,7 @@ import torch
 from torchsummary import summary
 
 # Local files to import
-from utils_func import *
+from utils.utils_func import *
 
 """
 Receiving variables from block 1 part and initializing variables
@@ -62,46 +62,19 @@ image_net_input_torch = torch.load(subroot + 'Data/initialization/image_' + net 
 # Loading DIP x_label (corrupted image) from block1
 image_corrupt = fijii_np(subroot+'Block2/x_label/' + format(test)+'/'+ format(admm_it) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
 # Scaling of x_label image
-image_net_input_scale,param1_scale_im_corrupt,param2_scale_im_corrupt= rescale_imag(image_corrupt) # Scaling of x_label image
+image_corrupt_input_scale,param1_scale_im_corrupt,param2_scale_im_corrupt= rescale_imag(image_corrupt,scaling_input) # Scaling of x_label image
 
 ## Transforming numpy variables to torch tensors
 
 
 # Corrupted image x_label, numpy --> torch
-image_corrupt_torch = torch.Tensor(image_net_input_scale)
+image_corrupt_torch = torch.Tensor(image_corrupt_input_scale)
 # Adding dimensions to fit network architecture
 image_corrupt_torch = image_corrupt_torch.view(1,1,PETImage_shape[0],PETImage_shape[1])
 
-"""
-Training the model using checkpoint to load model
-"""
 
-'''
-from torch.utils.data import Dataset
-class Dataset():
 
-    # load the dataset
-    def __init__(self, X, y):
-        # store the inputs and outputs
-        self.X = X
-        self.y = y
-     
-    # number of rows in the dataset
-    def __len__(self):
-        return self.X.size()[0]
-     
-    # get a row at an index
-    def __getitem__(self, idx):
-
-        X_sample = self.X[idx]
-        y_sample = self.y[idx]
-        
-        return X_sample, y_sample
-'''
-#from memory_profiler import profile
- 
-#@profile
-def train_process(config, finetuning, processing_unit, sub_iter_DIP, admm_it, image_net_input_torch, image_corrupt_torch):
+def train_process(config, finetuning, processing_unit, sub_iter_DIP, admm_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, test):
     # Implements Dataset
     train_dataset = torch.utils.data.TensorDataset(image_net_input_torch, image_corrupt_torch)
     # train_dataset = Dataset(image_net_input_torch, image_corrupt_torch)
@@ -140,7 +113,7 @@ def train_process(config, finetuning, processing_unit, sub_iter_DIP, admm_it, im
 
     return model
 
-model = train_process(config, finetuning, processing_unit, sub_iter_DIP, admm_it, image_net_input_torch, image_corrupt_torch)
+model = train_process(config, finetuning, processing_unit, sub_iter_DIP, admm_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, test)
 
 """
 Saving variables and model

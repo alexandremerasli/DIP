@@ -20,7 +20,7 @@ import sys
 import numpy as np
 
 # Local files to import
-from utils_func import *
+from utils.utils_func import *
 
 if (len(sys.argv) - 1 == 5):
     opti = sys.argv[1] # CASToR optimizer
