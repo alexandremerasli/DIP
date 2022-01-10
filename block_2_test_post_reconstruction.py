@@ -41,6 +41,33 @@ def post_reconstruction(config,root):
     # suffix =  'TEST_post_reconstruction_' + suffix_func(config) # suffix to make difference between raytune runs (different hyperparameters)
 
     subroot = root+'/data/Algo/'
+    test = 24
+    suffix = suffix_func(config)
+
+    Path(subroot+'Block1/' + suffix + '/before_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
+    Path(subroot+'Block1/' + suffix + '/during_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
+    Path(subroot+'Block1/' + suffix + '/out_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
+
+    Path(subroot+'Images/out_final/'+format(test)+'/').mkdir(parents=True, exist_ok=True) # Output of the framework (Last output of the DIP)
+
+    Path(subroot+'Block2/checkpoint/'+format(test)+'/').mkdir(parents=True, exist_ok=True)
+    Path(subroot+'Block2/out_cnn/'+ format(test)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
+    Path(subroot+'Block2/out_cnn/vae').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
+    Path(subroot+'Block2/out_cnn/cnn_metrics/'+ format(test)+'/').mkdir(parents=True, exist_ok=True) # DIP block metrics
+    Path(subroot+'Block2/out_cnn/'+ format(test)+'/like/').mkdir(parents=True, exist_ok=True) # folder for Likelihood calculation (using CASTOR)
+    Path(subroot+'Block2/x_label/'+format(test) + '/').mkdir(parents=True, exist_ok=True) # x corrupted - folder
+
+    Path(subroot+'Block2/checkpoint/'+format(test)+'/').mkdir(parents=True, exist_ok=True)
+    Path(subroot+'Block2/out_cnn/'+ format(test)+'/').mkdir(parents=True, exist_ok=True)
+    Path(subroot+'Block2/mu/'+ format(test)+'/').mkdir(parents=True, exist_ok=True)
+    Path(subroot+'Block2/out_cnn/cnn_metrics/'+ format(test)+'/').mkdir(parents=True, exist_ok=True)
+
+    Path(subroot+'Comparison/MLEM/').mkdir(parents=True, exist_ok=True) # CASTor path
+    Path(subroot+'Comparison/BSREM/').mkdir(parents=True, exist_ok=True) # CASTor path
+
+    Path(subroot+'Config/').mkdir(parents=True, exist_ok=True) # CASTor path
+
+    Path(subroot+'Data/initialization').mkdir(parents=True, exist_ok=True)
 
     # np.save(subroot + 'Config/config' + suffix + '.npy', config) # Save this configuration of hyperparameters, and reload it at the beginning of block 2 thanks to suffix (passed in subprocess call argumentsZ)
 
@@ -93,9 +120,9 @@ def post_reconstruction(config,root):
     image_net_input_torch = torch.load(subroot + 'Data/initialization/image_' + net + '_input_torch.pt')# Here we CAN create random input as this script is only run once
     
     # Loading DIP x_label (corrupted image) from block1
-    image_corrupt = fijii_np(subroot+'Comparison/im_corrupt_beginning.img',shape=(PETImage_shape))
+    #image_corrupt = fijii_np(subroot+'Comparison/im_corrupt_beginning.img',shape=(PETImage_shape))
     #image_corrupt = fijii_np(subroot+'Comparison/MLEM/MLEM_converge_sans_post_filtre.img',shape=(PETImage_shape)) # Does not "denoise" so well
-    #image_corrupt = fijii_np(subroot+'Data/initialization/BSREM_it30_REF_cropped.img',shape=(PETImage_shape))
+    image_corrupt = fijii_np(subroot+'Data/initialization/BSREM_it30_REF_cropped.img',shape=(PETImage_shape))
     #image_corrupt = fijii_np(subroot+'Comparison/MLEM/MLEM_it2.img',shape=(PETImage_shape))
 
     # Scaling of x_label image

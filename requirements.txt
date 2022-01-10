@@ -1,10 +1,13 @@
-pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org torch
-pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pillow
-pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org tifffile
-pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org matplotlib
-pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org numpy
-pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org scikit-image
-pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org tensorboard
-pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pytorch-lightning
-pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org "ray[tune]" 
-pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org SimpleITK
+# Run pip install with following option if ssh problems to install
+# pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org torch
+
+matplotlib==3.4.2
+numpy==1.20.3
+pandas==1.3.1
+pytorch-lightning==1.4.1
+ray[tune]
+scikit-image==0.18.1
+scipy==1.6.3
+tensorboard==2.4.1
+torch==1.8.1
+torchsummary==1.5.1

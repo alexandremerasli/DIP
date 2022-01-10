@@ -1,0 +1,20 @@
+!INTERFILE
+!name of data file := simu_eff10_mumap_psf.i
+!originating system := MMR2D
+!PET data type := transmission
+data format := image
+number format := float
+number of bytes per pixel := 4
+Patient name := simu_eff10
+number of dimensions := 3
+matrix size [1] := 112
+matrix size [2] := 112
+matrix size [3] := 1
+scaling factor (mm/pixel) [1] := 4
+scaling factor (mm/pixel) [2] := 4
+scaling factor (mm/pixel) [3] := 4
+FOV size (mm) [1] := 448
+FOV size (mm) [2] := 448
+FOV size (mm) [3] := 4
+patient orientation := NOPITCH
+PSF smoothing := YES

@@ -1,0 +1,15 @@
+!INTERFILE
+!name of data file := simu_eff10_nm.s
+!originating system := MMR2D
+!PET data type := normalization
+Patient ID := simu_eff10
+data format := sinogram
+number format := float
+number of bytes per pixel := 4
+axial compression := 1
+maximum ring difference := 0
+mashing power := 1
+number of dimensions := 3
+matrix size [1] := 344
+matrix size [2] := 252
+matrix size [3] := 1

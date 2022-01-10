@@ -1,0 +1,17 @@
+Data filename: data0.cdf
+Number of events: 68516
+Data mode: histogram
+Data type: pet
+Start time (s): 0
+Duration (s): 1
+Scanner name: PET_SIEMENS_MMR_2D
+Maximum number of lines per event: 1
+Axial compression: 1
+Azymutal compression: 1
+Max ring diff: 0
+Calibration factor: 749.014
+Isotope: INF
+Attenuation correction flag: 1
+Normalization correction flag: 1
+Scatter correction flag: 1
+Random correction flag: 1

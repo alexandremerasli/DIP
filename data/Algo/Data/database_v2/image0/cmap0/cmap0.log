@@ -1,0 +1,18 @@
+==================================================================================================
+                                      COMMAND LINE CONTEXT
+==================================================================================================
+CMmaker.exe -m mmr2d -r 10 -o cmap_eff10 -w -v 2 
+Date of execution (since Epoch): 1636474591
+Code precision in bytes: 4
+==================================================================================================
+oScanner::Constructor() -> Construct
+oScanner::Initialize() ...
+  --> Total number of crystals: 448  [448;1]
+oScanner::ProcessCrystalEfficiency() ...
+  --> Shoot random defficiencies at 10% around 1
+oScanner::WriteCrystalEfficiency() ...
+  --> Written in file 'cmap_eff10/cmap_eff10_eff.dat'.
+  --> Dimensions: [448;1;1] in float 32 bits raw format.
+oScanner::WriteCrystalMap() ...
+  --> Written in file 'cmap_eff10/cmap_eff10.ecm'.
+oScanner::Destructor() -> Destroy

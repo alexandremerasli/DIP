@@ -1,0 +1,25 @@
+!INTERFILE
+!name of data file := simu_eff10_rd.s
+!originating system := MMR2D
+!PET data type := random
+data format := sinogram
+number format := float
+number of bytes per pixel := 4
+axial compression := 1
+maximum ring difference := 0
+mashing power := 1
+image duration := 1.
+image start time := 0.
+branching factor := 1.
+Patient ID := simu_eff10
+Patient name := ******************************* 
+number of dimensions := 3
+matrix size [1] := 344
+matrix size [2] := 252
+matrix size [3] := 1
+scaling factor (mm/pixel) [1] := 1.
+scaling factor (mm/pixel) [2] := 1.
+scaling factor (mm/pixel) [3] := 1.
+frame := 0
+bed := 0
+start horizontal bed position (mm) := 0
