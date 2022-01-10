@@ -54,9 +54,9 @@ class vDenoising(abc.ABC):
     
     def do_everything(self,config,args,root):
         self.initializeSpecific(config,args,root)
-        self.runDenoiser()
+        self.runDenoiser(root)
 
-    def runDenoiser(self):
+    def runDenoiser(self,root):
         # Scaling of x_label image
         image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image
 

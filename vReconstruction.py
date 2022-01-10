@@ -36,15 +36,6 @@ class vReconstruction(abc.ABC):
         self.finetuning = self.args.finetuning # Finetuning or not for the DIP optimizations (block 2)
         self.max_iter = self.args.max_iter # Outer iterations 
 
-        # Metrics arrays
-        self.PSNR_recon = np.zeros(self.max_iter)
-        self.PSNR_norm_recon = np.zeros(self.max_iter)
-        self.MSE_recon = np.zeros(self.max_iter)
-        self.MA_cold_recon = np.zeros(self.max_iter)
-        self.CRC_hot_recon = np.zeros(self.max_iter)
-        self.CRC_bkg_recon = np.zeros(self.max_iter)
-        self.IR_bkg_recon = np.zeros(self.max_iter)
-
     def runReconstruction(self):
         """ Implement me! """
         pass
@@ -145,8 +136,6 @@ class vReconstruction(abc.ABC):
         save_img(self.mu,self.subroot+'Block2/mu/'+ format(self.test)+'/mu_' + format(-1) + self.suffix + '.img') # saving mu
 
         self.x_out = np.zeros((self.PETImage_shape[0], self.PETImage_shape[1]), dtype='<f') # output of DIP
-
-        self.writer = SummaryWriter()
 
         # Define ROIs for image0 phantom, otherwise it is already done in the database
         if (self.phantom == "image0"):
