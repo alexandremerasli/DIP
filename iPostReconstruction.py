@@ -41,7 +41,7 @@ class iPostReconstruction(vDenoising):
 
         # Initializing results class
         from Results import Results
-        classResults = Results(self.config,self.args,root,self.max_iter,self.PETImage_shape,self.phantom)
+        classResults = Results(self.config,self.args,root,self.max_iter,self.PETImage_shape,self.phantom,self.subroot)
 
         self.finetuning = 'False' # to ignore last.ckpt file
         vDenoising.runDenoiser(self,root)
@@ -60,7 +60,6 @@ class iPostReconstruction(vDenoising):
                 # Do finetuning now
                 self.admm_it = 1 # Set it to 1, to take last.ckpt file into account
                 self.finetuning = 'last' # Put finetuning back to 'last' as if we did not split network training
-                #write_image_tensorboard(self.writer,self.image_net_input,"TEST",suffix_func(self.config),self.image_gt,epoch,full_contrast=True) # DIP input in tensorboar
 
                 # Saving variables
                 if (self.net == 'DIP_VAE'):

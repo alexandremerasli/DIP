@@ -28,11 +28,12 @@ class iNestedADMM(vReconstruction):
     def runReconstruction(self,config,args,root):
         print("Nested ADMM reconstruction")
 
-        self.f = self.f_init  # Initializing DIP output with f_init
+        # Initializing DIP output with f_init
+        self.f = self.f_init
 
         # Initializing results class
         from Results import Results
-        classResults = Results(config,args,root,self.max_iter,self.PETImage_shape,self.phantom)
+        classResults = Results(config,args,root,self.max_iter,self.PETImage_shape,self.phantom,self.subroot)
 
         for i in range(self.max_iter):
             print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Outer iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', i)
@@ -49,33 +50,30 @@ class iNestedADMM(vReconstruction):
             # Write corrupted image over ADMM iterations
             classResults.writeCorruptedImage(i,self.max_iter,self.x_label,pet_algo="nested ADMM")
 
-            # Block 2 - CNN - 10 iterations
+            # Block 2 - CNN
             start_time_block2= time.time()            
             classDenoising = iDenoisingInReconstruction(config,args,root,i)
             classDenoising.do_everything(config,args,root)
             print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
-            self.f = fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.test)+'/out_' + self.net + '' + format(i) + self.suffix + '.img',shape=(self.PETImage_shape)) # loading DIP output
+            self.f = fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.test)+'/out_' + classDenoising.net + '' + format(i) + self.suffix + '.img',shape=(self.PETImage_shape)) # loading DIP output
 
-            # Block 3 - equation 15 - mu
+            # Block 3 - mu update
             self.mu = self.x_label- self.f
             save_img(self.mu,self.subroot+'Block2/mu/'+ format(self.test)+'/mu_' + format(i) + self.suffix + '.img') # saving mu
             
             print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))
 
             # Write output image and metrics to tensorboard
-            classResults.writeEndImages(i,self.max_iter,self.PETImage_shape,self.f,self.phantom,self.net,pet_algo="nested ADMM")
+            classResults.writeEndImages(i,self.max_iter,self.PETImage_shape,self.f,self.phantom,classDenoising.net,pet_algo="nested ADMM")
 
 
         """
         Output framework
         """
 
-        # Output of the framework
-        self.x_out = self.f
-
         # Saving final image output
-        save_img(self.x_out, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')
+        save_img(self.f, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')
         
         ## Averaging for VAE
-        if (self.net == 'DIP_VAE'):
+        if (classDenoising.net == 'DIP_VAE'):
             print('Need to code back this part with abstract classes')

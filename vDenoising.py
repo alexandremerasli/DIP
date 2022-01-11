@@ -16,14 +16,50 @@ import matplotlib.pyplot as plt
 # Local files to import
 from utils.utils_func import *
 from vReconstruction import vReconstruction
+from vGeneral import vGeneral
 
 import abc
 class vDenoising(abc.ABC):
     def __init__(self,config,args,root):
         vReconstruction.__init__(self,config,args,root)
+        self.finetuning = self.args.finetuning # Finetuning or not for the DIP optimizations (block 2)
+        self.processing_unit = self.args.proc
 
     def initializeSpecific(self, config, args, root):
-        vReconstruction.initializeSpecific(self,config,args,root)
+        vGeneral.initializeSpecific(self,config,args,root)
+        vGeneral.createDirectory(self)
+
+        # Specific hyperparameters for denoising module (Do it here to have raytune config hyperparameters selection)
+        self.net = config["net"]
+        if config["input"] == 'uniform': # Do not standardize or normalize if uniform, otherwise NaNs
+            config["scaling"] = "nothing"
+        self.scaling_input = config["scaling"]
+        if config["method"] == 'Gong':
+            # config["scaling"] = 'positive_normalization' # Will still introduce bias as mu can be negative
+            config["scaling"] = "nothing"
+
+        # Loading DIP input
+        # Creating random image input for DIP while we do not have CT, but need to be removed after
+        create_input(self.net,self.PETImage_shape,self.config) # to be removed when CT will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
+        # Loading DIP input (we do not have CT-map, so random image created in block 1)
+        self.image_net_input = load_input(self.net,self.PETImage_shape,self.config) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
+        #image_atn = fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape))
+        #write_image_tensorboard(writer,image_atn,"Attenuation map (FULL CONTRAST)",self.suffix,image_gt,0,full_contrast=True) # Attenuation map in tensorboard
+        image_net_input_scale = rescale_imag(self.image_net_input,self.scaling_input)[0] # Rescale of network input
+        # DIP input image, numpy --> torch
+        self.image_net_input_torch = torch.Tensor(image_net_input_scale)
+        # Adding dimensions to fit network architecture
+        if (self.net == 'DIP' or self.net == 'DIP_VAE'):
+            self.image_net_input_torch = self.image_net_input_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1]) # For DIP
+        else:
+            if (self.net == 'DD'):
+                input_size_DD = int(self.PETImage_shape[0] / (2**self.config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
+                self.image_net_input_torch = self.image_net_input_torch.view(1,self.config["k_DD"],input_size_DD,input_size_DD) # For Deep Decoder, if original Deep Decoder (i.e. only with decoder part)
+            elif (self.net == 'DD_AE'):
+                input_size_DD = self.PETImage_shape[0] # if auto encoder based on Deep Decoder
+                self.image_net_input_torch = self.image_net_input_torch.view(1,1,input_size_DD,input_size_DD) # For Deep Decoder, if auto encoder based on Deep Decoder
+        torch.save(self.image_net_input_torch,self.subroot + 'Data/initialization/image_' + self.net + '_input_torch.pt')
+
 
     def runRayTune(self,config,args,root):
         config_combination = 1

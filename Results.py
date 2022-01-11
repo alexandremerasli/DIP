@@ -24,20 +24,15 @@ import abc
 #class vResults(abc.ABC):
 #    @abc.abstractmethod
 class Results():
-    def __init__(self,config,args,root,max_iter,PETImage_shape,phantom):
+    def __init__(self,config,args,root,max_iter,PETImage_shape,phantom,subroot):
         print("__init__")
-        self.test = "not updated"
-        self.args = args
         self.config = config
 
         # Create summary writer from tensorboard
         self.writer = SummaryWriter()
-
-        # Initialize useful variables
-        self.subroot = root + '/data/Algo/'  # Directory root
         
         #Loading Ground Truth image to compute metrics
-        self.image_gt = fijii_np(self.subroot+'Data/database_v2/' + phantom + '/' + phantom + '.raw',shape=(PETImage_shape))
+        self.image_gt = fijii_np(subroot+'Data/database_v2/' + phantom + '/' + phantom + '.raw',shape=(PETImage_shape))
         
         # Metrics arrays
         self.PSNR_recon = np.zeros(max_iter)
@@ -52,10 +47,9 @@ class Results():
         write_image_tensorboard(self.writer,image_net_input,"DIP input (FULL CONTRAST)",suffix_func(self.config),self.image_gt,0,full_contrast=True) # DIP input in tensorboard
 
     def writeCorruptedImage(self,i,max_iter,x_label,pet_algo,iteration_name='iterations'):
-        # Write image over ADMM iterations
         if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
-            write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + iteration_name,suffix_func(self.config),self.image_gt,i) # Showing all corrupted images with same contrast to compare them together
-            write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + iteration_name + " (FULL CONTRAST)",suffix_func(self.config),self.image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
+            write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name,suffix_func(self.config),self.image_gt,i) # Showing all corrupted images with same contrast to compare them together
+            write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name + " (FULL CONTRAST)",suffix_func(self.config),self.image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
 
     def writeEndImages(self,i,max_iter,PETImage_shape,f,phantom,net,pet_algo,iteration_name='iterations'):
         # Metrics for NN output
@@ -63,8 +57,8 @@ class Results():
 
         # Write image over ADMM iterations
         if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
-            write_image_tensorboard(self.writer,f,"Image over " + pet_algo + iteration_name + "(" + net + "output)",suffix_func(self.config),self.image_gt,i) # Showing all images with same contrast to compare them together
-            write_image_tensorboard(self.writer,f,"Image over " + pet_algo + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix_func(self.config),self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
+            write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix_func(self.config),self.image_gt,i) # Showing all images with same contrast to compare them together
+            write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix_func(self.config),self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
 
         # Display CRC vs STD curve in tensorboard
         if (i>max_iter - min(max_iter,10)):
