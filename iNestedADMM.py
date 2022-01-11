@@ -11,11 +11,11 @@ from iDenoisingInReconstruction import iDenoisingInReconstruction
 class iNestedADMM(vReconstruction):
     def __init__(self,config,args,root):
         vReconstruction.__init__(self,config,args,root)
-        # Initializing DIP output with f_init
-        self.f = self.f_init
-
     def runReconstruction(self,config,args,root):
         print("Nested ADMM reconstruction")
+
+        # Initializing DIP output with f_init
+        self.f = self.f_init
 
         # Initializing results class
         from Results import Results

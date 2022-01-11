@@ -5,13 +5,8 @@ import torch
 
 # Useful
 import os
-from datetime import datetime
 from functools import partial
 from ray import tune
-
-# Math
-import numpy as np
-import matplotlib.pyplot as plt
 
 # Local files to import
 from utils.utils_func import *
@@ -19,15 +14,14 @@ from vReconstruction import vReconstruction
 from vGeneral import vGeneral
 
 import abc
-class vDenoising(abc.ABC):
+class vDenoising(vGeneral):
     def __init__(self,config,args,root):
         vReconstruction.__init__(self,config,args,root)
         self.finetuning = self.args.finetuning # Finetuning or not for the DIP optimizations (block 2)
         self.processing_unit = self.args.proc
 
     def initializeSpecific(self, config, args, root):
-        vGeneral.initializeSpecific(self,config,args,root)
-        vGeneral.createDirectory(self)
+        self.initializeEverything(config,args,root)
 
         # Specific hyperparameters for denoising module (Do it here to have raytune config hyperparameters selection)
         self.net = config["net"]

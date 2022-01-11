@@ -22,11 +22,10 @@ from utils.utils_func import *
 from vGeneral import vGeneral
 
 import abc
-class vReconstruction(abc.ABC):
+class vReconstruction(vGeneral):
     @abc.abstractmethod
     def __init__(self,config,args,root):
         print("__init__")
-        self.test = "not updated"
         self.args = args 
 
     def runReconstruction(self):
@@ -65,8 +64,7 @@ class vReconstruction(abc.ABC):
         self.runReconstruction(config,args,root)
 
     def initializeSpecific(self, config, args, root):
-        vGeneral.initializeSpecific(self,config,args,root)
-        vGeneral.createDirectory(self)
+        self.initializeEverything(config,args,root)
 
         # Specific hyperparameters for reconstruction module (Do it here to have raytune config hyperparameters selection)
         self.config = config

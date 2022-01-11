@@ -1,17 +1,7 @@
 ## Python libraries
 
 # Pytorch
-import torch
 from torch.utils.tensorboard import SummaryWriter
-
-# Useful
-import os
-from pathlib import Path
-import argparse
-import time
-import subprocess
-from functools import partial
-from ray import tune
 
 # Math
 import numpy as np
@@ -20,9 +10,6 @@ import matplotlib.pyplot as plt
 # Local files to import
 from utils.utils_func import *
 
-import abc
-#class vResults(abc.ABC):
-#    @abc.abstractmethod
 class Results():
     def __init__(self,config,args,root,max_iter,PETImage_shape,phantom,subroot):
         print("__init__")
