@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 # Local files to import
 from utils.utils_func import *
 from vDenoising import vDenoising
-#from vReconstruction import vReconstruction
 
 class iPostReconstruction(vDenoising):
     def __init__(self,config,args,root):

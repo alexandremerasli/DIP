@@ -1,21 +1,7 @@
 ## Python libraries
 
-# Pytorch
-from ray.tune import analysis
-import torch
-
 # Useful
-import os
-from pathlib import Path
-import argparse
 import time
-import subprocess
-from functools import partial
-from ray import tune
-
-# Math
-import numpy as np
-import matplotlib.pyplot as plt
 
 # Local files to import
 from utils.utils_func import *
@@ -25,11 +11,11 @@ from iDenoisingInReconstruction import iDenoisingInReconstruction
 class iNestedADMM(vReconstruction):
     def __init__(self,config,args,root):
         vReconstruction.__init__(self,config,args,root)
-    def runReconstruction(self,config,args,root):
-        print("Nested ADMM reconstruction")
-
         # Initializing DIP output with f_init
         self.f = self.f_init
+
+    def runReconstruction(self,config,args,root):
+        print("Nested ADMM reconstruction")
 
         # Initializing results class
         from Results import Results
@@ -58,18 +44,15 @@ class iNestedADMM(vReconstruction):
             self.f = fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.test)+'/out_' + classDenoising.net + '' + format(i) + self.suffix + '.img',shape=(self.PETImage_shape)) # loading DIP output
 
             # Block 3 - mu update
-            self.mu = self.x_label- self.f
+            self.mu += self.x_label - self.f
             save_img(self.mu,self.subroot+'Block2/mu/'+ format(self.test)+'/mu_' + format(i) + self.suffix + '.img') # saving mu
-            
+            # Write corrupted image over ADMM iterations
+            classResults.writeCorruptedImage(i,self.max_iter,self.mu,pet_algo="mmmmmuuuuuuu")
+
             print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))
 
             # Write output image and metrics to tensorboard
             classResults.writeEndImages(i,self.max_iter,self.PETImage_shape,self.f,self.phantom,classDenoising.net,pet_algo="nested ADMM")
-
-
-        """
-        Output framework
-        """
 
         # Saving final image output
         save_img(self.f, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')

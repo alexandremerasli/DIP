@@ -217,30 +217,29 @@ def compute_metrics(PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_
         phantom_ROI = fijii_np(path_phantom_ROI, shape=(PETImage_shape))
     else:
         phantom_ROI = fijii_np(subroot+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape))
-    f_metric = find_nan(image_recon)
     image_gt_norm = norm_imag(image_gt*phantom_ROI)[0]
 
     # Print metrics
     print('Metrics for iteration',i)
 
-    f_metric_norm = norm_imag(f_metric*phantom_ROI)[0] # normalizing DIP output
-    print('Dif for PSNR calculation',np.amax(f_metric*phantom_ROI) - np.amin(f_metric*phantom_ROI),' , must be as small as possible')
+    image_recon_norm = norm_imag(image_recon*phantom_ROI)[0] # normalizing DIP output
+    print('Dif for PSNR calculation',np.amax(image_recon*phantom_ROI) - np.amin(image_recon*phantom_ROI),' , must be as small as possible')
 
     # PSNR calculation
-    PSNR_recon[i] = peak_signal_noise_ratio(image_gt*phantom_ROI, f_metric*phantom_ROI, data_range=np.amax(f_metric*phantom_ROI) - np.amin(f_metric*phantom_ROI)) # PSNR with true values
-    PSNR_norm_recon[i] = peak_signal_noise_ratio(image_gt_norm,f_metric_norm) # PSNR with scaled values [0-1]
+    PSNR_recon[i] = peak_signal_noise_ratio(image_gt*phantom_ROI, image_recon*phantom_ROI, data_range=np.amax(image_recon*phantom_ROI) - np.amin(image_recon*phantom_ROI)) # PSNR with true values
+    PSNR_norm_recon[i] = peak_signal_noise_ratio(image_gt_norm,image_recon_norm) # PSNR with scaled values [0-1]
     print('PSNR calculation', PSNR_norm_recon[i],' , must be as high as possible')
 
     # MSE calculation
-    MSE_recon[i] = np.mean((image_gt - f_metric)**2)
+    MSE_recon[i] = np.mean((image_gt - image_recon)**2)
     print('MSE gt', MSE_recon[i],' , must be as small as possible')
-    MSE_recon[i] = np.mean((image_gt*phantom_ROI - f_metric*phantom_ROI)**2)
+    MSE_recon[i] = np.mean((image_gt*phantom_ROI - image_recon*phantom_ROI)**2)
     print('MSE phantom gt', MSE_recon[i],' , must be as small as possible')
 
     # Contrast Recovery Coefficient calculation    
     # Mean activity in cold cylinder calculation (-c -40. -40. 0. 40. 4. 0.)
     cold_ROI = fijii_np(subroot+'Data/database_v2/' + image + '/' + "cold_mask" + image[-1] + '.raw', shape=(PETImage_shape))
-    cold_ROI_act = f_metric[cold_ROI==1]
+    cold_ROI_act = image_recon[cold_ROI==1]
     MA_cold_recon[i] = np.mean(cold_ROI_act)
     #IR_cold_recon[i] = np.std(cold_ROI_act) / MA_cold_recon[i]
     print('Mean activity in cold cylinder', MA_cold_recon[i],' , must be close to 0')
@@ -248,18 +247,18 @@ def compute_metrics(PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_
 
     # Mean Concentration Recovery coefficient (CRCmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
     hot_ROI = fijii_np(subroot+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw', shape=(PETImage_shape))
-    hot_ROI_act = f_metric[hot_ROI==1]
+    hot_ROI_act = image_recon[hot_ROI==1]
     CRC_hot_recon[i] = np.mean(hot_ROI_act) / 400.
     #IR_hot_recon[i] = np.std(hot_ROI_act) / np.mean(hot_ROI_act)
     print('Mean Concentration Recovery coefficient in hot cylinder', CRC_hot_recon[i],' , must be close to 1')
     #print('Image roughness in the hot cylinder', IR_hot_recon[i])
 
     # Mean Concentration Recovery coefficient (CRCmean) in background calculation (-c 0. 0. 0. 150. 4. 100)
-    #m0_bkg = (np.sum(coord_to_value_array(bkg_ROI,f_metric*phantom_ROI)) - np.sum([coord_to_value_array(cold_ROI,f_metric*phantom_ROI),coord_to_value_array(hot_ROI,f_metric*phantom_ROI)])) / (len(bkg_ROI) - (len(cold_ROI) + len(hot_ROI)))
+    #m0_bkg = (np.sum(coord_to_value_array(bkg_ROI,image_recon*phantom_ROI)) - np.sum([coord_to_value_array(cold_ROI,image_recon*phantom_ROI),coord_to_value_array(hot_ROI,image_recon*phantom_ROI)])) / (len(bkg_ROI) - (len(cold_ROI) + len(hot_ROI)))
     #CRC_bkg_recon[i] = m0_bkg / 100.
     #         
     bkg_ROI = fijii_np(subroot+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape))
-    bkg_ROI_act = f_metric[bkg_ROI==1]
+    bkg_ROI_act = image_recon[bkg_ROI==1]
     CRC_bkg_recon[i] = np.mean(bkg_ROI_act) / 100.
     IR_bkg_recon[i] = np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)
     print('Mean Concentration Recovery coefficient in background', CRC_bkg_recon[i],' , must be close to 1')
@@ -627,7 +626,6 @@ def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix
 
     # Save x_label for load into block 2 - CNN as corrupted image (x_label)
     x_label = x + mu
-    x_label = find_nan(x_label)
 
     # Save x_label in .img and .hdr format
     name=(subroot+'Block2/x_label/'+format(test) + '/' + format(i) +'_x_label' + suffix + '.img')
@@ -679,7 +677,6 @@ def castor_reconstruction_OPTITR(i, castor_command_line, subroot, sub_iter_MAP, 
 
     # Save x_label for load into block 2 - CNN as corrupted image (x_label)
     x_label = x + mu
-    x_label = find_nan(x_label)
 
     # Save x_label in .img and .hdr format
     name=(subroot+'Block2/x_label/'+format(test) + '/' + format(i) +'_x_label' + suffix + '.img')
