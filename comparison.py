@@ -1,8 +1,5 @@
 ## Python libraries
 
-# Pytorch
-from torch.utils.tensorboard import SummaryWriter
-
 # Useful
 import os
 import argparse
@@ -19,7 +16,7 @@ from utils_func import read_input_dim, input_dim_str_to_list, fijii_np, subroot
 parser = argparse.ArgumentParser(description='DIP + ADMM computation')
 parser.add_argument('--opti', type=str, dest='opti', help='optimizer to use in CASToR')
 parser.add_argument('--nb_iter', type=str, dest='nb_iter', help='number of optimizer iterations')
-parser.add_argument('--beta', type=str, dest='beta', help='penalty strength (beta)')
+parser.add_argument('--beta', type=str, dest='beta', help='penalty strength (beta)',nargs='+')
 parser.add_argument('--image', type=str, dest='image', help='phantom image from database')
 
 # Retrieving arguments in this python script
@@ -32,8 +29,13 @@ if (args.opti is not None): # Must check if all args are None
 else: # For VS Code (without command line)
     optimizer = 'BSREM' # CASToR optimizer
     nb_iter = 10 # number of optimizer iterations
-    beta = 0.04 # penalty strength (beta)
-    image = "image0"
+    #beta = 0.04 # penalty strength (beta)
+    beta = list(np.logspace(-4,1,num=6)) # Good try for image0
+    beta = list(np.logspace(-7,-5,num=6)) # Good try for image1
+    #beta = [0.01,0.03,0.05,0.07,0.09]
+    #beta = [0.03,0.035,0.04,0.045,0.05]
+    #beta = [0.04]
+    image = "image1"
 
 # Define PET input dimensions according to input data dimensions
 PETImage_shape_str = read_input_dim(subroot+'Data/database_v2/' + image + '/' + image + '.hdr')
@@ -46,14 +48,9 @@ image_gt = fijii_np(subroot+'Data/database_v2/' + image + '/' + image + '.raw',s
 
 # Metrics arrays
 
-beta = [0.0001,0.001,0.01,0.1,1,10]
-beta = [0.01,0.03,0.05,0.07,0.09]
-beta = [0.03,0.035,0.04,0.045,0.05]
-beta = [0.04]
 if (optimizer == 'MLEM'):
-    max_iter = 1
-elif (optimizer == 'BSREM'):
-    max_iter = len(beta)
+    beta = [0]
+max_iter = len(beta)
 
 PSNR_recon = np.zeros(max_iter)
 PSNR_norm_recon = np.zeros(max_iter)
@@ -63,9 +60,8 @@ CRC_hot_recon = np.zeros(max_iter)
 CRC_bkg_recon = np.zeros(max_iter)
 IR_bkg_recon = np.zeros(max_iter)
 
-writer = SummaryWriter()
-
 for i in range(max_iter):
+    print(i)
 
     # castor-recon command line
     header_file = ' -df ' + subroot + 'Data/database_v2/' + image + '/data' + image[-1] + '/data' + image[-1]  + '.cdh' # PET data path
@@ -73,7 +69,7 @@ for i in range(max_iter):
     executable = 'castor-recon'
     dim = ' -dim ' + PETImage_shape_str
     vox = ' -vox 4,4,4'
-    vb = ' -vb 3'
+    vb = ' -vb 1'
     it = ' -it ' + str(nb_iter) + ':28'
     th = ' -th 0'
     proj = ' -proj incrementalSiddon'
@@ -82,7 +78,7 @@ for i in range(max_iter):
     if (optimizer == 'MLEM'):
         opti = ' -opti ' + optimizer
         conv = ' -conv gaussian,8,8,3.5::post'
-        conv = ''
+        #conv = ''
         penalty = ''
         penaltyStrength = ''
     else:
@@ -91,7 +87,7 @@ for i in range(max_iter):
         penalty = ' -pnlt MRF:' + subroot + 'Comparison/BSREM/' + 'MRF.conf'
         penaltyStrength = ' -pnlt-beta ' + str(beta[i])
 
-    output_path = ' -dout ' + subroot + 'Comparison/' + optimizer # Output path for CASTOR framework
+    output_path = ' -dout ' + subroot + 'Comparison/' + optimizer + '_beta_' + str(beta[i]) # Output path for CASTOR framework
     initialimage = ' -img ' + subroot+'Data/database_v2/' + image + '/' + image + '.hdr'
     initialimage = ''
 
@@ -99,9 +95,13 @@ for i in range(max_iter):
     vb_like = ' -vb 0'
     opti_like = ' -opti-fom'
 
+    print("CASToR command line :")
+    print("")
+    print(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv + psf)
+    print("")
     os.system(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv + psf) # + ' -fov-out 95')
 
 import subprocess
 root = os.getcwd()
 test = 24
-successful_process = subprocess.call(["python3", root+"/show_castor_results.py", optimizer, str(nb_iter), str(test),str("no suffix here"),image]) # Showing results in tensorboard
+successful_process = subprocess.call(["python3", root+"/show_castor_results.py", optimizer, str(nb_iter), str(test),str("no suffix here"),image,str(beta)]) # Showing results in tensorboard
