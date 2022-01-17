@@ -20,7 +20,7 @@ import numpy as np
 from utils.utils_func import *
 
 # Configuration dictionnary for hyperparameters to tune
-config = {
+hyperparameters_config = {
     "lr" : 0.001,
     "sub_iter_DIP" : 100,
     "rho" : 0.003,
@@ -38,13 +38,13 @@ max_iter = 20 # Outer iterations
 test = 24
 
 # Useful variables
-suffix =  suffix_func(config) # suffix to make difference between raytune runs (different hyperparameters)
+suffix =  suffix_func(hyperparameters_config) # suffix to make difference between raytune runs (different hyperparameters)
 root=os.getcwd() # We do not use raytune, so it is local directory
 subroot = root + '/data/Algo/'  # Directory root
 writer = SummaryWriter()
 
 # Define PET input dimensions according to input data dimensions
-PETImage_shape_str = read_input_dim(subroot+'Data/database_v2/' + config["image"] + '/' + config["image"] + '.hdr')
+PETImage_shape_str = read_input_dim(subroot+'Data/database_v2/' + hyperparameters_config["image"] + '/' + hyperparameters_config["image"] + '.hdr')
 PETImage_shape = input_dim_str_to_list(PETImage_shape_str)
 
 # Metrics arrays
@@ -57,13 +57,13 @@ CRC_bkg_recon = np.zeros(max_iter)
 IR_bkg_recon = np.zeros(max_iter)
 
 #Loading Ground Truth image to compute metrics
-image_gt = fijii_np(subroot+'Data/database_v2/' + config["image"] + '/' + config["image"] + '.raw',shape=(PETImage_shape))
+image_gt = fijii_np(subroot+'Data/database_v2/' + hyperparameters_config["image"] + '/' + hyperparameters_config["image"] + '.raw',shape=(PETImage_shape))
 
 for i in range(max_iter):
     f = fijii_np(subroot+'Block2/out_cnn/'+ format(test)+'/out_' + net + '' + format(i) + suffix + '.img',shape=(PETImage_shape)) # loading DIP output
 
     # Metrics for NN output
-    compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,config["image"],writer=writer,write_tensorboard=True)
+    compute_metrics(PETImage_shape,f,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,hyperparameters_config["image"],writer=writer,write_tensorboard=True)
 
     # Display images in tensorboard
     #write_image_tensorboard(writer,image_init,"initialization of DIP output",suffix,image_gt) # DIP input in tensorboard

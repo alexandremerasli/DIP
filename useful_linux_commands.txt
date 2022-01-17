@@ -26,7 +26,7 @@ pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org packag
 
 ##################### plus rares ##################### 
 
-export CASTOR_CONFIG=/home/meraslia/sgld/software/castor_v3.1/config/
+export CASTOR_CONFIG=/home/meraslia/sgld/software/castor_v3.1/hyperparameters_config/
 
 git push https://TOKEN@github.com/alexandremerasli/DIP.git HEAD:positive_proj
 git pull https://TOKEN@github.com/alexandremerasli/DIP.git

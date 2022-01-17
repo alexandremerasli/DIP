@@ -4,18 +4,18 @@ import pytorch_lightning as pl
 
 class ConvNet3D_real_lightning(pl.LightningModule):
 
-    def __init__(self, config):
+    def __init__(self, hyperparameters_config, method):
         super().__init__()
 
-        # Defining variables from config
-        self.lr = config['lr']
-        self.opti_DIP = config['opti_DIP']
-        self.sub_iter_DIP = config['sub_iter_DIP']
-        self.skip = config['skip_connections']
-        self.method = config['method']
-        if (config['mlem_sequence'] is None):
+        # Defining variables from hyperparameters_config
+        self.lr = hyperparameters_config['lr']
+        self.opti_DIP = hyperparameters_config['opti_DIP']
+        self.sub_iter_DIP = hyperparameters_config['sub_iter_DIP']
+        self.skip = hyperparameters_config['skip_connections']
+        self.method = method
+        if (hyperparameters_config['mlem_sequence'] is None):
             self.post_reco_mode = True
-            self.suffix = self.suffix_func(config)
+            self.suffix = self.suffix_func(hyperparameters_config)
         else:
             self.post_reco_mode = False
 
@@ -196,8 +196,8 @@ class ConvNet3D_real_lightning(pl.LightningModule):
             test = 24
             save_img(out_np, subroot+'Block2/out_cnn/' + format(test) + '/out_' + 'DIP' + '_post_reco_epoch=' + format(self.current_epoch) + self.suffix + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                     
-    def suffix_func(self,config):
+    def suffix_func(self,hyperparameters_config):
         suffix = "config"
-        for key, value in config.items():
+        for key, value in hyperparameters_config.items():
             suffix +=  "_" + key + "=" + str(value)
         return suffix

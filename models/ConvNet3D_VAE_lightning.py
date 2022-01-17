@@ -6,14 +6,14 @@ import os
 
 class ConvNet3D_VAE_lightning(pl.LightningModule):
 
-    def __init__(self, config):
+    def __init__(self, hyperparameters_config):
         super().__init__()
 
-        # Defining variables from config
-        self.lr = config['lr']
-        self.opti_DIP = config['opti_DIP']
-        self.sub_iter_DIP = config['sub_iter_DIP']
-        if (config['mlem_sequence'] is None):
+        # Defining variables from hyperparameters_config
+        self.lr = hyperparameters_config['lr']
+        self.opti_DIP = hyperparameters_config['opti_DIP']
+        self.sub_iter_DIP = hyperparameters_config['sub_iter_DIP']
+        if (hyperparameters_config['mlem_sequence'] is None):
             self.post_reco_mode = True
         else:
             self.post_reco_mode = False

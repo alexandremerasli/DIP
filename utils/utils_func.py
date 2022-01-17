@@ -20,9 +20,9 @@ import ADMMLim
 
 subroot=os.getcwd()+'/data/Algo/'
 
-def suffix_func(config):
+def suffix_func(hyperparameters_config):
     suffix = "config"
-    for key, value in config.items():
+    for key, value in hyperparameters_config.items():
         suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
     return suffix
 
@@ -118,7 +118,7 @@ def save_img(img,name):
     img.tofile(fp)
     print('Succesfully save in:', name)
 
-def write_hdr(L,subpath,config,variable_name='',subroot_output_path='',matrix_type='img'):
+def write_hdr(L,subpath,phantom,variable_name='',subroot_output_path='',matrix_type='img'):
     """ write a header for the optimization transfer solution (it's use as CASTOR input)"""
     if (len(L) == 1):
         i = L[0]
@@ -134,13 +134,13 @@ def write_hdr(L,subpath,config,variable_name='',subroot_output_path='',matrix_ty
         else:
             ref_numbers = format(i)
     filename = subroot_output_path + '/'+ subpath + '/' + ref_numbers +'.hdr'
-    with open(subroot + 'Data/MLEM_reco_for_init/' + config["image"] + '/' + config["image"] + '_it1.hdr') as f:
+    with open(subroot + 'Data/MLEM_reco_for_init/' + phantom + '/' + phantom + '_it1.hdr') as f:
         with open(filename, "w") as f1:
             for line in f:
-                if line.strip() == ('!name of data file := ' + config["image"] + '_it1.img'):
+                if line.strip() == ('!name of data file := ' + phantom + '_it1.img'):
                     f1.write('!name of data file := '+ ref_numbers +'.img')
                     f1.write('\n') 
-                elif line.strip() == ('patient name := ' + config["image"] + '_it1'):
+                elif line.strip() == ('patient name := ' + phantom + '_it1'):
                     f1.write('patient name := ' + ref_numbers)
                     f1.write('\n') 
                 else:
@@ -272,72 +272,72 @@ def compute_metrics(PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_
         writer.add_scalars('Mean Concentration Recovery coefficient in background (best : 1)', {'CRC_bkg':  CRC_bkg_recon[i], 'best': 1,}, i)
         writer.add_scalars('Image roughness in the background (best : 0)', {'IR':  IR_bkg_recon[i], 'best': 0,}, i)
 
-def choose_net(net, config):
+def choose_net(net, hyperparameters_config, method):
     if (net == 'DIP'):
-        model = ConvNet3D_real_lightning(config) #Loading DIP architecture
+        model = ConvNet3D_real_lightning(hyperparameters_config,method) #Loading DIP architecture
         model_class = ConvNet3D_real_lightning #Loading DIP architecture
     elif (net == 'DIP_VAE'):
-        model = ConvNet3D_VAE_lightning(config) #Loading DIP VAE architecture
+        model = ConvNet3D_VAE_lightning(hyperparameters_config) #Loading DIP VAE architecture
         model_class = ConvNet3D_VAE_lightning #Loading DIP VAE architecture
     else:
         if (net == 'DD'):
-            model = DD_2D_lightning(config) #Loading Deep Decoder architecture
+            model = DD_2D_lightning(hyperparameters_config,method) #Loading Deep Decoder architecture
             model_class = DD_2D_lightning #Loading Deep Decoder architecture
         elif (net == 'DD_AE'):
-            model = DD_AE_2D_lightning(config) #Loading Deep Decoder architecture
+            model = DD_AE_2D_lightning(hyperparameters_config) #Loading Deep Decoder architecture
             model_class = DD_AE_2D_lightning #Loading Deep Decoder architecture
     return model, model_class
 
-def create_input(net,PETImage_shape,config): #CT map for high-count data, but not CT yet...
+def create_input(net,PETImage_shape,hyperparameters_config): #CT map for high-count data, but not CT yet...
     constant_uniform = 1
     if (net == 'DIP' or net == 'DIP_VAE'):
-        if config["input"] == "random":
+        if hyperparameters_config["input"] == "random":
             im_input = np.random.normal(0,1,PETImage_shape[0]*PETImage_shape[1]).astype('float32') # initializing input image with random image (for DIP)
-        elif config["input"] == "uniform":
+        elif hyperparameters_config["input"] == "uniform":
             im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1])).astype('float32') # initializing input image with random image (for DIP)
         else:
             return "CT input, do not need to create input"
         im_input = im_input.reshape(PETImage_shape) # reshaping (for DIP)
     else:
         if (net == 'DD'):
-            input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
-            if config["input"] == "random":
-                im_input = np.random.normal(0,1,config["k_DD"]*input_size_DD*input_size_DD).astype('float32') # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
-            elif config["input"] == "uniform":
-                im_input = constant_uniform*np.ones((config["k_DD"],input_size_DD,input_size_DD)).astype('float32') # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+            input_size_DD = int(PETImage_shape[0] / (2**hyperparameters_config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
+            if hyperparameters_config["input"] == "random":
+                im_input = np.random.normal(0,1,hyperparameters_config["k_DD"]*input_size_DD*input_size_DD).astype('float32') # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+            elif hyperparameters_config["input"] == "uniform":
+                im_input = constant_uniform*np.ones((hyperparameters_config["k_DD"],input_size_DD,input_size_DD)).astype('float32') # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
             else:
                 return "CT input, do not need to create input"
-            im_input = im_input.reshape(config["k_DD"],input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+            im_input = im_input.reshape(hyperparameters_config["k_DD"],input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
             
         elif (net == 'DD_AE'):
             input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
 
-            input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
-            if config["input"] == "random":
+            input_size_DD = int(PETImage_shape[0] / (2**hyperparameters_config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
+            if hyperparameters_config["input"] == "random":
                 im_input = np.random.normal(0,1,input_size_DD*input_size_DD).astype('float32') # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
-            elif config["input"] == "uniform":
+            elif hyperparameters_config["input"] == "uniform":
                 im_input = constant_uniform*np.ones((input_size_DD,input_size_DD)).astype('float32') # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
             else:
                 return "CT input, do not need to create input"
             im_input = im_input.reshape(input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if auto encoder based on Deep Decoder
-    if config["input"] == "random":
+    if hyperparameters_config["input"] == "random":
         file_path = (subroot+'Data/initialization/random_input_' + net + '.img')
-    elif config["input"] == "uniform":
+    elif hyperparameters_config["input"] == "uniform":
         file_path = (subroot+'Data/initialization/uniform_input_' + net + '.img')
     save_img(im_input,file_path)
 
-def load_input(net,PETImage_shape,config):
-    if config["input"] == "random":
+def load_input(net,PETImage_shape,hyperparameters_config):
+    if hyperparameters_config["input"] == "random":
         file_path = (subroot+'Data/initialization/random_input_' + net + '.img')
-    elif config["input"] == "CT":
-        file_path = (subroot+'Data/database_v2/' + config["image"] + '/' + config["image"] + '_atn.raw') #CT map, but not CT yet, attenuation for now...
-    elif config["input"] == "BSREM":
+    elif hyperparameters_config["input"] == "CT":
+        file_path = (subroot+'Data/database_v2/' + hyperparameters_config["image"] + '/' + hyperparameters_config["image"] + '_atn.raw') #CT map, but not CT yet, attenuation for now...
+    elif hyperparameters_config["input"] == "BSREM":
         file_path = (subroot+'Data/initialization/BSREM_it30_REF_cropped.img') #
-    elif config["input"] == "uniform":
+    elif hyperparameters_config["input"] == "uniform":
         file_path = (subroot+'Data/initialization/uniform_input_' + net + '.img')
     if (net == 'DD'):
-        input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
-        PETImage_shape = (config['k_DD'],input_size_DD,input_size_DD) # if original Deep Decoder (i.e. only with decoder part)
+        input_size_DD = int(PETImage_shape[0] / (2**hyperparameters_config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
+        PETImage_shape = (hyperparameters_config['k_DD'],input_size_DD,input_size_DD) # if original Deep Decoder (i.e. only with decoder part)
     elif (net == 'DD_AE'):   
         input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
         PETImage_shape = (input_size_DD,input_size_DD) # if auto encoder based on Deep Decoder
@@ -432,13 +432,13 @@ def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, c
 
     return trainer
 
-def load_model(image_net_input_torch, config, finetuning, admm_it, model, model_class, subroot, checkpoint_simple_path_exp, training):
+def load_model(image_net_input_torch, hyperparameters_config, finetuning, admm_it, model, model_class, method, checkpoint_simple_path_exp, training):
     if (finetuning == 'last'): # last model saved in checkpoint
         if (admm_it > 0): # if model has already been trained
-            model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config) # Load previous model in checkpoint        
+            model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), hyperparameters_config=hyperparameters_config, method=method) # Load previous model in checkpoint        
     # if (admm_it == 0):
         # DD finetuning, k=32, d=6
-        #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
+        #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), hyperparameters_config=hyperparameters_config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
         #from torch.utils.tensorboard import SummaryWriter
         #writer = SummaryWriter()
         #out = model(image_net_input_torch)
@@ -446,24 +446,24 @@ def load_model(image_net_input_torch, config, finetuning, admm_it, model, model_
         #write_image_tensorboard(writer,out.detach().numpy(),"high statistics (" + "output, suffix,image_gt,FULL CONTRAST)",0,full_contrast=True) # Showing each corrupted image with contrast = 1
     
         # Set first network iterations to have convergence, as if we do post processing
-        # model = model_class.load_from_checkpoint(os.path.join(subroot,'post_reco'+net+'.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
+        # model = model_class.load_from_checkpoint(os.path.join(subroot,'post_reco'+net+'.ckpt'), hyperparameters_config=hyperparameters_config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
 
     if (finetuning == 'best'): # best model saved in checkpoint
         if (admm_it > 0): # if model has already been trained
-            model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'best_loss.ckpt'), config=config) # Load best model in checkpoint
+            model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'best_loss.ckpt'), hyperparameters_config=hyperparameters_config,method=method) # Load best model in checkpoint
         #if (admm_it == 0):
         # DD finetuning, k=32, d=6
-            #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
+            #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), hyperparameters_config=hyperparameters_config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
         if (training):
             os.system('rm -rf ' + checkpoint_simple_path_exp + '/best_loss.ckpt') # Otherwise, pl will store checkpoint with version in filename
     
     return model
 
-def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finetuning, admm_it, test, suffix, subroot):
+def generate_nn_output(net, hyperparameters_config, method, image_net_input_torch, PETImage_shape, finetuning, admm_it, test, suffix, subroot):
     # Loading using previous model
-    model, model_class = choose_net(net, config)
-    checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(test) + '/' + suffix_func(config) + '/'
-    model = load_model(config, finetuning, admm_it, model, model_class, subroot, checkpoint_simple_path_exp, training=False)
+    model, model_class = choose_net(net, hyperparameters_config, method)
+    checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(test) + '/' + suffix_func(hyperparameters_config) + '/'
+    model = load_model(image_net_input_torch, hyperparameters_config, finetuning, admm_it, model, model_class, subroot, checkpoint_simple_path_exp, training=False)
 
     # Compute output image
     out, mu, logvar, z = model(image_net_input_torch)
@@ -473,12 +473,12 @@ def generate_nn_output(net, config, image_net_input_torch, PETImage_shape, finet
     image_corrupt_scale,param1_scale_im_corrupt,param2_scale_im_corrupt = rescale_imag(image_corrupt)
 
     # Reverse scaling like at the beginning and add it to list of samples
-    out_descale = descale_imag(out,param1_scale_im_corrupt,param2_scale_im_corrupt,config["scaling"])
+    out_descale = descale_imag(out,param1_scale_im_corrupt,param2_scale_im_corrupt,hyperparameters_config["scaling"])
     return out_descale
 
-def castor_command_line_func(config,PETImage_shape_str,rho,alpha,i,k,suffix):
-    if (config["method"] == 'Gong'):
-        header_file = ' -df ' + subroot + 'Data/database_v2/' + config["image"] + '/data' + config["image"][-1] + '/data' + config["image"][-1]  + '.cdh' # PET data path
+def castor_command_line_func(method,phantom,PETImage_shape_str,rho,alpha,i,k,suffix):
+    if (method == 'Gong'):
+        header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[-1] + '/data' + phantom[-1]  + '.cdh' # PET data path
 
         executable = 'castor-recon'
         dim = ' -dim ' + PETImage_shape_str
@@ -503,31 +503,31 @@ def castor_command_line_func(config,PETImage_shape_str,rho,alpha,i,k,suffix):
         if (k==-1): # For first iteration, put alpha to zero (small value to be accepted by CASToR)
             alpha = 0
 
-        castor_command_line = castor_admm_command_line(PETImage_shape_str, alpha, rho, config)
+        castor_command_line = castor_admm_command_line(PETImage_shape_str, alpha, rho, phantom)
 
     return castor_command_line
 
-def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension):
+def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, hyperparameters_config, method, phantom, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension):
     only_x = False # Freezing u and v computation, just updating x if True
     start_time_block1 = time.time()
-    mlem_sequence = config['mlem_sequence']
-    nb_iter_second_admm = config["nb_iter_second_admm"]
+    mlem_sequence = hyperparameters_config['mlem_sequence']
+    nb_iter_second_admm = hyperparameters_config["nb_iter_second_admm"]
     
     # Save image f-mu in .img and .hdr format - block 1
     subroot_output_path = (subroot + 'Block1/' + suffix)
     path_before_eq_22 = (subroot_output_path + '/before_eq22/')
     path_during_eq_22 = (subroot_output_path + '/during_eq22/')
     save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
-    write_hdr([i],'before_eq22',config,'f_mu',subroot_output_path)
+    write_hdr([i],'before_eq22',phantom,'f_mu',subroot_output_path)
 
     # x^0
     copy(subroot + 'Data/initialization/' + image_init_path_without_extension + '.img', path_during_eq_22 + format(i) + '_-1_x.img')
-    write_hdr([i,-1],'during_eq22',config,'x',subroot_output_path)
+    write_hdr([i,-1],'during_eq22',phantom,'x',subroot_output_path)
 
     # Compute u^0 (u^-1 in CASToR) and store it with zeros, and save in .hdr format - block 1            
     u_0 = 0*np.ones((344,252)) # initialize u_0 to zeros
     save_img(u_0,path_during_eq_22 + format(i) + '_-1_u.img')
-    write_hdr([i,-1],'during_eq22',config,'u',subroot_output_path,matrix_type='sino')
+    write_hdr([i,-1],'during_eq22',phantom,'u',subroot_output_path,matrix_type='sino')
     
     # Compute v^0 (v^-1 in CASToR) with ADMM_spec_init_v optimizer and save in .hdr format - block 1
     if (i == 0):   # choose initial image for CASToR reconstruction
@@ -550,11 +550,11 @@ def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix
     u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
     # Define command line to run ADMM with CASToR
-    castor_command_line_x = castor_command_line_func(config,PETImage_shape_str,rho,alpha,i,k,suffix)
+    castor_command_line_x = castor_command_line_func(method,phantom,PETImage_shape_str,rho,alpha,i,k,suffix)
     # Compute one ADMM iteration (x, v, u) when only initializing x
     x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty #+ u_for_additional_data + v_for_additional_data # we need f-mu so that ADMM optimizer works, even if we will not use it...
     print('vvvvvvvvvvv0000000000')
-    ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,config,only_x,subroot_output_path)
+    ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,phantom,only_x,subroot_output_path)
 
     '''
     successful_process = subprocess.call(["python3", root+"/ADMMLim.py", str(i), castor_command_line_x, subroot, str(sub_iter_MAP), str(test), suffix, PETImage_shape_str, image_init_path_without_extension, net])
@@ -566,7 +566,7 @@ def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix
 
     # When only initializing x, u computation is only the forward model Ax, thus exactly what we want to initialize v
     copy(path_during_eq_22 + base_name_k_next + '_u.img', path_during_eq_22 + format(i) + '_-1_v.img')
-    write_hdr([i,-1],'during_eq22',config,'v',subroot_output_path,matrix_type='sino')
+    write_hdr([i,-1],'during_eq22',phantom,'v',subroot_output_path,matrix_type='sino')
         
     # Choose number of argmax iteration for (second) x computation
     if (mlem_sequence):
@@ -603,11 +603,11 @@ def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix
         u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
         # Define command line to run ADMM with CASToR
-        castor_command_line_x = castor_command_line_func(config,PETImage_shape_str,rho,alpha,i,k,suffix)
+        castor_command_line_x = castor_command_line_func(method,phantom,PETImage_shape_str,rho,alpha,i,k,suffix)
         # Compute one ADMM iteration (x, v, u)
         x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage    
         print('xxxxxxxxxuuuuuuuuuuuvvvvvvvvv')
-        ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,config,only_x,subroot_output_path=subroot_output_path)
+        ADMMLim.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,phantom,only_x,subroot_output_path=subroot_output_path)
 
         x = fijii_np(full_output_path_k_next + '_x.img', shape=(PETImage_shape[0],PETImage_shape[1]))
         if (k>=-1):
@@ -622,7 +622,7 @@ def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix
     # Save image x in .img and .hdr format - block 1
     name = (subroot+'Block1/' + suffix + '/out_eq22/' + format(i) + '.img')
     save_img(x, name)
-    write_hdr([i],'out_eq22',config,'',subroot_output_path)
+    write_hdr([i],'out_eq22',phantom,'',subroot_output_path)
 
     # Save x_label for load into block 2 - CNN as corrupted image (x_label)
     x_label = x + mu
@@ -633,15 +633,19 @@ def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, config, suffix
 
     return x_label
 
-def castor_reconstruction_OPTITR(i, castor_command_line, subroot, sub_iter_MAP, test, subroot_output_path, input_path, config, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
+def castor_reconstruction_OPTITR(i, subroot, sub_iter_MAP, test, subroot_output_path, input_path, hyperparameters_config, phantom, suffix, f, mu, PETImage_shape, image_init_path_without_extension):
+    
+    #castor_command_line = castor_command_line_func('Gong',phantom,PETImage_shape_str,rho,alpha,i,k,suffix)
+    castor_command_line = 'MERGE 2 FUNCTIONS'
+
     start_time_block1 = time.time()
-    mlem_sequence = config['mlem_sequence']
+    mlem_sequence = hyperparameters_config['mlem_sequence']
 
     # Save image f-mu in .img and .hdr format - block 1
     path_before_eq_22 = (subroot_output_path + '/before_eq22/')
     path_during_eq_22 = (subroot_output_path + '/during_eq22/')
     save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
-    write_hdr([i],'before_eq22',config,'f_mu',subroot_output_path)
+    write_hdr([i],'before_eq22',phantom,'f_mu',subroot_output_path)
     f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'
 
     if i==0:   # choose initial image for CASToR reconstruction
@@ -673,7 +677,7 @@ def castor_reconstruction_OPTITR(i, castor_command_line, subroot, sub_iter_MAP, 
     # Save image x in .img and .hdr format - block 1
     name = (subroot+'Block1/' + suffix + '/out_eq22/' + format(i) + '.img')
     save_img(x, name)
-    write_hdr([i],'out_eq22',config,'',subroot_output_path)
+    write_hdr([i],'out_eq22',phantom,'',subroot_output_path)
 
     # Save x_label for load into block 2 - CNN as corrupted image (x_label)
     x_label = x + mu
@@ -684,9 +688,9 @@ def castor_reconstruction_OPTITR(i, castor_command_line, subroot, sub_iter_MAP, 
 
     return x_label
 
-def castor_admm_command_line(PETImage_shape_str, alpha, rho, config, only_Lim=False, pnlt=''):
+def castor_admm_command_line(PETImage_shape_str, alpha, rho, phantom, only_Lim=False, pnlt=''):
     # castor-recon command line
-    header_file = ' -df ' + subroot + 'Data/database_v2/' + config["image"] + '/data' + config["image"][-1] + '/data' + config["image"][-1]  + '.cdh' # PET data path
+    header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[-1] + '/data' + phantom[-1]  + '.cdh' # PET data path
 
     executable = 'castor-recon'
     dim = ' -dim ' + PETImage_shape_str
