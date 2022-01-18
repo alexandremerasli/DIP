@@ -46,6 +46,7 @@ if __name__ == "__main__":
     nb_iter = hyperparameters_config["nb_iter"]
     max_iter = len(beta)
     phantom = hyperparameters_config["image"]
+    method = 'Lim'
 
     PSNR_recon = np.zeros(nb_iter)
     PSNR_norm_recon = np.zeros(nb_iter)
@@ -105,7 +106,7 @@ if __name__ == "__main__":
     utils.utils_func.write_hdr([i,-1],subdir,phantom,'u',subroot_output_path,matrix_type='sino')
 
     # Define command line to run ADMM with CASToR, to compute v^0
-    castor_command_line_x = utils.utils_func.castor_admm_command_line(PETImage_shape_str, alpha, rho, phantom ,True, penalty)
+    castor_command_line_x = utils.utils_func.castor_admm_command_line(method, PETImage_shape_str, alpha, rho, phantom ,True, penalty)
     initialimage = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
     f_mu_for_penalty = ' -multimodal ' + subroot + 'Data/initialization/BSREM_it30_REF_cropped.hdr'
     x_for_init_v = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values

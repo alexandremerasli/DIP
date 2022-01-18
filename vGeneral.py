@@ -121,10 +121,19 @@ class vGeneral(abc.ABC):
 
         tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
 
+    def parametersIncompatibility(self,hyperparameters_config,fixed_config):
+        # Specific hyperparameters for denoising module (Do it here to have raytune hyperparameters_config hyperparameters selection)
+        if hyperparameters_config["input"] == 'uniform': # Do not standardize or normalize if uniform, otherwise NaNs
+            hyperparameters_config["scaling"] = "nothing"
+        if fixed_config["method"] == 'Gong':
+            hyperparameters_config["scaling"] = "nothing"
+
     def do_everything(self,config,root):
 
         # Retrieve fixed parameters and hyperparameters from config dictionnary
         fixed_config, hyperparameters_config = self.split_config(config)
+        # Check parameters incompatibility
+        self.parametersIncompatibility(hyperparameters_config,fixed_config)
         self.initializeGeneralVariables(fixed_config, hyperparameters_config,root)
         self.initializeSpecific(hyperparameters_config,root)
         self.runComputation(config,hyperparameters_config,root)

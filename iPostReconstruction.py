@@ -11,11 +11,12 @@ class iPostReconstruction(vDenoising):
     def __init__(self,config,root):
         self.admm_it = 1 # Set it to 1, 0 is for ADMM reconstruction with hard coded values
     
-    def initializeSpecific(self, hyperparameters_config,root):
+    def initializeSpecific(self,hyperparameters_config,root):
         print("Denoising in post reconstruction")
         vDenoising.initializeSpecific(self,hyperparameters_config,root)
         # Loading DIP x_label (corrupted image) from block1
-        self.image_corrupt = fijii_np(self.subroot+'Comparison/im_corrupt_beginning.img',shape=(self.PETImage_shape))
+        #self.image_corrupt = fijii_np(self.subroot+'Comparison/im_corrupt_beginning.img',shape=(self.PETImage_shape))
+        self.image_corrupt = fijii_np(self.subroot+'Comparison/im_corrupt_beginning_optitr.img',shape=(self.PETImage_shape))
         self.net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.test) + '/out_' + self.net + '_post_reco_epoch=' + format(0) + suffix_func(hyperparameters_config) + '.img'
         self.checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         self.name_run = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -34,7 +35,7 @@ class iPostReconstruction(vDenoising):
         classResults = Results(hyperparameters_config,root,self.max_iter,self.PETImage_shape,self.phantom,self.subroot)
 
         self.finetuning = 'False' # to ignore last.ckpt file
-        vDenoising.runComputation(self,hyperparameters_config,root)
+        vDenoising.runComputation(self,config,hyperparameters_config,root)
         self.admm_it = 0 # Set it to 0, to ignore last.ckpt file
         # Squeeze image by loading it
         out_descale = fijii_np(self.net_outputs_path,shape=(self.PETImage_shape)) # loading DIP output

@@ -14,15 +14,12 @@ class vDenoising(vGeneral):
     def __init__(self,config,root):
         print('__init__')
 
-    def initializeSpecific(self, hyperparameters_config,root):
+    def initializeSpecific(self,hyperparameters_config,root):
         self.createDirectoryAndConfigFile(hyperparameters_config)
-        # Specific hyperparameters for denoising module (Do it here to have raytune hyperparameters_config hyperparameters selection)
-        if hyperparameters_config["input"] == 'uniform': # Do not standardize or normalize if uniform, otherwise NaNs
-            hyperparameters_config["scaling"] = "nothing"
+
+        # Specific hyperparameters for reconstruction module (Do it here to have raytune hyperparameters_config hyperparameters selection)
+        self.input = hyperparameters_config["input"]
         self.scaling_input = hyperparameters_config["scaling"]
-        if self.method == 'Gong':
-            # hyperparameters_config["scaling"] = 'positive_normalization' # Will still introduce bias as mu can be negative
-            hyperparameters_config["scaling"] = "nothing"
 
         # Loading DIP input
         # Creating random image input for DIP while we do not have CT, but need to be removed after
@@ -46,27 +43,6 @@ class vDenoising(vGeneral):
                 self.image_net_input_torch = self.image_net_input_torch.view(1,1,input_size_DD,input_size_DD) # For Deep Decoder, if auto encoder based on Deep Decoder
         torch.save(self.image_net_input_torch,self.subroot + 'Data/initialization/image_' + self.net + '_input_torch.pt')
 
-    def runComputation(self,config,hyperparameters_config,root):
-        # Scaling of x_label image
-        image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image
-
-        # Corrupted image x_label, numpy --> torch
-        self.image_corrupt_torch = torch.Tensor(image_corrupt_input_scale)
-        # Adding dimensions to fit network architecture
-        self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1])
-
-        # Training model with sub_iter_DIP iterations
-        model = self.train_process(hyperparameters_config, self.finetuning, self.processing_unit, self.sub_iter_DIP, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.test, self.checkpoint_simple_path, self.name_run, self.subroot) # Not useful to make iterations, we just want to initialize writer. admm_it must be set to -1, otherwise seeking for a checkpoint file...
-        if (self.net == 'DIP_VAE'):
-            out, mu, logvar, z = model(self.image_net_input_torch)
-        else:
-            out = model(self.image_net_input_torch)
-
-        # Descaling like at the beginning
-        out_descale = descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
-        # Saving image output
-        save_img(out_descale, self.net_outputs_path)
-
     def train_process(self, hyperparameters_config, finetuning, processing_unit, sub_iter_DIP, method, admm_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, test, checkpoint_simple_path, name_run, subroot):
         # Implements Dataset
         train_dataset = torch.utils.data.TensorDataset(image_net_input_torch, image_corrupt_torch)
@@ -88,3 +64,24 @@ class vDenoising(vGeneral):
         trainer.fit(model, train_dataloader)
 
         return model
+
+    def runComputation(self,config,hyperparameters_config,root):
+        # Scaling of x_label image
+        image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image
+
+        # Corrupted image x_label, numpy --> torch
+        self.image_corrupt_torch = torch.Tensor(image_corrupt_input_scale)
+        # Adding dimensions to fit network architecture
+        self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1])
+
+        # Training model with sub_iter_DIP iterations
+        model = self.train_process(hyperparameters_config, self.finetuning, self.processing_unit, self.sub_iter_DIP, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.test, self.checkpoint_simple_path, self.name_run, self.subroot) # Not useful to make iterations, we just want to initialize writer. admm_it must be set to -1, otherwise seeking for a checkpoint file...
+        if (self.net == 'DIP_VAE'):
+            out, mu, logvar, z = model(self.image_net_input_torch)
+        else:
+            out = model(self.image_net_input_torch)
+
+        # Descaling like at the beginning
+        out_descale = descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
+        # Saving image output
+        save_img(out_descale, self.net_outputs_path)

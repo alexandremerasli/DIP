@@ -17,11 +17,11 @@ class vReconstruction(vGeneral):
     def __init__(self,config,root):
         print('__init__')
 
-    def runComputation(self):
+    def runComputation(self,config,hyperparameters_config,root):
         """ Implement me! """
         pass
 
-    def initializeSpecific(self, hyperparameters_config,root):
+    def initializeSpecific(self,hyperparameters_config,root):
         self.createDirectoryAndConfigFile(hyperparameters_config)
 
         # Specific hyperparameters for reconstruction module (Do it here to have raytune hyperparameters_config hyperparameters selection)
@@ -43,7 +43,7 @@ class vReconstruction(vGeneral):
         elif (self.method == "Gong"): # Gong initialization with 60th iteration of MLEM (normally, DIP trained with this image as label...)
             self.f_init = fijii_np(self.subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped.img',shape=(self.PETImage_shape))
             #self.f_init = fijii_np(self.subroot + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape))
-            self.image_init_path_without_extension = '1_im_value_cropped' # OPTITR initialization, so firts in MLEM (1 iteration) computation. Not written in Gong, but perhaps not giving any prior information
+            self.image_init_path_without_extension = '1_im_value_cropped' # OPTITR initialization, so first image in MLEM (1 iteration) computation. Not written in Gong, but perhaps not giving any prior information
 
         # Launch short MLEM reconstruction
         path_mlem_init = self.subroot + 'Data/MLEM_reco_for_init/' + self.phantom

@@ -26,13 +26,8 @@ class iNestedADMM(vReconstruction):
             print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Outer iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', i)
             start_time_outer_iter = time.time()
             
-            # Reconstruction with CASToR (first equation of ADMM)
-            if (self.method == 'Gong'):
-                subroot_output_path = self.subroot + 'Block1/' + self.suffix # + '/' # Output path for CASTOR framework
-                input_path = ' -img ' + self.subroot + 'Block1/' + self.suffix + '/out_eq22/' # Input path for CASTOR framework
-                self.x_label = castor_reconstruction_OPTITR(i, self.subroot, self.sub_iter_MAP, self.test, subroot_output_path, input_path, hyperparameters_config, self.phantom, self.suffix, self.f, self.mu, self.PETImage_shape, self.image_init_path_without_extension)
-            else: # Nested ADMM
-                self.x_label = castor_reconstruction(classResults.writer, i, self.subroot, self.sub_iter_MAP, self.test, hyperparameters_config, self.method, self.phantom, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.rho, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
+            # Reconstruction with CASToR (tomographic reconstruction part of ADMM)
+            self.x_label = castor_reconstruction(classResults.writer, i, self.subroot, self.sub_iter_MAP, self.test, hyperparameters_config, self.method, self.phantom, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.rho, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
 
             # Write corrupted image over ADMM iterations
             classResults.writeCorruptedImage(i,self.max_iter,self.x_label,self.suffix,pet_algo="nested ADMM")
