@@ -14,7 +14,7 @@ class vDenoising(vGeneral):
     def __init__(self,config,root):
         print('__init__')
 
-    def initializeSpecific(self,hyperparameters_config,root):
+    def initializeSpecific(self,fixed_config,hyperparameters_config,root):
         self.createDirectoryAndConfigFile(hyperparameters_config)
 
         # Specific hyperparameters for reconstruction module (Do it here to have raytune hyperparameters_config hyperparameters selection)
@@ -43,7 +43,7 @@ class vDenoising(vGeneral):
                 self.image_net_input_torch = self.image_net_input_torch.view(1,1,input_size_DD,input_size_DD) # For Deep Decoder, if auto encoder based on Deep Decoder
         torch.save(self.image_net_input_torch,self.subroot + 'Data/initialization/image_' + self.net + '_input_torch.pt')
 
-    def train_process(self, hyperparameters_config, finetuning, processing_unit, sub_iter_DIP, method, admm_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, test, checkpoint_simple_path, name_run, subroot):
+    def train_process(self, hyperparameters_config, finetuning, processing_unit, sub_iter_DIP, method, admm_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, experiment, checkpoint_simple_path, name_run, subroot):
         # Implements Dataset
         train_dataset = torch.utils.data.TensorDataset(image_net_input_torch, image_corrupt_torch)
         # train_dataset = Dataset(image_net_input_torch, image_corrupt_torch)
@@ -53,19 +53,19 @@ class vDenoising(vGeneral):
         model, model_class = choose_net(net, hyperparameters_config, method)
 
         #checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
-        checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(test)  + '/' + suffix_func(hyperparameters_config) + '/'
+        checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(experiment)  + '/' + suffix_func(hyperparameters_config) + '/'
 
         model = load_model(image_net_input_torch, hyperparameters_config, finetuning, admm_it, model, model_class, method, checkpoint_simple_path_exp, training=True)
 
         # Start training
         print('Starting optimization, iteration',admm_it)
-        trainer = create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, checkpoint_simple_path, test, checkpoint_simple_path_exp,name=name_run)
+        trainer = create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, checkpoint_simple_path, experiment, checkpoint_simple_path_exp,name=name_run)
 
         trainer.fit(model, train_dataloader)
 
         return model
 
-    def runComputation(self,config,hyperparameters_config,root):
+    def runComputation(self,config,fixed_config,hyperparameters_config,root):
         # Scaling of x_label image
         image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image
 
@@ -75,7 +75,7 @@ class vDenoising(vGeneral):
         self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1])
 
         # Training model with sub_iter_DIP iterations
-        model = self.train_process(hyperparameters_config, self.finetuning, self.processing_unit, self.sub_iter_DIP, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.test, self.checkpoint_simple_path, self.name_run, self.subroot) # Not useful to make iterations, we just want to initialize writer. admm_it must be set to -1, otherwise seeking for a checkpoint file...
+        model = self.train_process(hyperparameters_config, self.finetuning, self.processing_unit, self.sub_iter_DIP, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot) # Not useful to make iterations, we just want to initialize writer. admm_it must be set to -1, otherwise seeking for a checkpoint file...
         if (self.net == 'DIP_VAE'):
             out, mu, logvar, z = model(self.image_net_input_torch)
         else:

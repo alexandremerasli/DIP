@@ -178,18 +178,18 @@ class ConvNet3D_VAE_lightning(pl.LightningModule):
     def reparameterize(self, mu, logvar, x):
         z_mu = self.layer_mu(mu).type_as(x)
         z_logvar = self.layer_logvar(logvar).type_as(x)
-        z_std = torch.exp(0.5*z_logvar) # standard deviation computed from log variance
+        z_std = torch.experiment(0.5*z_logvar) # standard deviation computed from log variance
         eps = torch.randn_like(z_mu) # N(0,I) computed with `randn_like` as we need the same size
         z = z_mu + (eps * z_std) # sampling as if coming from the input space
         return z, z_mu, z_std
 
     def gaussian_likelihood(self, x_hat, logscale, x): # return logarithm of gaussian likelihood (so with minus...)
-        scale = torch.exp(logscale)
+        scale = torch.experiment(logscale)
         mean = x_hat
         print(mean)
         print(torch.mean(mean),torch.max(mean),torch.min(mean))
         print(scale)
-        dist = torch.distributions.Normal(mean, scale) # normal distribution object, with mean x_hat (output of DIP) and std scale (exp(logscale) = exp(0) = 1)
+        dist = torch.distributions.Normal(mean, scale) # normal distribution object, with mean x_hat (output of DIP) and std scale (experiment(logscale) = experiment(0) = 1)
         # log prob = ||x_hat
         # measure prob of seeing image under p(x|z)
         log_pxz = dist.log_prob(x) # x is x label = corrupted image = label of DIP
@@ -217,7 +217,7 @@ class ConvNet3D_VAE_lightning(pl.LightningModule):
         # reconstruction loss
         recon_loss = self.gaussian_likelihood(out, self.log_scale, image_corrupt_torch) # corrupted image = label for DIP
         # kl divergence
-        kl = self.kl_divergence(z, mu, torch.exp(logvar / 2))
+        kl = self.kl_divergence(z, mu, torch.experiment(logvar / 2))
         # elbo
         elbo = (kl - recon_loss) # minus because recon_loss is minus norm
         loss = elbo.mean()
@@ -248,6 +248,6 @@ class ConvNet3D_VAE_lightning(pl.LightningModule):
         if ((self.current_epoch%(self.sub_iter_DIP // 10) == 0)):
             out_np = out.detach().numpy()[0,0,:,:]
             subroot = 'data/Algo/'
-            test = 24
-            save_img(out_np, subroot+'Block2/out_cnn/' + format(test) + '/out_' + 'DIP_VAE' + '_post_reco_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+            experiment = 24
+            save_img(out_np, subroot+'Block2/out_cnn/' + format(experiment) + '/out_' + 'DIP_VAE' + '_post_reco_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
         

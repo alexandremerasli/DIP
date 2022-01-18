@@ -144,5 +144,5 @@ if __name__ == "__main__":
 
     import subprocess
     root = os.getcwd()
-    test = 24
-    successful_process = subprocess.call(["python3", root+"/show_castor_results.py", optimizer, str(nb_iter), str(test),suffix]) # Showing results in tensorboard
+    experiment = 24
+    successful_process = subprocess.call(["python3", root+"/show_castor_results.py", optimizer, str(nb_iter), str(experiment),suffix]) # Showing results in tensorboard

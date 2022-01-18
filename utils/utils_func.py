@@ -390,7 +390,7 @@ def write_image_tensorboard(writer,image,name,suffix,image_gt,i=0,full_contrast=
     # Adding this figure to tensorboard
     writer.add_figure(name,plt.gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
 
-def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, checkpoint_simple_path, test, checkpoint_simple_path_exp, name=''):
+def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, checkpoint_simple_path, experiment, checkpoint_simple_path_exp, name=''):
     from ray.tune.integration.pytorch_lightning import TuneReportCallback, \
     TuneReportCheckpointCallback
 
@@ -407,26 +407,26 @@ def create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, c
         #sub_iter_DIP = 1000 if net.startswith('DD') else 200
         #sub_iter_DIP = 100 if net.startswith('DD') else 100
         print(admm_it)
-    elif (admm_it == -1): # First ADMM iteration in block2 test post reconstruction
+    elif (admm_it == -1): # First ADMM iteration in block2 post reconstruction
         sub_iter_DIP = 1 if net.startswith('DD') else 1
         print("admmm_it = -1 must be remooooooooooooooooooooooooooooooooooooooooooooooooooooooooved")
         import sys
         sys.exit()
 
     if (finetuning == 'False'): # Do not save and use checkpoints (still save hparams and event files for now ...)
-        logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(test), name=name) # Store checkpoints in checkpoint_simple_path path
+        logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
         #checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=0, save_weights_only=True) # Do not save any checkpoint (save_top_k = 0)
         checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0). We do not use it a priori, except in post reconstruction to initialize
         trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, callbacks=[checkpoint_callback, tuning_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple")
     else:
         if (finetuning == 'last'): # last model saved in checkpoint
             # Checkpoints pl variables
-            logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(test), name=name) # Store checkpoints in checkpoint_simple_path path
+            logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
             checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0)
             trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all") # Prepare trainer model with callback to save checkpoint        
         if (finetuning == 'best'): # best model saved in checkpoint
             # Checkpoints pl variables
-            logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(test), name=name) # Store checkpoints in checkpoint_simple_path path
+            logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
             checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, filename = 'best_loss', monitor='loss_monitor', save_top_k=1) # Save best checkpoint (save_top_k = 1) (according to minimum loss (monitor)) as best_loss.ckpt
             trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback],gpus=gpus, accelerator=accelerator, profiler="simple") # Prepare trainer model with callback to save checkpoint
 
@@ -459,17 +459,17 @@ def load_model(image_net_input_torch, hyperparameters_config, finetuning, admm_i
     
     return model
 
-def generate_nn_output(net, hyperparameters_config, method, image_net_input_torch, PETImage_shape, finetuning, admm_it, test, suffix, subroot):
+def generate_nn_output(net, hyperparameters_config, method, image_net_input_torch, PETImage_shape, finetuning, admm_it, experiment, suffix, subroot):
     # Loading using previous model
     model, model_class = choose_net(net, hyperparameters_config, method)
-    checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(test) + '/' + suffix_func(hyperparameters_config) + '/'
+    checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(experiment) + '/' + suffix_func(hyperparameters_config) + '/'
     model = load_model(image_net_input_torch, hyperparameters_config, finetuning, admm_it, model, model_class, subroot, checkpoint_simple_path_exp, training=False)
 
     # Compute output image
     out, mu, logvar, z = model(image_net_input_torch)
 
     # Loading X_label from block1 to destandardize NN output
-    image_corrupt = fijii_np(subroot+'Block2/x_label/' + format(test)+'/'+ format(admm_it - 1) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
+    image_corrupt = fijii_np(subroot+'Block2/x_label/' + format(experiment)+'/'+ format(admm_it - 1) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
     image_corrupt_scale,param1_scale_im_corrupt,param2_scale_im_corrupt = rescale_imag(image_corrupt)
 
     # Reverse scaling like at the beginning and add it to list of samples
@@ -488,7 +488,7 @@ def castor_command_line_func(method,phantom,PETImage_shape_str,rho,alpha,i,k=0):
 
     return castor_command_line
 
-def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, hyperparameters_config, method, phantom, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension):
+def castor_reconstruction(writer, i, subroot, sub_iter_MAP, experiment, hyperparameters_config, method, phantom, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension):
     
 
     start_time_block1 = time.time()
@@ -638,7 +638,7 @@ def castor_reconstruction(writer, i, subroot, sub_iter_MAP, test, hyperparameter
     x_label = x + mu
 
     # Save x_label in .img and .hdr format
-    name=(subroot+'Block2/x_label/'+format(test) + '/' + format(i) +'_x_label' + suffix + '.img')
+    name=(subroot+'Block2/x_label/'+format(experiment) + '/' + format(i) +'_x_label' + suffix + '.img')
     save_img(x_label, name)
 
     return x_label

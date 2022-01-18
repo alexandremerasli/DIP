@@ -102,8 +102,8 @@ class DD_2D_lightning(pl.LightningModule):
             except:
                 out_np = out.cpu().detach().numpy()[0,0,:,:]
             subroot = '/home/meraslia/sgld/hernan_folder/data/Algo/'
-            test = 24
-            save_img(out_np, subroot+'Block2/out_cnn/' + format(test) + '/out_' + 'DD' + '_post_reco_epoch=' + format(self.current_epoch) + self.suffix + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+            experiment = 24
+            save_img(out_np, subroot+'Block2/out_cnn/' + format(experiment) + '/out_' + 'DD' + '_post_reco_epoch=' + format(self.current_epoch) + self.suffix + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                     
     def suffix_func(self,hyperparameters_config):
         suffix = "config"

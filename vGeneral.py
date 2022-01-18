@@ -14,9 +14,9 @@ from utils.utils_func import *
 import abc
 class vGeneral(abc.ABC):
     @abc.abstractmethod
-    def __init__(self,config,root):
+    def __init__(self,config):
         print("__init__")
-        self.test = "not updated"
+        self.experiment = "not updated"
 
     def split_config(self,config):
         fixed_config = dict(config)
@@ -32,7 +32,7 @@ class vGeneral(abc.ABC):
         print("hyperparameters_config", hyperparameters_config)
         return fixed_config, hyperparameters_config
 
-    def initializeGeneralVariables(self, fixed_config, hyperparameters_config, root):
+    def initializeGeneralVariables(self,fixed_config,hyperparameters_config,root):
         """General variables"""
 
         # Initialize some parameters from fixed_config
@@ -43,7 +43,7 @@ class vGeneral(abc.ABC):
         self.method = fixed_config["method"]
         self.processing_unit = fixed_config["processing_unit"]
         self.max_iter = fixed_config["max_iter"] # Outer iterations
-        self.test = fixed_config["test"] # Label of the experiment
+        self.experiment = fixed_config["experiment"] # Label of the experiment
 
         # Initialize useful variables
         self.subroot = root + '/data/Algo/'  # Directory root
@@ -64,19 +64,19 @@ class vGeneral(abc.ABC):
         Path(self.subroot+'Block1/' + self.suffix + '/during_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
         Path(self.subroot+'Block1/' + self.suffix + '/out_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
 
-        Path(self.subroot+'Images/out_final/'+format(self.test)+'/').mkdir(parents=True, exist_ok=True) # Output of the framework (Last output of the DIP)
+        Path(self.subroot+'Images/out_final/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the framework (Last output of the DIP)
 
-        Path(self.subroot+'Block2/checkpoint/'+format(self.test)+'/').mkdir(parents=True, exist_ok=True)
-        Path(self.subroot+'Block2/out_cnn/'+ format(self.test)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
+        Path(self.subroot+'Block2/checkpoint/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
+        Path(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
         Path(self.subroot+'Block2/out_cnn/vae').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
-        Path(self.subroot+'Block2/out_cnn/cnn_metrics/'+ format(self.test)+'/').mkdir(parents=True, exist_ok=True) # DIP block metrics
-        Path(self.subroot+'Block2/out_cnn/'+ format(self.test)+'/like/').mkdir(parents=True, exist_ok=True) # folder for Likelihood calculation (using CASTOR)
-        Path(self.subroot+'Block2/x_label/'+format(self.test) + '/').mkdir(parents=True, exist_ok=True) # x corrupted - folder
+        Path(self.subroot+'Block2/out_cnn/cnn_metrics/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # DIP block metrics
+        Path(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/like/').mkdir(parents=True, exist_ok=True) # folder for Likelihood calculation (using CASTOR)
+        Path(self.subroot+'Block2/x_label/'+format(self.experiment) + '/').mkdir(parents=True, exist_ok=True) # x corrupted - folder
 
-        Path(self.subroot+'Block2/checkpoint/'+format(self.test)+'/').mkdir(parents=True, exist_ok=True)
-        Path(self.subroot+'Block2/out_cnn/'+ format(self.test)+'/').mkdir(parents=True, exist_ok=True)
-        Path(self.subroot+'Block2/mu/'+ format(self.test)+'/').mkdir(parents=True, exist_ok=True)
-        Path(self.subroot+'Block2/out_cnn/cnn_metrics/'+ format(self.test)+'/').mkdir(parents=True, exist_ok=True)
+        Path(self.subroot+'Block2/checkpoint/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
+        Path(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
+        Path(self.subroot+'Block2/mu/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
+        Path(self.subroot+'Block2/out_cnn/cnn_metrics/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
 
         Path(self.subroot+'Comparison/MLEM/').mkdir(parents=True, exist_ok=True) # CASTor path
         Path(self.subroot+'Comparison/BSREM/').mkdir(parents=True, exist_ok=True) # CASTor path
@@ -121,7 +121,7 @@ class vGeneral(abc.ABC):
 
         tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
 
-    def parametersIncompatibility(self,hyperparameters_config,fixed_config):
+    def parametersIncompatibility(self,fixed_config,hyperparameters_config):
         # Specific hyperparameters for denoising module (Do it here to have raytune hyperparameters_config hyperparameters selection)
         if hyperparameters_config["input"] == 'uniform': # Do not standardize or normalize if uniform, otherwise NaNs
             hyperparameters_config["scaling"] = "nothing"
@@ -133,10 +133,10 @@ class vGeneral(abc.ABC):
         # Retrieve fixed parameters and hyperparameters from config dictionnary
         fixed_config, hyperparameters_config = self.split_config(config)
         # Check parameters incompatibility
-        self.parametersIncompatibility(hyperparameters_config,fixed_config)
-        self.initializeGeneralVariables(fixed_config, hyperparameters_config,root)
-        self.initializeSpecific(hyperparameters_config,root)
-        self.runComputation(config,hyperparameters_config,root)
+        self.parametersIncompatibility(fixed_config,hyperparameters_config)
+        self.initializeGeneralVariables(fixed_config,hyperparameters_config,root)
+        self.initializeSpecific(fixed_config,hyperparameters_config,root)
+        self.runComputation(config,fixed_config,hyperparameters_config,root)
 
 
 
