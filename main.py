@@ -20,9 +20,9 @@ from iPostReconstruction import iPostReconstruction
 fixed_config = {
     "image" : tune.grid_search(['image0']),
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "method" : tune.grid_search(['Gong']),
+    "method" : tune.grid_search(['nested']),
     "processing_unit" : tune.grid_search(['CPU']),
-    "max_iter" : tune.grid_search([5]),
+    "max_iter" : tune.grid_search([10]),
     "finetuning" : tune.grid_search(['last']),
     "experiment" : tune.grid_search([24]),
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']),
@@ -58,13 +58,14 @@ root = os.getcwd()
 # Choose task to do (move this after raytune !!!)
 if (config["method"] == 'Gong' or config["method"] == 'nested'):
     task = 'full_reco_with_network'
-    print("task",task)
 
 elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["method"] == 'BSREM'):
     task = 'castor_reco'
 
-task = 'show_results'
+task = 'full_reco_with_network'
+#task = 'castor_reco'
 #task = 'post_reco'
+#task = 'show_results'
 
 if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
     classTask = iNestedADMM(hyperparameters_config)

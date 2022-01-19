@@ -28,8 +28,6 @@ class vGeneral(abc.ABC):
             else:
                 hyperparameters_config.pop(key, None)
 
-        print("fixed_config", fixed_config)
-        print("hyperparameters_config", hyperparameters_config)
         return fixed_config, hyperparameters_config
 
     def initializeGeneralVariables(self,fixed_config,hyperparameters_config,root):
@@ -81,12 +79,7 @@ class vGeneral(abc.ABC):
         Path(self.subroot+'Comparison/MLEM/').mkdir(parents=True, exist_ok=True) # CASTor path
         Path(self.subroot+'Comparison/BSREM/').mkdir(parents=True, exist_ok=True) # CASTor path
 
-        Path(self.subroot+'Config/').mkdir(parents=True, exist_ok=True) # CASTor path
-
         Path(self.subroot+'Data/initialization').mkdir(parents=True, exist_ok=True)
-
-        # Save this configuration of hyperparameters, and reload with suffix
-        np.save(self.subroot + 'Config/' + self.suffix + '.npy', hyperparameters_config) # Save this configuration of hyperparameters, and reload it at the beginning of block 2 thanks to self.suffix (passed in subprocess call arguments
 
     def runRayTune(self,config,root):
 
@@ -122,20 +115,24 @@ class vGeneral(abc.ABC):
         tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
 
     def parametersIncompatibility(self,fixed_config,hyperparameters_config):
-        # Specific hyperparameters for denoising module (Do it here to have raytune hyperparameters_config hyperparameters selection)
+        # Do not scale images if network input is uniform of if Gong's method
         if hyperparameters_config["input"] == 'uniform': # Do not standardize or normalize if uniform, otherwise NaNs
             hyperparameters_config["scaling"] = "nothing"
         if fixed_config["method"] == 'Gong':
             hyperparameters_config["scaling"] = "nothing"
+        # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMLim in CASToR
+        if fixed_config["method"] == "nested":
+            hyperparameters_config["mlem_sequence"] = False
 
     def do_everything(self,config,root):
-
         # Retrieve fixed parameters and hyperparameters from config dictionnary
         fixed_config, hyperparameters_config = self.split_config(config)
         # Check parameters incompatibility
         self.parametersIncompatibility(fixed_config,hyperparameters_config)
+        # Initialize variables
         self.initializeGeneralVariables(fixed_config,hyperparameters_config,root)
         self.initializeSpecific(fixed_config,hyperparameters_config,root)
+        # Run task computation
         self.runComputation(config,fixed_config,hyperparameters_config,root)
 
 

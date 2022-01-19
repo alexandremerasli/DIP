@@ -18,24 +18,15 @@ class iResults(vDenoising):
         print("__init__")
 
     def initializeSpecific(self,fixed_config,hyperparameters_config,root):
-        print(hyperparameters_config)
-        print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
-        vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
         # Initialize general variables
         self.initializeGeneralVariables(fixed_config,hyperparameters_config,root)
-        '''
-        self.suffix = suffix
-        self.experiment = experiment
-        self.PETImage_shape = PETImage_shape
-        self.max_iter = max_iter
-        self.net = net
-        '''
+        vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
 
         # Create summary writer from tensorboard
         self.writer = SummaryWriter()
         
         #Loading Ground Truth image to compute metrics
-        self.image_gt = fijii_np(subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape))
+        self.image_gt = fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape))
         
         # Metrics arrays
         self.PSNR_recon = np.zeros(self.max_iter)
