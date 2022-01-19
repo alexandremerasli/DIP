@@ -9,12 +9,12 @@
 # Useful
 import os
 from ray import tune
-from iResults import iResults
 
 # Local files to import
-from utils.utils_func import *
 from iNestedADMM import iNestedADMM
+from iComparison import iComparison
 from iPostReconstruction import iPostReconstruction
+from iResults import iResults
 
 # Configuration dictionnary for general parameters (not hyperparameters)
 fixed_config = {
@@ -26,14 +26,15 @@ fixed_config = {
     "finetuning" : tune.grid_search(['last']),
     "experiment" : tune.grid_search([24]),
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']),
-    #"f_init" : tune.grid_search(['1_im_value_cropped'])
+    #"f_init" : tune.grid_search(['1_im_value_cropped']),
+    "penalty" : tune.grid_search(['MRF']),
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
     "rho" : tune.grid_search([0.0003]),
     # network hyperparameters
     "lr" : tune.grid_search([0.01]), # 0.01 for DIP, 0.001 for DD
-    "sub_iter_DIP" : tune.grid_search([100]), # 10 for DIP, 100 for DD
+    "sub_iter_DIP" : tune.grid_search([10]), # 10 for DIP, 100 for DD
     "opti_DIP" : tune.grid_search(['Adam']),
     "skip_connections" : tune.grid_search([3]),
     "scaling" : tune.grid_search(['standardization']),
@@ -62,15 +63,15 @@ if (config["method"] == 'Gong' or config["method"] == 'nested'):
 elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["method"] == 'BSREM'):
     task = 'castor_reco'
 
-task = 'full_reco_with_network'
+#task = 'full_reco_with_network'
 #task = 'castor_reco'
 #task = 'post_reco'
-#task = 'show_results'
+task = 'show_results'
 
 if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
     classTask = iNestedADMM(hyperparameters_config)
-#elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
-#    classTask = iComparison(config)
+elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
+    classTask = iComparison(config)
 elif (task == 'post_reco'): # Run network denoising after a given reconstructed image im_corrupt
     classTask = iPostReconstruction(config)
 elif (task == 'show_results'): # Show already computed results

@@ -2,11 +2,20 @@
 
 # Pytorch
 import torch
+import pytorch_lightning as pl
+
+# Useful
+import numpy as np
+import os
 
 # Local files to import
-from utils.utils_func import *
 from vReconstruction import vReconstruction
 from vGeneral import vGeneral
+
+from models.ConvNet3D_real_lightning import ConvNet3D_real_lightning # DIP
+from models.ConvNet3D_VAE_lightning import ConvNet3D_VAE_lightning # DIP vae
+from models.DD_2D_lightning import DD_2D_lightning # DD
+from models.DD_AE_2D_lightning import DD_AE_2D_lightning # DD adding encoder part
 
 import abc
 class vDenoising(vGeneral):
@@ -23,12 +32,12 @@ class vDenoising(vGeneral):
 
         # Loading DIP input
         # Creating random image input for DIP while we do not have CT, but need to be removed after
-        create_input(self.net,self.PETImage_shape,hyperparameters_config) # to be removed when CT will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
+        self.create_input(self.net,self.PETImage_shape,hyperparameters_config,self.subroot) # to be removed when CT will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
         # Loading DIP input (we do not have CT-map, so random image created in block 1)
-        self.image_net_input = load_input(self.net,self.PETImage_shape,hyperparameters_config) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
+        self.image_net_input = self.load_input(self.net,self.PETImage_shape,self.subroot) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
         #image_atn = fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape))
         #write_image_tensorboard(writer,image_atn,"Attenuation map (FULL CONTRAST)",self.suffix,image_gt,0,full_contrast=True) # Attenuation map in tensorboard
-        image_net_input_scale = rescale_imag(self.image_net_input,self.scaling_input)[0] # Rescale of network input
+        image_net_input_scale = self.rescale_imag(self.image_net_input,self.scaling_input)[0] # Rescale of network input
         # DIP input image, numpy --> torch
         self.image_net_input_torch = torch.Tensor(image_net_input_scale)
         # Adding dimensions to fit network architecture
@@ -43,31 +52,158 @@ class vDenoising(vGeneral):
                 self.image_net_input_torch = self.image_net_input_torch.view(1,1,input_size_DD,input_size_DD) # For Deep Decoder, if auto encoder based on Deep Decoder
         torch.save(self.image_net_input_torch,self.subroot + 'Data/initialization/image_' + self.net + '_input_torch.pt')
 
-    def train_process(self, hyperparameters_config, finetuning, processing_unit, sub_iter_DIP, method, admm_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, experiment, checkpoint_simple_path, name_run, subroot):
+    def train_process(self, suffix, hyperparameters_config, finetuning, processing_unit, sub_iter_DIP, method, admm_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, experiment, checkpoint_simple_path, name_run, subroot):
         # Implements Dataset
         train_dataset = torch.utils.data.TensorDataset(image_net_input_torch, image_corrupt_torch)
         # train_dataset = Dataset(image_net_input_torch, image_corrupt_torch)
         train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
 
         # Choose network architecture as model
-        model, model_class = choose_net(net, hyperparameters_config, method)
+        model, model_class = self.choose_net(net, hyperparameters_config, method)
 
         #checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
-        checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(experiment)  + '/' + suffix_func(hyperparameters_config) + '/'
+        checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(experiment)  + '/' + suffix + '/'
 
-        model = load_model(image_net_input_torch, hyperparameters_config, finetuning, admm_it, model, model_class, method, checkpoint_simple_path_exp, training=True)
+        model = self.load_model(image_net_input_torch, hyperparameters_config, finetuning, admm_it, model, model_class, method, checkpoint_simple_path_exp, training=True)
 
         # Start training
         print('Starting optimization, iteration',admm_it)
-        trainer = create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, checkpoint_simple_path, experiment, checkpoint_simple_path_exp,name=name_run)
+        trainer = self.create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, checkpoint_simple_path, experiment, checkpoint_simple_path_exp,name=name_run)
 
         trainer.fit(model, train_dataloader)
 
         return model
 
+    def create_pl_trainer(self,finetuning, processing_unit, sub_iter_DIP, admm_it, net, checkpoint_simple_path, experiment, checkpoint_simple_path_exp, name=''):
+        from ray.tune.integration.pytorch_lightning import TuneReportCallback, \
+        TuneReportCheckpointCallback
+
+        tuning_callback = TuneReportCallback({"loss": "val_loss"}, on="validation_end")
+        accelerator = None
+        if (processing_unit == 'CPU'): # use cpus and no gpu
+            gpus = 0
+        elif (processing_unit == 'GPU' or processing_unit == 'both'): # use all available gpus, no cpu (pytorch lightning does not handle cpus and gpus at the same time)
+            gpus = -1
+            #if (torch.cuda.device_count() > 1):
+            #    accelerator = 'dp'
+
+        if (admm_it == 0): # First ADMM iteration in block 1
+            #sub_iter_DIP = 1000 if net.startswith('DD') else 200
+            #sub_iter_DIP = 100 if net.startswith('DD') else 100
+            print(admm_it)
+        elif (admm_it == -1): # First ADMM iteration in block2 post reconstruction
+            sub_iter_DIP = 1 if net.startswith('DD') else 1
+            print("admmm_it = -1 must be remooooooooooooooooooooooooooooooooooooooooooooooooooooooooved")
+            import sys
+            sys.exit()
+
+        if (finetuning == 'False'): # Do not save and use checkpoints (still save hparams and event files for now ...)
+            logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
+            #checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=0, save_weights_only=True) # Do not save any checkpoint (save_top_k = 0)
+            checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0). We do not use it a priori, except in post reconstruction to initialize
+            trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, callbacks=[checkpoint_callback, tuning_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple")
+        else:
+            if (finetuning == 'last'): # last model saved in checkpoint
+                # Checkpoints pl variables
+                logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
+                checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0)
+                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all") # Prepare trainer model with callback to save checkpoint        
+            if (finetuning == 'best'): # best model saved in checkpoint
+                # Checkpoints pl variables
+                logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
+                checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, filename = 'best_loss', monitor='loss_monitor', save_top_k=1) # Save best checkpoint (save_top_k = 1) (according to minimum loss (monitor)) as best_loss.ckpt
+                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback],gpus=gpus, accelerator=accelerator, profiler="simple") # Prepare trainer model with callback to save checkpoint
+
+        return trainer
+
+    def create_input(self,net,PETImage_shape,hyperparameters_config,subroot): #CT map for high-count data, but not CT yet...
+        constant_uniform = 1
+        if (net == 'DIP' or net == 'DIP_VAE'):
+            if hyperparameters_config["input"] == "random":
+                im_input = np.random.normal(0,1,PETImage_shape[0]*PETImage_shape[1]).astype('float32') # initializing input image with random image (for DIP)
+            elif hyperparameters_config["input"] == "uniform":
+                im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1])).astype('float32') # initializing input image with random image (for DIP)
+            else:
+                return "CT input, do not need to create input"
+            im_input = im_input.reshape(PETImage_shape) # reshaping (for DIP)
+        else:
+            if (net == 'DD'):
+                input_size_DD = int(PETImage_shape[0] / (2**hyperparameters_config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
+                if hyperparameters_config["input"] == "random":
+                    im_input = np.random.normal(0,1,hyperparameters_config["k_DD"]*input_size_DD*input_size_DD).astype('float32') # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+                elif hyperparameters_config["input"] == "uniform":
+                    im_input = constant_uniform*np.ones((hyperparameters_config["k_DD"],input_size_DD,input_size_DD)).astype('float32') # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+                else:
+                    return "CT input, do not need to create input"
+                im_input = im_input.reshape(hyperparameters_config["k_DD"],input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+                
+            elif (net == 'DD_AE'):
+                input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
+
+                input_size_DD = int(PETImage_shape[0] / (2**hyperparameters_config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
+                if hyperparameters_config["input"] == "random":
+                    im_input = np.random.normal(0,1,input_size_DD*input_size_DD).astype('float32') # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+                elif hyperparameters_config["input"] == "uniform":
+                    im_input = constant_uniform*np.ones((input_size_DD,input_size_DD)).astype('float32') # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+                else:
+                    return "CT input, do not need to create input"
+                im_input = im_input.reshape(input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if auto encoder based on Deep Decoder
+        if hyperparameters_config["input"] == "random":
+            file_path = (subroot+'Data/initialization/random_input_' + net + '.img')
+        elif hyperparameters_config["input"] == "uniform":
+            file_path = (subroot+'Data/initialization/uniform_input_' + net + '.img')
+        self.save_img(im_input,file_path)
+
+    def load_input(self,net,PETImage_shape,subroot):
+        if self.input == "random":
+            file_path = (subroot+'Data/initialization/random_input_' + net + '.img')
+        elif self.input == "CT":
+            file_path = (subroot+'Data/database_v2/' + self.image + '/' + self.image + '_atn.raw') #CT map, but not CT yet, attenuation for now...
+        elif self.input == "BSREM":
+            file_path = (subroot+'Data/initialization/BSREM_it30_REF_cropped.img') #
+        elif self.input == "uniform":
+            file_path = (subroot+'Data/initialization/uniform_input_' + net + '.img')
+        if (net == 'DD'):
+            input_size_DD = int(PETImage_shape[0] / (2**self.d_DD)) # if original Deep Decoder (i.e. only with decoder part)
+            PETImage_shape = (self.k_DD,input_size_DD,input_size_DD) # if original Deep Decoder (i.e. only with decoder part)
+        elif (net == 'DD_AE'):   
+            input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
+            PETImage_shape = (input_size_DD,input_size_DD) # if auto encoder based on Deep Decoder
+
+        im_input = self.fijii_np(file_path, shape=(PETImage_shape)) # Load input of the DNN (CT image)
+        return im_input
+
+
+    def load_model(self,image_net_input_torch, hyperparameters_config, finetuning, admm_it, model, model_class, method, checkpoint_simple_path_exp, training):
+        if (finetuning == 'last'): # last model saved in checkpoint
+            if (admm_it > 0): # if model has already been trained
+                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), hyperparameters_config=hyperparameters_config, method=method) # Load previous model in checkpoint        
+        # if (admm_it == 0):
+            # DD finetuning, k=32, d=6
+            #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), hyperparameters_config=hyperparameters_config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
+            #from torch.utils.tensorboard import SummaryWriter
+            #writer = SummaryWriter()
+            #out = model(image_net_input_torch)
+            #write_image_tensorboard(writer,out.detach().numpy(),"high statistics output)",suffix,image_gt) # Showing all corrupted images with same contrast to compare them together
+            #write_image_tensorboard(writer,out.detach().numpy(),"high statistics (" + "output, suffix,image_gt,FULL CONTRAST)",0,full_contrast=True) # Showing each corrupted image with contrast = 1
+        
+            # Set first network iterations to have convergence, as if we do post processing
+            # model = model_class.load_from_checkpoint(os.path.join(subroot,'post_reco'+net+'.ckpt'), hyperparameters_config=hyperparameters_config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
+
+        if (finetuning == 'best'): # best model saved in checkpoint
+            if (admm_it > 0): # if model has already been trained
+                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'best_loss.ckpt'), hyperparameters_config=hyperparameters_config,method=method) # Load best model in checkpoint
+            #if (admm_it == 0):
+            # DD finetuning, k=32, d=6
+                #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), hyperparameters_config=hyperparameters_config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
+            if (training):
+                os.system('rm -rf ' + checkpoint_simple_path_exp + '/best_loss.ckpt') # Otherwise, pl will store checkpoint with version in filename
+        
+        return model
+
     def runComputation(self,config,fixed_config,hyperparameters_config,root):
         # Scaling of x_label image
-        image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image
+        image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image
 
         # Corrupted image x_label, numpy --> torch
         self.image_corrupt_torch = torch.Tensor(image_corrupt_input_scale)
@@ -75,13 +211,46 @@ class vDenoising(vGeneral):
         self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1])
 
         # Training model with sub_iter_DIP iterations
-        model = self.train_process(hyperparameters_config, self.finetuning, self.processing_unit, self.sub_iter_DIP, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot) # Not useful to make iterations, we just want to initialize writer. admm_it must be set to -1, otherwise seeking for a checkpoint file...
+        model = self.train_process(self.suffix, hyperparameters_config, self.finetuning, self.processing_unit, self.sub_iter_DIP, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot) # Not useful to make iterations, we just want to initialize writer. admm_it must be set to -1, otherwise seeking for a checkpoint file...
         if (self.net == 'DIP_VAE'):
             out, mu, logvar, z = model(self.image_net_input_torch)
         else:
             out = model(self.image_net_input_torch)
 
         # Descaling like at the beginning
-        out_descale = descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
+        out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
         # Saving image output
-        save_img(out_descale, self.net_outputs_path)
+        self.save_img(out_descale, self.net_outputs_path)
+
+    def choose_net(self,net, hyperparameters_config, method):
+        if (net == 'DIP'):
+            model = ConvNet3D_real_lightning(hyperparameters_config,method) #Loading DIP architecture
+            model_class = ConvNet3D_real_lightning #Loading DIP architecture
+        elif (net == 'DIP_VAE'):
+            model = ConvNet3D_VAE_lightning(hyperparameters_config) #Loading DIP VAE architecture
+            model_class = ConvNet3D_VAE_lightning #Loading DIP VAE architecture
+        else:
+            if (net == 'DD'):
+                model = DD_2D_lightning(hyperparameters_config,method) #Loading Deep Decoder architecture
+                model_class = DD_2D_lightning #Loading Deep Decoder architecture
+            elif (net == 'DD_AE'):
+                model = DD_AE_2D_lightning(hyperparameters_config) #Loading Deep Decoder architecture
+                model_class = DD_AE_2D_lightning #Loading Deep Decoder architecture
+        return model, model_class
+    
+    def generate_nn_output(self,net, hyperparameters_config, method, image_net_input_torch, PETImage_shape, finetuning, admm_it, experiment, suffix, subroot):
+        # Loading using previous model
+        model, model_class = self.choose_net(net, hyperparameters_config, method)
+        checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(experiment) + '/' + suffix + '/'
+        model = self.load_model(image_net_input_torch, hyperparameters_config, finetuning, admm_it, model, model_class, subroot, checkpoint_simple_path_exp, training=False)
+
+        # Compute output image
+        out, mu, logvar, z = model(image_net_input_torch)
+
+        # Loading X_label from block1 to destandardize NN output
+        image_corrupt = self.fijii_np(subroot+'Block2/x_label/' + format(experiment)+'/'+ format(admm_it - 1) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
+        image_corrupt_scale,param1_scale_im_corrupt,param2_scale_im_corrupt = self.rescale_imag(image_corrupt)
+
+        # Reverse scaling like at the beginning and add it to list of samples
+        out_descale = self.descale_imag(out,param1_scale_im_corrupt,param2_scale_im_corrupt,hyperparameters_config["scaling"])
+        return out_descale

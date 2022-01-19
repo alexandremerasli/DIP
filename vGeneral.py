@@ -2,14 +2,12 @@
 
 # Useful
 from pathlib import Path
+import os
 from functools import partial
 from ray import tune
-
-# Math
 import numpy as np
-
-# Local files to import
-from utils.utils_func import *
+from itertools import product
+import matplotlib.pyplot as plt
 
 import abc
 class vGeneral(abc.ABC):
@@ -45,15 +43,15 @@ class vGeneral(abc.ABC):
 
         # Initialize useful variables
         self.subroot = root + '/data/Algo/'  # Directory root
-        self.suffix = suffix_func(hyperparameters_config) # self.suffix to make difference between raytune runs (different hyperparameters)
+        self.suffix = self.suffix_func(hyperparameters_config) # self.suffix to make difference between raytune runs (different hyperparameters)
 
         # Define PET input dimensions according to input data dimensions
-        self.PETImage_shape_str = read_input_dim(self.subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
-        self.PETImage_shape = input_dim_str_to_list(self.PETImage_shape_str)
+        self.PETImage_shape_str = self.read_input_dim(self.subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+        self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
         # Define ROIs for image0 phantom, otherwise it is already done in the database
         if (self.phantom == "image0"):
-            define_ROI_image0(self.PETImage_shape)
+            self.define_ROI_image0(self.PETImage_shape,self.subroot)
 
         return hyperparameters_config
 
@@ -138,23 +136,285 @@ class vGeneral(abc.ABC):
 
 
 
-""""""""""""""""""""" Useful functions """""""""""""""""""""
+    """"""""""""""""""""" Useful functions """""""""""""""""""""
+    def write_hdr(self,subroot,L,subpath,phantom,variable_name='',subroot_output_path='',matrix_type='img'):
+        """ write a header for the optimization transfer solution (it's use as CASTOR input)"""
+        if (len(L) == 1):
+            i = L[0]
+            if variable_name != '':
+                ref_numbers = format(i) + '_' + variable_name
+            else:
+                ref_numbers = format(i)
+        else:
+            i = L[0]
+            k = L[1]
+            if variable_name != '':
+                ref_numbers = format(i) + '_' + format(k) + '_' + variable_name
+            else:
+                ref_numbers = format(i)
+        filename = subroot_output_path + '/'+ subpath + '/' + ref_numbers +'.hdr'
+        with open(subroot + 'Data/MLEM_reco_for_init/' + phantom + '/' + phantom + '_it1.hdr') as f:
+            with open(filename, "w") as f1:
+                for line in f:
+                    if line.strip() == ('!name of data file := ' + phantom + '_it1.img'):
+                        f1.write('!name of data file := '+ ref_numbers +'.img')
+                        f1.write('\n') 
+                    elif line.strip() == ('patient name := ' + phantom + '_it1'):
+                        f1.write('patient name := ' + ref_numbers)
+                        f1.write('\n') 
+                    else:
+                        if (matrix_type == 'sino'): # There are 68516=2447*28 events, but not really useful for computation
+                            if line.strip().startswith('!matrix size [1]'):
+                                f1.write('matrix size [1] := 2447')
+                                f1.write('\n') 
+                            elif line.strip().startswith('!matrix size [2]'):
+                                f1.write('matrix size [2] := 28')
+                                f1.write('\n')
+                            else:
+                                f1.write(line) 
+                        else:
+                            f1.write(line)
 
-def load_input(self,net,PETImage_shape):
-    if self.input == "random":
-        file_path = (subroot+'Data/initialization/random_input_' + net + '.img')
-    elif self.input == "CT":
-        file_path = (subroot+'Data/database_v2/' + self.image + '/' + self.image + '_atn.raw') #CT map, but not CT yet, attenuation for now...
-    elif self.input == "BSREM":
-        file_path = (subroot+'Data/initialization/BSREM_it30_REF_cropped.img') #
-    elif self.input == "uniform":
-        file_path = (subroot+'Data/initialization/uniform_input_' + net + '.img')
-    if (net == 'DD'):
-        input_size_DD = int(PETImage_shape[0] / (2**self.d_DD)) # if original Deep Decoder (i.e. only with decoder part)
-        PETImage_shape = (self.k_DD,input_size_DD,input_size_DD) # if original Deep Decoder (i.e. only with decoder part)
-    elif (net == 'DD_AE'):   
-        input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
-        PETImage_shape = (input_size_DD,input_size_DD) # if auto encoder based on Deep Decoder
+    def suffix_func(self,hyperparameters_config):
+        suffix = "config"
+        for key, value in hyperparameters_config.items():
+            suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
+        return suffix
 
-    im_input = fijii_np(file_path, shape=(PETImage_shape)) # Load input of the DNN (CT image)
-    return im_input
+    def read_input_dim(self,file_path):
+        # Read CASToR header file to retrieve image dimension """
+        with open(file_path) as f:
+            for line in f:
+                if 'matrix size [1]' in line.strip():
+                    dim1 = [int(s) for s in line.split() if s.isdigit()][-1]
+                if 'matrix size [2]' in line.strip():
+                    dim2 = [int(s) for s in line.split() if s.isdigit()][-1]
+                if 'matrix size [3]' in line.strip():
+                    dim3 = [int(s) for s in line.split() if s.isdigit()][-1]
+
+        # Create variables to store dimensions
+        PETImage_shape = (dim1,dim2)
+        PETImage_shape_str = str(dim1) + ','+ str(dim2) + ',' + str(dim3)
+        if (dim3 > 1):
+            raise ValueError("3D not implemented yet")
+        print('image shape :', PETImage_shape)
+        return PETImage_shape_str
+
+    def input_dim_str_to_list(self,PETImage_shape_str):
+        return [int(e.strip()) for e in PETImage_shape_str.split(',')][:-1]
+
+    def fijii_np(self,path,shape,type='<f'):
+        """"Transforming raw data to numpy array"""
+        file_path=(path)
+        dtype = np.dtype(type)
+        fid = open(file_path, 'rb')
+        data = np.fromfile(fid,dtype)
+        image = data.reshape(shape)
+        return image
+
+    def norm_imag(self,img):
+        """ Normalization of input - output [0..1] and the normalization value for each slide"""
+        if (np.max(img) - np.min(img)) != 0:
+            return (img - np.min(img)) / (np.max(img) - np.min(img)), np.min(img), np.max(img)
+        else:
+            return img, np.min(img), np.max(img)
+
+    def denorm_imag(self,image, mini, maxi):
+        """ Denormalization of input - output [0..1] and the normalization value for each slide"""
+        image_np = image.detach().numpy()
+        return self.denorm_numpy_imag(image_np, mini, maxi)
+
+    def denorm_numpy_imag(self,img, mini, maxi):
+        if (maxi - mini) != 0:
+            return img * (maxi - mini) + mini
+        else:
+            return img
+
+
+    def norm_positive_imag(self,img):
+        """ Positive normalization of input - output [0..1] and the normalization value for each slide"""
+        if (np.max(img) - np.min(img)) != 0:
+            return img / np.max(img), np.min(img), np.max(img)
+        else:
+            return img, 0, np.max(img)
+
+    def denorm_positive_imag(self,image, mini, maxi):
+        """ Positive normalization of input - output [0..1] and the normalization value for each slide"""
+        image_np = image.detach().numpy()
+        return self.denorm_numpy_imag(image_np, mini, maxi)
+
+    def denorm_numpy_positive_imag(self, img, mini, maxi):
+        if (maxi - mini) != 0:
+            return img * maxi 
+        else:
+            return img
+
+    def stand_imag(self,image_corrupt):
+        """ Standardization of input - output with mean 0 and std 1 for each slide"""
+        mean=np.mean(image_corrupt)
+        std=np.std(image_corrupt)
+        image_center = image_corrupt - mean
+        image_corrupt_std = image_center / std
+        return image_corrupt_std,mean,std
+
+    def destand_numpy_imag(self,image, mean, std):
+        """ Destandardization of input - output with mean 0 and std 1 for each slide"""
+        return image * std + mean
+
+    def destand_imag(self,image, mean, std):
+        image_np = image.detach().numpy()
+        return self.destand_numpy_imag(image_np, mean, std)
+
+    def rescale_imag(self,image_corrupt, scaling):
+        """ Scaling of input """
+        if (scaling == 'standardization'):
+            return self.stand_imag(image_corrupt)
+        elif (scaling == 'normalization'):
+            return self.norm_positive_imag(image_corrupt)
+        elif (scaling == 'positive_normalization'):
+            return self.norm_imag(image_corrupt)
+        else: # No scaling required
+            return image_corrupt, 0, 0
+
+    def descale_imag(self,image, param_scale1, param_scale2, scaling='standardization'):
+        """ Descaling of input """
+        image_np = image.detach().numpy()
+        if (scaling == 'standardization'):
+            return self.destand_numpy_imag(image_np, param_scale1, param_scale2)
+        elif (scaling == 'normalization'):
+            return self.denorm_numpy_imag(image_np, param_scale1, param_scale2)
+        elif (scaling == 'positive_normalization'):
+            return self.denorm_numpy_positive_imag(image_np, param_scale1, param_scale2)
+        else: # No scaling required
+            return image_np
+
+    def save_img(self,img,name):
+        fp=open(name,'wb')
+        img.tofile(fp)
+        print('Succesfully save in:', name)
+
+    def find_nan(self,image):
+        """ find NaN values on the image"""
+        idx = np.argwhere(np.isnan(image))
+        print('index with NaN value:',len(idx))
+        for i in range(len(idx)):
+            image[idx[i,0],idx[i,1]] = 0
+        print('index with NaN value:',len(np.argwhere(np.isnan(image))))
+        return image
+
+    def points_in_circle(self,center_y,center_x,radius,PETImage_shape,inner_circle=True): # x and y are inverted in an array compared to coordinates
+        liste = [] 
+
+        center_x += int(PETImage_shape[0]/2)
+        center_y += int(PETImage_shape[1]/2)
+        for x in range(0,PETImage_shape[0]):
+            for y in range(0,PETImage_shape[1]):
+                if (x+0.5-center_x)**2 + (y+0.5-center_y)**2 <= radius**2:
+                    liste.append((x,y))
+
+        return liste
+
+    def define_ROI_image0(self,PETImage_shape,subroot):
+        phantom_ROI = self.points_in_circle(0/4,0/4,150/4,PETImage_shape)
+        cold_ROI = self.points_in_circle(-40/4,-40/4,40/4-1,PETImage_shape)
+        hot_ROI = self.points_in_circle(50/4,10/4,20/4-1,PETImage_shape)
+            
+        cold_ROI_bkg = self.points_in_circle(-40/4,-40/4,40/4+1,PETImage_shape)
+        hot_ROI_bkg = self.points_in_circle(50/4,10/4,20/4+1,PETImage_shape)
+        phantom_ROI_bkg = self.points_in_circle(0/4,0/4,150/4-1,PETImage_shape)
+        bkg_ROI = list(set(phantom_ROI_bkg) - set(cold_ROI_bkg) - set(hot_ROI_bkg))
+
+        cold_mask = np.zeros(PETImage_shape, dtype='<f')
+        tumor_mask = np.zeros(PETImage_shape, dtype='<f')
+        phantom_mask = np.zeros(PETImage_shape, dtype='<f')
+        bkg_mask = np.zeros(PETImage_shape, dtype='<f')
+
+        ROI_list = [cold_ROI, hot_ROI, phantom_ROI, bkg_ROI]
+        mask_list = [cold_mask, tumor_mask, phantom_mask, bkg_mask]
+        for i in range(len(ROI_list)):
+            ROI = ROI_list[i]
+            mask = mask_list[i]
+            for couple in ROI:
+                #mask[int(couple[0] - PETImage_shape[0]/2)][int(couple[1] - PETImage_shape[1]/2)] = 1
+                mask[couple] = 1
+
+        # Storing into file instead of defining them at each metrics computation
+        self.save_img(cold_mask, subroot+'Data/database_v2/' + "image0" + '/' + "cold_mask0" + '.raw')
+        self.save_img(tumor_mask, subroot+'Data/database_v2/' + "image0" + '/' + "tumor_mask0" + '.raw')
+        self.save_img(phantom_mask, subroot+'Data/database_v2/' + "image0" + '/' + "phantom_mask0" + '.raw')
+        self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image0" + '/' + "background_mask0" + '.raw')
+
+    def write_image_tensorboard(self,writer,image,name,suffix,image_gt,i=0,full_contrast=False):
+        # Creating matplotlib figure with colorbar
+        plt.figure()
+        if (len(image.shape) != 2):
+            print('image is ' + str(len(image.shape)) + 'D, plotting only 2D slice')
+            image = image[:,:,0]
+        if (full_contrast):
+            plt.imshow(image, cmap='gray_r',vmin=np.min(image),vmax=np.max(image)) # Showing each image with maximum contrast  
+        else:
+            plt.imshow(image, cmap='gray_r',vmin=0,vmax=1.25*np.max(image_gt)) # Showing all images with same contrast
+        plt.colorbar()
+        #plt.axis('off')
+
+        # Saving this figure locally
+        Path('/home/meraslia/sgld/hernan_folder/data/Algo/Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
+        plt.savefig('/home/meraslia/sgld/hernan_folder/data/Algo/Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
+        from textwrap import wrap
+        wrapped_title = "\n".join(wrap(suffix, 50))
+        plt.title(wrapped_title,fontsize=12)
+        # Adding this figure to tensorboard
+        writer.add_figure(name,plt.gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
+
+    def castor_command_line_func(self,method,phantom,PETImage_shape_str,rho,alpha,i,k=0):
+        if (method == 'nested'):
+            if (i==0): # For first iteration, put rho to zero
+                if (k!=-1): # For first iteration, do not put both rho and alpha to zero
+                    rho = 0
+            if (k==-1): # For first iteration, put alpha to zero (small value to be accepted by CASToR)
+                alpha = 0
+
+        castor_command_line = self.castor_admm_command_line(self.subroot, method, PETImage_shape_str, alpha, rho, phantom)
+
+        return castor_command_line
+
+    def castor_admm_command_line(self, subroot, method, PETImage_shape_str, alpha, rho, phantom, only_Lim=False, pnlt=''):
+        
+        # castor-recon command line
+        header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[-1] + '/data' + phantom[-1]  + '.cdh' # PET data path
+
+        executable = 'castor-recon'
+        dim = ' -dim ' + PETImage_shape_str
+        vox = ' -vox 4,4,4'
+        vb = ' -vb 1'
+        th = ' -th 1'
+        proj = ' -proj incrementalSiddon'
+
+        # Command line for calculating the Likelihood
+        opti_like = ' -opti-fom'
+        opti_like = ''
+        
+        if (method == 'nested' or method == 'Lim'):
+            if (rho == 0): # Special case where we do not want to penalize reconstruction (not taking into account network output)
+                # Seg fault in CASToR...
+                pnlt = ''
+                pnlt_beta = ''
+                # Not clean, but works to put rho == 0 in CASToR
+                if (~only_Lim): # DIP + ADMM reconstruction, so choose DIP_ADMM penalty from CASToR
+                    pnlt = ' -pnlt DIP_ADMM'
+                pnlt_beta = ' -pnlt-beta ' + str(rho)
+            else:      
+                if (~only_Lim): # DIP + ADMM reconstruction, so choose DIP_ADMM penalty from CASToR
+                    pnlt = ' -pnlt DIP_ADMM'
+                pnlt_beta = ' -pnlt-beta ' + str(rho)
+            if (alpha == 0): # Special case where we only want to fit network output (when v has not been initialized with data)
+                alpha = 1E-10 # Do not put 0, otherwise CASToR will not work
+            opti = ' -opti ADMMLim' + ',' + str(alpha) + ',0.01,10.'
+        
+        elif (method == 'Gong'):
+            opti = ' -opti OPTITR'
+            pnlt = ' -pnlt OPTITR'
+            pnlt_beta = ' -pnlt-beta ' + str(rho)
+
+        castor_command_line_x = executable + dim + vox + header_file + vb + th + proj + opti + opti_like + pnlt + pnlt_beta
+        return castor_command_line_x
