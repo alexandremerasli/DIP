@@ -13,6 +13,7 @@ class iComparison(vReconstruction):
         print("__init__")
 
     def runComputation(self,config,fixed_config,hyperparameters_config,root):
+        print("hyperparameters_config",hyperparameters_config)
 
         # Initializing results class
         from iResults import iResults
@@ -20,20 +21,24 @@ class iComparison(vReconstruction):
         classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
         
         
+        '''
         hyperparameters_config = {
         "penalty" : 'MRF',
         #"penalty" : 'DIP_ADMM'
         }
-
+        '''
         beta = [0.0001,0.001,0.01,0.1,1,10]
         beta = [0.01,0.03,0.05,0.07,0.09]
         beta = [0.03,0.035,0.04,0.045,0.05]
         beta = [0.04]
+        print("hyperparameters_config",hyperparameters_config)
 
         if (fixed_config["method"] == 'ADMMLim'):
-            self.ADMMLim(hyperparameters_config,beta)
+            self.ADMMLim(fixed_config,hyperparameters_config,beta)
         else:
-            for i in range(self.max_iter):
+            if (config["method"] == 'MLEM'):
+                beta = [0]
+            for i in range(len(beta)):
                 print(i)
 
                 # castor-recon command line
@@ -43,7 +48,7 @@ class iComparison(vReconstruction):
                 dim = ' -dim ' + self.PETImage_shape_str
                 vox = ' -vox 4,4,4'
                 vb = ' -vb 1'
-                it = ' -it ' + str(self.nb_iter) + ':28'
+                it = ' -it ' + str(self.max_iter) + ':28'
                 th = ' -th 0'
                 proj = ' -proj incrementalSiddon'
                 psf = ' -conv gaussian,4,4,3.5::psf'
@@ -55,9 +60,9 @@ class iComparison(vReconstruction):
                     penalty = ''
                     penaltyStrength = ''
                 else:
-                    opti = ' -opti ' + config["method"] + ':' + self.subroot + 'Comparison/BSREM/' + 'BSREM.conf'
+                    opti = ' -opti ' + config["method"] + ':' + self.subroot + 'Comparison/' + 'BSREM.conf'
                     conv = ''
-                    penalty = ' -pnlt MRF:' + self.subroot + 'Comparison/BSREM/' + 'MRF.conf'
+                    penalty = ' -pnlt MRF:' + self.subroot + 'Comparison/' + 'MRF.conf'
                     penaltyStrength = ' -pnlt-beta ' + str(beta[i])
 
                 output_path = ' -dout ' + self.subroot + 'Comparison/' + config["method"] + '_beta_' + str(beta[i]) # Output path for CASTOR framework
@@ -66,6 +71,7 @@ class iComparison(vReconstruction):
 
                 # Command line for calculating the Likelihood
                 opti_like = ' -opti-fom'
+                opti_like = ''
 
                 print("CASToR command line :")
                 print("")
@@ -75,41 +81,42 @@ class iComparison(vReconstruction):
 
 
 
-    def ADMMLim(self,hyperparameters_config):
+    def ADMMLim(self,fixed_config,hyperparameters_config,beta):
 
             # Variables from hyperparameters_config dictionnary
+            print("hyperparameters_config",hyperparameters_config)
             it = ' -it ' + str(hyperparameters_config["sub_iter_MAP"]) + ':1' # 1 subset
-            penalty = ' -pnlt ' + hyperparameters_config["penalty"]
-            if hyperparameters_config["penalty"] == "MRF":
-                penalty += ':' + self.self.subroot + 'Comparison/ADMMLim/' + 'MRF.conf'
+            penalty = ' -pnlt ' + fixed_config["penalty"]
+            if fixed_config["penalty"] == "MRF":
+                penalty += ':' + self.subroot + 'Comparison/' + 'MRF.conf'
 
             only_x = False # Freezing u and v computation, just updating x if True
 
             # Path variables
-            subroot_output_path = (self.self.subroot + 'Comparison/ADMMLim/' + self.suffix)
+            subroot_output_path = (self.subroot + 'Comparison/ADMMLim/' + self.suffix)
             subdir = 'ADMM'
-            Path(self.self.subroot+'Comparison/ADMMLim/').mkdir(parents=True, exist_ok=True) # CASTor path
-            Path(self.self.subroot+'Comparison/ADMMLim/' + self.suffix + '/ADMM').mkdir(parents=True, exist_ok=True) # CASToR path
+            Path(self.subroot+'Comparison/ADMMLim/').mkdir(parents=True, exist_ok=True) # CASTor path
+            Path(self.subroot+'Comparison/ADMMLim/' + self.suffix + '/ADMM').mkdir(parents=True, exist_ok=True) # CASToR path
 
             i = 0
             k = -2
             full_output_path_k_next = subroot_output_path + '/ADMM/' + format(i) + '_' + format(k+1)
 
             # Initialize u^0 (u^-1 in CASToR)
-            copy(self.self.subroot + 'Data/initialization/0_sino_value.hdr', full_output_path_k_next + '_u.hdr')
+            copy(self.subroot + 'Data/initialization/0_sino_value.hdr', full_output_path_k_next + '_u.hdr')
             self.write_hdr(self.subroot,[i,-1],subdir,self.phantom,'u',subroot_output_path,matrix_type='sino')
 
             # Define command line to run ADMM with CASToR, to compute v^0
             castor_command_line_x = self.castor_admm_command_line(self.subroot, 'Lim', self.PETImage_shape_str, self.alpha, self.rho, self.phantom ,True, penalty)
-            initialimage = ' -img ' + self.self.subroot + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
-            f_mu_for_penalty = ' -multimodal ' + self.self.subroot + 'Data/initialization/BSREM_it30_REF_cropped.hdr'
-            x_for_init_v = ' -img ' + self.self.subroot + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+            initialimage = ' -img ' + self.subroot + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+            f_mu_for_penalty = ' -multimodal ' + self.subroot + 'Data/initialization/BSREM_it30_REF_cropped.hdr'
+            x_for_init_v = ' -img ' + self.subroot + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
             if (only_x):
-                x_for_init_v = ' -img ' + self.self.subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped' + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+                x_for_init_v = ' -img ' + self.subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped' + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
                 
             # Compute one ADMM iteration (x, v, u) when only initializing x to compute v^0
             if (only_x):
-                copy(self.self.subroot + 'Data/initialization/0_sino_value.hdr', subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(-1) + '_u.img')
+                copy(self.subroot + 'Data/initialization/0_sino_value.hdr', subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(-1) + '_u.img')
             x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
             print('vvvvvvvvvvv0000000000')
             self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k-1,self.phantom,only_x,subroot_output_path,self.subroot)
@@ -121,7 +128,7 @@ class iComparison(vReconstruction):
                 # Initialize variables for command line
                 if (k == -1):
                     if (i == 0):   # choose initial self.phantom for CASToR reconstruction
-                        initialimage = ' -img ' + self.self.subroot + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+                        initialimage = ' -img ' + self.subroot + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
                 else:
                     initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k) + '_x.hdr'
 
