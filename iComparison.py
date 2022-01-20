@@ -86,7 +86,7 @@ class iComparison(vReconstruction):
             it = ' -it ' + str(hyperparameters_config["sub_iter_MAP"]) + ':1' # 1 subset
             penalty = ' -pnlt ' + fixed_config["penalty"]
             if fixed_config["penalty"] == "MRF":
-                penalty += ':' + self.subroot + 'Comparison/' + 'MRF.conf'
+                penalty += ':' + self.subroot + 'Comparison/' + 'ADMMLim/MRF.conf'
 
             only_x = False # Freezing u and v computation, just updating x if True
 
