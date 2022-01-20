@@ -1,9 +1,7 @@
 # Useful
 from pathlib import Path
 import os
-import numpy as np
 from shutil import copy
-import argparse
 
 # Local files to import
 from vReconstruction import vReconstruction
@@ -17,9 +15,10 @@ class iComparison(vReconstruction):
 
         # Initializing results class
         from iResults import iResults
-        classResults = iResults(fixed_config,hyperparameters_config,root)
+        classResults = iResults(config)
         classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
         
+        self.beta = hyperparameters_config["alpha"]
         
         '''
         hyperparameters_config = {
@@ -27,61 +26,60 @@ class iComparison(vReconstruction):
         #"penalty" : 'DIP_ADMM'
         }
         '''
-        beta = [0.0001,0.001,0.01,0.1,1,10]
-        beta = [0.01,0.03,0.05,0.07,0.09]
-        beta = [0.03,0.035,0.04,0.045,0.05]
-        beta = [0.04]
+
         print("hyperparameters_config",hyperparameters_config)
 
         if (fixed_config["method"] == 'ADMMLim'):
-            self.ADMMLim(fixed_config,hyperparameters_config,beta)
+            self.ADMMLim(fixed_config,hyperparameters_config)
         else:
             if (config["method"] == 'MLEM'):
-                beta = [0]
-            for i in range(len(beta)):
-                print(i)
+                self.beta = [0]
+            #for i in range(len(self.beta)):
+            #print(i)
 
-                # castor-recon command line
-                header_file = ' -df ' + self.subroot + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[-1] + '/data' + self.phantom[-1]  + '.cdh' # PET data path
+            # castor-recon command line
+            header_file = ' -df ' + self.subroot + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[-1] + '/data' + self.phantom[-1]  + '.cdh' # PET data path
 
-                executable = 'castor-recon'
-                dim = ' -dim ' + self.PETImage_shape_str
-                vox = ' -vox 4,4,4'
-                vb = ' -vb 1'
-                it = ' -it ' + str(self.max_iter) + ':28'
-                th = ' -th 0'
-                proj = ' -proj incrementalSiddon'
-                psf = ' -conv gaussian,4,4,3.5::psf'
+            executable = 'castor-recon'
+            dim = ' -dim ' + self.PETImage_shape_str
+            vox = ' -vox 4,4,4'
+            vb = ' -vb 1'
+            it = ' -it ' + str(self.max_iter) + ':28'
+            th = ' -th 0'
+            proj = ' -proj incrementalSiddon'
+            psf = ' -conv gaussian,4,4,3.5::psf'
 
-                if (config["method"] == 'MLEM'):
-                    opti = ' -opti ' + config["method"]
-                    conv = ' -conv gaussian,8,8,3.5::post'
-                    #conv = ''
-                    penalty = ''
-                    penaltyStrength = ''
-                else:
-                    opti = ' -opti ' + config["method"] + ':' + self.subroot + 'Comparison/' + 'BSREM.conf'
-                    conv = ''
-                    penalty = ' -pnlt MRF:' + self.subroot + 'Comparison/' + 'MRF.conf'
-                    penaltyStrength = ' -pnlt-beta ' + str(beta[i])
+            if (config["method"] == 'MLEM'):
+                opti = ' -opti ' + config["method"]
+                conv = ' -conv gaussian,8,8,3.5::post'
+                #conv = ''
+                penalty = ''
+                penaltyStrength = ''
+            else:
+                opti = ' -opti ' + config["method"] + ':' + self.subroot + 'Comparison/' + 'BSREM.conf'
+                conv = ''
+                penalty = ' -pnlt MRF:' + self.subroot + 'Comparison/' + 'MRF.conf'
+                #penaltyStrength = ' -pnlt-beta ' + str(self.beta[i])
+                penaltyStrength = ' -pnlt-beta ' + str(self.beta)
 
-                output_path = ' -dout ' + self.subroot + 'Comparison/' + config["method"] + '_beta_' + str(beta[i]) # Output path for CASTOR framework
-                initialimage = ' -img ' + self.subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr'
-                initialimage = ''
+            #output_path = ' -dout ' + self.subroot + 'Comparison/' + config["method"] + '_beta_' + str(self.beta[i]) # Output path for CASTOR framework
+            output_path = ' -dout ' + self.subroot + 'Comparison/' + config["method"] + '_beta_' + str(self.beta) # Output path for CASTOR framework
+            initialimage = ' -img ' + self.subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr'
+            initialimage = ''
 
-                # Command line for calculating the Likelihood
-                opti_like = ' -opti-fom'
-                opti_like = ''
+            # Command line for calculating the Likelihood
+            opti_like = ' -opti-fom'
+            opti_like = ''
 
-                print("CASToR command line :")
-                print("")
-                print(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv + psf)
-                print("")
-                os.system(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv + psf) # + ' -fov-out 95')
+            print("CASToR command line :")
+            print("")
+            print(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv + psf)
+            print("")
+            os.system(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv + psf) # + ' -fov-out 95')
 
+        classResults.runComputation(config,fixed_config,hyperparameters_config,root)
 
-
-    def ADMMLim(self,fixed_config,hyperparameters_config,beta):
+    def ADMMLim(self,fixed_config,hyperparameters_config):
 
             # Variables from hyperparameters_config dictionnary
             print("hyperparameters_config",hyperparameters_config)

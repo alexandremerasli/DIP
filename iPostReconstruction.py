@@ -31,7 +31,7 @@ class iPostReconstruction(vDenoising):
 
         # Initializing results class
         from iResults import iResults
-        classResults = iResults(fixed_config,hyperparameters_config,root)
+        classResults = iResults(config)
         classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
 
         self.finetuning = 'False' # to ignore last.ckpt file

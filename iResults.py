@@ -16,7 +16,7 @@ from skimage.metrics import peak_signal_noise_ratio
 from vDenoising import vDenoising
 
 class iResults(vDenoising):
-    def __init__(self,fixed_config,hyperparameters_config,root):
+    def __init__(self,config):
     #def __init__(self,fixed_config,hyperparameters_config,max_iter,PETImage_shape,phantom,subroot,suffix,net,experiment):
         print("__init__")
 
@@ -24,6 +24,7 @@ class iResults(vDenoising):
         # Initialize general variables
         self.initializeGeneralVariables(fixed_config,hyperparameters_config,root)
         vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
+        self.beta = hyperparameters_config["alpha"]
 
         # Create summary writer from tensorboard
         self.writer = SummaryWriter()
@@ -39,7 +40,7 @@ class iResults(vDenoising):
         self.CRC_hot_recon = np.zeros(self.max_iter)
         self.CRC_bkg_recon = np.zeros(self.max_iter)
         self.IR_bkg_recon = np.zeros(self.max_iter)
-
+        
     def writeBeginningImages(self,image_net_input,suffix):
         self.write_image_tensorboard(self.writer,image_net_input,"DIP input (FULL CONTRAST)",suffix,self.image_gt,0,full_contrast=True) # DIP input in tensorboard
 
@@ -69,16 +70,25 @@ class iResults(vDenoising):
             self.writer.close()
 
     def runComputation(self,config,fixed_config,hyperparameters_config,root):
+        beta_string = ', beta = ' + str(self.beta)
 
         self.writeBeginningImages(self.image_net_input,self.suffix)
         #self.writeCorruptedImage(0,self.max_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
-
-
         for i in range(self.max_iter):
-            f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i) + self.suffix + '.img',shape=(self.PETImage_shape)) # loading DIP output
-
-            # Write images over epochs
-            self.writeEndImages(self.subroot,i,self.max_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
+            print(i)
+            if (config["method"] == 'Gong' or config["method"] == 'nested'):
+                pet_algo=config["method"]+"to fit"
+                iteration_name="(post reconstruction)"
+                f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i) + self.suffix + '.img',shape=(self.PETImage_shape)) # loading DIP output
+            elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["method"] == 'BSREM'):
+                pet_algo=config["method"]
+                iteration_name="iterations"+beta_string
+                if (config["method"] == 'ADMMLim'):
+                    f = self.fijii_np(self.subroot+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(i+1) + '_it1'  + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                else:
+                    f = self.fijii_np(self.subroot+'Comparison/' + config["method"] + '_beta_' + str(self.beta) + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i+1) + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                # Write images over epochs
+                self.writeEndImages(self.subroot,i,self.max_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
 
     def compute_metrics(self, subroot, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing backround ROI, because we want to exclude those regions from big cylinder
