@@ -17,7 +17,6 @@ from vDenoising import vDenoising
 
 class iResults(vDenoising):
     def __init__(self,config):
-    #def __init__(self,fixed_config,hyperparameters_config,max_iter,PETImage_shape,phantom,subroot,suffix,net,experiment):
         print("__init__")
 
     def initializeSpecific(self,fixed_config,hyperparameters_config,root):
@@ -25,6 +24,11 @@ class iResults(vDenoising):
         self.initializeGeneralVariables(fixed_config,hyperparameters_config,root)
         vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
         self.beta = hyperparameters_config["alpha"]
+        
+        if (fixed_config["method"] == 'ADMMLim'):
+            self.total_nb_iter = hyperparameters_config["nb_iter_second_admm"]
+        else:
+            self.total_nb_iter = self.max_iter
 
         # Create summary writer from tensorboard
         self.writer = SummaryWriter()
@@ -33,13 +37,13 @@ class iResults(vDenoising):
         self.image_gt = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape))
         
         # Metrics arrays
-        self.PSNR_recon = np.zeros(self.max_iter)
-        self.PSNR_norm_recon = np.zeros(self.max_iter)
-        self.MSE_recon = np.zeros(self.max_iter)
-        self.MA_cold_recon = np.zeros(self.max_iter)
-        self.CRC_hot_recon = np.zeros(self.max_iter)
-        self.CRC_bkg_recon = np.zeros(self.max_iter)
-        self.IR_bkg_recon = np.zeros(self.max_iter)
+        self.PSNR_recon = np.zeros(self.total_nb_iter)
+        self.PSNR_norm_recon = np.zeros(self.total_nb_iter)
+        self.MSE_recon = np.zeros(self.total_nb_iter)
+        self.MA_cold_recon = np.zeros(self.total_nb_iter)
+        self.CRC_hot_recon = np.zeros(self.total_nb_iter)
+        self.CRC_bkg_recon = np.zeros(self.total_nb_iter)
+        self.IR_bkg_recon = np.zeros(self.total_nb_iter)
         
     def writeBeginningImages(self,image_net_input,suffix):
         self.write_image_tensorboard(self.writer,image_net_input,"DIP input (FULL CONTRAST)",suffix,self.image_gt,0,full_contrast=True) # DIP input in tensorboard
@@ -73,8 +77,9 @@ class iResults(vDenoising):
         beta_string = ', beta = ' + str(self.beta)
 
         self.writeBeginningImages(self.image_net_input,self.suffix)
-        #self.writeCorruptedImage(0,self.max_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
-        for i in range(self.max_iter):
+        #self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
+        
+        for i in range(self.total_nb_iter):
             print(i)
             if (config["method"] == 'Gong' or config["method"] == 'nested'):
                 pet_algo=config["method"]+"to fit"
@@ -84,11 +89,11 @@ class iResults(vDenoising):
                 pet_algo=config["method"]
                 iteration_name="iterations"+beta_string
                 if (config["method"] == 'ADMMLim'):
-                    f = self.fijii_np(self.subroot+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(i+1) + '_it1'  + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                    f = self.fijii_np(self.subroot+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(i) + '_x'  + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                 else:
                     f = self.fijii_np(self.subroot+'Comparison/' + config["method"] + '_beta_' + str(self.beta) + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i+1) + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                 # Write images over epochs
-                self.writeEndImages(self.subroot,i,self.max_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
+                self.writeEndImages(self.subroot,i,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
 
     def compute_metrics(self, subroot, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing backround ROI, because we want to exclude those regions from big cylinder

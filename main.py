@@ -20,7 +20,7 @@ from iResults import iResults
 fixed_config = {
     "image" : tune.grid_search(['image0']),
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "method" : tune.grid_search(['nested']),
+    "method" : tune.grid_search(['BSREM']),
     "processing_unit" : tune.grid_search(['CPU']),
     "max_iter" : tune.grid_search([10]),
     "finetuning" : tune.grid_search(['last']),
@@ -28,10 +28,11 @@ fixed_config = {
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']),
     #"f_init" : tune.grid_search(['1_im_value_cropped']),
     "penalty" : tune.grid_search(['MRF']),
+    "NNEPPS" : tune.grid_search([False]),
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
-    "rho" : tune.grid_search([0.0003]),
+    "rho" : tune.grid_search([0.0003]), # Penalty strength (beta) in MAP algorithms 
     # network hyperparameters
     "lr" : tune.grid_search([0.01]), # 0.01 for DIP, 0.001 for DD
     "sub_iter_DIP" : tune.grid_search([10]), # 10 for DIP, 100 for DD
@@ -43,9 +44,9 @@ hyperparameters_config = {
     "k_DD" : tune.grid_search([32]),
     # ADMMLim hyperparameters
     "sub_iter_MAP" : tune.grid_search([1]), # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
-    "nb_iter_second_admm": tune.grid_search([1]), # Number of ADMM iterations (ADMM before NN)
+    "nb_iter_second_admm": tune.grid_search([10]), # Number of ADMM iterations (ADMM before NN)
     "mlem_sequence" : tune.grid_search([True]),
-    "alpha" : tune.grid_search([0.005])
+    "alpha" : tune.grid_search([0.005,1]) # alpha from ADMM in ADMMLim
 }
 
 # Merge 2 dictionaries
@@ -64,9 +65,9 @@ elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["met
     task = 'castor_reco'
 
 #task = 'full_reco_with_network'
-#task = 'castor_reco'
+task = 'castor_reco'
 #task = 'post_reco'
-task = 'show_results'
+#task = 'show_results'
 
 if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
     classTask = iNestedADMM(hyperparameters_config)
@@ -75,7 +76,7 @@ elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
 elif (task == 'post_reco'): # Run network denoising after a given reconstructed image im_corrupt
     classTask = iPostReconstruction(config)
 elif (task == 'show_results'): # Show already computed results
-    classTask = iResults(fixed_config,hyperparameters_config,root)#,config["max_iter"],config["PETImage_shape"],config["phantom"],config["subroot"],config["suffix"],config["net"])
+    classTask = iResults(config)#,config["max_iter"],config["PETImage_shape"],config["phantom"],config["subroot"],config["suffix"],config["net"])
 
 # Launch task
 classTask.runRayTune(config,root)

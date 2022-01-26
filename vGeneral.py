@@ -74,7 +74,7 @@ class vGeneral(abc.ABC):
         Path(self.subroot+'Block2/mu/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
         Path(self.subroot+'Block2/out_cnn/cnn_metrics/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
 
-        Path(self.subroot+'Comparison/MLEM/').mkdir(parents=True, exist_ok=True) # CASTor path
+        #Path(self.subroot+'Comparison/MLEM/').mkdir(parents=True, exist_ok=True) # CASTor path
         Path(self.subroot+'Comparison/BSREM/').mkdir(parents=True, exist_ok=True) # CASTor path
 
         Path(self.subroot+'Data/initialization').mkdir(parents=True, exist_ok=True)
@@ -121,6 +121,9 @@ class vGeneral(abc.ABC):
         # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMLim in CASToR
         if fixed_config["method"] == "nested":
             hyperparameters_config["mlem_sequence"] = False
+        # Do not provide penalty if MLEM
+        if (fixed_config["method"] == 'MLEM'):
+            hyperparameters_config["alpha"] = 0
 
     def do_everything(self,config,root):
         # Retrieve fixed parameters and hyperparameters from config dictionnary

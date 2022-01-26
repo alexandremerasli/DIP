@@ -18,25 +18,11 @@ class iComparison(vReconstruction):
         classResults = iResults(config)
         classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
         
-        self.beta = hyperparameters_config["alpha"]
-        
-        '''
-        hyperparameters_config = {
-        "penalty" : 'MRF',
-        #"penalty" : 'DIP_ADMM'
-        }
-        '''
-
-        print("hyperparameters_config",hyperparameters_config)
+        self.beta = self.rho
 
         if (fixed_config["method"] == 'ADMMLim'):
             self.ADMMLim(fixed_config,hyperparameters_config)
         else:
-            if (config["method"] == 'MLEM'):
-                self.beta = [0]
-            #for i in range(len(self.beta)):
-            #print(i)
-
             # castor-recon command line
             header_file = ' -df ' + self.subroot + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[-1] + '/data' + self.phantom[-1]  + '.cdh' # PET data path
 
@@ -49,21 +35,19 @@ class iComparison(vReconstruction):
             proj = ' -proj incrementalSiddon'
             psf = ' -conv gaussian,4,4,3.5::psf'
 
-            if (config["method"] == 'MLEM'):
-                opti = ' -opti ' + config["method"]
+            if (fixed_config["method"] == 'MLEM'):
+                opti = ' -opti ' + fixed_config["method"]
                 conv = ' -conv gaussian,8,8,3.5::post'
                 #conv = ''
                 penalty = ''
                 penaltyStrength = ''
             else:
-                opti = ' -opti ' + config["method"] + ':' + self.subroot + 'Comparison/' + 'BSREM.conf'
+                opti = ' -opti ' + fixed_config["method"] + ':' + self.subroot + 'Comparison/' + 'BSREM.conf'
                 conv = ''
                 penalty = ' -pnlt MRF:' + self.subroot + 'Comparison/' + 'MRF.conf'
-                #penaltyStrength = ' -pnlt-beta ' + str(self.beta[i])
                 penaltyStrength = ' -pnlt-beta ' + str(self.beta)
 
-            #output_path = ' -dout ' + self.subroot + 'Comparison/' + config["method"] + '_beta_' + str(self.beta[i]) # Output path for CASTOR framework
-            output_path = ' -dout ' + self.subroot + 'Comparison/' + config["method"] + '_beta_' + str(self.beta) # Output path for CASTOR framework
+            output_path = ' -dout ' + self.subroot + 'Comparison/' + fixed_config["method"] + '_beta_' + str(self.beta) # Output path for CASTOR framework
             initialimage = ' -img ' + self.subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr'
             initialimage = ''
 
@@ -77,6 +61,11 @@ class iComparison(vReconstruction):
             print("")
             os.system(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv + psf) # + ' -fov-out 95')
 
+
+        # NNEPPS
+        if (fixed_config["NNEPPS"]):
+            self.NNEPPS_function(fixed_config,hyperparameters_config)
+
         classResults.runComputation(config,fixed_config,hyperparameters_config,root)
 
     def ADMMLim(self,fixed_config,hyperparameters_config):
@@ -86,15 +75,15 @@ class iComparison(vReconstruction):
             it = ' -it ' + str(hyperparameters_config["sub_iter_MAP"]) + ':1' # 1 subset
             penalty = ' -pnlt ' + fixed_config["penalty"]
             if fixed_config["penalty"] == "MRF":
-                penalty += ':' + self.subroot + 'Comparison/' + 'ADMMLim/MRF.conf'
+                penalty += ':' + self.subroot + 'Comparison/' + '' + fixed_config["method"] + '/MRF.conf'
 
             only_x = False # Freezing u and v computation, just updating x if True
 
             # Path variables
-            subroot_output_path = (self.subroot + 'Comparison/ADMMLim/' + self.suffix)
+            subroot_output_path = (self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix)
             subdir = 'ADMM'
-            Path(self.subroot+'Comparison/ADMMLim/').mkdir(parents=True, exist_ok=True) # CASTor path
-            Path(self.subroot+'Comparison/ADMMLim/' + self.suffix + '/ADMM').mkdir(parents=True, exist_ok=True) # CASToR path
+            Path(self.subroot+'Comparison/' + fixed_config["method"] + '/').mkdir(parents=True, exist_ok=True) # CASTor path
+            Path(self.subroot+'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/ADMM').mkdir(parents=True, exist_ok=True) # CASToR path
 
             i = 0
             k = -2
@@ -141,11 +130,53 @@ class iComparison(vReconstruction):
                 x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
                 self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k,self.phantom,only_x,subroot_output_path,self.subroot)
 
+    def NNEPPS_function(self,fixed_config,hyperparameters_config):
+        executable='removeNegativeValues.exe'
 
+        if (fixed_config["method"] == 'ADMMLim'):
+            i = 0
+            subdir = 'ADMM'
+            input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + subdir + format(i) + '_' + format(hyperparameters_config["nb_iter_second_admm"]+1)
+        else:
+            input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '_beta_' + str(self.beta)
+        
+        input = input_without_extension + '.img'
+        output = input_without_extension + '_NNEPPS' + '.img'
+        
+        # The following 9 commands can be used to specify to which part of the image the NNEPPS has to be applied. You can set dim, min, and max as you wish, provided they are consistent. The default value of min is 0. Note that if you specify dim and max, min is automatically set to the correct value.
 
-'''
-import subprocess
-root = os.getcwd()
-experiment = 24
-successful_process = subprocess.call(["python3", root+"/show_castor_results.py", optimizer, str(nb_iter_second_admm), str(experiment),self.suffix,self.phantom,str(beta)]) # Showing results in tensorboard
-'''
+        dimX='-dimX ' + self.PETImage_shape[0]
+        dimY='-dimY ' + self.PETImage_shape[1]
+        #dimZ='-dimZ ' + self.PETImage_shape[2]
+        dimZ='-dimZ ' + 1
+
+        minX=''
+        minY=''
+        minZ=''
+
+        maxX=''
+        maxY=''
+        maxZ='' #'-maxZ 3'
+
+        # The two following variables are the full size of the input image. They are important for a correct reading of the data. If unset, they are assumed to be equal to the previous max value.
+        inputSizeX='-inputSizeX ' + self.PETImage_shape[0]
+        inputSizeY='-inputSizeY ' + self.PETImage_shape[1]
+
+        nbThreads='' #'-th 8' Don't use this option if you want to use all threads
+
+        # The 3 following lines give the coefficients assigned to the neighbors in each of the three dimensions (only the 1st-order neighbors are considered). They must sum up to 0.5. If voxels are square, the natural choice is 1/6 for each (default value). In the example, other values are provided to favor close neighbors because voxels are cuboids. See the supplementary material for further explanation of these numbers. Note that the value 0 is forbidden. If you are using 1D or 2D images, provide any value to the unused dimensions, and the code will adapt to the fact that the dimensions do not exist. For example, for square pixels using x and y dimensions, 1/6;1/6;1/6 is equivalent to 0.2;0.2;0.1 and to 0.1;0.1;0.3.
+        coeffX='-coeffX 0.108882'
+        coeffY='-coeffY 0.108882'
+        coeffZ='-coeffZ 0.282236'
+
+        skip_initialization='' #'-skip_initialization' #Use this option if you want to skip the initialization step.
+        critere_stop_init='' #'-critere_stop_init 1.0e-4' by default. Criterion used to stop the initialization step, the lower, the longer the initialization step will be. Unused if -skip_initialization is set.
+        skip_algebraic='' #'-skip_algebraic'#Use this option only if you want to skip the main algebraic part and directly write the image after the initialization step.
+        precision='' #'-precision 1.0e-3' by default. Use -1 for maximum precision. This is the relative precision used by the main algebraic part to proceed. Unused if -skip_algebraic is set.
+
+        #input and output type. This doesn't affect the precision of the computation, which is always done using doubles. Two possibilities : float or double. Default value: float
+        input_type='' #-input_type double'
+        output_type='' #-output_type double'
+
+        #Command line (do not modify):
+        NNEPPS_command_line = executable + input + output + dimX + dimY + dimZ + nbThreads + coeffX + coeffY + coeffZ + precision + skip_initialization + critere_stop_init + minX + minY + minZ + maxX + maxY + maxZ + inputSizeX + inputSizeY + input_type + output_type + skip_algebraic
