@@ -3,7 +3,6 @@ data/Algo/Block2/checkpoint/
 data/Algo/Block2/out_cnn/
 data/Algo/Block2/x_label/
 data/Algo/Block2/mu/
-data/Algo/Config/
 data/Algo/Images/
 data/Algo/Comparison/
 data/Algo/Data/initialization/image_DIP_input_torch.pt

@@ -121,9 +121,9 @@ class vGeneral(abc.ABC):
         # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMLim in CASToR
         if fixed_config["method"] == "nested":
             hyperparameters_config["mlem_sequence"] = False
-        # Do not provide penalty if MLEM
+        # Do not provide penalty strength if MLEM
         if (fixed_config["method"] == 'MLEM'):
-            hyperparameters_config["alpha"] = 0
+            hyperparameters_config["rho"] = 0
 
     def do_everything(self,config,root):
         # Retrieve fixed parameters and hyperparameters from config dictionnary

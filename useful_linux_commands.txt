@@ -1,3 +1,12 @@
+export CASTOR_OMP=1 # Enable multithreading
+export PATH=$PATH:your/link/to/castor/folder/castor_v3.1/bin
+export CASTOR_CONFIG=your/link/to/castor/folder/castor_v3.1/config # Path to the default CASToR config directory
+chmod +x your/link/to/castor/folder/castor_v3.1/bin/*
+
+export PATH=$PATH:your/link/to/removeNegativeValues/folder/removeNegativeValues/
+chmod +x your/link/to/removeNegativeValues/folder/removeNegativeValues/removeNegativeValues.exe
+
+
 cd sgld/hernan_folder
 source env/bin/activate
 
