@@ -412,7 +412,7 @@ class vGeneral(abc.ABC):
                 pnlt_beta = ' -pnlt-beta ' + str(rho)
             if (alpha == 0): # Special case where we only want to fit network output (when v has not been initialized with data)
                 alpha = 1E-10 # Do not put 0, otherwise CASToR will not work
-            opti = ' -opti ADMMLim' + ',' + str(alpha) + ',0.01,10.'
+            opti = ' -opti ADMMLim' + ',' + str(alpha)
         
         elif (method == 'Gong'):
             opti = ' -opti OPTITR'

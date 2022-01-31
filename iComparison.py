@@ -18,11 +18,11 @@ class iComparison(vReconstruction):
         classResults = iResults(config)
         classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
         
-        self.beta = self.rho
-
         if (fixed_config["method"] == 'ADMMLim'):
+            self.beta = hyperparameters_config["alpha"]
             self.ADMMLim(fixed_config,hyperparameters_config)
         else:
+            self.beta = self.rho
             # castor-recon command line
             header_file = ' -df ' + self.subroot + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[-1] + '/data' + self.phantom[-1]  + '.cdh' # PET data path
 
@@ -39,6 +39,11 @@ class iComparison(vReconstruction):
                 opti = ' -opti ' + fixed_config["method"]
                 conv = ' -conv gaussian,8,8,3.5::post'
                 #conv = ''
+                penalty = ''
+                penaltyStrength = ''
+            elif (fixed_config["method"] == 'AML'):
+                opti = ' -opti ' + fixed_config["method"] + ':' + self.subroot + 'Comparison/' + 'AML.conf'
+                conv = ''
                 penalty = ''
                 penaltyStrength = ''
             else:
@@ -172,10 +177,10 @@ class iComparison(vReconstruction):
         coeffY=' -coeffY 0.108882'
         coeffZ=' -coeffZ 0.282236'
 
-        skip_initialization='' #'-skip_initialization' #Use this option if you want to skip the initialization step.
+        skip_initialization=' -skip_initialization' #'-skip_initialization' #Use this option if you want to skip the initialization step.
         critere_stop_init='' #'-critere_stop_init 1.0e-4' by default. Criterion used to stop the initialization step, the lower, the longer the initialization step will be. Unused if -skip_initialization is set.
         skip_algebraic='' #'-skip_algebraic'#Use this option only if you want to skip the main algebraic part and directly write the image after the initialization step.
-        precision='' #'-precision 1.0e-3' by default. Use -1 for maximum precision. This is the relative precision used by the main algebraic part to proceed. Unused if -skip_algebraic is set.
+        precision=' -precision -1' #'-precision 1.0e-3' by default. Use -1 for maximum precision. This is the relative precision used by the main algebraic part to proceed. Unused if -skip_algebraic is set.
 
         #input and output type. This doesn't affect the precision of the computation, which is always done using doubles. Two possibilities : float or double. Default value: float
         input_type='' #-input_type double'

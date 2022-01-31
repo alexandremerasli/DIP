@@ -23,12 +23,13 @@ class iResults(vDenoising):
         # Initialize general variables
         self.initializeGeneralVariables(fixed_config,hyperparameters_config,root)
         vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
-        self.beta = hyperparameters_config["alpha"]
         
         if (fixed_config["method"] == 'ADMMLim'):
             self.total_nb_iter = hyperparameters_config["nb_iter_second_admm"]
+            self.beta = hyperparameters_config["alpha"]
         else:
             self.total_nb_iter = self.max_iter
+            self.beta = hyperparameters_config["rho"]
 
         # Create summary writer from tensorboard
         self.writer = SummaryWriter()
@@ -85,7 +86,7 @@ class iResults(vDenoising):
                 pet_algo=config["method"]+"to fit"
                 iteration_name="(post reconstruction)"
                 f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i) + self.suffix + '.img',shape=(self.PETImage_shape)) # loading DIP output
-            elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["method"] == 'BSREM'):
+            elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML'):
                 pet_algo=config["method"]
                 iteration_name="iterations"+beta_string
                 if (config["method"] == 'ADMMLim'):
