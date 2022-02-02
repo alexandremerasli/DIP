@@ -393,6 +393,10 @@ class vGeneral(abc.ABC):
         th = ' -th 1'
         proj = ' -proj incrementalSiddon'
 
+        #conv = ' -conv gaussian,8,8,3.5::post'
+        #conv = ''
+        psf = ' -conv gaussian,4,4,3.5::psf'
+
         # Command line for calculating the Likelihood
         opti_like = ' -opti-fom'
         opti_like = ''

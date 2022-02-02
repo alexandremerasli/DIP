@@ -77,7 +77,7 @@ class vReconstruction(vGeneral):
             only_x = False # Freezing u and v computation, just updating x if True
 
             # x^0
-            copy(subroot + 'Data/initialization/' + image_init_path_without_extension + '.img', path_during_eq_22 + format(i) + '_-1_x.img')
+            copy(subroot + 'Data/initialization/' + image_init_path_without_extension + '.img', path_during_eq_22 + format(i) + '_-1_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.img')
             self.write_hdr(subroot,[i,-1],'during_eq22',phantom,'x',subroot_output_path)
 
             # Compute u^0 (u^-1 in CASToR) and store it with zeros, and save in .hdr format - block 1            
@@ -93,7 +93,7 @@ class vReconstruction(vGeneral):
                     x_for_init_v = ' -img ' + subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
                 #x_for_init_v = ' -img ' + subroot + 'Data/initialization/' + '1_im_value' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
             elif (i >= 1):
-                x_for_init_v = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
+                x_for_init_v = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
             
             # Useful variables for command line
             k=-3
@@ -130,15 +130,15 @@ class vReconstruction(vGeneral):
                     if (i == 0):   # choose initial image for CASToR reconstruction
                         initialimage = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
                     elif (i >= 1):
-                        initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
+                        initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
                         # Trying to initialize ADMMLim
                         #initialimage = ' -img ' + subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
                         initialimage = ' -img ' + subroot + 'Data/initialization/' + '1_im_value_cropped.hdr'
                         if (only_x):
-                            initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' + format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
+                            initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' + format(i-1) + '_' + format(nb_iter_second_admm) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
 
                 else:
-                    initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' + format(i) + '_' + format(k) + '_x.hdr'
+                    initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' + format(i) + '_' + format(k) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
 
                 base_name_k = format(i) + '_' + format(k)
                 base_name_k_next = format(i) + '_' + format(k+1)
@@ -155,7 +155,7 @@ class vReconstruction(vGeneral):
                 print('xxxxxxxxxuuuuuuuuuuuvvvvvvvvv')
                 self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,phantom,only_x,subroot_output_path,subroot)
 
-                x = self.fijii_np(full_output_path_k_next + '_x.img', shape=(PETImage_shape[0],PETImage_shape[1]))
+                x = self.fijii_np(full_output_path_k_next + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.img', shape=(PETImage_shape[0],PETImage_shape[1]))
                 if (k>=-1):
                     self.write_image_tensorboard(writer,x,"x in second ADMM over iterations",suffix,image_gt, k+1+i*nb_iter_second_admm) # Showing all corrupted images with same contrast to compare them together
                     self.write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)",suffix,image_gt, k+1+i*nb_iter_second_admm,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
@@ -167,11 +167,11 @@ class vReconstruction(vGeneral):
             if (i == 0):   # choose initial image for CASToR reconstruction
                 initialimage = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
             elif (i >= 1):
-                initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' + format(i-1) + '_' + format(nb_iter_second_admm) + '_x.hdr'
+                initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' + format(i-1) + '_' + format(nb_iter_second_admm) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
                 # Trying to initialize OPTITR
                 #initialimage = ' -img ' + subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
                 initialimage = ' -img ' + subroot + 'Data/initialization/' + '1_im_value_cropped.hdr'
-                #initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' + format(i-1) + '_x.hdr'
+                #initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' + format(i-1) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
 
             base_name_k_next = format(i)
             full_output_path_k_next = subroot_output_path + '/during_eq22/' + base_name_k_next
@@ -191,7 +191,7 @@ class vReconstruction(vGeneral):
         # Load previously computed image with CASToR ADMM optimizers
 
         if (method == 'nested'):
-            x = self.fijii_np(full_output_path_k_next + '_x.img', shape=(PETImage_shape))
+            x = self.fijii_np(full_output_path_k_next + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.img', shape=(PETImage_shape))
         elif (method == 'Gong'):
             if (mlem_sequence):
                 x = self.fijii_np(full_output_path_k_next + '_it30.img', shape=(PETImage_shape))
@@ -216,7 +216,7 @@ class vReconstruction(vGeneral):
         # Compute x,u,v
         os.system(x_reconstruction_command_line)
         # Write x hdr file
-        self.write_hdr(subroot,[i,k+1],subdir,phantom,'x',subroot_output_path=subroot_output_path)
+        #self.write_hdr(subroot,[i,k+1],subdir,phantom,'it_'+str(self.sub_iter_MAP),subroot_output_path=subroot_output_path)
         # Write v hdr file and change v file if only x computation is needed
         if (only_x):
             copy(subroot_output_path + subdir + format(i) + '_' + format(-1) + '_v.img',full_output_path + '_v.img')

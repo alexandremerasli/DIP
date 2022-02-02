@@ -13,11 +13,6 @@ class iComparison(vReconstruction):
     def runComputation(self,config,fixed_config,hyperparameters_config,root):
         print("hyperparameters_config",hyperparameters_config)
 
-        # Initializing results class
-        from iResults import iResults
-        classResults = iResults(config)
-        classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
-        
         if (fixed_config["method"] == 'ADMMLim'):
             self.beta = hyperparameters_config["alpha"]
             self.ADMMLim(fixed_config,hyperparameters_config)
@@ -43,12 +38,14 @@ class iComparison(vReconstruction):
                 penaltyStrength = ''
             elif (fixed_config["method"] == 'AML'):
                 opti = ' -opti ' + fixed_config["method"] + ':' + self.subroot + 'Comparison/' + 'AML.conf'
-                conv = ''
+                conv = ' -conv gaussian,8,8,3.5::post'
+                #conv = ''
                 penalty = ''
                 penaltyStrength = ''
             else:
                 opti = ' -opti ' + fixed_config["method"] + ':' + self.subroot + 'Comparison/' + 'BSREM.conf'
-                conv = ''
+                conv = ' -conv gaussian,8,8,3.5::post'
+                #conv = ''
                 penalty = ' -pnlt MRF:' + self.subroot + 'Comparison/' + 'MRF.conf'
                 penaltyStrength = ' -pnlt-beta ' + str(self.beta)
 
@@ -68,10 +65,15 @@ class iComparison(vReconstruction):
 
 
         # NNEPPS
-        print("NNEPPS")
         if (fixed_config["NNEPPS"]):
+            print("NNEPPS")
             self.NNEPPS_function(fixed_config,hyperparameters_config)
 
+        # Initializing results class
+        from iResults import iResults
+        classResults = iResults(config)
+        classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
+        
         classResults.runComputation(config,fixed_config,hyperparameters_config,root)
 
     def ADMMLim(self,fixed_config,hyperparameters_config):
@@ -92,12 +94,12 @@ class iComparison(vReconstruction):
             Path(self.subroot+'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/ADMM').mkdir(parents=True, exist_ok=True) # CASToR path
 
             i = 0
-            k = -2
+            k = -1
             full_output_path_k_next = subroot_output_path + '/ADMM/' + format(i) + '_' + format(k+1)
 
             # Initialize u^0 (u^-1 in CASToR)
             copy(self.subroot + 'Data/initialization/0_sino_value.hdr', full_output_path_k_next + '_u.hdr')
-            self.write_hdr(self.subroot,[i,-1],subdir,self.phantom,'u',subroot_output_path,matrix_type='sino')
+            self.write_hdr(self.subroot,[i,k+1],subdir,self.phantom,'u',subroot_output_path,matrix_type='sino')
 
             # Define command line to run ADMM with CASToR, to compute v^0
             castor_command_line_x = self.castor_admm_command_line(self.subroot, 'Lim', self.PETImage_shape_str, self.alpha, self.rho, self.phantom ,True, penalty)
@@ -117,13 +119,13 @@ class iComparison(vReconstruction):
 
             # Compute one ADMM iteration (x, v, u)
             print('xxxxxxxxxxxxxxxxxxxxx')
-            for k in range(-1,hyperparameters_config["nb_iter_second_admm"]):
+            for k in range(0,hyperparameters_config["nb_iter_second_admm"]):
                 # Initialize variables for command line
-                if (k == -1):
+                if (k == 0):
                     if (i == 0):   # choose initial self.phantom for CASToR reconstruction
                         initialimage = ' -img ' + self.subroot + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
                 else:
-                    initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k) + '_x.hdr'
+                    initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
 
                 base_name_k = format(i) + '_' + format(k)
                 base_name_k_next = format(i) + '_' + format(k+1)
@@ -133,8 +135,13 @@ class iComparison(vReconstruction):
                 u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
                 # Compute one ADMM iteration (x, v, u)
-                x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
+                if (k == hyperparameters_config["nb_iter_second_admm"] - 1): # For last iteration, apply post smoothing
+                    conv = ' -conv gaussian,8,8,3.5::post'
+                else:
+                    conv = ''
+                x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + penalty + conv # we need f-mu so that ADMM optimizer works, even if we will not use it...
                 self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k,self.phantom,only_x,subroot_output_path,self.subroot)
+
 
     def NNEPPS_function(self,fixed_config,hyperparameters_config):
         executable='removeNegativeValues.exe'
@@ -142,7 +149,7 @@ class iComparison(vReconstruction):
         if (fixed_config["method"] == 'ADMMLim'):
             i = 0
             subdir = 'ADMM'
-            input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + format(hyperparameters_config["nb_iter_second_admm"]) + '_x'
+            input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + format(hyperparameters_config["nb_iter_second_admm"]) + '_it' + str(hyperparameters_config["sub_iter_MAP"])
         else:
             input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '_beta_' + str(self.beta) + '/' + fixed_config["method"] + '_beta_' + str(self.beta) + '_it' + format(self.max_iter)
         
