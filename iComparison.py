@@ -38,6 +38,7 @@ class iComparison(vReconstruction):
                 penaltyStrength = ''
             elif (fixed_config["method"] == 'AML'):
                 opti = ' -opti ' + fixed_config["method"] + ':' + self.subroot + 'Comparison/' + 'AML.conf'
+                opti = ' -opti ' + fixed_config["method"] + ',1,1e-10,' + str(hyperparameters_config["A_AML"])
                 conv = ' -conv gaussian,8,8,3.5::post'
                 #conv = ''
                 penalty = ''

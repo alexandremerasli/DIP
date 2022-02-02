@@ -423,5 +423,5 @@ class vGeneral(abc.ABC):
             pnlt = ' -pnlt OPTITR'
             pnlt_beta = ' -pnlt-beta ' + str(rho)
 
-        castor_command_line_x = executable + dim + vox + header_file + vb + th + proj + opti + opti_like + pnlt + pnlt_beta
+        castor_command_line_x = executable + dim + vox + header_file + vb + th + proj + opti + opti_like + pnlt + pnlt_beta + psf
         return castor_command_line_x
