@@ -14,8 +14,8 @@ class iPostReconstruction(vDenoising):
         print("Denoising in post reconstruction")
         vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
         # Loading DIP x_label (corrupted image) from block1
-        #self.image_corrupt = self.fijii_np(self.subroot+'Comparison/im_corrupt_beginning.img',shape=(self.PETImage_shape))
-        self.image_corrupt = self.fijii_np(self.subroot+'Comparison/im_corrupt_beginning_optitr.img',shape=(self.PETImage_shape))
+        #self.image_corrupt = self.fijii_np(self.subroot+'im_corrupt_beginning.img',shape=(self.PETImage_shape))
+        self.image_corrupt = self.fijii_np(self.subroot+'im_corrupt_beginning_optitr.img',shape=(self.PETImage_shape))
         self.net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_post_reco_epoch=' + format(0) + self.suffix + '.img'
         self.checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         self.name_run = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -69,4 +69,4 @@ class iPostReconstruction(vDenoising):
                 self.save_img(out_descale, net_outputs_path)
 
             # Write images over epochs
-            classResults.writeEndImages(self.subroot,epoch,self.max_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
+            classResults.writeEndImages(epoch,self.max_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")

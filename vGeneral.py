@@ -40,18 +40,20 @@ class vGeneral(abc.ABC):
         self.processing_unit = fixed_config["processing_unit"]
         self.max_iter = fixed_config["max_iter"] # Outer iterations
         self.experiment = fixed_config["experiment"] # Label of the experiment
+        self.replicate = fixed_config["replicates"] # Label of the replicate
 
         # Initialize useful variables
-        self.subroot = root + '/data/Algo/'  # Directory root
+        self.subroot = root + '/data/Algo/' + 'replicate_' + str(self.replicate) + '/' # Directory root
+        self.subroot_data = root + '/data/Algo/' # Directory root
         self.suffix = self.suffix_func(hyperparameters_config) # self.suffix to make difference between raytune runs (different hyperparameters)
 
         # Define PET input dimensions according to input data dimensions
-        self.PETImage_shape_str = self.read_input_dim(self.subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+        self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
         self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
         # Define ROIs for image0 phantom, otherwise it is already done in the database
         if (self.phantom == "image0"):
-            self.define_ROI_image0(self.PETImage_shape,self.subroot)
+            self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
 
         return hyperparameters_config
 
@@ -75,9 +77,9 @@ class vGeneral(abc.ABC):
         Path(self.subroot+'Block2/out_cnn/cnn_metrics/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
 
         #Path(self.subroot+'Comparison/MLEM/').mkdir(parents=True, exist_ok=True) # CASTor path
-        Path(self.subroot+'Comparison/BSREM/').mkdir(parents=True, exist_ok=True) # CASTor path
+        #Path(self.subroot+'Comparison/BSREM/').mkdir(parents=True, exist_ok=True) # CASTor path
 
-        Path(self.subroot+'Data/initialization').mkdir(parents=True, exist_ok=True)
+        Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
 
     def runRayTune(self,config,root):
 
@@ -361,15 +363,15 @@ class vGeneral(abc.ABC):
         #plt.axis('off')
 
         # Saving this figure locally
-        Path('/home/meraslia/sgld/hernan_folder/data/Algo/Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
-        plt.savefig('/home/meraslia/sgld/hernan_folder/data/Algo/Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
+        Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
+        plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
         from textwrap import wrap
         wrapped_title = "\n".join(wrap(suffix, 50))
         plt.title(wrapped_title,fontsize=12)
         # Adding this figure to tensorboard
         writer.add_figure(name,plt.gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
 
-    def castor_command_line_func(self,method,phantom,PETImage_shape_str,rho,alpha,i,k=0):
+    def castor_command_line_func(self,method,phantom,replicate,PETImage_shape_str,rho,alpha,i,k=0):
         if (method == 'nested'):
             if (i==0): # For first iteration, put rho to zero
                 if (k!=-1): # For first iteration, do not put both rho and alpha to zero
@@ -377,20 +379,20 @@ class vGeneral(abc.ABC):
             if (k==-1): # For first iteration, put alpha to zero (small value to be accepted by CASToR)
                 alpha = 0
 
-        castor_command_line = self.castor_admm_command_line(self.subroot, method, PETImage_shape_str, alpha, rho, phantom)
+        castor_command_line = self.castor_admm_command_line(self.subroot_data, method, PETImage_shape_str, alpha, rho, phantom, replicate)
 
         return castor_command_line
 
-    def castor_admm_command_line(self, subroot, method, PETImage_shape_str, alpha, rho, phantom, only_Lim=False, pnlt=''):
+    def castor_admm_command_line(self, subroot, method, PETImage_shape_str, alpha, rho, phantom, replicates, only_Lim=False, pnlt=''):
         
         # castor-recon command line
-        header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[-1] + '/data' + phantom[-1]  + '.cdh' # PET data path
+        header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[-1] + '_' + str(replicates) + '/data' + phantom[-1] + '_' + str(replicates) + '.cdh' # PET data path
 
         executable = 'castor-recon'
         dim = ' -dim ' + PETImage_shape_str
         vox = ' -vox 4,4,4'
         vb = ' -vb 1'
-        th = ' -th 1'
+        th = ' -th 0'
         proj = ' -proj incrementalSiddon'
 
         #conv = ' -conv gaussian,8,8,3.5::post'

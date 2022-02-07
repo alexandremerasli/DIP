@@ -32,10 +32,10 @@ class vDenoising(vGeneral):
 
         # Loading DIP input
         # Creating random image input for DIP while we do not have CT, but need to be removed after
-        self.create_input(self.net,self.PETImage_shape,hyperparameters_config,self.subroot) # to be removed when CT will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
+        self.create_input(self.net,self.PETImage_shape,hyperparameters_config,self.subroot_data) # to be removed when CT will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
         # Loading DIP input (we do not have CT-map, so random image created in block 1)
-        self.image_net_input = self.load_input(self.net,self.PETImage_shape,self.subroot) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
-        #image_atn = fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape))
+        self.image_net_input = self.load_input(self.net,self.PETImage_shape,self.subroot_data) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
+        #image_atn = fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape))
         #write_image_tensorboard(writer,image_atn,"Attenuation map (FULL CONTRAST)",self.suffix,image_gt,0,full_contrast=True) # Attenuation map in tensorboard
         image_net_input_scale = self.rescale_imag(self.image_net_input,self.scaling_input)[0] # Rescale of network input
         # DIP input image, numpy --> torch
@@ -50,7 +50,7 @@ class vDenoising(vGeneral):
             elif (self.net == 'DD_AE'):
                 input_size_DD = self.PETImage_shape[0] # if auto encoder based on Deep Decoder
                 self.image_net_input_torch = self.image_net_input_torch.view(1,1,input_size_DD,input_size_DD) # For Deep Decoder, if auto encoder based on Deep Decoder
-        torch.save(self.image_net_input_torch,self.subroot + 'Data/initialization/image_' + self.net + '_input_torch.pt')
+        torch.save(self.image_net_input_torch,self.subroot_data + 'Data/initialization/image_' + self.net + '_input_torch.pt')
 
     def train_process(self, suffix, hyperparameters_config, finetuning, processing_unit, sub_iter_DIP, method, admm_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, experiment, checkpoint_simple_path, name_run, subroot):
         # Implements Dataset

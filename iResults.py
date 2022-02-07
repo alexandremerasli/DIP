@@ -35,7 +35,7 @@ class iResults(vDenoising):
         self.writer = SummaryWriter()
         
         #Loading Ground Truth image to compute metrics
-        self.image_gt = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape))
+        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape))
         
         # Metrics arrays
         self.PSNR_recon = np.zeros(self.total_nb_iter)
@@ -54,9 +54,9 @@ class iResults(vDenoising):
             self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name,suffix,self.image_gt,i) # Showing all corrupted images with same contrast to compare them together
             self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name + " (FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
 
-    def writeEndImages(self,subroot,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):
+    def writeEndImages(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):
         # Metrics for NN output
-        self.compute_metrics(subroot,PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.CRC_hot_recon,self.CRC_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer,write_tensorboard=True)
+        self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.CRC_hot_recon,self.CRC_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer,write_tensorboard=True)
 
         # Write image over ADMM iterations
         if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
@@ -94,21 +94,18 @@ class iResults(vDenoising):
                 else:
                     f = self.fijii_np(self.subroot+'Comparison/' + config["method"] + '_beta_' + str(self.beta) + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                 # Write images over epochs
-                self.writeEndImages(self.subroot,i,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
+                self.writeEndImages(i,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
 
-    def compute_metrics(self, subroot, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
-        # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing backround ROI, because we want to exclude those regions from big cylinder
+    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
+        # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
         
         # Select only phantom ROI, not whole reconstructed image
-        print(subroot)
-        print(image)
-        print(str(image[-1]))
-        path_phantom_ROI = subroot+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[-1]) + '.raw'
+        path_phantom_ROI = self.subroot_data+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[-1]) + '.raw'
         my_file = Path(path_phantom_ROI)
         if (my_file.is_file()):
             phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(PETImage_shape))
         else:
-            phantom_ROI = self.fijii_np(subroot+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape))
+            phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape))
         image_gt_norm = self.norm_imag(image_gt*phantom_ROI)[0]
 
         # Print metrics
@@ -130,7 +127,7 @@ class iResults(vDenoising):
 
         # Contrast Recovery Coefficient calculation    
         # Mean activity in cold cylinder calculation (-c -40. -40. 0. 40. 4. 0.)
-        cold_ROI = self.fijii_np(subroot+'Data/database_v2/' + image + '/' + "cold_mask" + image[-1] + '.raw', shape=(PETImage_shape))
+        cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "cold_mask" + image[-1] + '.raw', shape=(PETImage_shape))
         cold_ROI_act = image_recon[cold_ROI==1]
         MA_cold_recon[i-1] = np.mean(cold_ROI_act)
         #IR_cold_recon[i-1] = np.std(cold_ROI_act) / MA_cold_recon[i-1]
@@ -138,7 +135,7 @@ class iResults(vDenoising):
         #print('Image roughness in the cold cylinder', IR_cold_recon[i-1])
 
         # Mean Concentration Recovery coefficient (CRCmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
-        hot_ROI = self.fijii_np(subroot+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw', shape=(PETImage_shape))
+        hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw', shape=(PETImage_shape))
         hot_ROI_act = image_recon[hot_ROI==1]
         CRC_hot_recon[i-1] = np.mean(hot_ROI_act) / 400.
         #IR_hot_recon[i-1] = np.std(hot_ROI_act) / np.mean(hot_ROI_act)
@@ -149,7 +146,7 @@ class iResults(vDenoising):
         #m0_bkg = (np.sum(coord_to_value_array(bkg_ROI,image_recon*phantom_ROI)) - np.sum([coord_to_value_array(cold_ROI,image_recon*phantom_ROI),coord_to_value_array(hot_ROI,image_recon*phantom_ROI)])) / (len(bkg_ROI) - (len(cold_ROI) + len(hot_ROI)))
         #CRC_bkg_recon[i-1] = m0_bkg / 100.
         #         
-        bkg_ROI = self.fijii_np(subroot+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape))
+        bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape))
         bkg_ROI_act = image_recon[bkg_ROI==1]
         CRC_bkg_recon[i-1] = np.mean(bkg_ROI_act) / 100.
         IR_bkg_recon[i-1] = np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)
@@ -158,8 +155,15 @@ class iResults(vDenoising):
 
         if (write_tensorboard):
             print("Metrics saved in tensorboard")
+            '''
             writer.add_scalars('MSE gt (best : 0)', {'MSE':  MSE_recon[i-1], 'best': 0,}, i)
             writer.add_scalars('Mean activity in cold cylinder (best : 0)', {'mean_cold':  MA_cold_recon[i-1], 'best': 0,}, i)
             writer.add_scalars('Mean Concentration Recovery coefficient in hot cylinder (best : 1)', {'CRC_hot':  CRC_hot_recon[i-1], 'best': 1,}, i)
             writer.add_scalars('Mean Concentration Recovery coefficient in background (best : 1)', {'CRC_bkg':  CRC_bkg_recon[i-1], 'best': 1,}, i)
             writer.add_scalars('Image roughness in the background (best : 0)', {'IR':  IR_bkg_recon[i-1], 'best': 0,}, i)
+            '''
+            writer.add_scalar('MSE gt (best : 0)', MSE_recon[i-1], i)
+            writer.add_scalar('Mean activity in cold cylinder (best : 0)', MA_cold_recon[i-1], i)
+            writer.add_scalar('Mean Concentration Recovery coefficient in hot cylinder (best : 1)', CRC_hot_recon[i-1], i)
+            writer.add_scalar('Mean Concentration Recovery coefficient in background (best : 1)', CRC_bkg_recon[i-1], i)
+            writer.add_scalar('Image roughness in the background (best : 0)', IR_bkg_recon[i-1], i)

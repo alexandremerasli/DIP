@@ -27,7 +27,7 @@ class iNestedADMM(vReconstruction):
             start_time_outer_iter = time.time()
             
             # Reconstruction with CASToR (tomographic reconstruction part of ADMM)
-            self.x_label = self.castor_reconstruction(classResults.writer, i, self.subroot, self.sub_iter_MAP, self.experiment, hyperparameters_config, self.method, self.phantom, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.rho, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
+            self.x_label = self.castor_reconstruction(classResults.writer, i, self.subroot, self.sub_iter_MAP, self.experiment, hyperparameters_config, self.method, self.phantom, self.replicate, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.rho, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
 
             # Write corrupted image over ADMM iterations
             classResults.writeCorruptedImage(i,self.max_iter,self.x_label,self.suffix,pet_algo="nested ADMM")
@@ -49,7 +49,7 @@ class iNestedADMM(vReconstruction):
             print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))
 
             # Write output image and metrics to tensorboard
-            classResults.writeEndImages(self.subroot,i,self.max_iter,self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo="nested ADMM")
+            classResults.writeEndImages(i,self.max_iter,self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo="nested ADMM")
 
         # Saving final image output
         self.save_img(self.f, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')

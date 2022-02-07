@@ -35,8 +35,8 @@ class vReconstruction(vGeneral):
         if (self.method == "nested"): # Nested needs 1 to not add any prior information at the beginning, and to initialize x computation to uniform with 1
             self.f_init = np.ones((self.PETImage_shape[0],self.PETImage_shape[1]), dtype='<f')
         elif (self.method == "Gong"): # Gong initialization with 60th iteration of MLEM (normally, DIP trained with this image as label...)
-            self.f_init = self.fijii_np(self.subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped.img',shape=(self.PETImage_shape))
-            #self.f_init = self.fijii_np(self.subroot + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape))
+            #self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.img',shape=(self.PETImage_shape))
+            self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape))
 
         # Initialize and save mu variable from ADMM
         self.mu = 0* np.ones((self.PETImage_shape[0], self.PETImage_shape[1]), dtype='<f')
@@ -45,10 +45,10 @@ class vReconstruction(vGeneral):
         self.save_img(self.mu,self.subroot+'Block2/mu/'+ format(self.experiment)+'/mu_' + format(-1) + self.suffix + '.img')
 
         # Launch short MLEM reconstruction
-        path_mlem_init = self.subroot + 'Data/MLEM_reco_for_init/' + self.phantom
+        path_mlem_init = self.subroot_data + 'Data/MLEM_reco_for_init/' + self.phantom
         my_file = Path(path_mlem_init + '/' + self.phantom + '/' + self.phantom + '_it1.img')
         if (~my_file.is_file()):
-            header_file = ' -df ' + self.subroot + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[-1] + '/data' + self.phantom[-1]  + '.cdh' # PET data path
+            header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[-1] + '_' + str(fixed_config["replicates"]) + '/data' + self.phantom[-1] + '_' + str(fixed_config["replicates"]) + '.cdh' # PET data path
             executable = 'castor-recon'
             optimizer = 'MLEM'
             output_path = ' -dout ' + path_mlem_init # Output path for CASTOR framework
@@ -59,7 +59,7 @@ class vReconstruction(vGeneral):
             opti = ' -opti ' + optimizer
             os.system(executable + dim + vox + output_path + header_file + vb + it + opti) # + ' -fov-out 95')
 
-    def castor_reconstruction(self,writer, i, subroot, sub_iter_MAP, experiment, hyperparameters_config, method, phantom, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension):
+    def castor_reconstruction(self,writer, i, subroot, sub_iter_MAP, experiment, hyperparameters_config, method, phantom, replicate, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension):
         start_time_block1 = time.time()
         mlem_sequence = hyperparameters_config['mlem_sequence']
         nb_iter_second_admm = hyperparameters_config["nb_iter_second_admm"]
@@ -105,7 +105,7 @@ class vReconstruction(vGeneral):
             u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
             # Define command line to run ADMM with CASToR
-            castor_command_line_x = self.castor_command_line_func(method,phantom,PETImage_shape_str,rho,alpha,i,k)
+            castor_command_line_x = self.castor_command_line_func(method,phantom,replicate,PETImage_shape_str,rho,alpha,i,k)
             x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty #+ u_for_additional_data + v_for_additional_data # we need f-mu so that ADMM optimizer works, even if we will not use it...
             # Compute one ADMM iteration (x, v, u). When only initializing x, u computation is only the forward model Ax, thus exactly what we want to initialize v
             print('vvvvvvvvvvv0000000000')
@@ -149,7 +149,7 @@ class vReconstruction(vGeneral):
                 u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
                 # Define command line to run ADMM with CASToR
-                castor_command_line_x = self.castor_command_line_func(method,phantom,PETImage_shape_str,rho,alpha,i,k)
+                castor_command_line_x = self.castor_command_line_func(method,phantom,replicate,PETImage_shape_str,rho,alpha,i,k)
                 # Compute one ADMM iteration (x, v, u)
                 x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage    
                 print('xxxxxxxxxuuuuuuuuuuuvvvvvvvvv')
@@ -162,7 +162,7 @@ class vReconstruction(vGeneral):
 
         elif (method == 'Gong'):
             # Define command line to run ADMM with CASToR
-            castor_command_line_x = self.castor_command_line_func(method,phantom,PETImage_shape_str,rho,alpha,i)
+            castor_command_line_x = self.castor_command_line_func(method,phantom,replicate,PETImage_shape_str,rho,alpha,i)
             # Initialize image
             if (i == 0):   # choose initial image for CASToR reconstruction
                 initialimage = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values

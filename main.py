@@ -20,7 +20,7 @@ from iResults import iResults
 fixed_config = {
     "image" : tune.grid_search(['image0']),
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "method" : tune.grid_search(['ADMMLim','AML']),
+    "method" : tune.grid_search(['ADMMLim']),
     "processing_unit" : tune.grid_search(['CPU']),
     "max_iter" : tune.grid_search([10]),
     "finetuning" : tune.grid_search(['last']),
@@ -28,7 +28,8 @@ fixed_config = {
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']),
     #"f_init" : tune.grid_search(['1_im_value_cropped']),
     "penalty" : tune.grid_search(['DIP_ADMM']),
-    "NNEPPS" : tune.grid_search([False]),
+    "NNEPPS" : tune.grid_search([True]),
+    "replicates" : tune.grid_search(list(range(1,1+1))),
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
@@ -50,7 +51,7 @@ hyperparameters_config = {
     # Optimization transfer (OPTITR) hyperparameters
     "mlem_sequence" : tune.grid_search([True]),
     # AML hyperparameters
-    "A_AML" : tune.grid_search([-100,-500,-1000,-1e4,-1e5,-1e6]),
+    "A_AML" : tune.grid_search([0]),
 }
 
 # Merge 2 dictionaries
