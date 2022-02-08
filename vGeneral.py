@@ -395,15 +395,13 @@ class vGeneral(abc.ABC):
         th = ' -th 0'
         proj = ' -proj incrementalSiddon'
 
-        #conv = ' -conv gaussian,8,8,3.5::post'
-        #conv = ''
-        psf = ' -conv gaussian,4,4,3.5::psf'
+        psf = ' -conv gaussian,4,1,3.5::psf'
 
         # Command line for calculating the Likelihood
         opti_like = ' -opti-fom'
         opti_like = ''
         
-        if (method == 'nested' or method == 'Lim'):
+        if (method == 'nested' or method == 'ADMMLim'):
             if (rho == 0): # Special case where we do not want to penalize reconstruction (not taking into account network output)
                 # Seg fault in CASToR...
                 pnlt = ''
