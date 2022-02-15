@@ -29,8 +29,11 @@ class iResults(vDenoising):
             self.beta = hyperparameters_config["alpha"]
         else:
             self.total_nb_iter = self.max_iter
-            self.beta = hyperparameters_config["rho"]
 
+            if (fixed_config["method"] == 'AML'):
+                self.beta = hyperparameters_config["A_AML"]
+            else:                
+                self.beta = self.rho
         # Create summary writer from tensorboard
         self.writer = SummaryWriter()
         
@@ -54,7 +57,7 @@ class iResults(vDenoising):
             self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name,suffix,self.image_gt,i) # Showing all corrupted images with same contrast to compare them together
             self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name + " (FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
 
-    def writeEndImages(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):
+    def writeEndImagesAndMetrics(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):
         # Metrics for NN output
         self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.CRC_hot_recon,self.CRC_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer,write_tensorboard=True)
 
@@ -79,22 +82,27 @@ class iResults(vDenoising):
 
         self.writeBeginningImages(self.image_net_input,self.suffix)
         #self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
-        
+
         for i in range(1,self.total_nb_iter+1):
             print(i)
+            # Take NNEPPS images for last iteration if NNEPPS was computed
+            if (fixed_config["NNEPPS"] and i == self.total_nb_iter):
+                NNEPPS_string = "_NNEPPS"
+            else:
+                NNEPPS_string = ""
             if (config["method"] == 'Gong' or config["method"] == 'nested'):
                 pet_algo=config["method"]+"to fit"
                 iteration_name="(post reconstruction)"
-                f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i) + self.suffix + '.img',shape=(self.PETImage_shape)) # loading DIP output
+                f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i) + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading DIP output
             elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML'):
                 pet_algo=config["method"]
                 iteration_name="iterations"+beta_string
                 if (config["method"] == 'ADMMLim'):
-                    f = self.fijii_np(self.subroot+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                    f = self.fijii_np(self.subroot+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                 else:
-                    f = self.fijii_np(self.subroot+'Comparison/' + config["method"] + '_beta_' + str(self.beta) + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + '.img',shape=(self.PETImage_shape)) # loading optimizer output
-                # Write images over epochs
-                self.writeEndImages(i,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
+                    f = self.fijii_np(self.subroot+'Comparison/' + config["method"] + '_beta_' + str(self.beta) + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+            # Write images over epochs
+            self.writeEndImagesAndMetrics(i,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
 
     def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder

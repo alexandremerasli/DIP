@@ -15,12 +15,13 @@ from iNestedADMM import iNestedADMM
 from iComparison import iComparison
 from iPostReconstruction import iPostReconstruction
 from iResults import iResults
+from iResultsReplicates import iResultsReplicates
 
 # Configuration dictionnary for general parameters (not hyperparameters)
 fixed_config = {
     "image" : tune.grid_search(['image0']),
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "method" : tune.grid_search(['ADMMLim']),
+    "method" : tune.grid_search(['AML']),
     "processing_unit" : tune.grid_search(['CPU']),
     "max_iter" : tune.grid_search([10]),
     "finetuning" : tune.grid_search(['last']),
@@ -28,8 +29,8 @@ fixed_config = {
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']),
     #"f_init" : tune.grid_search(['1_im_value_cropped']),
     "penalty" : tune.grid_search(['DIP_ADMM']),
-    "NNEPPS" : tune.grid_search([True]),
-    "replicates" : tune.grid_search(list(range(1,1+1))),
+    "NNEPPS" : tune.grid_search([False]),
+    "replicates" : tune.grid_search(list(range(1,2+1))),
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
@@ -70,9 +71,10 @@ elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["met
     task = 'castor_reco'
 
 #task = 'full_reco_with_network'
-task = 'castor_reco'
+#task = 'castor_reco'
 #task = 'post_reco'
 #task = 'show_results'
+task = 'show_results_replicates'
 
 if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
     classTask = iNestedADMM(hyperparameters_config)
@@ -80,8 +82,10 @@ elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
     classTask = iComparison(config)
 elif (task == 'post_reco'): # Run network denoising after a given reconstructed image im_corrupt
     classTask = iPostReconstruction(config)
-elif (task == 'show_results'): # Show already computed results
-    classTask = iResults(config)#,config["max_iter"],config["PETImage_shape"],config["phantom"],config["subroot"],config["suffix"],config["net"])
+elif (task == 'show_results'): # Show already computed results over iterations
+    classTask = iResults(config)
+elif (task == 'show_results_replicates'): # Show already computed results averaging over replicates
+    classTask = iResultsReplicates(config)
 
 # Launch task
-classTask.runRayTune(config,root)
+classTask.runRayTune(config,root,task)

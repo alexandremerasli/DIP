@@ -17,14 +17,17 @@ class iComparison(vReconstruction):
             self.beta = hyperparameters_config["alpha"]
             self.ADMMLim(fixed_config,hyperparameters_config)
         else:
-            self.beta = self.rho
+            if (fixed_config["method"] == 'AML'):
+                self.beta = hyperparameters_config["A_AML"]
+            else:                
+                self.beta = self.rho
             # castor-recon command line
             header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[-1] + '_' + str(fixed_config["replicates"]) + '/data' + self.phantom[-1] + '_' + str(fixed_config["replicates"]) + '.cdh' # PET data path
 
             executable = 'castor-recon'
             dim = ' -dim ' + self.PETImage_shape_str
             vox = ' -vox 4,4,4'
-            vb = ' -vb 1'
+            vb = ' -vb 3'
             it = ' -it ' + str(self.max_iter) + ':28'
             th = ' -th 0'
             proj = ' -proj incrementalSiddon'

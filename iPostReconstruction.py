@@ -69,4 +69,4 @@ class iPostReconstruction(vDenoising):
                 self.save_img(out_descale, net_outputs_path)
 
             # Write images over epochs
-            classResults.writeEndImages(epoch,self.max_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
+            classResults.writeEndImagesAndMetrics(epoch,self.max_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")

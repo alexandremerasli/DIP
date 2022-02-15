@@ -54,7 +54,7 @@ class vReconstruction(vGeneral):
             output_path = ' -dout ' + path_mlem_init # Output path for CASTOR framework
             dim = ' -dim ' + self.PETImage_shape_str
             vox = ' -vox 4,4,4'
-            vb = ' -vb 0'
+            vb = ' -vb 3'
             it = ' -it 1:1'
             opti = ' -opti ' + optimizer
             os.system(executable + dim + vox + output_path + header_file + vb + it + opti) # + ' -fov-out 95')

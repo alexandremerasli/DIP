@@ -81,11 +81,31 @@ class vGeneral(abc.ABC):
 
         Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
 
-    def runRayTune(self,config,root):
+    def runRayTune(self,config,root,task):
 
         self.hyperparameters_list = config["hyperparameters"]
         config.pop("hyperparameters", None)
 
+        # Additional variables needing every values in config
+        if (task == "show_results_replicates"):
+            # Number of replicates 
+            self.nb_replicates = config["replicates"]['grid_search'][-1]
+            # List of beta values
+            if (len(config["method"]['grid_search']) == 1):
+                config["replicates"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
+                if (config["method"]['grid_search'][0] == 'ADMMLim'):
+                    self.beta_list = config["alpha"]['grid_search']
+                    config["alpha"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
+                else:
+                    if (config["method"]['grid_search'][0] == 'AML'):
+                        self.beta_list = config["A_AML"]['grid_search']
+                        config["A_AML"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
+                    else:                
+                        self.beta_list = config["rho"]['grid_search']
+                        config["rho"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
+            else:
+                ValueError("There must be only one method to average over replicates")
+        
         config_combination = 1
         for i in range(len(config)): # List of hyperparameters keys is still in config dictionary
             config_combination *= len(list(list(config.values())[i].values())[0])
@@ -391,8 +411,8 @@ class vGeneral(abc.ABC):
         executable = 'castor-recon'
         dim = ' -dim ' + PETImage_shape_str
         vox = ' -vox 4,4,4'
-        vb = ' -vb 1'
-        th = ' -th 0'
+        vb = ' -vb 3'
+        th = ' -th 1' # et it to 1, as multithreading does not work for now with ADMMLim optimizer
         proj = ' -proj incrementalSiddon'
 
         psf = ' -conv gaussian,4,1,3.5::psf'
