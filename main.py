@@ -29,8 +29,7 @@ fixed_config = {
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']),
     #"f_init" : tune.grid_search(['1_im_value_cropped']),
     "penalty" : tune.grid_search(['DIP_ADMM']),
-    "NNEPPS" : tune.grid_search([False]),
-    "replicates" : tune.grid_search(list(range(1,2+1))),
+    "replicates" : tune.grid_search(list(range(1,10+1))),
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
@@ -52,7 +51,9 @@ hyperparameters_config = {
     # Optimization transfer (OPTITR) hyperparameters
     "mlem_sequence" : tune.grid_search([True]),
     # AML hyperparameters
-    "A_AML" : tune.grid_search([0]),
+    "A_AML" : tune.grid_search([0,-100,-500]),
+    # NNEPPS post processing
+    "NNEPPS" : tune.grid_search([True,False]),
 }
 
 # Merge 2 dictionaries
@@ -73,8 +74,8 @@ elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["met
 #task = 'full_reco_with_network'
 #task = 'castor_reco'
 #task = 'post_reco'
-#task = 'show_results'
-task = 'show_results_replicates'
+task = 'show_results'
+#task = 'show_results_replicates'
 
 if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
     classTask = iNestedADMM(hyperparameters_config)

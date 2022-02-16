@@ -69,9 +69,15 @@ class iComparison(vReconstruction):
 
 
         # NNEPPS
-        if (fixed_config["NNEPPS"]):
-            print("NNEPPS")
-            self.NNEPPS_function(fixed_config,hyperparameters_config)
+        if (fixed_config["method"] == 'ADMMLim'):
+            max_it = hyperparameters_config["sub_iter_MAP"]
+        else:
+            max_it = fixed_config["max_iter"]
+        
+        if (hyperparameters_config["NNEPPS"]):
+            print("NNEPPS")        
+            for it in range(1,max_it + 1):
+                self.NNEPPS_function(fixed_config,hyperparameters_config,it)
 
         # Initializing results class
         from iResults import iResults
@@ -148,15 +154,15 @@ class iComparison(vReconstruction):
                 self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k,self.phantom,only_x,subroot_output_path,self.subroot_data)
 
 
-    def NNEPPS_function(self,fixed_config,hyperparameters_config):
+    def NNEPPS_function(self,fixed_config,hyperparameters_config,it):
         executable='removeNegativeValues.exe'
 
         if (fixed_config["method"] == 'ADMMLim'):
             i = 0
             subdir = 'ADMM'
-            input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + format(hyperparameters_config["nb_iter_second_admm"]) + '_it' + str(hyperparameters_config["sub_iter_MAP"])
+            input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + format(hyperparameters_config["nb_iter_second_admm"]) + '_it' + str(it)
         else:
-            input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '_beta_' + str(self.beta) + '/' + fixed_config["method"] + '_beta_' + str(self.beta) + '_it' + format(self.max_iter)
+            input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '_beta_' + str(self.beta) + '/' + fixed_config["method"] + '_beta_' + str(self.beta) + '_it' + format(it)
         
         input = ' -i ' + input_without_extension + '.img'
         output = ' -o ' + input_without_extension + '_NNEPPS' # Without extension !

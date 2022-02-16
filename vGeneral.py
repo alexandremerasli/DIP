@@ -87,12 +87,14 @@ class vGeneral(abc.ABC):
         config.pop("hyperparameters", None)
 
         # Additional variables needing every values in config
+        # Number of replicates 
+        self.nb_replicates = config["replicates"]['grid_search'][-1]
+        if (task == "show_results_replicates" or task == "show_results"):
+            config["replicates"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
+            
         if (task == "show_results_replicates"):
-            # Number of replicates 
-            self.nb_replicates = config["replicates"]['grid_search'][-1]
             # List of beta values
             if (len(config["method"]['grid_search']) == 1):
-                config["replicates"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
                 if (config["method"]['grid_search'][0] == 'ADMMLim'):
                     self.beta_list = config["alpha"]['grid_search']
                     config["alpha"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
@@ -384,6 +386,9 @@ class vGeneral(abc.ABC):
 
         # Saving this figure locally
         Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
+        #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
+        print('savefig')
+        print(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
         plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
         from textwrap import wrap
         wrapped_title = "\n".join(wrap(suffix, 50))

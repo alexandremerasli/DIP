@@ -67,11 +67,21 @@ class iResults(vDenoising):
             self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
 
         # Display CRC vs STD curve in tensorboard
-        if (i>max_iter - min(max_iter,10)):
+        if (i == self.total_nb_iter):
             # Creating matplotlib figure
             plt.plot(self.IR_bkg_recon,self.CRC_hot_recon,linestyle='None',marker='x')
             plt.xlabel('IR')
             plt.ylabel('CRC')
+            # Saving this figure locally
+            Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
+            #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
+            print('savefig')
+            print(self.subroot + 'Images/tmp/' + suffix + '/' + 'CRC in hot region vs IR in background' + '_' + str(i) + '.png')
+            plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + 'CRC in hot region vs IR in background' + '_' + str(i) + '.png')
+            from textwrap import wrap
+            wrapped_title = "\n".join(wrap(suffix, 50))
+            plt.title(wrapped_title,fontsize=12)
+
             # Adding this figure to tensorboard
             self.writer.flush()
             self.writer.add_figure('CRC in hot region vs IR in background', plt.gcf(),global_step=i,close=True)
@@ -85,24 +95,56 @@ class iResults(vDenoising):
 
         for i in range(1,self.total_nb_iter+1):
             print(i)
-            # Take NNEPPS images for last iteration if NNEPPS was computed
-            if (fixed_config["NNEPPS"] and i == self.total_nb_iter):
-                NNEPPS_string = "_NNEPPS"
-            else:
-                NNEPPS_string = ""
-            if (config["method"] == 'Gong' or config["method"] == 'nested'):
-                pet_algo=config["method"]+"to fit"
-                iteration_name="(post reconstruction)"
-                f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i) + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading DIP output
-            elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML'):
-                pet_algo=config["method"]
-                iteration_name="iterations"+beta_string
-                if (config["method"] == 'ADMMLim'):
-                    f = self.fijii_np(self.subroot+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+
+            f = np.zeros(self.PETImage_shape,dtype='<f')
+            for p in range(1,self.nb_replicates+1):
+                self.subroot_p = self.subroot_data + 'replicate_' + str(p) + '/'
+
+                # Take NNEPPS images for last iteration if NNEPPS was computed
+                if (hyperparameters_config["NNEPPS"]):
+                    NNEPPS_string = "_NNEPPS"
                 else:
-                    f = self.fijii_np(self.subroot+'Comparison/' + config["method"] + '_beta_' + str(self.beta) + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
-            # Write images over epochs
+                    NNEPPS_string = ""
+                if (config["method"] == 'Gong' or config["method"] == 'nested'):
+                    pet_algo=config["method"]+"to fit"
+                    iteration_name="(post reconstruction)"
+                    f_p = self.fijii_np(self.subroot_p+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i) + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading DIP output
+                elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML'):
+                    pet_algo=config["method"]
+                    iteration_name="iterations"+beta_string
+                    if (config["method"] == 'ADMMLim'):
+                        f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                    else:
+                        f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '_beta_' + str(self.beta) + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                f += f_p
+                # Metrics for NN output 
+                self.compute_IR_bkg(self.PETImage_shape,f_p,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.CRC_hot_recon,self.CRC_bkg_recon,self.IR_bkg_recon,self.phantom,writer=self.writer,write_tensorboard=True)
+    
+            print("Metrics saved in tensorboard")
+            self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[i-1], i)
+
+            # Compute metrics after averaging images across replicates
+            f = f / self.nb_replicates
             self.writeEndImagesAndMetrics(i,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
+
+
+    def compute_IR_bkg(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
+        # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
+        
+        # Select only phantom ROI, not whole reconstructed image
+        path_phantom_ROI = self.subroot_data+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[-1]) + '.raw'
+        my_file = Path(path_phantom_ROI)
+        if (my_file.is_file()):
+            phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(PETImage_shape))
+        else:
+            phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape))
+
+              
+        bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape))
+        bkg_ROI_act = image_recon[bkg_ROI==1]
+        IR_bkg_recon[i-1] += (np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)) / self.nb_replicates
+        print("IR_bkg_recon",IR_bkg_recon)
+        print('Image roughness in the background', IR_bkg_recon[i-1],' , must be as small as possible')
 
     def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
@@ -157,9 +199,9 @@ class iResults(vDenoising):
         bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape))
         bkg_ROI_act = image_recon[bkg_ROI==1]
         CRC_bkg_recon[i-1] = np.mean(bkg_ROI_act) / 100.
-        IR_bkg_recon[i-1] = np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)
+        #IR_bkg_recon[i-1] = np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)
         print('Mean Concentration Recovery coefficient in background', CRC_bkg_recon[i-1],' , must be close to 1')
-        print('Image roughness in the background', IR_bkg_recon[i-1],' , must be as small as possible')
+        #print('Image roughness in the background', IR_bkg_recon[i-1],' , must be as small as possible')
 
         if (write_tensorboard):
             print("Metrics saved in tensorboard")
@@ -168,7 +210,7 @@ class iResults(vDenoising):
             writer.add_scalars('Mean activity in cold cylinder (best : 0)', {'mean_cold':  MA_cold_recon[i-1], 'best': 0,}, i)
             writer.add_scalars('Mean Concentration Recovery coefficient in hot cylinder (best : 1)', {'CRC_hot':  CRC_hot_recon[i-1], 'best': 1,}, i)
             writer.add_scalars('Mean Concentration Recovery coefficient in background (best : 1)', {'CRC_bkg':  CRC_bkg_recon[i-1], 'best': 1,}, i)
-            writer.add_scalars('Image roughness in the background (best : 0)', {'IR':  IR_bkg_recon[i-1], 'best': 0,}, i)
+            #writer.add_scalars('Image roughness in the background (best : 0)', {'IR':  IR_bkg_recon[i-1], 'best': 0,}, i)
             '''
             writer.add_scalar('MSE gt (best : 0)', MSE_recon[i-1], i)
             writer.add_scalar('Mean activity in cold cylinder (best : 0)', MA_cold_recon[i-1], i)

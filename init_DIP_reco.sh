@@ -25,7 +25,7 @@ export PATH=$PATH:/home/meraslia/sgld/simulator_mmr_2d/bin
 fi
 
 
-nb_replicates=2
+nb_replicates=10
 for ((replicate_id=1;replicate_id<=nb_replicates;replicate_id++)); do
     echo "replicate_id"$replicate_id
     if [ $1 = 'biograph' ]
