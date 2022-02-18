@@ -89,8 +89,9 @@ class iResults(vDenoising):
     def runComputation(self,config,fixed_config,hyperparameters_config,root):
         beta_string = ', beta = ' + str(self.beta)
 
-        self.writeBeginningImages(self.image_net_input,self.suffix)
-        #self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
+        if (fixed_config["method"] == "nested" or fixed_config["method"] == "Gong"):
+            self.writeBeginningImages(self.image_net_input,self.suffix)
+            #self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
 
         for i in range(1,self.total_nb_iter+1):
             print(i)
@@ -115,7 +116,7 @@ class iResults(vDenoising):
                     if (config["method"] == 'ADMMLim'):
                         f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                     else:
-                        f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '_beta_' + str(self.beta) + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                        f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         print(np.min(f_p))
                 print(self.subroot_p+'Comparison/' + config["method"] + '_beta_' + str(self.beta) + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img')
                 f += f_p

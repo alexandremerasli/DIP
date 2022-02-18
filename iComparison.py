@@ -48,12 +48,14 @@ class iComparison(vReconstruction):
                 penaltyStrength = ''
             else:
                 opti = ' -opti ' + fixed_config["method"] + ':' + self.subroot + 'Comparison/' + 'BSREM.conf'
-                conv = ' -conv gaussian,8,1,3.5::post'
-                #conv = ''
+                if (fixed_config["post_smoothing"]):
+                    conv = ' -conv gaussian,8,1,3.5::post'
+                else:
+                    conv = ''
                 penalty = ' -pnlt ' + fixed_config["penalty"] + ':' + self.subroot + fixed_config["method"] + '_MRF.conf'
                 penaltyStrength = ' -pnlt-beta ' + str(self.beta)
 
-            output_path = ' -dout ' + self.subroot + 'Comparison/' + fixed_config["method"] + '_beta_' + str(self.beta) # Output path for CASTOR framework
+            output_path = ' -fout ' + self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' + fixed_config["method"] + '_beta_' + str(self.beta) # Output path for CASTOR framework
             initialimage = ' -img ' + self.subroot_data+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr'
             initialimage = ''
 
@@ -163,7 +165,7 @@ class iComparison(vReconstruction):
             subdir = 'ADMM'
             input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(hyperparameters_config["sub_iter_MAP"])
         else:
-            input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '_beta_' + str(self.beta) + '/' + fixed_config["method"] + '_beta_' + str(self.beta) + '_it' + format(it)
+            input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' + fixed_config["method"] + '_beta_' + str(self.beta) + '_it' + format(it)
         
         input = ' -i ' + input_without_extension + '.img'
         output = ' -o ' + input_without_extension + '_NNEPPS' # Without extension !

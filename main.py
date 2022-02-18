@@ -22,7 +22,7 @@ from iResultsReplicates import iResultsReplicates
 fixed_config = {
     "image" : tune.grid_search(['image0']),
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "method" : tune.grid_search(['ADMMLim']),
+    "method" : tune.grid_search(['AML']),
     "processing_unit" : tune.grid_search(['CPU']),
     "max_iter" : tune.grid_search([10]),
     "finetuning" : tune.grid_search(['last']),
@@ -30,6 +30,7 @@ fixed_config = {
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']),
     #"f_init" : tune.grid_search(['1_im_value_cropped']),
     "penalty" : tune.grid_search(['DIP_ADMM']),
+    "post_smoothing" : tune.grid_search([False]),
     "replicates" : tune.grid_search(list(range(1,10+1))),
 }
 # Configuration dictionnary for hyperparameters to tune
@@ -55,7 +56,7 @@ hyperparameters_config = {
     "A_AML" : tune.grid_search([0,-100,-500]),
     "A_AML" : tune.grid_search([-100]),
     # NNEPPS post processing
-    "NNEPPS" : tune.grid_search([True,False]),
+    "NNEPPS" : tune.grid_search([False,True]),
 }
 
 # Merge 2 dictionaries
@@ -74,7 +75,7 @@ elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["met
     task = 'castor_reco'
 
 #task = 'full_reco_with_network'
-task = 'castor_reco'
+#task = 'castor_reco'
 #task = 'post_reco'
 task = 'show_results'
 #task = 'show_results_replicates'
@@ -91,8 +92,8 @@ elif (task == 'show_results_replicates'): # Show already computed results averag
     classTask = iResultsReplicates(config)
 
 # Launch task
-os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run.txt')
-classTask.runRayTune(config,root,task)
+#os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + fixed_config["method"]['grid_search'][0] + '.txt')
+#classTask.runRayTune(config,root,task)
 
 PSNR_recon = []
 PSNR_norm_recon = []
@@ -106,7 +107,7 @@ from csv import reader as reader_csv
 import numpy as np
 import matplotlib.pyplot as plt
 suffixes = []
-with open(root + '/data/Algo/' + '/suffixes_for_last_run.txt') as f:
+with open(root + '/data/Algo/' + '/suffixes_for_last_run_' + fixed_config["method"]['grid_search'][0] + '.txt') as f:
     suffixes.append(f.readlines())
 
 print(suffixes) 
@@ -149,10 +150,28 @@ for suffix in suffixes[0]:
 
 for run_id in range(len(PSNR_recon)):
     print(IR_bkg_recon[run_id])
-    plt.plot(IR_bkg_recon[run_id],CRC_hot_recon[run_id],linestyle='None',marker='x')
+    plt.plot(IR_bkg_recon[run_id],CRC_hot_recon[run_id],'-o')
 
 plt.xlabel('IR')
 plt.ylabel('CRC')
+
+suffixes_legend = list(suffixes[0])
+
+for i in range(len(suffixes_legend)):
+    
+    print(suffixes[0][i])
+    suffixes_legend[i] = ''
+    l = suffixes[0][i].replace('=','_')
+    l = l.replace('\n','_')
+    l = l.split('_')
+    print(l)
+    for p in range(len(l)):
+        if l[p] == "AML":
+            suffixes_legend[i] += "A : " + l[p+1] + ' / ' 
+        if l[p] == "NNEPP":
+            suffixes_legend[i] += "NNEPPS : " + l[p+1]
+
+plt.legend(suffixes_legend)
 # Saving this figure locally
 plt.savefig(root + '/data/Algo/' + 'replicate_0/Images/tmp/' + 'CRC in hot region vs IR in background' + '.png')
 from textwrap import wrap

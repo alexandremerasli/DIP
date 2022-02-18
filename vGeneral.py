@@ -64,6 +64,8 @@ class vGeneral(abc.ABC):
 
         Path(self.subroot+'Images/out_final/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the framework (Last output of the DIP)
 
+        Path(self.subroot+'Comparison/' + self.method + '/' + self.suffix).mkdir(parents=True, exist_ok=True) # CASToR path
+
         Path(self.subroot+'Block2/checkpoint/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
         Path(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
         Path(self.subroot+'Block2/out_cnn/vae').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
@@ -77,7 +79,7 @@ class vGeneral(abc.ABC):
         Path(self.subroot+'Block2/out_cnn/cnn_metrics/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
 
         Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
-        
+                
         Path(self.subroot_data+'metrics/' + self.method + '/' + self.suffix).mkdir(parents=True, exist_ok=True) # CASToR path
 
     def runRayTune(self,config,root,task):
@@ -146,6 +148,23 @@ class vGeneral(abc.ABC):
         # Do not provide penalty strength if MLEM
         if (fixed_config["method"] == 'MLEM'):
             hyperparameters_config["rho"] = 0
+        
+        # Delete hyperparameters specific to others optimizer 
+        if (fixed_config["method"] == "ADMMLim"):
+            hyperparameters_config.pop("A_AML", None)
+        if (fixed_config["method"] == "AML"):
+            hyperparameters_config.pop("sub_iter_MAP", None)
+            hyperparameters_config.pop("nb_iter_second_admm", None)
+            hyperparameters_config.pop("alpha", None)
+        if (fixed_config["method"] != "nested" and fixed_config["method"] != "Gong"):
+            hyperparameters_config.pop("lr", None)
+            hyperparameters_config.pop("sub_iter_DIP", None)
+            hyperparameters_config.pop("opti_DIP", None)
+            hyperparameters_config.pop("skip_connections", None)
+            hyperparameters_config.pop("scaling", None)
+            hyperparameters_config.pop("input", None)
+            hyperparameters_config.pop("d_DD", None)
+            hyperparameters_config.pop("k_DD", None)
 
     def do_everything(self,config,root):
         # Retrieve fixed parameters and hyperparameters from config dictionnary
@@ -158,7 +177,7 @@ class vGeneral(abc.ABC):
         # Run task computation
         self.runComputation(config,fixed_config,hyperparameters_config,root)
         # Store suffix to retrieve all suffixes in main.py for metrics
-        text_file = open(self.subroot_data + 'suffixes_for_last_run.txt', "a")
+        text_file = open(self.subroot_data + 'suffixes_for_last_run_' + fixed_config["method"] + '.txt', "a")
         text_file.write(self.suffix + "\n")
         text_file.close()
 

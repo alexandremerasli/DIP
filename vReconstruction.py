@@ -27,8 +27,9 @@ class vReconstruction(vGeneral):
 
         # Specific hyperparameters for reconstruction module (Do it here to have raytune hyperparameters_config hyperparameters selection)
         self.rho = hyperparameters_config["rho"]
-        self.alpha = hyperparameters_config["alpha"]
-        self.sub_iter_MAP = hyperparameters_config["sub_iter_MAP"]
+        if (fixed_config["method"] == "ADMMLim" or fixed_config["method"] == "nested"):
+            self.alpha = hyperparameters_config["alpha"]
+            self.sub_iter_MAP = hyperparameters_config["sub_iter_MAP"]
         self.image_init_path_without_extension = fixed_config["image_init_path_without_extension"]
 
         # Ininitializing DIP output and first image x with f_init and image_init
