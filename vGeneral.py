@@ -46,6 +46,7 @@ class vGeneral(abc.ABC):
         self.subroot = root + '/data/Algo/' + 'replicate_' + str(self.replicate) + '/' # Directory root
         self.subroot_data = root + '/data/Algo/' # Directory root
         self.suffix = self.suffix_func(hyperparameters_config) # self.suffix to make difference between raytune runs (different hyperparameters)
+        self.suffix_metrics = self.suffix_func(hyperparameters_config,NNEPPS=True) # self.suffix with NNEPPS information
 
         # Define PET input dimensions according to input data dimensions
         self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
@@ -80,7 +81,7 @@ class vGeneral(abc.ABC):
 
         Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
                 
-        Path(self.subroot_data+'metrics/' + self.method + '/' + self.suffix).mkdir(parents=True, exist_ok=True) # CASToR path
+        Path(self.subroot_data+'metrics/' + self.method + '/' + self.suffix_metrics).mkdir(parents=True, exist_ok=True) # CASToR path
 
     def runRayTune(self,config,root,task):
 
@@ -178,7 +179,7 @@ class vGeneral(abc.ABC):
         self.runComputation(config,fixed_config,hyperparameters_config,root)
         # Store suffix to retrieve all suffixes in main.py for metrics
         text_file = open(self.subroot_data + 'suffixes_for_last_run_' + fixed_config["method"] + '.txt', "a")
-        text_file.write(self.suffix + "\n")
+        text_file.write(self.suffix_metrics + "\n")
         text_file.close()
 
 
@@ -222,9 +223,12 @@ class vGeneral(abc.ABC):
                         else:
                             f1.write(line)
 
-    def suffix_func(self,hyperparameters_config):
+    def suffix_func(self,hyperparameters_config,NNEPPS=False):
+        hyperparameters_config_copy = dict(hyperparameters_config)
+        if (NNEPPS==False):
+            hyperparameters_config_copy.pop('NNEPPS',None)
         suffix = "config"
-        for key, value in hyperparameters_config.items():
+        for key, value in hyperparameters_config_copy.items():
             suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
         return suffix
 

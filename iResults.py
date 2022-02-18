@@ -101,7 +101,6 @@ class iResults(vDenoising):
                 self.subroot_p = self.subroot_data + 'replicate_' + str(p) + '/'
 
                 # Take NNEPPS images if NNEPPS is asked for this run
-                print('hyperparameters_config["NNEPPS"]',hyperparameters_config["NNEPPS"])
                 if (hyperparameters_config["NNEPPS"]):
                     NNEPPS_string = "_NNEPPS"
                 else:
@@ -208,7 +207,7 @@ class iResults(vDenoising):
 
         # Save metrics in csv
         from csv import writer as writer_csv
-        with open(self.subroot_data + 'metrics/' + self.method + '/' + self.suffix + '/CRC in hot region vs IR in background.csv', 'w', newline='') as myfile:
+        with open(self.subroot_data + 'metrics/' + self.method + '/' + self.suffix_metrics + '/CRC in hot region vs IR in background.csv', 'w', newline='') as myfile:
             wr = writer_csv(myfile,delimiter=';')
             wr.writerow(PSNR_recon)
             wr.writerow(PSNR_norm_recon)
