@@ -76,15 +76,11 @@ class vGeneral(abc.ABC):
         Path(self.subroot+'Block2/mu/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
         Path(self.subroot+'Block2/out_cnn/cnn_metrics/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
 
-        #Path(self.subroot+'Comparison/MLEM/').mkdir(parents=True, exist_ok=True) # CASTor path
-        #Path(self.subroot+'Comparison/BSREM/').mkdir(parents=True, exist_ok=True) # CASTor path
-
         Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
+        
+        Path(self.subroot_data+'metrics/' + self.method + '/' + self.suffix).mkdir(parents=True, exist_ok=True) # CASToR path
 
     def runRayTune(self,config,root,task):
-
-        self.hyperparameters_list = config["hyperparameters"]
-        config.pop("hyperparameters", None)
 
         # Additional variables needing every values in config
         # Number of replicates 
@@ -92,6 +88,9 @@ class vGeneral(abc.ABC):
         if (task == "show_results_replicates" or task == "show_results"):
             config["replicates"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
             
+        self.hyperparameters_list = config["hyperparameters"]
+        config.pop("hyperparameters", None)
+        
         if (task == "show_results_replicates"):
             # List of beta values
             if (len(config["method"]['grid_search']) == 1):
@@ -133,7 +132,6 @@ class vGeneral(abc.ABC):
         #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(hyperparameters_config) + "_max_iter=" + str(config["max_iter"], resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
 
 
-
         tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
 
     def parametersIncompatibility(self,fixed_config,hyperparameters_config):
@@ -159,7 +157,10 @@ class vGeneral(abc.ABC):
         self.initializeSpecific(fixed_config,hyperparameters_config,root)
         # Run task computation
         self.runComputation(config,fixed_config,hyperparameters_config,root)
-
+        # Store suffix to retrieve all suffixes in main.py for metrics
+        text_file = open(self.subroot_data + 'suffixes_for_last_run.txt', "a")
+        text_file.write(self.suffix + "\n")
+        text_file.close()
 
 
 

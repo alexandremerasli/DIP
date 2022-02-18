@@ -75,7 +75,6 @@ class iResults(vDenoising):
             # Saving this figure locally
             Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
             #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
-            print('savefig')
             print(self.subroot + 'Images/tmp/' + suffix + '/' + 'CRC in hot region vs IR in background' + '_' + str(i) + '.png')
             plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + 'CRC in hot region vs IR in background' + '_' + str(i) + '.png')
             from textwrap import wrap
@@ -202,6 +201,26 @@ class iResults(vDenoising):
         #IR_bkg_recon[i-1] = np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)
         print('Mean Concentration Recovery coefficient in background', CRC_bkg_recon[i-1],' , must be close to 1')
         #print('Image roughness in the background', IR_bkg_recon[i-1],' , must be as small as possible')
+
+        # Save metrics in csv
+        from csv import writer as writer_csv
+        with open(self.subroot_data + 'metrics/' + self.method + '/' + self.suffix + '/CRC in hot region vs IR in background.csv', 'w', newline='') as myfile:
+            wr = writer_csv(myfile,delimiter=';')
+            wr.writerow(PSNR_recon)
+            wr.writerow(PSNR_norm_recon)
+            wr.writerow(MSE_recon)
+            wr.writerow(MA_cold_recon)
+            wr.writerow(CRC_hot_recon)
+            wr.writerow(CRC_bkg_recon)
+            wr.writerow(IR_bkg_recon)
+
+        print(PSNR_recon)
+        print(PSNR_norm_recon)
+        print(MSE_recon)
+        print(MA_cold_recon)
+        print(CRC_hot_recon)
+        print(CRC_bkg_recon)
+        print(IR_bkg_recon)
 
         if (write_tensorboard):
             print("Metrics saved in tensorboard")
