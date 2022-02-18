@@ -22,7 +22,7 @@ from iResultsReplicates import iResultsReplicates
 fixed_config = {
     "image" : tune.grid_search(['image0']),
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "method" : tune.grid_search(['AML']),
+    "method" : tune.grid_search(['ADMMLim']),
     "processing_unit" : tune.grid_search(['CPU']),
     "max_iter" : tune.grid_search([10]),
     "finetuning" : tune.grid_search(['last']),
@@ -53,9 +53,9 @@ hyperparameters_config = {
     "mlem_sequence" : tune.grid_search([True]),
     # AML hyperparameters
     "A_AML" : tune.grid_search([0,-100,-500]),
-    #"A_AML" : tune.grid_search([0]),
+    "A_AML" : tune.grid_search([-100]),
     # NNEPPS post processing
-    "NNEPPS" : tune.grid_search([True]),
+    "NNEPPS" : tune.grid_search([True,False]),
 }
 
 # Merge 2 dictionaries
@@ -74,7 +74,7 @@ elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["met
     task = 'castor_reco'
 
 #task = 'full_reco_with_network'
-#task = 'castor_reco'
+task = 'castor_reco'
 #task = 'post_reco'
 task = 'show_results'
 #task = 'show_results_replicates'
@@ -115,52 +115,53 @@ print(config["method"]['grid_search'][0])
 if config["method"]['grid_search'][0] == "AML":
     A_AML_list = config["A_AML"]['grid_search']
 NNEPPS_list = config["NNEPPS"]['grid_search']
-if config["method"]['grid_search'][0] == "AML": 
+
+for suffix in suffixes[0]:
+    metrics_file = root + '/data/Algo/' + '/metrics/' + config["method"]['grid_search'][0] + '/' + suffix.rstrip("\n") + '/' + 'CRC in hot region vs IR in background.csv'
+    with open(metrics_file, 'r') as myfile:
+        spamreader = reader_csv(myfile,delimiter=';')
+        rows_csv = list(spamreader)
+        rows_csv[0] = [float(i) for i in rows_csv[0]]
+        rows_csv[1] = [float(i) for i in rows_csv[1]]
+        rows_csv[2] = [float(i) for i in rows_csv[2]]
+        rows_csv[3] = [float(i) for i in rows_csv[3]]
+        rows_csv[4] = [float(i) for i in rows_csv[4]]
+        rows_csv[5] = [float(i) for i in rows_csv[5]]
+        rows_csv[6] = [float(i) for i in rows_csv[6]]
+
+        PSNR_recon.append(np.array(rows_csv[0]))
+        PSNR_norm_recon.append(np.array(rows_csv[1]))
+        MSE_recon.append(np.array(rows_csv[2]))
+        MA_cold_recon.append(np.array(rows_csv[3]))
+        CRC_hot_recon.append(np.array(rows_csv[4]))
+        CRC_bkg_recon.append(np.array(rows_csv[5]))
+        IR_bkg_recon.append(np.array(rows_csv[6]))
+
+        print(PSNR_recon)
+        print(PSNR_norm_recon)
+        print(MSE_recon)
+        print(MA_cold_recon)
+        print(CRC_hot_recon)
+        print(CRC_bkg_recon)
+        print(IR_bkg_recon)
+
+
+
+for run_id in range(len(PSNR_recon)):
+    print(IR_bkg_recon[run_id])
+    plt.plot(IR_bkg_recon[run_id],CRC_hot_recon[run_id],linestyle='None',marker='x')
+
+plt.xlabel('IR')
+plt.ylabel('CRC')
+# Saving this figure locally
+plt.savefig(root + '/data/Algo/' + 'replicate_0/Images/tmp/' + 'CRC in hot region vs IR in background' + '.png')
+from textwrap import wrap
+wrapped_title = "\n".join(wrap(suffix, 50))
+plt.title(wrapped_title,fontsize=12)
+
+#if config["method"]['grid_search'][0] == "AML": 
     #for beta in A_AML_list:
         #for NNEPPS in NNEPPS_list:
-    for suffix in suffixes[0]:
-        metrics_file = root + '/data/Algo/' + '/metrics/' + config["method"]['grid_search'][0] + '/' + suffix.rstrip("\n") + '/' + 'CRC in hot region vs IR in background.csv'
-        with open(metrics_file, 'r') as myfile:
-            spamreader = reader_csv(myfile,delimiter=';')
-            rows_csv = list(spamreader)
-            rows_csv[0] = [float(i) for i in rows_csv[0]]
-            rows_csv[1] = [float(i) for i in rows_csv[1]]
-            rows_csv[2] = [float(i) for i in rows_csv[2]]
-            rows_csv[3] = [float(i) for i in rows_csv[3]]
-            rows_csv[4] = [float(i) for i in rows_csv[4]]
-            rows_csv[5] = [float(i) for i in rows_csv[5]]
-            rows_csv[6] = [float(i) for i in rows_csv[6]]
-
-            PSNR_recon.append(np.array(rows_csv[0]))
-            PSNR_norm_recon.append(np.array(rows_csv[1]))
-            MSE_recon.append(np.array(rows_csv[2]))
-            MA_cold_recon.append(np.array(rows_csv[3]))
-            CRC_hot_recon.append(np.array(rows_csv[4]))
-            CRC_bkg_recon.append(np.array(rows_csv[5]))
-            IR_bkg_recon.append(np.array(rows_csv[6]))
-
-            print(PSNR_recon)
-            print(PSNR_norm_recon)
-            print(MSE_recon)
-            print(MA_cold_recon)
-            print(CRC_hot_recon)
-            print(CRC_bkg_recon)
-            print(IR_bkg_recon)
-
-
-
-    for run_id in range(len(PSNR_recon)):
-        print(IR_bkg_recon[run_id])
-        plt.plot(IR_bkg_recon[run_id],CRC_hot_recon[run_id],linestyle='None',marker='x')
-    
-    plt.xlabel('IR')
-    plt.ylabel('CRC')
-    # Saving this figure locally
-    plt.savefig(root + '/data/Algo/' + 'replicate_0/Images/tmp/' + 'CRC in hot region vs IR in background' + '.png')
-    from textwrap import wrap
-    wrapped_title = "\n".join(wrap(suffix, 50))
-    plt.title(wrapped_title,fontsize=12)
-
         # + '_beta_' + beta + '/' + 'CRC in hot region vs IR in background.csv'
 #elif config["method"]['grid_search'][0] == "ADMMLim":
 #    metrics_path = root + 'metrics/' + 'Comparison/' + config["method"]['grid_search'][0] + '/' + suffix + '/' 

@@ -99,7 +99,8 @@ class iResults(vDenoising):
             for p in range(1,self.nb_replicates+1):
                 self.subroot_p = self.subroot_data + 'replicate_' + str(p) + '/'
 
-                # Take NNEPPS images for last iteration if NNEPPS was computed
+                # Take NNEPPS images if NNEPPS is asked for this run
+                print('hyperparameters_config["NNEPPS"]',hyperparameters_config["NNEPPS"])
                 if (hyperparameters_config["NNEPPS"]):
                     NNEPPS_string = "_NNEPPS"
                 else:
@@ -115,6 +116,8 @@ class iResults(vDenoising):
                         f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                     else:
                         f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '_beta_' + str(self.beta) + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                        print(np.min(f_p))
+                print(self.subroot_p+'Comparison/' + config["method"] + '_beta_' + str(self.beta) + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img')
                 f += f_p
                 # Metrics for NN output 
                 self.compute_IR_bkg(self.PETImage_shape,f_p,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.CRC_hot_recon,self.CRC_bkg_recon,self.IR_bkg_recon,self.phantom,writer=self.writer,write_tensorboard=True)

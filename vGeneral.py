@@ -388,7 +388,6 @@ class vGeneral(abc.ABC):
         # Saving this figure locally
         Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
         #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
-        print('savefig')
         print(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
         plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
         from textwrap import wrap

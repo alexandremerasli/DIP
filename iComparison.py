@@ -70,13 +70,14 @@ class iComparison(vReconstruction):
 
         # NNEPPS
         if (fixed_config["method"] == 'ADMMLim'):
-            max_it = hyperparameters_config["sub_iter_MAP"]
+            max_it = hyperparameters_config["nb_iter_second_admm"]
         else:
             max_it = fixed_config["max_iter"]
         
         if (hyperparameters_config["NNEPPS"]):
             print("NNEPPS")        
             for it in range(1,max_it + 1):
+                print("iiiiiiiiiiiiiiiit", it)
                 self.NNEPPS_function(fixed_config,hyperparameters_config,it)
 
         # Initializing results class
@@ -160,7 +161,7 @@ class iComparison(vReconstruction):
         if (fixed_config["method"] == 'ADMMLim'):
             i = 0
             subdir = 'ADMM'
-            input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + format(hyperparameters_config["nb_iter_second_admm"]) + '_it' + str(it)
+            input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(hyperparameters_config["sub_iter_MAP"])
         else:
             input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '_beta_' + str(self.beta) + '/' + fixed_config["method"] + '_beta_' + str(self.beta) + '_it' + format(it)
         
