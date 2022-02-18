@@ -22,16 +22,16 @@ from iResultsReplicates import iResultsReplicates
 fixed_config = {
     "image" : tune.grid_search(['image0']),
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "method" : tune.grid_search(['AML']),
+    "method" : tune.grid_search(['AML','ADMMLim']),
     "processing_unit" : tune.grid_search(['CPU']),
-    "max_iter" : tune.grid_search([10]),
+    "max_iter" : tune.grid_search([30]),
     "finetuning" : tune.grid_search(['last']),
     "experiment" : tune.grid_search([24]),
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']),
     #"f_init" : tune.grid_search(['1_im_value_cropped']),
     "penalty" : tune.grid_search(['DIP_ADMM']),
     "post_smoothing" : tune.grid_search([False]),
-    "replicates" : tune.grid_search(list(range(1,10+1))),
+    "replicates" : tune.grid_search(list(range(1,1+1))),
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
@@ -47,7 +47,7 @@ hyperparameters_config = {
     "k_DD" : tune.grid_search([32]),
     ## ADMMLim hyperparameters
     "sub_iter_MAP" : tune.grid_search([10]), # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
-    "nb_iter_second_admm": tune.grid_search([10]), # Number of ADMM iterations (ADMM before NN)
+    "nb_iter_second_admm": tune.grid_search([30]), # Number of ADMM iterations (ADMM before NN)
     "alpha" : tune.grid_search([0.005]), # alpha from ADMM in ADMMLim
     ## hyperparameters from CASToR algorithms 
     # Optimization transfer (OPTITR) hyperparameters
@@ -92,91 +92,95 @@ elif (task == 'show_results_replicates'): # Show already computed results averag
     classTask = iResultsReplicates(config)
 
 # Launch task
-#os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + fixed_config["method"]['grid_search'][0] + '.txt')
-#classTask.runRayTune(config,root,task)
+for method in config["method"]['grid_search']:
+    os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + method + '.txt')
 
-PSNR_recon = []
-PSNR_norm_recon = []
-MSE_recon = []
-MA_cold_recon = []
-CRC_hot_recon = []
-CRC_bkg_recon = []
-IR_bkg_recon = [] 
+classTask.runRayTune(config,root,task)
 
 from csv import reader as reader_csv
 import numpy as np
 import matplotlib.pyplot as plt
-suffixes = []
-with open(root + '/data/Algo/' + '/suffixes_for_last_run_' + fixed_config["method"]['grid_search'][0] + '.txt') as f:
-    suffixes.append(f.readlines())
 
-print(suffixes) 
-print(config["method"]['grid_search'][0])
-# Load metrics from last runs to merge them in one figure
-if config["method"]['grid_search'][0] == "AML":
-    A_AML_list = config["A_AML"]['grid_search']
-NNEPPS_list = config["NNEPPS"]['grid_search']
+suffixes_legend = []
 
-for suffix in suffixes[0]:
-    metrics_file = root + '/data/Algo/' + '/metrics/' + config["method"]['grid_search'][0] + '/' + suffix.rstrip("\n") + '/' + 'CRC in hot region vs IR in background.csv'
-    with open(metrics_file, 'r') as myfile:
-        spamreader = reader_csv(myfile,delimiter=';')
-        rows_csv = list(spamreader)
-        rows_csv[0] = [float(i) for i in rows_csv[0]]
-        rows_csv[1] = [float(i) for i in rows_csv[1]]
-        rows_csv[2] = [float(i) for i in rows_csv[2]]
-        rows_csv[3] = [float(i) for i in rows_csv[3]]
-        rows_csv[4] = [float(i) for i in rows_csv[4]]
-        rows_csv[5] = [float(i) for i in rows_csv[5]]
-        rows_csv[6] = [float(i) for i in rows_csv[6]]
+for method in config["method"]['grid_search']:
+    suffixes = []
 
-        PSNR_recon.append(np.array(rows_csv[0]))
-        PSNR_norm_recon.append(np.array(rows_csv[1]))
-        MSE_recon.append(np.array(rows_csv[2]))
-        MA_cold_recon.append(np.array(rows_csv[3]))
-        CRC_hot_recon.append(np.array(rows_csv[4]))
-        CRC_bkg_recon.append(np.array(rows_csv[5]))
-        IR_bkg_recon.append(np.array(rows_csv[6]))
-
-        print(PSNR_recon)
-        print(PSNR_norm_recon)
-        print(MSE_recon)
-        print(MA_cold_recon)
-        print(CRC_hot_recon)
-        print(CRC_bkg_recon)
-        print(IR_bkg_recon)
+    PSNR_recon = []
+    PSNR_norm_recon = []
+    MSE_recon = []
+    MA_cold_recon = []
+    CRC_hot_recon = []
+    CRC_bkg_recon = []
+    IR_bkg_recon = [] 
 
 
+    with open(root + '/data/Algo/' + '/suffixes_for_last_run_' + method + '.txt') as f:
+        suffixes.append(f.readlines())
 
-for run_id in range(len(PSNR_recon)):
-    print(IR_bkg_recon[run_id])
-    plt.plot(IR_bkg_recon[run_id],CRC_hot_recon[run_id],'-o')
+    # Load metrics from last runs to merge them in one figure
 
-plt.xlabel('IR')
-plt.ylabel('CRC')
+    for suffix in suffixes[0]:
+        metrics_file = root + '/data/Algo/' + '/metrics/' + method + '/' + suffix.rstrip("\n") + '/' + 'CRC in hot region vs IR in background.csv'
+        with open(metrics_file, 'r') as myfile:
+            spamreader = reader_csv(myfile,delimiter=';')
+            rows_csv = list(spamreader)
+            rows_csv[0] = [float(i) for i in rows_csv[0]]
+            rows_csv[1] = [float(i) for i in rows_csv[1]]
+            rows_csv[2] = [float(i) for i in rows_csv[2]]
+            rows_csv[3] = [float(i) for i in rows_csv[3]]
+            rows_csv[4] = [float(i) for i in rows_csv[4]]
+            rows_csv[5] = [float(i) for i in rows_csv[5]]
+            rows_csv[6] = [float(i) for i in rows_csv[6]]
 
-suffixes_legend = list(suffixes[0])
+            PSNR_recon.append(np.array(rows_csv[0]))
+            PSNR_norm_recon.append(np.array(rows_csv[1]))
+            MSE_recon.append(np.array(rows_csv[2]))
+            MA_cold_recon.append(np.array(rows_csv[3]))
+            CRC_hot_recon.append(np.array(rows_csv[4]))
+            CRC_bkg_recon.append(np.array(rows_csv[5]))
+            IR_bkg_recon.append(np.array(rows_csv[6]))
 
-for i in range(len(suffixes_legend)):
-    
-    print(suffixes[0][i])
-    suffixes_legend[i] = ''
-    l = suffixes[0][i].replace('=','_')
-    l = l.replace('\n','_')
-    l = l.split('_')
-    print(l)
-    for p in range(len(l)):
-        if l[p] == "AML":
-            suffixes_legend[i] += "A : " + l[p+1] + ' / ' 
-        if l[p] == "NNEPP":
-            suffixes_legend[i] += "NNEPPS : " + l[p+1]
+            '''
+            print(PSNR_recon)
+            print(PSNR_norm_recon)
+            print(MSE_recon)
+            print(MA_cold_recon)
+            print(CRC_hot_recon)
+            print(CRC_bkg_recon)
+            print(IR_bkg_recon)
+            '''
 
+
+    for run_id in range(len(PSNR_recon)):
+        plt.plot(IR_bkg_recon[run_id],CRC_hot_recon[run_id],'-o')
+
+    plt.xlabel('IR')
+    plt.ylabel('CRC')
+
+    for i in range(len(suffixes[0])):
+        
+        l = suffixes[0][i].replace('=','_')
+        l = l.replace('\n','_')
+        l = l.split('_')
+        legend = ''
+        for p in range(len(l)):
+            if l[p] == "AML":
+                legend += "A : " + l[p+1] + ' / ' 
+            if l[p] == "NNEPP":
+                legend += "NNEPPS : " + l[p+1]
+        suffixes_legend.append(legend)
 plt.legend(suffixes_legend)
 # Saving this figure locally
 plt.savefig(root + '/data/Algo/' + 'replicate_0/Images/tmp/' + 'CRC in hot region vs IR in background' + '.png')
 from textwrap import wrap
 wrapped_title = "\n".join(wrap(suffix, 50))
 plt.title(wrapped_title,fontsize=12)
+
+
+#if config["method"]['grid_search'][0] == "AML":
+#    A_AML_list = config["A_AML"]['grid_search']
+#NNEPPS_list = config["NNEPPS"]['grid_search']
 
 #if config["method"]['grid_search'][0] == "AML": 
     #for beta in A_AML_list:

@@ -35,8 +35,10 @@ class iComparison(vReconstruction):
 
             if (fixed_config["method"] == 'MLEM'):
                 opti = ' -opti ' + fixed_config["method"]
-                conv = ' -conv gaussian,8,1,3.5::post'
-                #conv = ''
+                if (fixed_config["post_smoothing"]):
+                    conv = ' -conv gaussian,8,1,3.5::post'
+                else:
+                    conv = ''
                 penalty = ''
                 penaltyStrength = ''
             elif (fixed_config["method"] == 'AML'):
@@ -148,7 +150,7 @@ class iComparison(vReconstruction):
                 u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
                 # Compute one ADMM iteration (x, v, u)
-                if (k == hyperparameters_config["nb_iter_second_admm"] - 1): # For last iteration, apply post smoothing for vizualization
+                if ((k == hyperparameters_config["nb_iter_second_admm"] - 1) and fixed_config["post_smoothing"]): # For last iteration, apply post smoothing for vizualization
                     #conv = ''
                     conv = ' -conv gaussian,18,1,3.5::post'
                 else:
