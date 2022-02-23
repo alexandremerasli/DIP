@@ -8,6 +8,7 @@ from ray import tune
 import numpy as np
 from itertools import product
 import matplotlib.pyplot as plt
+import sys
 
 import abc
 class vGeneral(abc.ABC):
@@ -90,9 +91,36 @@ class vGeneral(abc.ABC):
         self.nb_replicates = config["replicates"]['grid_search'][-1]
         if (task == "show_results_replicates" or task == "show_results"):
             config["replicates"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
-            
+
+        # Remove hyperparameters list
         self.hyperparameters_list = config["hyperparameters"]
         config.pop("hyperparameters", None)
+        
+        # Remove NNEPPS=False if True is selected for computation
+        if (len(config["NNEPPS"]['grid_search']) > 1 and False in config["NNEPPS"]['grid_search'] and 'results' not in task):
+            print("No need for computation without NNEPPS")
+            config["NNEPPS"]['grid_search'] = [True]
+
+        # Delete hyperparameters specific to others optimizer 
+        if (len(config["method"]['grid_search']) == 1):
+            if (config["method"]['grid_search'] != "AML"):
+                config.pop("A_AML", None)
+            if (config["method"]['grid_search'] != "ADMMLim"):
+                config.pop("sub_iter_MAP", None)
+                config.pop("nb_iter_second_admm", None)
+                config.pop("alpha", None)
+            if (config["method"]['grid_search'] != "nested" and config["method"]['grid_search'] != "Gong"):
+                config.pop("lr", None)
+                config.pop("sub_iter_DIP", None)
+                config.pop("opti_DIP", None)
+                config.pop("skip_connections", None)
+                config.pop("scaling", None)
+                config.pop("input", None)
+                config.pop("d_DD", None)
+                config.pop("k_DD", None)
+        else:
+            if ('results' not in task):
+                raise ValueError("Please do not put several methods at the same time for computation.")
         
         if (task == "show_results_replicates"):
             # List of beta values
@@ -108,7 +136,7 @@ class vGeneral(abc.ABC):
                         self.beta_list = config["rho"]['grid_search']
                         config["rho"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
             else:
-                ValueError("There must be only one method to average over replicates")
+                raise ValueError("There must be only one method to average over replicates")
         
         config_combination = 1
         for i in range(len(config)): # List of hyperparameters keys is still in config dictionary
@@ -149,15 +177,19 @@ class vGeneral(abc.ABC):
         # Do not provide penalty strength if MLEM
         if (fixed_config["method"] == 'MLEM'):
             hyperparameters_config["rho"] = 0
-        
+            hyperparameters_config.pop("penalty", None)
+
         # Delete hyperparameters specific to others optimizer 
-        if (fixed_config["method"] == "ADMMLim"):
+        if (fixed_config["method"] != "AML"):
             hyperparameters_config.pop("A_AML", None)
-        if (fixed_config["method"] == "AML"):
+        if (fixed_config["method"] != "ADMMLim"):
             hyperparameters_config.pop("sub_iter_MAP", None)
             hyperparameters_config.pop("nb_iter_second_admm", None)
             hyperparameters_config.pop("alpha", None)
+        else:
+            hyperparameters_config.pop("max_iter", None)
         if (fixed_config["method"] != "nested" and fixed_config["method"] != "Gong"):
+            hyperparameters_config.pop("net", None)
             hyperparameters_config.pop("lr", None)
             hyperparameters_config.pop("sub_iter_DIP", None)
             hyperparameters_config.pop("opti_DIP", None)
@@ -167,11 +199,11 @@ class vGeneral(abc.ABC):
             hyperparameters_config.pop("d_DD", None)
             hyperparameters_config.pop("k_DD", None)
 
-    def do_everything(self,config,root):
+    def do_everything(self,config,root,task):
         # Retrieve fixed parameters and hyperparameters from config dictionnary
         fixed_config, hyperparameters_config = self.split_config(config)
         # Check parameters incompatibility
-        self.parametersIncompatibility(fixed_config,hyperparameters_config)
+        self.parametersIncompatibility(fixed_config,hyperparameters_config,task)
         # Initialize variables
         self.initializeGeneralVariables(fixed_config,hyperparameters_config,root)
         self.initializeSpecific(fixed_config,hyperparameters_config,root)
