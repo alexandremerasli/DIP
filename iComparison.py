@@ -87,6 +87,7 @@ class iComparison(vReconstruction):
         # Initializing results class
         from iResults import iResults
         classResults = iResults(config)
+        classResults.nb_replicates = self.nb_replicates
         classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
         
         classResults.runComputation(config,fixed_config,hyperparameters_config,root)
