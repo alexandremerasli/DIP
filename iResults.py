@@ -86,6 +86,27 @@ class iResults(vDenoising):
             self.writer.add_figure('CRC in hot region vs IR in background', plt.gcf(),global_step=i,close=True)
             self.writer.close()
 
+
+            # Creating matplotlib figure
+            plt.plot(self.IR_bkg_recon,self.MA_cold_recon,linestyle='None',marker='x')
+            plt.xlabel('IR')
+            plt.ylabel('MA')
+            # Saving this figure locally
+            Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
+            #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
+            print(self.subroot + 'Images/tmp/' + suffix + '/' + 'MA in cold region vs IR in background' + '_' + str(i) + '.png')
+            plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + 'MA in cold region vs IR in background' + '_' + str(i) + '.png')
+            from textwrap import wrap
+            wrapped_title = "\n".join(wrap(suffix, 50))
+            plt.title(wrapped_title,fontsize=12)
+
+            # Adding this figure to tensorboard
+            self.writer.flush()
+            self.writer.add_figure('MA in cold region vs IR in background', plt.gcf(),global_step=i,close=True)
+            self.writer.close()
+
+
+
     def runComputation(self,config,fixed_config,hyperparameters_config,root):
         beta_string = ', beta = ' + str(self.beta)
 
@@ -136,6 +157,7 @@ class iResults(vDenoising):
         # Select only phantom ROI, not whole reconstructed image
         path_phantom_ROI = self.subroot_data+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[-1]) + '.raw'
         my_file = Path(path_phantom_ROI)
+        print(path_phantom_ROI)
         if (my_file.is_file()):
             phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(PETImage_shape))
         else:
@@ -187,6 +209,7 @@ class iResults(vDenoising):
         #print('Image roughness in the cold cylinder', IR_cold_recon[i-1])
 
         # Mean Concentration Recovery coefficient (CRCmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
+        print(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw')
         hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw', shape=(PETImage_shape))
         hot_ROI_act = image_recon[hot_ROI==1]
         CRC_hot_recon[i-1] = np.mean(hot_ROI_act) / 400.
