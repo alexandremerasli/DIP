@@ -70,7 +70,7 @@ class vReconstruction(vGeneral):
         path_before_eq_22 = (subroot_output_path + '/before_eq22/')
         path_during_eq_22 = (subroot_output_path + '/during_eq22/')
         self.save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
-        self.write_hdr(subroot,[i],'before_eq22',phantom,'f_mu',subroot_output_path)
+        self.write_hdr(self.subroot_data,[i],'before_eq22',phantom,'f_mu',subroot_output_path)
         f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'
         
         # Initialization
@@ -78,8 +78,8 @@ class vReconstruction(vGeneral):
             only_x = False # Freezing u and v computation, just updating x if True
 
             # x^0
-            copy(subroot + 'Data/initialization/' + image_init_path_without_extension + '.img', path_during_eq_22 + format(i) + '_-1_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.img')
-            self.write_hdr(subroot,[i,-1],'during_eq22',phantom,'x',subroot_output_path)
+            copy(self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.img', path_during_eq_22 + format(i) + '_-1_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.img')
+            self.write_hdr(self.subroot_data,[i,-1],'during_eq22',phantom,'x',subroot_output_path)
 
             # Compute u^0 (u^-1 in CASToR) and store it with zeros, and save in .hdr format - block 1            
             u_0 = 0*np.ones((344,252)) # initialize u_0 to zeros
@@ -88,11 +88,11 @@ class vReconstruction(vGeneral):
             
             # Compute v^0 (v^-1 in CASToR) with ADMM_spec_init_v optimizer and save in .hdr format - block 1
             if (i == 0):   # choose initial image for CASToR reconstruction
-                x_for_init_v = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+                x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
                 #v^0 is BSREM if we only look at x optimization
                 if (only_x):
-                    x_for_init_v = ' -img ' + subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
-                #x_for_init_v = ' -img ' + subroot + 'Data/initialization/' + '1_im_value' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+                    x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+                #x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
             elif (i >= 1):
                 x_for_init_v = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
             
@@ -129,12 +129,12 @@ class vReconstruction(vGeneral):
                 # Initialize variables for command line
                 if (k == -1):
                     if (i == 0):   # choose initial image for CASToR reconstruction
-                        initialimage = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+                        initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
                     elif (i >= 1):
                         initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
                         # Trying to initialize ADMMLim
-                        #initialimage = ' -img ' + subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
-                        initialimage = ' -img ' + subroot + 'Data/initialization/' + '1_im_value_cropped.hdr'
+                        #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
+                        initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
                         if (only_x):
                             initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' + format(i-1) + '_' + format(nb_iter_second_admm) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
 
@@ -166,12 +166,12 @@ class vReconstruction(vGeneral):
             castor_command_line_x = self.castor_command_line_func(method,phantom,replicate,PETImage_shape_str,rho,alpha,i)
             # Initialize image
             if (i == 0):   # choose initial image for CASToR reconstruction
-                initialimage = ' -img ' + subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
+                initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
             elif (i >= 1):
                 initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' + format(i-1) + '_' + format(nb_iter_second_admm) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
                 # Trying to initialize OPTITR
-                #initialimage = ' -img ' + subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
-                initialimage = ' -img ' + subroot + 'Data/initialization/' + '1_im_value_cropped.hdr'
+                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
+                initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
                 #initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' + format(i-1) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
 
             base_name_k_next = format(i)

@@ -28,6 +28,9 @@ data/Algo/Data/ADMMLim_*
 
 data/Algo/Data/database_v2/
 data/Algo/im_corrupt_beginning.img
+data/Algo/metrics
+
+data/Algo/suffixes*
 data/Algo/replicate_*
 
 models/__pycache__/
@@ -40,5 +43,3 @@ trash/
 __pycache__/
 
 PlotNeuralNet/
-
-test.py

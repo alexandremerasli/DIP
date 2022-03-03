@@ -42,19 +42,19 @@ class iComparison(vReconstruction):
                 penalty = ''
                 penaltyStrength = ''
             elif (fixed_config["method"] == 'AML'):
-                opti = ' -opti ' + fixed_config["method"] + ':' + self.subroot + 'Comparison/' + 'AML.conf'
+                #opti = ' -opti ' + fixed_config["method"] + ':' + self.subroot + 'Comparison/' + 'AML.conf'
                 opti = ' -opti ' + fixed_config["method"] + ',1,1e-10,' + str(hyperparameters_config["A_AML"])
                 conv = ' -conv gaussian,8,1,3.5::post'
                 #conv = ''
                 penalty = ''
                 penaltyStrength = ''
             else:
-                opti = ' -opti ' + fixed_config["method"] + ':' + self.subroot + 'Comparison/' + 'BSREM.conf'
+                opti = ' -opti ' + fixed_config["method"] + ':' + self.subroot_data + 'BSREM.conf'
                 if (fixed_config["post_smoothing"]):
                     conv = ' -conv gaussian,8,1,3.5::post'
                 else:
                     conv = ''
-                penalty = ' -pnlt ' + fixed_config["penalty"] + ':' + self.subroot + fixed_config["method"] + '_MRF.conf'
+                penalty = ' -pnlt ' + fixed_config["penalty"] + ':' + self.subroot_data + fixed_config["method"] + '_MRF.conf'
                 penaltyStrength = ' -pnlt-beta ' + str(self.beta)
 
             output_path = ' -fout ' + self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' + fixed_config["method"] + '_beta_' + str(self.beta) # Output path for CASTOR framework
@@ -63,7 +63,7 @@ class iComparison(vReconstruction):
 
             # Command line for calculating the Likelihood
             opti_like = ' -opti-fom'
-            opti_like = ''
+            #opti_like = ''
 
             print("CASToR command line :")
             print("")
@@ -88,6 +88,7 @@ class iComparison(vReconstruction):
         from iResults import iResults
         classResults = iResults(config)
         classResults.nb_replicates = self.nb_replicates
+        classResults.rho = self.rho
         classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
         
         classResults.runComputation(config,fixed_config,hyperparameters_config,root)
@@ -99,7 +100,7 @@ class iComparison(vReconstruction):
             it = ' -it ' + str(hyperparameters_config["sub_iter_MAP"]) + ':1' # 1 subset
             penalty = ' -pnlt ' + fixed_config["penalty"]
             if fixed_config["penalty"] == "MRF":
-                penalty += ':' + self.subroot + fixed_config["method"] + '_MRF.conf'
+                penalty += ':' + self.subroot_data + fixed_config["method"] + '_MRF.conf'
 
             only_x = False # Freezing u and v computation, just updating x if True
 

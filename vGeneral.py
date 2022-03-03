@@ -146,7 +146,7 @@ class vGeneral(abc.ABC):
         if (len(config["method"]['grid_search']) == 1):
             if (config["method"]['grid_search'][0] != "AML"):
                 config.pop("A_AML", None)
-            if (config["method"]['grid_search'][0] != "ADMMLim"):
+            if (config["method"]['grid_search'][0] != "ADMMLim" and config["method"]['grid_search'][0] != "nested"):
                 config.pop("sub_iter_MAP", None)
                 config.pop("nb_iter_second_admm", None)
                 config.pop("alpha", None)
@@ -211,7 +211,7 @@ class vGeneral(abc.ABC):
             else:
                 ref_numbers = format(i)
         filename = subroot_output_path + '/'+ subpath + '/' + ref_numbers +'.hdr'
-        with open(subroot + 'Data/MLEM_reco_for_init/' + phantom + '/' + phantom + '_it1.hdr') as f:
+        with open(self.subroot_data + 'Data/MLEM_reco_for_init/' + phantom + '/' + phantom + '_it1.hdr') as f:
             with open(filename, "w") as f1:
                 for line in f:
                     if line.strip() == ('!name of data file := ' + phantom + '_it1.img'):
@@ -451,14 +451,14 @@ class vGeneral(abc.ABC):
         dim = ' -dim ' + PETImage_shape_str
         vox = ' -vox 4,4,4'
         vb = ' -vb 3'
-        th = ' -th 1' # et it to 1, as multithreading does not work for now with ADMMLim optimizer
+        th = ' -th 1' # set it to 1, as multithreading does not work for now with ADMMLim optimizer
         proj = ' -proj incrementalSiddon'
 
         psf = ' -conv gaussian,4,1,3.5::psf'
 
         # Command line for calculating the Likelihood
         opti_like = ' -opti-fom'
-        opti_like = ''
+        #opti_like = ''
         
         if (method == 'nested' or method == 'ADMMLim'):
             if (rho == 0): # Special case where we do not want to penalize reconstruction (not taking into account network output)

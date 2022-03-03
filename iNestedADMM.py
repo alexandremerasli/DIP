@@ -21,6 +21,7 @@ class iNestedADMM(vReconstruction):
         from iResults import iResults
         classResults = iResults(config)
         classResults.nb_replicates = self.nb_replicates
+        classResults.rho = self.rho
         classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
         
         for i in range(self.max_iter):

@@ -25,12 +25,12 @@ fixed_config = {
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "method" : tune.grid_search(['ADMMLim']),
     "processing_unit" : tune.grid_search(['CPU']),
-    "max_iter" : tune.grid_search([50]),
+    "max_iter" : tune.grid_search([10]),
     "finetuning" : tune.grid_search(['last']),
     "experiment" : tune.grid_search([24]),
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']),
     #"f_init" : tune.grid_search(['1_im_value_cropped']),
-    "penalty" : tune.grid_search(['DIP_ADMM']),
+    "penalty" : tune.grid_search(['MRF']),
     "post_smoothing" : tune.grid_search([False]),
     "replicates" : tune.grid_search(list(range(1,1+1))),
 }
@@ -48,17 +48,17 @@ hyperparameters_config = {
     "k_DD" : tune.grid_search([32]),
     ## ADMMLim hyperparameters
     "sub_iter_MAP" : tune.grid_search([10]), # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
-    "nb_iter_second_admm": tune.grid_search([3]), # Number of ADMM iterations (ADMM before NN)
-    "alpha" : tune.grid_search([0.05]), # alpha from ADMM in ADMMLim
+    "nb_iter_second_admm": tune.grid_search([10]), # Number of ADMM iterations (ADMM before NN)
+    "alpha" : tune.grid_search([0.005]), # alpha from ADMM in ADMMLim
     ## hyperparameters from CASToR algorithms 
     # Optimization transfer (OPTITR) hyperparameters
     "mlem_sequence" : tune.grid_search([True]),
     # AML hyperparameters
     "A_AML" : tune.grid_search([-10000,-500,-100]),
-    #"A_AML" : tune.grid_search([-10000]),
+    "A_AML" : tune.grid_search([0]),
     # NNEPPS post processing
     "NNEPPS" : tune.grid_search([True,False]),
-    #"NNEPPS" : tune.grid_search([True]),
+    "NNEPPS" : tune.grid_search([False]),
 }
 
 # Merge 2 dictionaries
@@ -70,18 +70,20 @@ config = {**fixed_config, **hyperparameters_config, **split_config}
 root = os.getcwd()
 
 # Choose task to do (move this after raytune !!!)
-if (config["method"] == 'Gong' or config["method"] == 'nested'):
+if (config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested'):
     task = 'full_reco_with_network'
 
-elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["method"] == 'BSREM'):
+elif (config["method"]["grid_search"][0] == 'ADMMLim' or config["method"]["grid_search"][0] == 'MLEM' or config["method"]["grid_search"][0] == 'BSREM' or config["method"]["grid_search"][0] == 'AML'):
     task = 'castor_reco'
 
 #task = 'full_reco_with_network'
-task = 'castor_reco'
+#task = 'castor_reco'
 #task = 'post_reco'
 #task = 'show_results'
 #task = 'show_results_replicates'
 #task = 'show_metrics_results_already_computed'
+
+print('task = ',task)
 
 if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
     classTask = iNestedADMM(hyperparameters_config)
