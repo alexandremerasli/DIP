@@ -45,8 +45,8 @@ class iResults(vDenoising):
         self.PSNR_norm_recon = np.zeros(self.total_nb_iter)
         self.MSE_recon = np.zeros(self.total_nb_iter)
         self.MA_cold_recon = np.zeros(self.total_nb_iter)
-        self.CRC_hot_recon = np.zeros(self.total_nb_iter)
-        self.CRC_bkg_recon = np.zeros(self.total_nb_iter)
+        self.AR_hot_recon = np.zeros(self.total_nb_iter)
+        self.AR_bkg_recon = np.zeros(self.total_nb_iter)
         self.IR_bkg_recon = np.zeros(self.total_nb_iter)
         
     def writeBeginningImages(self,image_net_input,suffix):
@@ -59,31 +59,31 @@ class iResults(vDenoising):
 
     def writeEndImagesAndMetrics(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):
         # Metrics for NN output
-        self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.CRC_hot_recon,self.CRC_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer,write_tensorboard=True)
+        self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer,write_tensorboard=True)
 
         # Write image over ADMM iterations
         if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
             self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
             self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
 
-        # Display CRC vs STD curve in tensorboard
+        # Display AR (hot) /MA (cold) vs STD curve in tensorboard
         if (i == self.total_nb_iter):
             # Creating matplotlib figure
-            plt.plot(self.IR_bkg_recon,self.CRC_hot_recon,linestyle='None',marker='x')
+            plt.plot(self.IR_bkg_recon,self.AR_hot_recon,linestyle='None',marker='x')
             plt.xlabel('IR')
-            plt.ylabel('CRC')
+            plt.ylabel('AR')
             # Saving this figure locally
             Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
             #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
-            print(self.subroot + 'Images/tmp/' + suffix + '/' + 'CRC in hot region vs IR in background' + '_' + str(i) + '.png')
-            plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + 'CRC in hot region vs IR in background' + '_' + str(i) + '.png')
+            print(self.subroot + 'Images/tmp/' + suffix + '/' + 'AR in hot region vs IR in background' + '_' + str(i) + '.png')
+            plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + 'AR in hot region vs IR in background' + '_' + str(i) + '.png')
             from textwrap import wrap
             wrapped_title = "\n".join(wrap(suffix, 50))
             plt.title(wrapped_title,fontsize=12)
 
             # Adding this figure to tensorboard
             self.writer.flush()
-            self.writer.add_figure('CRC in hot region vs IR in background', plt.gcf(),global_step=i,close=True)
+            self.writer.add_figure('AR in hot region vs IR in background', plt.gcf(),global_step=i,close=True)
             self.writer.close()
 
 
@@ -141,7 +141,7 @@ class iResults(vDenoising):
                 print(self.subroot_p+'Comparison/' + config["method"] + '_beta_' + str(self.beta) + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img')
                 f += f_p
                 # Metrics for NN output 
-                self.compute_IR_bkg(self.PETImage_shape,f_p,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.CRC_hot_recon,self.CRC_bkg_recon,self.IR_bkg_recon,self.phantom,writer=self.writer,write_tensorboard=True)
+                self.compute_IR_bkg(self.PETImage_shape,f_p,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,self.phantom,writer=self.writer,write_tensorboard=True)
     
             print("Metrics saved in tensorboard")
             self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[i-1], i)
@@ -151,7 +151,7 @@ class iResults(vDenoising):
             self.writeEndImagesAndMetrics(i,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
 
 
-    def compute_IR_bkg(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
+    def compute_IR_bkg(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,AR_hot_recon,AR_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
         
         # Select only phantom ROI, not whole reconstructed image
@@ -170,7 +170,7 @@ class iResults(vDenoising):
         print("IR_bkg_recon",IR_bkg_recon)
         print('Image roughness in the background', IR_bkg_recon[i-1],' , must be as small as possible')
 
-    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,CRC_hot_recon,CRC_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
+    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,AR_hot_recon,AR_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
         
         # Select only phantom ROI, not whole reconstructed image
@@ -208,44 +208,44 @@ class iResults(vDenoising):
         print('Mean activity in cold cylinder', MA_cold_recon[i-1],' , must be close to 0')
         #print('Image roughness in the cold cylinder', IR_cold_recon[i-1])
 
-        # Mean Concentration Recovery coefficient (CRCmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
+        # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
         print(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw')
         hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw', shape=(PETImage_shape))
         hot_ROI_act = image_recon[hot_ROI==1]
-        CRC_hot_recon[i-1] = np.mean(hot_ROI_act) / 400.
+        AR_hot_recon[i-1] = np.mean(hot_ROI_act) / 400.
         #IR_hot_recon[i-1] = np.std(hot_ROI_act) / np.mean(hot_ROI_act)
-        print('Mean Concentration Recovery coefficient in hot cylinder', CRC_hot_recon[i-1],' , must be close to 1')
+        print('Mean Activity Recovery in hot cylinder', AR_hot_recon[i-1],' , must be close to 1')
         #print('Image roughness in the hot cylinder', IR_hot_recon[i-1])
 
-        # Mean Concentration Recovery coefficient (CRCmean) in background calculation (-c 0. 0. 0. 150. 4. 100)
+        # Mean Activity Recovery (ARmean) in background calculation (-c 0. 0. 0. 150. 4. 100)
         #m0_bkg = (np.sum(coord_to_value_array(bkg_ROI,image_recon*phantom_ROI)) - np.sum([coord_to_value_array(cold_ROI,image_recon*phantom_ROI),coord_to_value_array(hot_ROI,image_recon*phantom_ROI)])) / (len(bkg_ROI) - (len(cold_ROI) + len(hot_ROI)))
-        #CRC_bkg_recon[i-1] = m0_bkg / 100.
+        #AR_bkg_recon[i-1] = m0_bkg / 100.
         #         
         bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape))
         bkg_ROI_act = image_recon[bkg_ROI==1]
-        CRC_bkg_recon[i-1] = np.mean(bkg_ROI_act) / 100.
+        AR_bkg_recon[i-1] = np.mean(bkg_ROI_act) / 100.
         #IR_bkg_recon[i-1] = np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)
-        print('Mean Concentration Recovery coefficient in background', CRC_bkg_recon[i-1],' , must be close to 1')
+        print('Mean Activity Recovery in background', AR_bkg_recon[i-1],' , must be close to 1')
         #print('Image roughness in the background', IR_bkg_recon[i-1],' , must be as small as possible')
 
         # Save metrics in csv
         from csv import writer as writer_csv
-        with open(self.subroot_data + 'metrics/' + self.method + '/' + self.suffix_metrics + '/CRC in hot region vs IR in background.csv', 'w', newline='') as myfile:
+        with open(self.subroot_data + 'metrics/' + self.method + '/' + self.suffix_metrics + '/metrics.csv', 'w', newline='') as myfile:
             wr = writer_csv(myfile,delimiter=';')
             wr.writerow(PSNR_recon)
             wr.writerow(PSNR_norm_recon)
             wr.writerow(MSE_recon)
             wr.writerow(MA_cold_recon)
-            wr.writerow(CRC_hot_recon)
-            wr.writerow(CRC_bkg_recon)
+            wr.writerow(AR_hot_recon)
+            wr.writerow(AR_bkg_recon)
             wr.writerow(IR_bkg_recon)
 
         print(PSNR_recon)
         print(PSNR_norm_recon)
         print(MSE_recon)
         print(MA_cold_recon)
-        print(CRC_hot_recon)
-        print(CRC_bkg_recon)
+        print(AR_hot_recon)
+        print(AR_bkg_recon)
         print(IR_bkg_recon)
 
         if (write_tensorboard):
@@ -253,12 +253,12 @@ class iResults(vDenoising):
             '''
             writer.add_scalars('MSE gt (best : 0)', {'MSE':  MSE_recon[i-1], 'best': 0,}, i)
             writer.add_scalars('Mean activity in cold cylinder (best : 0)', {'mean_cold':  MA_cold_recon[i-1], 'best': 0,}, i)
-            writer.add_scalars('Mean Concentration Recovery coefficient in hot cylinder (best : 1)', {'CRC_hot':  CRC_hot_recon[i-1], 'best': 1,}, i)
-            writer.add_scalars('Mean Concentration Recovery coefficient in background (best : 1)', {'CRC_bkg':  CRC_bkg_recon[i-1], 'best': 1,}, i)
+            writer.add_scalars('Mean Concentration Recovery coefficient in hot cylinder (best : 1)', {'AR_hot':  AR_hot_recon[i-1], 'best': 1,}, i)
+            writer.add_scalars('Mean Concentration Recovery coefficient in background (best : 1)', {'MA_bkg':  AR_bkg_recon[i-1], 'best': 1,}, i)
             #writer.add_scalars('Image roughness in the background (best : 0)', {'IR':  IR_bkg_recon[i-1], 'best': 0,}, i)
             '''
             writer.add_scalar('MSE gt (best : 0)', MSE_recon[i-1], i)
             writer.add_scalar('Mean activity in cold cylinder (best : 0)', MA_cold_recon[i-1], i)
-            writer.add_scalar('Mean Concentration Recovery coefficient in hot cylinder (best : 1)', CRC_hot_recon[i-1], i)
-            writer.add_scalar('Mean Concentration Recovery coefficient in background (best : 1)', CRC_bkg_recon[i-1], i)
+            writer.add_scalar('Mean Concentration Recovery coefficient in hot cylinder (best : 1)', AR_hot_recon[i-1], i)
+            writer.add_scalar('Mean Concentration Recovery coefficient in background (best : 1)', AR_bkg_recon[i-1], i)
             writer.add_scalar('Image roughness in the background (best : 0)', IR_bkg_recon[i-1], i)
