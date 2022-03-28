@@ -35,8 +35,8 @@ class iResultsReplicates(iResults):
         self.PSNR_norm_recon = np.zeros(self.total_nb_iter)
         self.MSE_recon = np.zeros(self.total_nb_iter)
         self.MA_cold_recon = np.zeros(self.total_nb_iter)
-        self.CRC_hot_recon = np.zeros(self.total_nb_iter)
-        self.CRC_bkg_recon = np.zeros(self.total_nb_iter)
+        self.AR_hot_recon = np.zeros(self.total_nb_iter)
+        self.AR_bkg_recon = np.zeros(self.total_nb_iter)
         self.IR_bkg_recon = np.zeros(self.total_nb_iter)
 
     def runComputation(self,config,fixed_config,hyperparameters_config,root): 
@@ -68,7 +68,7 @@ class iResultsReplicates(iResults):
                         f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '_beta_' + str(self.beta_list[i-1]) + '/' +  config["method"] + '_beta_' + str(self.beta_list[i-1]) + '_it' + str(fixed_config["max_iter"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                 f += f_p
                 # Metrics for NN output 
-                self.compute_IR_bkg(self.PETImage_shape,f_p,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.CRC_hot_recon,self.CRC_bkg_recon,self.IR_bkg_recon,self.phantom,writer=self.writer,write_tensorboard=True)
+                self.compute_IR_bkg(self.PETImage_shape,f_p,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,self.phantom,writer=self.writer,write_tensorboard=True)
     
             print("Metrics saved in tensorboard")
             self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[i-1], i)
