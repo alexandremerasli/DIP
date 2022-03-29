@@ -11,8 +11,6 @@ class iComparison(vReconstruction):
         print("__init__")
 
     def runComputation(self,config,fixed_config,hyperparameters_config,root):
-        print("hyperparameters_config",hyperparameters_config)
-
         if (fixed_config["method"] == 'ADMMLim'):
             self.beta = hyperparameters_config["alpha"]
             self.ADMMLim(fixed_config,hyperparameters_config)
@@ -29,7 +27,8 @@ class iComparison(vReconstruction):
             vox = ' -vox 4,4,4'
             vb = ' -vb 3'
             it = ' -it ' + str(self.max_iter) + ':28'
-            th = ' -th 0'
+            #it = ' -it ' + str(self.max_iter) + ':1'
+            th = ' -th ' + str(self.nb_threads)
             proj = ' -proj incrementalSiddon'
             psf = ' -conv gaussian,4,1,3.5::psf'
 
@@ -96,7 +95,6 @@ class iComparison(vReconstruction):
     def ADMMLim(self,fixed_config,hyperparameters_config):
 
             # Variables from hyperparameters_config dictionnary
-            print("hyperparameters_config",hyperparameters_config)
             it = ' -it ' + str(hyperparameters_config["sub_iter_MAP"]) + ':1' # 1 subset
             penalty = ' -pnlt ' + fixed_config["penalty"]
             if fixed_config["penalty"] == "MRF":
@@ -114,26 +112,30 @@ class iComparison(vReconstruction):
             k_init = -1
             full_output_path_k_next = subroot_output_path + '/ADMM/' + format(i) + '_' + format(k_init+1)
 
-            # Initialize u^0 (u^-1 in CASToR)
-            copy(self.subroot_data + 'Data/initialization/0_sino_value.hdr', full_output_path_k_next + '_u.hdr')
-            self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'u',subroot_output_path,matrix_type='sino')
-
-            # Define command line to run ADMM with CASToR, to compute v^0
             castor_command_line_x = self.castor_admm_command_line(self.subroot_data, 'ADMMLim', self.PETImage_shape_str, self.alpha, self.rho, self.phantom, self.replicate, True, penalty)
-            initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
             f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/1_im_value_cropped.hdr' # its value is not useful to compute v^0
+            
+            # Define command line to run ADMM with CASToR, to compute v^0
+            initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
             x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
             if (only_x):
                 x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped' + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
                 
-            # Compute one ADMM iteration (x, v, u) when only initializing x to compute v^0
+            # Compute one ADMM iteration (x, v, u) when only initializing x to compute v^0. x (i_0_it.img) and u (i_0_u.img) will be computed, but are useless
             if (only_x):
                 copy(self.subroot_data + 'Data/initialization/0_sino_value.hdr', subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(-1) + '_u.img')
             x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
+            
             print('vvvvvvvvvvv0000000000')
             self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k_init-1,self.phantom,only_x,subroot_output_path,self.subroot_data)
+            # Copy u^-1 coming from CASToR to v^0
+            copy(full_output_path_k_next + '_u.img', full_output_path_k_next + '_v.img')
             self.write_hdr(self.subroot_data,[i,k_init+1],'ADMM',self.phantom,'v',subroot_output_path,matrix_type='sino')
 
+            # Then initialize u^0 (u^-1 in CASToR)
+            copy(self.subroot_data + 'Data/initialization/0_sino_value.img', full_output_path_k_next + '_u.img')
+            self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'u',subroot_output_path,matrix_type='sino')
+            
             # Compute one ADMM iteration (x, v, u)
             print('xxxxxxxxxxxxxxxxxxxxx')
             for k in range(k_init+1,hyperparameters_config["nb_iter_second_admm"]):
@@ -158,6 +160,8 @@ class iComparison(vReconstruction):
                 else:
                     conv = ''
                 x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + conv # we need f-mu so that ADMM optimizer works, even if we will not use it...
+                print("k = ",k)
+                print(x_reconstruction_command_line)
                 self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k,self.phantom,only_x,subroot_output_path,self.subroot_data)
 
 

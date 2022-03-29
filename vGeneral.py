@@ -39,6 +39,7 @@ class vGeneral(abc.ABC):
         self.net = fixed_config["net"]
         self.method = fixed_config["method"]
         self.processing_unit = fixed_config["processing_unit"]
+        self.nb_threads = fixed_config["nb_threads"]
         self.max_iter = fixed_config["max_iter"] # Outer iterations
         self.experiment = fixed_config["experiment"] # Label of the experiment
         self.replicate = fixed_config["replicates"] # Label of the replicate
@@ -451,14 +452,14 @@ class vGeneral(abc.ABC):
         dim = ' -dim ' + PETImage_shape_str
         vox = ' -vox 4,4,4'
         vb = ' -vb 3'
-        th = ' -th 1' # set it to 1, as multithreading does not work for now with ADMMLim optimizer
+        th = ' -th ' + str(self.nb_threads) # set it to 1, as multithreading does not work for now with ADMMLim optimizer
         proj = ' -proj incrementalSiddon'
 
         psf = ' -conv gaussian,4,1,3.5::psf'
 
         # Command line for calculating the Likelihood
-        opti_like = ' -opti-fom'
-        #opti_like = ''
+        #opti_like = ' -opti-fom'
+        opti_like = ''
         
         if (method == 'nested' or method == 'ADMMLim'):
             if (rho == 0): # Special case where we do not want to penalize reconstruction (not taking into account network output)
