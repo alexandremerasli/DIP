@@ -36,7 +36,7 @@ class vDenoising(vGeneral):
             self.create_input(self.net,self.PETImage_shape,hyperparameters_config,self.subroot_data) # to be removed when CT will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
             # Loading DIP input (we do not have CT-map, so random image created in block 1)
             self.image_net_input = self.load_input(self.net,self.PETImage_shape,self.subroot_data) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
-            #image_atn = fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape))
+            #image_atn = fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type='<f')
             #write_image_tensorboard(writer,image_atn,"Attenuation map (FULL CONTRAST)",self.suffix,image_gt,0,full_contrast=True) # Attenuation map in tensorboard
             image_net_input_scale = self.rescale_imag(self.image_net_input,self.scaling_input)[0] # Rescale of network input
             # DIP input image, numpy --> torch
@@ -171,7 +171,7 @@ class vDenoising(vGeneral):
             input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
             PETImage_shape = (input_size_DD,input_size_DD) # if auto encoder based on Deep Decoder
 
-        im_input = self.fijii_np(file_path, shape=(PETImage_shape)) # Load input of the DNN (CT image)
+        im_input = self.fijii_np(file_path, shape=(PETImage_shape),type='<f') # Load input of the DNN (CT image)
         return im_input
 
 
@@ -249,7 +249,7 @@ class vDenoising(vGeneral):
         out, mu, logvar, z = model(image_net_input_torch)
 
         # Loading X_label from block1 to destandardize NN output
-        image_corrupt = self.fijii_np(subroot+'Block2/x_label/' + format(experiment)+'/'+ format(admm_it - 1) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
+        image_corrupt = self.fijii_np(subroot+'Block2/x_label/' + format(experiment)+'/'+ format(admm_it - 1) +'_x_label' + suffix + '.img',shape=(PETImage_shape),type='<f')
         image_corrupt_scale,param1_scale_im_corrupt,param2_scale_im_corrupt = self.rescale_imag(image_corrupt)
 
         # Reverse scaling like at the beginning and add it to list of samples

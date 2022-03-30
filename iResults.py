@@ -38,7 +38,7 @@ class iResults(vDenoising):
         self.writer = SummaryWriter()
         
         #Loading Ground Truth image to compute metrics
-        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape))
+        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
         
         # Metrics arrays
         self.PSNR_recon = np.zeros(self.total_nb_iter)
@@ -159,12 +159,12 @@ class iResults(vDenoising):
         my_file = Path(path_phantom_ROI)
         print(path_phantom_ROI)
         if (my_file.is_file()):
-            phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(PETImage_shape))
+            phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(PETImage_shape),type='<f')
         else:
-            phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape))
+            phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
 
               
-        bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape))
+        bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
         bkg_ROI_act = image_recon[bkg_ROI==1]
         IR_bkg_recon[i-1] += (np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)) / self.nb_replicates
         print("IR_bkg_recon",IR_bkg_recon)
@@ -177,9 +177,9 @@ class iResults(vDenoising):
         path_phantom_ROI = self.subroot_data+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[-1]) + '.raw'
         my_file = Path(path_phantom_ROI)
         if (my_file.is_file()):
-            phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(PETImage_shape))
+            phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(PETImage_shape),type='<f')
         else:
-            phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape))
+            phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
         image_gt_norm = self.norm_imag(image_gt*phantom_ROI)[0]
 
         # Print metrics
@@ -201,7 +201,7 @@ class iResults(vDenoising):
 
         # Contrast Recovery Coefficient calculation    
         # Mean activity in cold cylinder calculation (-c -40. -40. 0. 40. 4. 0.)
-        cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "cold_mask" + image[-1] + '.raw', shape=(PETImage_shape))
+        cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "cold_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
         cold_ROI_act = image_recon[cold_ROI==1]
         MA_cold_recon[i-1] = np.mean(cold_ROI_act)
         #IR_cold_recon[i-1] = np.std(cold_ROI_act) / MA_cold_recon[i-1]
@@ -210,7 +210,7 @@ class iResults(vDenoising):
 
         # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
         print(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw')
-        hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw', shape=(PETImage_shape))
+        hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
         hot_ROI_act = image_recon[hot_ROI==1]
         AR_hot_recon[i-1] = np.mean(hot_ROI_act) / 400.
         #IR_hot_recon[i-1] = np.std(hot_ROI_act) / np.mean(hot_ROI_act)
@@ -221,7 +221,7 @@ class iResults(vDenoising):
         #m0_bkg = (np.sum(coord_to_value_array(bkg_ROI,image_recon*phantom_ROI)) - np.sum([coord_to_value_array(cold_ROI,image_recon*phantom_ROI),coord_to_value_array(hot_ROI,image_recon*phantom_ROI)])) / (len(bkg_ROI) - (len(cold_ROI) + len(hot_ROI)))
         #AR_bkg_recon[i-1] = m0_bkg / 100.
         #         
-        bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape))
+        bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
         bkg_ROI_act = image_recon[bkg_ROI==1]
         AR_bkg_recon[i-1] = np.mean(bkg_ROI_act) / 100.
         #IR_bkg_recon[i-1] = np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)

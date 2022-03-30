@@ -27,7 +27,7 @@ class iResultsReplicates(iResults):
         self.writer = SummaryWriter()
         
         #Loading Ground Truth image to compute metrics
-        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape))
+        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
         
         # Metrics arrays
         self.total_nb_iter = len(self.beta_list)
