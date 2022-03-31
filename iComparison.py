@@ -104,13 +104,13 @@ class iComparison(vReconstruction):
 
             # Path variables
             subroot_output_path = (self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix)
-            subdir = 'ADMM'
+            subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
             Path(self.subroot+'Comparison/' + fixed_config["method"] + '/').mkdir(parents=True, exist_ok=True) # CASTor path
-            Path(self.subroot+'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/ADMM').mkdir(parents=True, exist_ok=True) # CASToR path
+            Path(self.subroot+'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
 
             i = 0
             k_init = -1
-            full_output_path_k_next = subroot_output_path + '/ADMM/' + format(i) + '_' + format(k_init+1)
+            full_output_path_k_next = subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k_init+1)
 
             castor_command_line_x = self.castor_admm_command_line(self.subroot_data, 'ADMMLim', self.PETImage_shape_str, self.alpha, self.rho, self.phantom, self.replicate, True, penalty)
             f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/1_im_value_cropped.hdr' # its value is not useful to compute v^0
@@ -126,16 +126,32 @@ class iComparison(vReconstruction):
                 copy(self.subroot_data + 'Data/initialization/0_sino_value.hdr', subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(-1) + '_u.img')
             x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
             
+            #'''
             print('vvvvvvvvvvv0000000000')
             self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k_init-1,self.phantom,only_x,subroot_output_path,self.subroot_data)
             # Copy u^-1 coming from CASToR to v^0
             copy(full_output_path_k_next + '_u.img', full_output_path_k_next + '_v.img')
-            self.write_hdr(self.subroot_data,[i,k_init+1],'ADMM',self.phantom,'v',subroot_output_path,matrix_type='sino')
+            self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'v',subroot_output_path,matrix_type='sino')
 
             # Then initialize u^0 (u^-1 in CASToR)
             copy(self.subroot_data + 'Data/initialization/0_sino_value.img', full_output_path_k_next + '_u.img')
             self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'u',subroot_output_path,matrix_type='sino')
-            
+            #'''
+            '''
+            # Initialize to previously computed v and u
+            # Copy u^-1 coming from CASToR to v^0
+            copy(self.subroot_data + '0_0_v.img', full_output_path_k_next + '_v.img')
+            self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'v',subroot_output_path,matrix_type='sino')
+
+            # Then initialize u^0 (u^-1 in CASToR)
+            copy(self.subroot_data + '0_0_u.img', full_output_path_k_next + '_u.img')
+            self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'u',subroot_output_path,matrix_type='sino')
+            '''
+
+
+
+
+
             # Compute one ADMM iteration (x, v, u)
             print('xxxxxxxxxxxxxxxxxxxxx')
             for k in range(k_init+1,hyperparameters_config["nb_iter_second_admm"]):
@@ -160,6 +176,10 @@ class iComparison(vReconstruction):
                 else:
                     conv = ''
                 x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + conv # we need f-mu so that ADMM optimizer works, even if we will not use it...
+
+
+                x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + ' -additional-data /home/meraslia/sgld/hernan_folder/data/Algo/0_8_u.hdr -additional-data /home/meraslia/sgld/hernan_folder/data/Algo/0_8_v.hdr -multimodal /home/meraslia/sgld/hernan_folder/data/Algo/Data/initialization/1_im_value_cropped.hdr'# -img /home/meraslia/sgld/hernan_folder/data/Algo/0_8_it10.hdr'
+
                 print("k = ",k)
                 print(x_reconstruction_command_line)
                 self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k,self.phantom,only_x,subroot_output_path,self.subroot_data)
@@ -170,7 +190,7 @@ class iComparison(vReconstruction):
 
         if (fixed_config["method"] == 'ADMMLim'):
             i = 0
-            subdir = 'ADMM'
+            subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
             input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(hyperparameters_config["sub_iter_MAP"])
         else:
             input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' + fixed_config["method"] + '_beta_' + str(self.beta) + '_it' + format(it)

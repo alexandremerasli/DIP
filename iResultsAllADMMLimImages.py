@@ -138,7 +138,8 @@ class iResults(vDenoising):
                         if (config["method"] == 'ADMMLim'):
                             #f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                             # also change total_nb_iter
-                            f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(j) + '_it' + str(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                            subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
+                            f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' + subdir + '/0_' + format(j) + '_it' + str(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         else:
                             f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                             print(np.min(f_p))
