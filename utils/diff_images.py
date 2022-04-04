@@ -25,25 +25,39 @@ img1_np = fijii_np(args.img1, shape=(PETImage_shape))
 img2_np = fijii_np(args.img2, shape=(PETImage_shape))
 
 plt.figure()
-plt.imshow(np.abs(img1_np - img2_np), cmap='gray_r')
+#plt.imshow(np.abs(img1_np - img2_np), cmap='gray_r')
 plt.imshow(img1_np - img2_np, cmap='gray_r')
 plt.title('absolute difference between img1 and img2')
 plt.colorbar()
 plt.savefig(root+'diff_img.png')
+
+plt.figure()
+plt.imshow(img1_np / img2_np, cmap='gray_r')
+
+'''
+for i in range(img1_np.shape[0]):
+    for j in range(img1_np.shape[1]):
+        if (np.abs(img1_np[i,j] / img2_np[i,j] > 100)):
+            print("img1_np = ",img1_np[i,j])
+            print("img2_np = ",img2_np[i,j])
+'''
+plt.title('relative difference between img1 and img2')
+plt.colorbar()
+plt.savefig(root+'relative_diff_img.png')
 
 MSE_normed = np.linalg.norm(img1_np - img2_np) / (PETImage_shape[0]*PETImage_shape[1])
 print("MSE : ",MSE_normed)
 print("Numerical error below threshold : ",MSE_normed < 1e-5)
 
 plt.figure()
-plt.imshow(np.abs(img1_np), cmap='gray_r')
+#plt.imshow(np.abs(img1_np), cmap='gray_r')
 plt.imshow(img1_np, cmap='gray_r')
 plt.title('img1')
 plt.colorbar()
 plt.savefig(root+'img1.png')
 
 plt.figure()
-plt.imshow(np.abs(img2_np), cmap='gray_r')
+#plt.imshow(np.abs(img2_np), cmap='gray_r')
 plt.imshow(img2_np, cmap='gray_r')
 plt.title('img2')
 plt.colorbar()

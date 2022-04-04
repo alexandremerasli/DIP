@@ -43,6 +43,7 @@ class vGeneral(abc.ABC):
         self.max_iter = fixed_config["max_iter"] # Outer iterations
         self.experiment = fixed_config["experiment"] # Label of the experiment
         self.replicate = fixed_config["replicates"] # Label of the replicate
+        self.nb_threads = fixed_config["nb_threads"]
 
         # Initialize useful variables
         self.subroot = root + '/data/Algo/' + 'replicate_' + str(self.replicate) + '/' # Directory root
@@ -67,7 +68,7 @@ class vGeneral(abc.ABC):
 
         Path(self.subroot+'Images/out_final/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the framework (Last output of the DIP)
 
-        Path(self.subroot+'Comparison/' + self.method + '/' + self.suffix).mkdir(parents=True, exist_ok=True) # CASToR path
+        Path(self.subroot+'Comparison/' + self.method + '_' + str(self.nb_threads)  + '/' + self.suffix).mkdir(parents=True, exist_ok=True) # CASToR path
 
         Path(self.subroot+'Block2/checkpoint/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
         Path(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
@@ -483,5 +484,6 @@ class vGeneral(abc.ABC):
             pnlt = ' -pnlt OPTITR'
             pnlt_beta = ' -pnlt-beta ' + str(rho)
 
+        pnlt = ''
         castor_command_line_x = executable + dim + vox + header_file + vb + th + proj + opti + opti_like + pnlt + pnlt_beta + psf
         return castor_command_line_x

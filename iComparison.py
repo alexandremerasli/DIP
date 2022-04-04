@@ -26,8 +26,8 @@ class iComparison(vReconstruction):
             dim = ' -dim ' + self.PETImage_shape_str
             vox = ' -vox 4,4,4'
             vb = ' -vb 3'
-            it = ' -it ' + str(self.max_iter) + ':28'
-            #it = ' -it ' + str(self.max_iter) + ':1'
+            #it = ' -it ' + str(self.max_iter) + ':28' # 28 subsets
+            it = ' -it ' + str(self.max_iter) + ':1' # 1 subset
             th = ' -th ' + str(self.nb_threads)
             proj = ' -proj incrementalSiddon'
             psf = ' -conv gaussian,4,1,3.5::psf'
@@ -56,7 +56,7 @@ class iComparison(vReconstruction):
                 penalty = ' -pnlt ' + fixed_config["penalty"] + ':' + self.subroot_data + fixed_config["method"] + '_MRF.conf'
                 penaltyStrength = ' -pnlt-beta ' + str(self.beta)
 
-            output_path = ' -fout ' + self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' + fixed_config["method"] + '_beta_' + str(self.beta) # Output path for CASTOR framework
+            output_path = ' -fout ' + self.subroot + 'Comparison/' + fixed_config["method"] + '_' + str(fixed_config["nb_threads"]) + '/' + self.suffix + '/' + fixed_config["method"] + '_beta_' + str(self.beta) # Output path for CASTOR framework
             initialimage = ' -img ' + self.subroot_data+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr'
             initialimage = ''
 
@@ -99,7 +99,6 @@ class iComparison(vReconstruction):
             penalty = ' -pnlt ' + fixed_config["penalty"]
             if fixed_config["penalty"] == "MRF":
                 penalty += ':' + self.subroot_data + fixed_config["method"] + '_MRF.conf'
-
             only_x = False # Freezing u and v computation, just updating x if True
 
             # Path variables
@@ -128,6 +127,7 @@ class iComparison(vReconstruction):
             
             #'''
             print('vvvvvvvvvvv0000000000')
+            print(x_reconstruction_command_line)
             self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k_init-1,self.phantom,only_x,subroot_output_path,self.subroot_data)
             # Copy u^-1 coming from CASToR to v^0
             copy(full_output_path_k_next + '_u.img', full_output_path_k_next + '_v.img')
@@ -177,7 +177,7 @@ class iComparison(vReconstruction):
                     conv = ''
                 x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + conv # we need f-mu so that ADMM optimizer works, even if we will not use it...
 
-
+                penalty = ''
                 x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + ' -additional-data /home/meraslia/sgld/hernan_folder/data/Algo/0_8_u.hdr -additional-data /home/meraslia/sgld/hernan_folder/data/Algo/0_8_v.hdr -multimodal /home/meraslia/sgld/hernan_folder/data/Algo/Data/initialization/1_im_value_cropped.hdr'# -img /home/meraslia/sgld/hernan_folder/data/Algo/0_8_it10.hdr'
 
                 print("k = ",k)
