@@ -75,8 +75,6 @@ class vReconstruction(vGeneral):
         
         # Initialization
         if (method == 'nested'):
-            only_x = False # Freezing u and v computation, just updating x if True
-
             # x^0
             copy(self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.img', path_during_eq_22 + format(i) + '_-1_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.img')
             self.write_hdr(self.subroot_data,[i,-1],'during_eq22',phantom,'x',subroot_output_path)
@@ -89,9 +87,6 @@ class vReconstruction(vGeneral):
             # Compute v^0 (v^-1 in CASToR) with ADMM_spec_init_v optimizer and save in .hdr format - block 1
             if (i == 0):   # choose initial image for CASToR reconstruction
                 x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
-                #v^0 is BSREM if we only look at x optimization
-                if (only_x):
-                    x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
                 #x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
             elif (i >= 1):
                 x_for_init_v = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
@@ -110,7 +105,7 @@ class vReconstruction(vGeneral):
             x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty #+ u_for_additional_data + v_for_additional_data # we need f-mu so that ADMM optimizer works, even if we will not use it...
             # Compute one ADMM iteration (x, v, u). When only initializing x, u computation is only the forward model Ax, thus exactly what we want to initialize v
             print('vvvvvvvvvvv0000000000')
-            self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,phantom,only_x,subroot_output_path,subroot)
+            self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,phantom,subroot_output_path,subroot)
             copy(path_during_eq_22 + base_name_k_next + '_u.img', path_during_eq_22 + format(i) + '_-1_v.img')
             self.write_hdr(subroot,[i,-1],'during_eq22',phantom,'v',subroot_output_path,matrix_type='sino')
                 
@@ -135,9 +130,6 @@ class vReconstruction(vGeneral):
                         # Trying to initialize ADMMLim
                         #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
                         initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
-                        if (only_x):
-                            initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' + format(i-1) + '_' + format(nb_iter_second_admm) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
-
                 else:
                     initialimage = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' + format(i) + '_' + format(k) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
 
@@ -154,7 +146,7 @@ class vReconstruction(vGeneral):
                 # Compute one ADMM iteration (x, v, u)
                 x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage    
                 print('xxxxxxxxxuuuuuuuuuuuvvvvvvvvv')
-                self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,phantom,only_x,subroot_output_path,subroot)
+                self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,phantom,subroot_output_path,subroot)
 
                 x = self.fijii_np(full_output_path_k_next + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.img', shape=(PETImage_shape[0],PETImage_shape[1]))
                 if (k>=-1):
@@ -213,16 +205,9 @@ class vReconstruction(vGeneral):
 
         return x_label
 
-    def compute_x_v_u_ADMM(self,x_reconstruction_command_line,full_output_path,subdir,i,k,phantom,only_x,subroot_output_path,subroot):
+    def compute_x_v_u_ADMM(self,x_reconstruction_command_line,full_output_path,subdir,i,k,phantom,subroot_output_path,subroot):
         # Compute x,u,v
         os.system(x_reconstruction_command_line)
-        # Write x hdr file
-        #self.write_hdr(subroot,[i,k+1],subdir,phantom,'it_'+str(self.sub_iter_MAP),subroot_output_path=subroot_output_path)
-        # Write v hdr file and change v file if only x computation is needed
-        if (only_x):
-            copy(subroot_output_path + subdir + format(i) + '_' + format(-1) + '_v.img',full_output_path + '_v.img')
+        # Write v and u hdr files
         self.write_hdr(subroot,[i,k+1],subdir,phantom,'v',subroot_output_path=subroot_output_path,matrix_type='sino')
-        # Write u hdr file and change u file if only x computation is needed
-        if (only_x):
-            copy(subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(-1) + '_u.img',full_output_path + '_u.img')
         self.write_hdr(subroot,[i,k+1],subdir,phantom,'u',subroot_output_path=subroot_output_path,matrix_type='sino')

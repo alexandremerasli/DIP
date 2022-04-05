@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 import sys
 
 import abc
+
+from torch import fix
 class vGeneral(abc.ABC):
     @abc.abstractmethod
     def __init__(self,config):
@@ -44,6 +46,8 @@ class vGeneral(abc.ABC):
         self.experiment = fixed_config["experiment"] # Label of the experiment
         self.replicate = fixed_config["replicates"] # Label of the replicate
         self.nb_threads = fixed_config["nb_threads"]
+        self.post_smoothing = fixed_config["post_smoothing"]
+        self.penalty = fixed_config["penalty"]
 
         # Initialize useful variables
         self.subroot = root + '/data/Algo/' + 'replicate_' + str(self.replicate) + '/' # Directory root
@@ -67,8 +71,6 @@ class vGeneral(abc.ABC):
         Path(self.subroot+'Block1/' + self.suffix + '/out_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
 
         Path(self.subroot+'Images/out_final/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the framework (Last output of the DIP)
-
-        Path(self.subroot+'Comparison/' + self.method + '_' + str(self.nb_threads)  + '/' + self.suffix).mkdir(parents=True, exist_ok=True) # CASToR path
 
         Path(self.subroot+'Block2/checkpoint/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
         Path(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
@@ -432,58 +434,67 @@ class vGeneral(abc.ABC):
         # Adding this figure to tensorboard
         writer.add_figure(name,plt.gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
 
-    def castor_command_line_func(self,method,phantom,replicate,PETImage_shape_str,rho,alpha,i,k=0):
-        if (method == 'nested'):
+    def castor_common_command_line(self, subroot, PETImage_shape_str, phantom, replicates, post_smoothing):
+        executable = 'castor-recon'
+        header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[-1] + '_' + str(replicates) + '/data' + phantom[-1] + '_' + str(replicates) + '.cdh' # PET data path
+        dim = ' -dim ' + PETImage_shape_str
+        vox = ' -vox 4,4,4'
+        vb = ' -vb 3'
+        th = ' -th ' + str(self.nb_threads) # must be set to 1 for ADMMLim, as multithreading does not work for now with ADMMLim optimizer
+        proj = ' -proj incrementalSiddon'
+        psf = ' -conv gaussian,4,1,3.5::psf'
+        if (post_smoothing):
+            conv = ' -conv gaussian,8,1,3.5::post'
+        else:
+            conv = ''
+        # Computing likelihood
+        #opti_like = ' -opti-fom'
+        opti_like = ''
+
+        return executable + dim + vox + header_file + vb + th + proj + opti_like + psf + conv
+
+    def castor_opti_and_penalty(self, method, penalty, rho, i=None ,k=None):
+        if (method == 'MLEM'):
+            opti = ' -opti ' + method
+            pnlt = ''
+            penaltyStrength = ''
+        elif (method == 'AML'):
+            opti = ' -opti ' + method + ',1,1e-10,' + str(self.A_AML)
+            pnlt = ''
+            penaltyStrength = ''
+        elif (method == 'BSREM'):
+            opti = ' -opti ' + method + ':' + self.subroot_data + 'BSREM.conf'
+            pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
+            penaltyStrength = ' -pnlt-beta ' + str(self.beta)
+        elif (method == 'nested'):
+            opti = ' -opti ADMMLim' + ',' + str(self.alpha)
+            pnlt = ' -pnlt DIP_ADMM'
             if (i==0): # For first iteration, put rho to zero
                 if (k!=-1): # For first iteration, do not put both rho and alpha to zero
                     rho = 0
             if (k==-1): # For first iteration, put alpha to zero (small value to be accepted by CASToR)
                 alpha = 0
-
-        castor_command_line = self.castor_admm_command_line(self.subroot_data, method, PETImage_shape_str, alpha, rho, phantom, replicate)
-
-        return castor_command_line
-
-    def castor_admm_command_line(self, subroot, method, PETImage_shape_str, alpha, rho, phantom, replicates, only_Lim=False, pnlt=''):
-        
-        # castor-recon command line
-        header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[-1] + '_' + str(replicates) + '/data' + phantom[-1] + '_' + str(replicates) + '.cdh' # PET data path
-
-        executable = 'castor-recon'
-        dim = ' -dim ' + PETImage_shape_str
-        vox = ' -vox 4,4,4'
-        vb = ' -vb 3'
-        th = ' -th ' + str(self.nb_threads) # set it to 1, as multithreading does not work for now with ADMMLim optimizer
-        proj = ' -proj incrementalSiddon'
-
-        psf = ' -conv gaussian,4,1,3.5::psf'
-
-        # Command line for calculating the Likelihood
-        #opti_like = ' -opti-fom'
-        opti_like = ''
-        
-        if (method == 'nested' or method == 'ADMMLim'):
             if (rho == 0): # Special case where we do not want to penalize reconstruction (not taking into account network output)
                 # Seg fault in CASToR...
-                pnlt = ''
-                pnlt_beta = ''
                 # Not clean, but works to put rho == 0 in CASToR
-                if (~only_Lim): # DIP + ADMM reconstruction, so choose DIP_ADMM penalty from CASToR
-                    pnlt = ' -pnlt DIP_ADMM'
-                pnlt_beta = ' -pnlt-beta ' + str(rho)
+                penaltyStrength = ' -pnlt-beta ' + str(rho)
             else:      
-                if (~only_Lim): # DIP + ADMM reconstruction, so choose DIP_ADMM penalty from CASToR
-                    pnlt = ' -pnlt DIP_ADMM'
-                pnlt_beta = ' -pnlt-beta ' + str(rho)
+                penaltyStrength = ' -pnlt-beta ' + str(rho)
             if (alpha == 0): # Special case where we only want to fit network output (when v has not been initialized with data)
                 alpha = 1E-10 # Do not put 0, otherwise CASToR will not work
-            opti = ' -opti ADMMLim' + ',' + str(alpha)
-        
+            
+        elif (method == 'ADMMLim'):
+            opti = ' -opti ADMMLim' + ',' + str(self.alpha)
+            pnlt = ' -pnlt ' + penalty
+            if penalty == "MRF":
+                pnlt += ':' + self.subroot_data + method + '_MRF.conf'
+
+            penaltyStrength = ' -pnlt-beta ' + str(rho)
+            pnlt = '' # Testing ADMMLim without penalty for now
+
         elif (method == 'Gong'):
             opti = ' -opti OPTITR'
             pnlt = ' -pnlt OPTITR'
-            pnlt_beta = ' -pnlt-beta ' + str(rho)
+            penaltyStrength = ' -pnlt-beta ' + str(rho)
 
-        pnlt = ''
-        castor_command_line_x = executable + dim + vox + header_file + vb + th + proj + opti + opti_like + pnlt + pnlt_beta + psf
-        return castor_command_line_x
+        return opti + pnlt + penaltyStrength

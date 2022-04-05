@@ -25,7 +25,6 @@ class iResults(vDenoising):
         vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
         
         if (fixed_config["method"] == 'ADMMLim'):
-            self.total_nb_iter = hyperparameters_config["nb_iter_second_admm"]
             self.total_nb_iter = hyperparameters_config["sub_iter_MAP"]
             self.beta = hyperparameters_config["alpha"]
         else:

@@ -11,64 +11,32 @@ class iComparison(vReconstruction):
         print("__init__")
 
     def runComputation(self,config,fixed_config,hyperparameters_config,root):
-        if (fixed_config["method"] == 'ADMMLim'):
+
+        if (fixed_config["method"] == 'AML'):
+            self.beta = hyperparameters_config["A_AML"]
+            self.A_AML = hyperparameters_config["A_AML"]
+        elif (fixed_config["method"] == 'ADMMLim' or fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
             self.beta = hyperparameters_config["alpha"]
+        elif (fixed_config["method"] == 'BSREM'):
+            self.beta = self.rho
+        # castor-recon command line
+        castor_command_line = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho)
+        
+        if (fixed_config["method"] == 'ADMMLim'):
             self.ADMMLim(fixed_config,hyperparameters_config)
         else:
-            if (fixed_config["method"] == 'AML'):
-                self.beta = hyperparameters_config["A_AML"]
-            else:                
-                self.beta = self.rho
-            # castor-recon command line
-            header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[-1] + '_' + str(fixed_config["replicates"]) + '/data' + self.phantom[-1] + '_' + str(fixed_config["replicates"]) + '.cdh' # PET data path
+            it = ' -it ' + str(self.max_iter) + ':28' # 28 subsets
 
-            executable = 'castor-recon'
-            dim = ' -dim ' + self.PETImage_shape_str
-            vox = ' -vox 4,4,4'
-            vb = ' -vb 3'
-            #it = ' -it ' + str(self.max_iter) + ':28' # 28 subsets
-            it = ' -it ' + str(self.max_iter) + ':1' # 1 subset
-            th = ' -th ' + str(self.nb_threads)
-            proj = ' -proj incrementalSiddon'
-            psf = ' -conv gaussian,4,1,3.5::psf'
-
-            if (fixed_config["method"] == 'MLEM'):
-                opti = ' -opti ' + fixed_config["method"]
-                if (fixed_config["post_smoothing"]):
-                    conv = ' -conv gaussian,8,1,3.5::post'
-                else:
-                    conv = ''
-                penalty = ''
-                penaltyStrength = ''
-            elif (fixed_config["method"] == 'AML'):
-                #opti = ' -opti ' + fixed_config["method"] + ':' + self.subroot + 'Comparison/' + 'AML.conf'
-                opti = ' -opti ' + fixed_config["method"] + ',1,1e-10,' + str(hyperparameters_config["A_AML"])
-                conv = ' -conv gaussian,8,1,3.5::post'
-                #conv = ''
-                penalty = ''
-                penaltyStrength = ''
-            else:
-                opti = ' -opti ' + fixed_config["method"] + ':' + self.subroot_data + 'BSREM.conf'
-                if (fixed_config["post_smoothing"]):
-                    conv = ' -conv gaussian,8,1,3.5::post'
-                else:
-                    conv = ''
-                penalty = ' -pnlt ' + fixed_config["penalty"] + ':' + self.subroot_data + fixed_config["method"] + '_MRF.conf'
-                penaltyStrength = ' -pnlt-beta ' + str(self.beta)
-
-            output_path = ' -fout ' + self.subroot + 'Comparison/' + fixed_config["method"] + '_' + str(fixed_config["nb_threads"]) + '/' + self.suffix + '/' + fixed_config["method"] + '_beta_' + str(self.beta) # Output path for CASTOR framework
-            initialimage = ' -img ' + self.subroot_data+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr'
+            output_path = ' -fout ' + self.subroot + 'Comparison/' + fixed_config["method"] + '_' + str(fixed_config["nb_threads"]) + '/' + self.suffix + '/' + fixed_config["method"] # Output path for CASTOR framework
+            if (fixed_config["method"] == 'AML' or fixed_config["method"] == 'BSREM'):
+                output_path += '_beta_' + str(self.beta)
             initialimage = ''
 
-            # Command line for calculating the Likelihood
-            opti_like = ' -opti-fom'
-            #opti_like = ''
-
-            print("CASToR command line :")
-            print("")
-            print(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv + psf)
-            print("")
-            os.system(executable + dim + vox + output_path + header_file + vb + it + th + proj + opti + opti_like + initialimage + penalty + penaltyStrength + conv + psf) # + ' -fov-out 95')
+            Path(self.subroot+'Comparison/' + self.method + '_' + str(self.nb_threads)  + '/' + self.suffix).mkdir(parents=True, exist_ok=True) # CASToR pat
+        
+            print("CASToR command line : ")
+            print(castor_command_line + it + output_path + initialimage)
+            os.system(castor_command_line + it + output_path + initialimage)
 
 
         # NNEPPS
@@ -80,7 +48,6 @@ class iComparison(vReconstruction):
         if (hyperparameters_config["NNEPPS"]):
             print("NNEPPS")        
             for it in range(1,max_it + 1):
-                print("iiiiiiiiiiiiiiiit", it)
                 self.NNEPPS_function(fixed_config,hyperparameters_config,it)
 
         # Initializing results class
@@ -93,13 +60,8 @@ class iComparison(vReconstruction):
         classResults.runComputation(config,fixed_config,hyperparameters_config,root)
 
     def ADMMLim(self,fixed_config,hyperparameters_config):
-
             # Variables from hyperparameters_config dictionnary
             it = ' -it ' + str(hyperparameters_config["sub_iter_MAP"]) + ':1' # 1 subset
-            penalty = ' -pnlt ' + fixed_config["penalty"]
-            if fixed_config["penalty"] == "MRF":
-                penalty += ':' + self.subroot_data + fixed_config["method"] + '_MRF.conf'
-            only_x = False # Freezing u and v computation, just updating x if True
 
             # Path variables
             subroot_output_path = (self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix)
@@ -111,24 +73,19 @@ class iComparison(vReconstruction):
             k_init = -1
             full_output_path_k_next = subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k_init+1)
 
-            castor_command_line_x = self.castor_admm_command_line(self.subroot_data, 'ADMMLim', self.PETImage_shape_str, self.alpha, self.rho, self.phantom, self.replicate, True, penalty)
+            castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho)
             f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/1_im_value_cropped.hdr' # its value is not useful to compute v^0
             
             # Define command line to run ADMM with CASToR, to compute v^0
             initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
             x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
-            if (only_x):
-                x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped' + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
-                
+            
             # Compute one ADMM iteration (x, v, u) when only initializing x to compute v^0. x (i_0_it.img) and u (i_0_u.img) will be computed, but are useless
-            if (only_x):
-                copy(self.subroot_data + 'Data/initialization/0_sino_value.hdr', subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(-1) + '_u.img')
             x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
             
-            #'''
             print('vvvvvvvvvvv0000000000')
             print(x_reconstruction_command_line)
-            self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k_init-1,self.phantom,only_x,subroot_output_path,self.subroot_data)
+            self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k_init-1,self.phantom,subroot_output_path,self.subroot_data)
             # Copy u^-1 coming from CASToR to v^0
             copy(full_output_path_k_next + '_u.img', full_output_path_k_next + '_v.img')
             self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'v',subroot_output_path,matrix_type='sino')
@@ -136,21 +93,6 @@ class iComparison(vReconstruction):
             # Then initialize u^0 (u^-1 in CASToR)
             copy(self.subroot_data + 'Data/initialization/0_sino_value.img', full_output_path_k_next + '_u.img')
             self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'u',subroot_output_path,matrix_type='sino')
-            #'''
-            '''
-            # Initialize to previously computed v and u
-            # Copy u^-1 coming from CASToR to v^0
-            copy(self.subroot_data + '0_0_v.img', full_output_path_k_next + '_v.img')
-            self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'v',subroot_output_path,matrix_type='sino')
-
-            # Then initialize u^0 (u^-1 in CASToR)
-            copy(self.subroot_data + '0_0_u.img', full_output_path_k_next + '_u.img')
-            self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'u',subroot_output_path,matrix_type='sino')
-            '''
-
-
-
-
 
             # Compute one ADMM iteration (x, v, u)
             print('xxxxxxxxxxxxxxxxxxxxx')
@@ -182,13 +124,13 @@ class iComparison(vReconstruction):
 
                 print("k = ",k)
                 print(x_reconstruction_command_line)
-                self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k,self.phantom,only_x,subroot_output_path,self.subroot_data)
+                self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k,self.phantom,subroot_output_path,self.subroot_data)
 
 
     def NNEPPS_function(self,fixed_config,hyperparameters_config,it):
         executable='removeNegativeValues.exe'
 
-        if (fixed_config["method"] == 'ADMMLim'):
+        if (fixed_config["method"] == 'ADMMLim' or fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
             i = 0
             subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
             input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(hyperparameters_config["sub_iter_MAP"])
