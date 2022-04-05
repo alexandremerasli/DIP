@@ -1,6 +1,7 @@
 ## Python libraries
 
 # Pytorch
+from torch import fix
 from torch.utils.tensorboard import SummaryWriter
 
 # Math
@@ -24,15 +25,20 @@ class iResults(vDenoising):
         self.initializeGeneralVariables(fixed_config,hyperparameters_config,root)
         vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
         
-        if (fixed_config["method"] == 'ADMMLim'):
+        print(fixed_config)
+        if (fixed_config["task"] == 'post_reco'):
+            self.total_nb_iter = hyperparameters_config["sub_iter_DIP"]
+            print("ooooooooooooooooooooooooo")
+        elif (fixed_config["method"] == 'ADMMLim'):
             self.total_nb_iter = hyperparameters_config["sub_iter_MAP"]
             self.beta = hyperparameters_config["alpha"]
         else:
             self.total_nb_iter = self.max_iter
+        
 
             if (fixed_config["method"] == 'AML'):
                 self.beta = hyperparameters_config["A_AML"]
-            else:                
+            elif (fixed_config["method"] == 'BSREM'):
                 self.beta = self.rho
         # Create summary writer from tensorboard
         self.writer = SummaryWriter()

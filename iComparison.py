@@ -15,7 +15,7 @@ class iComparison(vReconstruction):
         if (fixed_config["method"] == 'AML'):
             self.beta = hyperparameters_config["A_AML"]
             self.A_AML = hyperparameters_config["A_AML"]
-        elif (fixed_config["method"] == 'ADMMLim' or fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
+        elif (fixed_config["method"] == 'ADMMLim'):
             self.beta = hyperparameters_config["alpha"]
         elif (fixed_config["method"] == 'BSREM'):
             self.beta = self.rho
@@ -77,7 +77,6 @@ class iComparison(vReconstruction):
             f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/1_im_value_cropped.hdr' # its value is not useful to compute v^0
             
             # Define command line to run ADMM with CASToR, to compute v^0
-            initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
             x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
             
             # Compute one ADMM iteration (x, v, u) when only initializing x to compute v^0. x (i_0_it.img) and u (i_0_u.img) will be computed, but are useless
@@ -99,7 +98,7 @@ class iComparison(vReconstruction):
             for k in range(k_init+1,hyperparameters_config["nb_iter_second_admm"]):
                 # Initialize variables for command line
                 if (k == k_init+1):
-                    if (i == 0):   # choose initial self.phantom for CASToR reconstruction
+                    if (i == 0):   # choose initial image for CASToR reconstruction
                         initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
                 else:
                     initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
@@ -130,7 +129,7 @@ class iComparison(vReconstruction):
     def NNEPPS_function(self,fixed_config,hyperparameters_config,it):
         executable='removeNegativeValues.exe'
 
-        if (fixed_config["method"] == 'ADMMLim' or fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
+        if (fixed_config["method"] == 'ADMMLim'):
             i = 0
             subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
             input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(hyperparameters_config["sub_iter_MAP"])

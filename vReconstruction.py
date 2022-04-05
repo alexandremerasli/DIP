@@ -68,46 +68,42 @@ class vReconstruction(vGeneral):
         # Save image f-mu in .img and .hdr format - block 1
         subroot_output_path = (subroot + 'Block1/' + suffix)
         path_before_eq_22 = (subroot_output_path + '/before_eq22/')
-        path_during_eq_22 = (subroot_output_path + '/during_eq22/')
         self.save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
         self.write_hdr(self.subroot_data,[i],'before_eq22',phantom,'f_mu',subroot_output_path)
-        f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'
-        
-        # Initialization
-        if (method == 'nested'):
-            # x^0
-            copy(self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.img', path_during_eq_22 + format(i) + '_-1_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.img')
-            self.write_hdr(self.subroot_data,[i,-1],'during_eq22',phantom,'x',subroot_output_path)
+        f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'        
+        k_init = -1
+        subdir = 'during_eq22'
+        castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho)
 
-            # Compute u^0 (u^-1 in CASToR) and store it with zeros, and save in .hdr format - block 1            
-            u_0 = 0*np.ones((344,252)) # initialize u_0 to zeros
-            self.save_img(u_0,path_during_eq_22 + format(i) + '_-1_u.img')
-            self.write_hdr(subroot,[i,-1],'during_eq22',phantom,'u',subroot_output_path,matrix_type='sino')
-            
-            # Compute v^0 (v^-1 in CASToR) with ADMM_spec_init_v optimizer and save in .hdr format - block 1
+        # Initialization
+        if (method == 'nested'):            
+            # Useful variables for command line
+            base_name_k_next = format(i) + '_' + format(k_init+1)
+            full_output_path_k_next = subroot_output_path + '/during_eq22/' + base_name_k_next
+
+            # Define command line to run ADMM with CASToR, to compute v^0
             if (i == 0):   # choose initial image for CASToR reconstruction
                 x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
                 #x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
             elif (i >= 1):
                 x_for_init_v = ' -img ' + subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.hdr'
+                        
+            # Compute one ADMM iteration (x, v, u) when only initializing x to compute v^0. x (i_0_it.img) and u (i_0_u.img) will be computed, but are useless
+            x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
             
-            # Useful variables for command line
-            k=-3
-            base_name_k = format(i) + '_' + format(k)
-            base_name_k_next = format(i) + '_' + format(k+1)
-            full_output_path_k = subroot_output_path + '/during_eq22/' + base_name_k
-            full_output_path_k_next = subroot_output_path + '/during_eq22/' + base_name_k_next
-            v_for_additional_data = ' -additional-data ' + full_output_path_k + '_v.hdr'
-            u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
-
-            # Define command line to run ADMM with CASToR
-            castor_command_line_x = self.castor_command_line_func(method,phantom,replicate,PETImage_shape_str,rho,alpha,i,k)
-            x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty #+ u_for_additional_data + v_for_additional_data # we need f-mu so that ADMM optimizer works, even if we will not use it...
-            # Compute one ADMM iteration (x, v, u). When only initializing x, u computation is only the forward model Ax, thus exactly what we want to initialize v
             print('vvvvvvvvvvv0000000000')
-            self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,phantom,subroot_output_path,subroot)
-            copy(path_during_eq_22 + base_name_k_next + '_u.img', path_during_eq_22 + format(i) + '_-1_v.img')
-            self.write_hdr(subroot,[i,-1],'during_eq22',phantom,'v',subroot_output_path,matrix_type='sino')
+            print(x_reconstruction_command_line)
+            self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k_init-1,self.phantom,subroot_output_path,self.subroot_data)
+            # Copy u^-1 coming from CASToR to v^0
+            copy(full_output_path_k_next + '_u.img', full_output_path_k_next + '_v.img')
+            self.write_hdr(subroot,[i,k_init+1],'during_eq22',phantom,'v',subroot_output_path,matrix_type='sino')
+
+            # Then initialize u^0 (u^-1 in CASToR)
+            if (i == 0):   # choose initial image for CASToR reconstruction
+                copy(self.subroot_data + 'Data/initialization/0_sino_value.img', full_output_path_k_next + '_u.img')
+            elif (i >= 1):
+                copy(subroot + 'Block1/' + suffix + '/during_eq22/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_u.img', full_output_path_k_next + '_u.img')
+            self.write_hdr(subroot,[i,k_init+1],'during_eq22',phantom,'u',subroot_output_path,matrix_type='sino')
                 
         # Choose number of argmax iteration for (second) x computation
         if (mlem_sequence):
@@ -120,9 +116,9 @@ class vReconstruction(vGeneral):
         # Whole computation
         if (method == 'nested'):
             # Second ADMM computation
-            for k in range(-1,nb_iter_second_admm): # iteration -1 is to initialize v fitting data
+            for k in range(k_init+1,hyperparameters_config["nb_iter_second_admm"]):
                 # Initialize variables for command line
-                if (k == -1):
+                if (k == k_init+1):
                     if (i == 0):   # choose initial image for CASToR reconstruction
                         initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR MAP reconstruction with image_init or with CASToR default values
                     elif (i >= 1):
@@ -142,7 +138,6 @@ class vReconstruction(vGeneral):
                 u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
                 # Define command line to run ADMM with CASToR
-                castor_command_line_x = self.castor_command_line_func(method,phantom,replicate,PETImage_shape_str,rho,alpha,i,k)
                 # Compute one ADMM iteration (x, v, u)
                 x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage    
                 print('xxxxxxxxxuuuuuuuuuuuvvvvvvvvv')

@@ -121,6 +121,7 @@ class vGeneral(abc.ABC):
         tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
 
     def parametersIncompatibility(self,config,task):
+        config["task"] = {'grid_search': [task]}
         # Additional variables needing every values in config
         # Number of replicates 
         self.nb_replicates = config["replicates"]['grid_search'][-1]
@@ -154,7 +155,7 @@ class vGeneral(abc.ABC):
                 config.pop("sub_iter_MAP", None)
                 config.pop("nb_iter_second_admm", None)
                 config.pop("alpha", None)
-            if (config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong"):
+            if (config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong" and config["method"]['grid_search'][0] != "post_reco"):
                 config.pop("lr", None)
                 config.pop("sub_iter_DIP", None)
                 config.pop("opti_DIP", None)
@@ -186,6 +187,7 @@ class vGeneral(abc.ABC):
     def do_everything(self,config,root):
         # Retrieve fixed parameters and hyperparameters from config dictionnary
         fixed_config, hyperparameters_config = self.split_config(config)
+        fixed_config["task"] = config["task"]
         # Initialize variables
         self.initializeGeneralVariables(fixed_config,hyperparameters_config,root)
         self.initializeSpecific(fixed_config,hyperparameters_config,root)
@@ -480,8 +482,8 @@ class vGeneral(abc.ABC):
                 penaltyStrength = ' -pnlt-beta ' + str(rho)
             else:      
                 penaltyStrength = ' -pnlt-beta ' + str(rho)
-            if (alpha == 0): # Special case where we only want to fit network output (when v has not been initialized with data)
-                alpha = 1E-10 # Do not put 0, otherwise CASToR will not work
+            if (self.alpha == 0): # Special case where we only want to fit network output (when v has not been initialized with data)
+                self.alpha = 1E-10 # Do not put 0, otherwise CASToR will not work
             
         elif (method == 'ADMMLim'):
             opti = ' -opti ADMMLim' + ',' + str(self.alpha)

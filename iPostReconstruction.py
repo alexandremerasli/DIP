@@ -15,11 +15,12 @@ class iPostReconstruction(vDenoising):
         vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
         # Loading DIP x_label (corrupted image) from block1
         #self.image_corrupt = self.fijii_np(self.subroot+'im_corrupt_beginning.img',shape=(self.PETImage_shape))
-        self.image_corrupt = self.fijii_np(self.subroot+'im_corrupt_beginning_optitr.img',shape=(self.PETImage_shape))
+        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning.img',shape=(self.PETImage_shape))
         self.net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_post_reco_epoch=' + format(0) + self.suffix + '.img'
         self.checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         self.name_run = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        self.sub_iter_DIP = 1 # For first iteration, then everything is in for loop with max_iter variable
+        self.total_nb_iter = hyperparameters_config["sub_iter_DIP"]
+        self.sub_iter_DIP = 1 # For first iteration, then everything is in for loop with total_nb_iter variable
         '''
         ckpt_file_path = self.subroot+'Block2/checkpoint/'+format(self.experiment)  + '/' + suffix_func(hyperparameters_config) + '/' + '/last.ckpt'
         my_file = Path(ckpt_file_path)
@@ -43,12 +44,12 @@ class iPostReconstruction(vDenoising):
         #writer = model.logger.experiment # Assess to new variable, otherwise error : weakly-referenced object ...
      
         classResults.writeBeginningImages(self.image_net_input,self.suffix)
-        classResults.writeCorruptedImage(0,self.max_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
+        classResults.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
         
-        for epoch in range(0,self.max_iter,self.max_iter//10):      
+        for epoch in range(0,self.total_nb_iter,self.total_nb_iter//10):      
             if (epoch > 0):
                 # Train model using previously trained network (at iteration before)
-                model = self.train_process(self.suffix,hyperparameters_config, self.finetuning, self.processing_unit, self.max_iter//10, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot)
+                model = self.train_process(self.suffix,hyperparameters_config, self.finetuning, self.processing_unit, self.total_nb_iter//10, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot)
                 # Do finetuning now
                 self.admm_it = 1 # Set it to 1, to take last.ckpt file into account
                 self.finetuning = 'last' # Put finetuning back to 'last' as if we did not split network training
@@ -70,4 +71,4 @@ class iPostReconstruction(vDenoising):
                 self.save_img(out_descale, net_outputs_path)
 
             # Write images over epochs
-            classResults.writeEndImagesAndMetrics(epoch,self.max_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
+            classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")

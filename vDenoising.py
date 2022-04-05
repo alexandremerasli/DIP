@@ -159,7 +159,7 @@ class vDenoising(vGeneral):
         if self.input == "random":
             file_path = (subroot+'Data/initialization/random_input_' + net + '.img')
         elif self.input == "CT":
-            file_path = (subroot+'Data/database_v2/' + self.image + '/' + self.image + '_atn.raw') #CT map, but not CT yet, attenuation for now...
+            file_path = (subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw') #CT map, but not CT yet, attenuation for now...
         elif self.input == "BSREM":
             file_path = (subroot+'Data/initialization/BSREM_it30_REF_cropped.img') #
         elif self.input == "uniform":
