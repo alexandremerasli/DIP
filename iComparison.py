@@ -118,8 +118,7 @@ class iComparison(vReconstruction):
                     conv = ''
                 x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + conv # we need f-mu so that ADMM optimizer works, even if we will not use it...
 
-                penalty = ''
-                x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + ' -additional-data /home/meraslia/sgld/hernan_folder/data/Algo/0_8_u.hdr -additional-data /home/meraslia/sgld/hernan_folder/data/Algo/0_8_v.hdr -multimodal /home/meraslia/sgld/hernan_folder/data/Algo/Data/initialization/1_im_value_cropped.hdr'# -img /home/meraslia/sgld/hernan_folder/data/Algo/0_8_it10.hdr'
+                #x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + ' -additional-data /home/meraslia/sgld/hernan_folder/data/Algo/0_8_u.hdr -additional-data /home/meraslia/sgld/hernan_folder/data/Algo/0_8_v.hdr -multimodal /home/meraslia/sgld/hernan_folder/data/Algo/Data/initialization/1_im_value_cropped.hdr'# -img /home/meraslia/sgld/hernan_folder/data/Algo/0_8_it10.hdr'
 
                 print("k = ",k)
                 print(x_reconstruction_command_line)

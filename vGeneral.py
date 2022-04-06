@@ -471,20 +471,25 @@ class vGeneral(abc.ABC):
         elif (method == 'nested'):
             opti = ' -opti ADMMLim' + ',' + str(self.alpha)
             pnlt = ' -pnlt DIP_ADMM'
+            '''
             if (i==0): # For first iteration, put rho to zero
                 if (k!=-1): # For first iteration, do not put both rho and alpha to zero
                     rho = 0
             if (k==-1): # For first iteration, put alpha to zero (small value to be accepted by CASToR)
-                alpha = 0
+                self.alpha = 0
             if (rho == 0): # Special case where we do not want to penalize reconstruction (not taking into account network output)
                 # Seg fault in CASToR...
                 # Not clean, but works to put rho == 0 in CASToR
                 penaltyStrength = ' -pnlt-beta ' + str(rho)
             else:      
                 penaltyStrength = ' -pnlt-beta ' + str(rho)
+            
             if (self.alpha == 0): # Special case where we only want to fit network output (when v has not been initialized with data)
                 self.alpha = 1E-10 # Do not put 0, otherwise CASToR will not work
-            
+            '''
+            if (i==0): # For first iteration, put rho to zero
+                rho = 0
+            penaltyStrength = ' -pnlt-beta ' + str(rho)
         elif (method == 'ADMMLim'):
             opti = ' -opti ADMMLim' + ',' + str(self.alpha)
             pnlt = ' -pnlt ' + penalty
@@ -492,7 +497,7 @@ class vGeneral(abc.ABC):
                 pnlt += ':' + self.subroot_data + method + '_MRF.conf'
 
             penaltyStrength = ' -pnlt-beta ' + str(rho)
-            pnlt = '' # Testing ADMMLim without penalty for now
+            #pnlt = '' # Testing ADMMLim without penalty for now
 
         elif (method == 'Gong'):
             opti = ' -opti OPTITR'

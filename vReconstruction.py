@@ -73,7 +73,7 @@ class vReconstruction(vGeneral):
         f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'        
         k_init = -1
         subdir = 'during_eq22'
-        castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho)
+        castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i)
 
         # Initialization
         if (method == 'nested'):            
@@ -141,6 +141,7 @@ class vReconstruction(vGeneral):
                 # Compute one ADMM iteration (x, v, u)
                 x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage    
                 print('xxxxxxxxxuuuuuuuuuuuvvvvvvvvv')
+                print(x_reconstruction_command_line)
                 self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,phantom,subroot_output_path,subroot)
 
                 x = self.fijii_np(full_output_path_k_next + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.img', shape=(PETImage_shape[0],PETImage_shape[1]))
