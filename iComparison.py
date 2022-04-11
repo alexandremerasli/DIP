@@ -12,27 +12,27 @@ class iComparison(vReconstruction):
 
     def runComputation(self,config,fixed_config,hyperparameters_config,root):
 
-        if (fixed_config["method"] == 'AML'):
+        if (self.method == 'AML'):
             self.beta = hyperparameters_config["A_AML"]
             self.A_AML = hyperparameters_config["A_AML"]
-        elif (fixed_config["method"] == 'ADMMLim'):
+        elif (self.method == 'ADMMLim'):
             self.beta = hyperparameters_config["alpha"]
-        elif (fixed_config["method"] == 'BSREM'):
+        elif (self.method == 'BSREM'):
             self.beta = self.rho
         # castor-recon command line
         castor_command_line = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho)
         
-        if (fixed_config["method"] == 'ADMMLim'):
+        if (self.method == 'ADMMLim'):
             self.ADMMLim(fixed_config,hyperparameters_config)
         else:
-            it = ' -it ' + str(self.max_iter) + ':28' # 28 subsets
+            it = ' -it ' + str(self.max_iter) + ':' + str(fixed_config["nb_subsets"])
 
-            output_path = ' -fout ' + self.subroot + 'Comparison/' + fixed_config["method"] + '_' + str(fixed_config["nb_threads"]) + '/' + self.suffix + '/' + fixed_config["method"] # Output path for CASTOR framework
-            if (fixed_config["method"] == 'AML' or fixed_config["method"] == 'BSREM'):
-                output_path += '_beta_' + str(self.beta)
+            output_path = ' -fout ' + self.subroot + 'Comparison/' + self.method + '/' + self.suffix + '/' + self.method # Output path for CASTOR framework
+            #if (self.method == 'AML' or self.method == 'BSREM'):
+            #    output_path += '_beta_' + str(self.beta)
             initialimage = ''
 
-            Path(self.subroot+'Comparison/' + self.method + '_' + str(self.nb_threads)  + '/' + self.suffix).mkdir(parents=True, exist_ok=True) # CASToR pat
+            Path(self.subroot+'Comparison/' + self.method + '/' + self.suffix).mkdir(parents=True, exist_ok=True) # CASToR pat
         
             print("CASToR command line : ")
             print(castor_command_line + it + output_path + initialimage)
@@ -40,7 +40,7 @@ class iComparison(vReconstruction):
 
 
         # NNEPPS
-        if (fixed_config["method"] == 'ADMMLim'):
+        if (self.method == 'ADMMLim'):
             max_it = hyperparameters_config["nb_iter_second_admm"]
         else:
             max_it = fixed_config["max_iter"]
@@ -54,6 +54,7 @@ class iComparison(vReconstruction):
         from iResults import iResults
         classResults = iResults(config)
         classResults.nb_replicates = self.nb_replicates
+        classResults.debug = self.debug
         classResults.rho = self.rho
         classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
         
@@ -64,10 +65,10 @@ class iComparison(vReconstruction):
             it = ' -it ' + str(hyperparameters_config["sub_iter_MAP"]) + ':1' # 1 subset
 
             # Path variables
-            subroot_output_path = (self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix)
+            subroot_output_path = (self.subroot + 'Comparison/' + self.method + '/' + self.suffix)
             subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
-            Path(self.subroot+'Comparison/' + fixed_config["method"] + '/').mkdir(parents=True, exist_ok=True) # CASTor path
-            Path(self.subroot+'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
+            Path(self.subroot+'Comparison/' + self.method + '/').mkdir(parents=True, exist_ok=True) # CASTor path
+            Path(self.subroot+'Comparison/' + self.method + '/' + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
 
             i = 0
             k_init = -1
@@ -128,12 +129,12 @@ class iComparison(vReconstruction):
     def NNEPPS_function(self,fixed_config,hyperparameters_config,it):
         executable='removeNegativeValues.exe'
 
-        if (fixed_config["method"] == 'ADMMLim'):
+        if (self.method == 'ADMMLim'):
             i = 0
             subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
-            input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(hyperparameters_config["sub_iter_MAP"])
+            input_without_extension = self.subroot + 'Comparison/' + self.method + '/' + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(hyperparameters_config["sub_iter_MAP"])
         else:
-            input_without_extension = self.subroot + 'Comparison/' + fixed_config["method"] + '/' + self.suffix + '/' + fixed_config["method"] + '_beta_' + str(self.beta) + '_it' + format(it)
+            input_without_extension = self.subroot + 'Comparison/' + self.method + '/' + self.suffix + '/' + self.method + '_beta_' + str(self.beta) + '_it' + format(it)
         
         input = ' -i ' + input_without_extension + '.img'
         output = ' -o ' + input_without_extension + '_NNEPPS' # Without extension !
@@ -144,8 +145,7 @@ class iComparison(vReconstruction):
 
         dimX=' -dimX ' + str(self.PETImage_shape[0])
         dimY=' -dimY ' + str(self.PETImage_shape[1])
-        #dimZ=' -dimZ ' + str(self.PETImage_shape[2])
-        dimZ=' -dimZ ' + "1"
+        dimZ=' -dimZ ' + str(self.PETImage_shape[2])
 
         minX=''
         minY=''
@@ -158,6 +158,7 @@ class iComparison(vReconstruction):
         # The two following variables are the full size of the input image. They are important for a correct reading of the data. If unset, they are assumed to be equal to the previous max value.
         inputSizeX=' -inputSizeX ' + str(self.PETImage_shape[0])
         inputSizeY=' -inputSizeY ' + str(self.PETImage_shape[1])
+        inputSizeZ=' -inputSizeZ ' + str(self.PETImage_shape[2])
 
         nbThreads='' #'-th 8' Don't use this option if you want to use all threads
 

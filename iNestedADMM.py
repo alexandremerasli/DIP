@@ -22,6 +22,7 @@ class iNestedADMM(vReconstruction):
         classResults = iResults(config)
         classResults.nb_replicates = self.nb_replicates
         classResults.rho = self.rho
+        classResults.debug = self.debug
         classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
         
         for i in range(self.max_iter):
@@ -34,10 +35,11 @@ class iNestedADMM(vReconstruction):
             # Write corrupted image over ADMM iterations
             classResults.writeCorruptedImage(i,hyperparameters_config["sub_iter_MAP"],self.x_label,self.suffix,pet_algo="nested ADMM")
 
-            # Block 2 - CNN
+            # Block 2 - CNN         
             start_time_block2= time.time()            
             classDenoising = iDenoisingInReconstruction(hyperparameters_config,i)
             classDenoising.hyperparameters_list = self.hyperparameters_list
+            classDenoising.debug = self.debug
             classDenoising.do_everything(config,root)
             print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
             self.f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + self.suffix + '.img',shape=(self.PETImage_shape)) # loading DIP output

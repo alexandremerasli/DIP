@@ -23,6 +23,7 @@ class iDenoisingInReconstruction(vDenoising):
         print("Denoising in reconstruction")
         vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
         # Loading DIP x_label (corrupted image) from block1
+        print(self.subroot+'Block2/x_label/' + format(self.experiment)+'/'+ format(self.admm_it) +'_x_label' + self.suffix + '.img')
         self.image_corrupt = self.fijii_np(self.subroot+'Block2/x_label/' + format(self.experiment)+'/'+ format(self.admm_it) +'_x_label' + self.suffix + '.img',shape=(self.PETImage_shape))
         self.net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + '' + format(self.admm_it) + self.suffix + '.img'
         self.checkpoint_simple_path = self.subroot+'Block2/checkpoint/'

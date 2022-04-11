@@ -50,7 +50,7 @@ class vGeneral(abc.ABC):
         self.penalty = fixed_config["penalty"]
 
         # Initialize useful variables
-        self.subroot = root + '/data/Algo/' + 'replicate_' + str(self.replicate) + '/' # Directory root
+        self.subroot = root + '/data/Algo/' + 'debug/'*self.debug + 'replicate_' + str(self.replicate) + '/' # Directory root
         self.subroot_data = root + '/data/Algo/' # Directory root
         self.suffix = self.suffix_func(hyperparameters_config) # self.suffix to make difference between raytune runs (different hyperparameters)
         self.suffix_metrics = self.suffix_func(hyperparameters_config,NNEPPS=True) # self.suffix with NNEPPS information
@@ -87,14 +87,19 @@ class vGeneral(abc.ABC):
         Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
                 
         Path(self.subroot_data+'metrics/' + self.method + '/' + self.suffix_metrics).mkdir(parents=True, exist_ok=True) # CASToR path
+        Path(self.subroot_data + 'debug/' +'metrics/' + self.method + '/' + self.suffix_metrics).mkdir(parents=True, exist_ok=True) # CASToR path
 
     def runRayTune(self,config,root,task):
         # Check parameters incompatibility
         self.parametersIncompatibility(config,task)
+        # Remove debug key from config
+        self.debug = config["debug"]
+        config.pop("debug",None)
 
         # Launch raytune
         config_combination = 1
         for i in range(len(config)): # List of hyperparameters keys is still in config dictionary
+            config_combination *= len(list(list(config.values())[i].values())[0])
             config_combination *= len(list(list(config.values())[i].values())[0])
 
         self.processing_unit = config["processing_unit"]
@@ -117,8 +122,21 @@ class vGeneral(abc.ABC):
         #except: # do not resume previous run because there is no previous one
         #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(hyperparameters_config) + "_max_iter=" + str(config["max_iter"], resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
 
+        if (self.debug):
+            # Remove grid search if debug mode and choose first element of each config key. The result does not matter, just if the code runs.
+            for key, value in config.items():
+                if key != "hyperparameters":
+                    config[key] = value["grid_search"][0]
 
-        tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
+            # Set every iteration values to 1 to be quicker
+            for iter in ["max_iter","nb_subsets","sub_iter_DIP","sub_iter_MAP","nb_iter_second_admm"]:
+                if iter in config.keys():
+                    config[iter] = 1
+
+            # Launch computation
+            self.do_everything(config,root)
+        else:
+            tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
 
     def parametersIncompatibility(self,config,task):
         config["task"] = {'grid_search': [task]}
@@ -164,6 +182,8 @@ class vGeneral(abc.ABC):
                 config.pop("input", None)
                 config.pop("d_DD", None)
                 config.pop("k_DD", None)
+            if (config["method"]['grid_search'][0] == 'MLEM' or config["method"]['grid_search'][0] == 'AML'):
+                config.pop("rho", None)
         else:
             if ('results' not in task):
                 raise ValueError("Please do not put several methods at the same time for computation.")
@@ -261,15 +281,13 @@ class vGeneral(abc.ABC):
                     dim3 = [int(s) for s in line.split() if s.isdigit()][-1]
 
         # Create variables to store dimensions
-        PETImage_shape = (dim1,dim2)
+        PETImage_shape = (dim1,dim2,dim3)
         PETImage_shape_str = str(dim1) + ','+ str(dim2) + ',' + str(dim3)
-        if (dim3 > 1):
-            raise ValueError("3D not implemented yet")
         print('image shape :', PETImage_shape)
         return PETImage_shape_str
 
     def input_dim_str_to_list(self,PETImage_shape_str):
-        return [int(e.strip()) for e in PETImage_shape_str.split(',')][:-1]
+        return [int(e.strip()) for e in PETImage_shape_str.split(',')]#[:-1]
 
     def fijii_np(self,path,shape,type='<f'):
         """"Transforming raw data to numpy array"""
@@ -438,7 +456,10 @@ class vGeneral(abc.ABC):
 
     def castor_common_command_line(self, subroot, PETImage_shape_str, phantom, replicates, post_smoothing):
         executable = 'castor-recon'
-        header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[-1] + '_' + str(replicates) + '/data' + phantom[-1] + '_' + str(replicates) + '.cdh' # PET data path
+        if (self.nb_replicates == 1):
+            header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[-1] + '/data' + phantom[-1] + '.cdh' # PET data path
+        else:
+            header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[-1] + '_' + str(replicates) + '/data' + phantom[-1] + '_' + str(replicates) + '.cdh' # PET data path
         dim = ' -dim ' + PETImage_shape_str
         vox = ' -vox 4,4,4'
         vb = ' -vb 3'

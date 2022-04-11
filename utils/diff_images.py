@@ -22,7 +22,14 @@ root = 'data/Algo/'
 PETImage_shape = (112,112)
 
 img1_np = fijii_np(args.img1, shape=(PETImage_shape))
+print("min 1 = " ,np.min(img1_np))
+print("mean 1 = " ,np.mean(img1_np))
+print("max 1 = " ,np.max(img1_np))
 img2_np = fijii_np(args.img2, shape=(PETImage_shape))
+print("")
+print("min 2 = " ,np.min(img2_np))
+print("mean 2 = " ,np.mean(img2_np))
+print("max 2 = " ,np.max(img2_np))
 
 plt.figure()
 #plt.imshow(np.abs(img1_np - img2_np), cmap='gray_r')
@@ -45,7 +52,7 @@ plt.title('relative difference between img1 and img2')
 plt.colorbar()
 plt.savefig(root+'relative_diff_img.png')
 
-MSE_normed = np.linalg.norm(img1_np - img2_np) / (PETImage_shape[0]*PETImage_shape[1])
+MSE_normed = np.linalg.norm(img1_np - img2_np) / (PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])
 print("MSE : ",MSE_normed)
 print("Numerical error below threshold : ",MSE_normed < 1e-5)
 

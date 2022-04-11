@@ -9,7 +9,6 @@ import numpy as np
 import os
 
 # Local files to import
-from vReconstruction import vReconstruction
 from vGeneral import vGeneral
 
 from models.ConvNet3D_real_lightning import ConvNet3D_real_lightning # DIP
@@ -25,7 +24,6 @@ class vDenoising(vGeneral):
 
     def initializeSpecific(self,fixed_config,hyperparameters_config,root):
         self.createDirectoryAndConfigFile(hyperparameters_config)
-
         # Specific hyperparameters for reconstruction module (Do it here to have raytune hyperparameters_config hyperparameters selection)
         if (fixed_config["method"] == "nested" or fixed_config["method"] == "Gong"):
             self.input = hyperparameters_config["input"]
@@ -43,14 +41,13 @@ class vDenoising(vGeneral):
             self.image_net_input_torch = torch.Tensor(image_net_input_scale)
             # Adding dimensions to fit network architecture
             if (self.net == 'DIP' or self.net == 'DIP_VAE'):
-                self.image_net_input_torch = self.image_net_input_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1]) # For DIP
+                self.image_net_input_torch = self.image_net_input_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2]) # For DIP
             else:
                 if (self.net == 'DD'):
                     input_size_DD = int(self.PETImage_shape[0] / (2**hyperparameters_config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
                     self.image_net_input_torch = self.image_net_input_torch.view(1,hyperparameters_config["k_DD"],input_size_DD,input_size_DD) # For Deep Decoder, if original Deep Decoder (i.e. only with decoder part)
                 elif (self.net == 'DD_AE'):
-                    input_size_DD = self.PETImage_shape[0] # if auto encoder based on Deep Decoder
-                    self.image_net_input_torch = self.image_net_input_torch.view(1,1,input_size_DD,input_size_DD) # For Deep Decoder, if auto encoder based on Deep Decoder
+                    self.image_net_input_torch = self.image_net_input_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2]) # For Deep Decoder, if auto encoder based on Deep Decoder
             torch.save(self.image_net_input_torch,self.subroot_data + 'Data/initialization/image_' + self.net + '_input_torch.pt')
 
     def train_process(self, suffix, hyperparameters_config, finetuning, processing_unit, sub_iter_DIP, method, admm_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, experiment, checkpoint_simple_path, name_run, subroot):
@@ -121,9 +118,9 @@ class vDenoising(vGeneral):
         constant_uniform = 1
         if (net == 'DIP' or net == 'DIP_VAE'):
             if hyperparameters_config["input"] == "random":
-                im_input = np.random.normal(0,1,PETImage_shape[0]*PETImage_shape[1]).astype('float32') # initializing input image with random image (for DIP)
+                im_input = np.random.normal(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype('float32') # initializing input image with random image (for DIP)
             elif hyperparameters_config["input"] == "uniform":
-                im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1])).astype('float32') # initializing input image with random image (for DIP)
+                im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype('float32') # initializing input image with random image (for DIP)
             else:
                 return "CT input, do not need to create input"
             im_input = im_input.reshape(PETImage_shape) # reshaping (for DIP)
@@ -139,13 +136,10 @@ class vDenoising(vGeneral):
                 im_input = im_input.reshape(hyperparameters_config["k_DD"],input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
                 
             elif (net == 'DD_AE'):
-                input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
-
-                input_size_DD = int(PETImage_shape[0] / (2**hyperparameters_config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
                 if hyperparameters_config["input"] == "random":
-                    im_input = np.random.normal(0,1,input_size_DD*input_size_DD).astype('float32') # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+                    im_input = np.random.normal(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype('float32') # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
                 elif hyperparameters_config["input"] == "uniform":
-                    im_input = constant_uniform*np.ones((input_size_DD,input_size_DD)).astype('float32') # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+                    im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype('float32') # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
                 else:
                     return "CT input, do not need to create input"
                 im_input = im_input.reshape(input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if auto encoder based on Deep Decoder
@@ -168,8 +162,7 @@ class vDenoising(vGeneral):
             input_size_DD = int(PETImage_shape[0] / (2**self.d_DD)) # if original Deep Decoder (i.e. only with decoder part)
             PETImage_shape = (self.k_DD,input_size_DD,input_size_DD) # if original Deep Decoder (i.e. only with decoder part)
         elif (net == 'DD_AE'):   
-            input_size_DD = PETImage_shape[0] # if auto encoder based on Deep Decoder
-            PETImage_shape = (input_size_DD,input_size_DD) # if auto encoder based on Deep Decoder
+            PETImage_shape = (PETImage_shape[0],PETImage_shape[1],PETImage_shape[2]) # if auto encoder based on Deep Decoder
 
         im_input = self.fijii_np(file_path, shape=(PETImage_shape),type='<f') # Load input of the DNN (CT image)
         return im_input
@@ -209,7 +202,7 @@ class vDenoising(vGeneral):
         # Corrupted image x_label, numpy --> torch
         self.image_corrupt_torch = torch.Tensor(image_corrupt_input_scale)
         # Adding dimensions to fit network architecture
-        self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1])
+        self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
 
         # Training model with sub_iter_DIP iterations
         model = self.train_process(self.suffix, hyperparameters_config, self.finetuning, self.processing_unit, self.sub_iter_DIP, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot) # Not useful to make iterations, we just want to initialize writer. admm_it must be set to -1, otherwise seeking for a checkpoint file...

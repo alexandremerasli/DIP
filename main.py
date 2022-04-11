@@ -17,16 +17,18 @@ from iComparison import iComparison
 from iPostReconstruction import iPostReconstruction
 from iResults import iResults
 from iResultsReplicates import iResultsReplicates
-#from iResultsAlreadyComputed import iResultsAlreadyComputed
+from iResultsAlreadyComputed import iResultsAlreadyComputed
 
 # Configuration dictionnary for general parameters (not hyperparameters)
 fixed_config = {
     "image" : tune.grid_search(['image0']),
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "method" : tune.grid_search(['ADMMLim']),
+    "method" : tune.grid_search(['nested']),
     "processing_unit" : tune.grid_search(['CPU']),
-    "nb_threads" : tune.grid_search([1]),
-    "max_iter" : tune.grid_search([10]),
+    "nb_threads" : tune.grid_search([64]),
+    "debug" : True,
+    "max_iter" : tune.grid_search([2]),
+    "nb_subsets" : tune.grid_search([28]),
     "finetuning" : tune.grid_search(['last']),
     "experiment" : tune.grid_search([24]),
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']),
@@ -37,19 +39,19 @@ fixed_config = {
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
-    "rho" : tune.grid_search([0]), # Penalty strength (beta) in MAP algorithms 
+    "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in MAP algorithms 
     ## network hyperparameters
-    "lr" : tune.grid_search([0.01]), # 0.01 for DIP, 0.001 for DD
-    "sub_iter_DIP" : tune.grid_search([10]), # 10 for DIP, 100 for DD
+    "lr" : tune.grid_search([0.041]), # 0.01 for DIP, 0.001 for DD
+    "sub_iter_DIP" : tune.grid_search([200]), # 10 for DIP, 100 for DD
     "opti_DIP" : tune.grid_search(['Adam']),
-    "skip_connections" : tune.grid_search([1]),
+    "skip_connections" : tune.grid_search([0]),
     "scaling" : tune.grid_search(['standardization']),
-    "input" : tune.grid_search(['random']),
+    "input" : tune.grid_search(['CT']),
     "d_DD" : tune.grid_search([4]), # not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]),
     ## ADMMLim hyperparameters
-    "sub_iter_MAP" : tune.grid_search([10]), # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
-    "nb_iter_second_admm": tune.grid_search([10]), # Number of ADMM iterations (ADMM before NN)
+    "sub_iter_MAP" : tune.grid_search([2]), # Block 1 iterations (Sub-problem 1 - MAP) if mlem_sequence is False
+    "nb_iter_second_admm": tune.grid_search([2]), # Number of ADMM iterations (ADMM before NN)
     "alpha" : tune.grid_search([0.0005,0.005,0.05,0.5]), # alpha from ADMM in ADMMLim
     "alpha" : tune.grid_search([0.005]), # alpha from ADMM in ADMMLim
     ## hyperparameters from CASToR algorithms 
@@ -57,7 +59,7 @@ hyperparameters_config = {
     "mlem_sequence" : tune.grid_search([True]),
     # AML hyperparameters
     "A_AML" : tune.grid_search([-10000,-500,-100]),
-    "A_AML" : tune.grid_search([0]),
+    #"A_AML" : tune.grid_search([0]),
     # NNEPPS post processing
     "NNEPPS" : tune.grid_search([True,False]),
     "NNEPPS" : tune.grid_search([False]),
@@ -85,8 +87,6 @@ elif (config["method"]["grid_search"][0] == 'ADMMLim' or config["method"]["grid_
 #task = 'show_results_replicates'
 #task = 'show_metrics_results_already_computed'
 
-print('task = ',task)
-
 if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
     classTask = iNestedADMM(hyperparameters_config)
 elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
@@ -97,14 +97,14 @@ elif (task == 'show_results'): # Show already computed results over iterations
     classTask = iResults(config)
 elif (task == 'show_results_replicates'): # Show already computed results averaging over replicates
     classTask = iResultsReplicates(config)
-#elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
-#    classTask = iResultsAlreadyComputed(config)
+elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
+    classTask = iResultsAlreadyComputed(config)
 
-# Launch task
 #'''
 for method in config["method"]['grid_search']:
     os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + method + '.txt')
 
+# Launch task
 classTask.runRayTune(config,root,task)
 #'''
 
@@ -116,7 +116,12 @@ for ROI in ['hot','cold']:
 
     suffixes_legend = []
 
-    for method in config["method"]['grid_search']:
+    if classTask.debug:
+        method_list = [config["method"]]
+    else:
+        method_list = config["method"]['grid_search']
+    print(method_list)
+    for method in method_list:
         print("method",method)
         suffixes = []
 
@@ -141,7 +146,7 @@ for ROI in ['hot','cold']:
         # Load metrics from last runs to merge them in one figure
 
         for suffix in suffixes[0]:
-            metrics_file = root + '/data/Algo' + '/metrics/' + method + '/' + suffix.rstrip("\n") + '/' + 'CRC in hot region vs IR in background.csv'
+            metrics_file = root + '/data/Algo' + '/metrics/' + method + '/' + suffix.rstrip("\n") + '/' + 'metrics.csv'
             with open(metrics_file, 'r') as myfile:
                 spamreader = reader_csv(myfile,delimiter=';')
                 rows_csv = list(spamreader)
@@ -192,7 +197,7 @@ for ROI in ['hot','cold']:
             suffixes_legend.append(legend)
     plt.legend(suffixes_legend)
     # Saving this figure locally
-    plt.savefig(root + '/data/Algo/' + 'metrics/' + 'CRC in ' + ROI + ' region vs IR in background' + '.png')
+    plt.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'CRC in ' + ROI + ' region vs IR in background' + '.png')
     from textwrap import wrap
     wrapped_title = "\n".join(wrap(suffix, 50))
     plt.title(wrapped_title,fontsize=12)

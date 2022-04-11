@@ -22,103 +22,103 @@ class ConvNet3D_real_lightning(pl.LightningModule):
         # Defining CNN variables
         L_relu = 0.2
         num_channel = [16, 32, 64, 128]
-        pad = [0, 0]
+        pad = [0, 0, 0]
 
         # Layers in CNN architecture
-        self.deep1 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(1, num_channel[0], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[0]),
+        self.deep1 = nn.Sequential(nn.ReplicationPad3d(1),
+                                   nn.Conv3d(1, num_channel[0], (3, 3, 3), stride=1, padding=pad[1]),
+                                   nn.BatchNorm3d(num_channel[0]),
                                    nn.LeakyReLU(L_relu),
-                                   nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[0], num_channel[0], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[0]),
+                                   nn.ReplicationPad3d(1),
+                                   nn.Conv3d(num_channel[0], num_channel[0], (3, 3, 3), stride=1, padding=pad[1]),
+                                   nn.BatchNorm3d(num_channel[0]),
                                    nn.LeakyReLU(L_relu))
 
-        self.down1 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[0], num_channel[0], 3, stride=(2, 2), padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[0]),
+        self.down1 = nn.Sequential(nn.ReplicationPad3d(1),
+                                   nn.Conv3d(num_channel[0], num_channel[0], 3, stride=(2, 2, 2), padding=pad[1]),
+                                   nn.BatchNorm3d(num_channel[0]),
                                    nn.LeakyReLU(L_relu))
 
-        self.deep2 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[0], num_channel[1], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[1]),
+        self.deep2 = nn.Sequential(nn.ReplicationPad3d(1),
+                                   nn.Conv3d(num_channel[0], num_channel[1], (3, 3, 3), stride=1, padding=pad[1]),
+                                   nn.BatchNorm3d(num_channel[1]),
                                    nn.LeakyReLU(L_relu),
-                                   nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[1], num_channel[1], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[1]),
+                                   nn.ReplicationPad3d(1),
+                                   nn.Conv3d(num_channel[1], num_channel[1], (3, 3, 3), stride=1, padding=pad[1]),
+                                   nn.BatchNorm3d(num_channel[1]),
                                    nn.LeakyReLU(L_relu))
 
-        self.down2 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[1], num_channel[1], 3, stride=(2, 2), padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[1]),
+        self.down2 = nn.Sequential(nn.ReplicationPad3d(1),
+                                   nn.Conv3d(num_channel[1], num_channel[1], 3, stride=(2, 2, 2), padding=pad[1]),
+                                   nn.BatchNorm3d(num_channel[1]),
                                    nn.LeakyReLU(L_relu))
 
-        self.deep3 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[1], num_channel[2], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[2]),
+        self.deep3 = nn.Sequential(nn.ReplicationPad3d(1),
+                                   nn.Conv3d(num_channel[1], num_channel[2], (3, 3, 3), stride=1, padding=pad[1]),
+                                   nn.BatchNorm3d(num_channel[2]),
                                    nn.LeakyReLU(L_relu),
-                                   nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[2], num_channel[2], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[2]),
+                                   nn.ReplicationPad3d(1),
+                                   nn.Conv3d(num_channel[2], num_channel[2], (3, 3, 3), stride=1, padding=pad[1]),
+                                   nn.BatchNorm3d(num_channel[2]),
                                    nn.LeakyReLU(L_relu))
 
-        self.down3 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[2], num_channel[2], 3, stride=(2, 2), padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[2]),
+        self.down3 = nn.Sequential(nn.ReplicationPad3d(1),
+                                   nn.Conv3d(num_channel[2], num_channel[2], 3, stride=(2, 2, 2), padding=pad[1]),
+                                   nn.BatchNorm3d(num_channel[2]),
                                    nn.LeakyReLU(L_relu))
 
-        self.deep4 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[2], num_channel[3], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[3]),
+        self.deep4 = nn.Sequential(nn.ReplicationPad3d(1),
+                                   nn.Conv3d(num_channel[2], num_channel[3], (3, 3, 3), stride=1, padding=pad[1]),
+                                   nn.BatchNorm3d(num_channel[3]),
                                    nn.LeakyReLU(L_relu),
-                                   nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[3], num_channel[3], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[3]),
+                                   nn.ReplicationPad3d(1),
+                                   nn.Conv3d(num_channel[3], num_channel[3], (3, 3, 3), stride=1, padding=pad[1]),
+                                   nn.BatchNorm3d(num_channel[3]),
                                    nn.LeakyReLU(L_relu))
 
-        self.up1 = nn.Sequential(nn.Upsample(scale_factor=(2, 2), mode='bilinear', align_corners=False),
-                                 nn.ReplicationPad2d(1),
-                                 nn.Conv2d(num_channel[3], num_channel[2], 3, stride=(1, 1), padding=pad[0]),
-                                 nn.BatchNorm2d(num_channel[2]),
+        self.up1 = nn.Sequential(nn.Upsample(scale_factor=(2, 2, 2), mode='trilinear', align_corners=False),
+                                 nn.ReplicationPad3d(1),
+                                 nn.Conv3d(num_channel[3], num_channel[2], 3, stride=(1, 1, 1), padding=pad[0]),
+                                 nn.BatchNorm3d(num_channel[2]),
                                  nn.LeakyReLU(L_relu))
 
-        self.deep5 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[2], num_channel[2], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[2]),
+        self.deep5 = nn.Sequential(nn.ReplicationPad3d(1),
+                                   nn.Conv3d(num_channel[2], num_channel[2], (3, 3, 3), stride=1, padding=pad[1]),
+                                   nn.BatchNorm3d(num_channel[2]),
                                    nn.LeakyReLU(L_relu),
-                                   nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[2], num_channel[2], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[2]),
+                                   nn.ReplicationPad3d(1),
+                                   nn.Conv3d(num_channel[2], num_channel[2], (3, 3, 3), stride=1, padding=pad[1]),
+                                   nn.BatchNorm3d(num_channel[2]),
                                    nn.LeakyReLU(L_relu))
 
-        self.up2 = nn.Sequential(nn.Upsample(scale_factor=(2, 2), mode='bilinear', align_corners=False),
-                                 nn.ReplicationPad2d(1),
-                                 nn.Conv2d(num_channel[2], num_channel[1], 3, stride=(1, 1), padding=pad[0]),
-                                 nn.BatchNorm2d(num_channel[1]),
+        self.up2 = nn.Sequential(nn.Upsample(scale_factor=(2, 2, 2), mode='trilinear', align_corners=False),
+                                 nn.ReplicationPad3d(1),
+                                 nn.Conv3d(num_channel[2], num_channel[1], 3, stride=(1, 1, 1), padding=pad[0]),
+                                 nn.BatchNorm3d(num_channel[1]),
                                  nn.LeakyReLU(L_relu))
 
-        self.deep6 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[1], num_channel[1], (3, 3), stride=1, padding=pad[0]),
-                                   nn.BatchNorm2d(num_channel[1]),
+        self.deep6 = nn.Sequential(nn.ReplicationPad3d(1),
+                                   nn.Conv3d(num_channel[1], num_channel[1], (3, 3, 3), stride=1, padding=pad[0]),
+                                   nn.BatchNorm3d(num_channel[1]),
                                    nn.LeakyReLU(L_relu),
-                                   nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[1], num_channel[1], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[1]),
+                                   nn.ReplicationPad3d(1),
+                                   nn.Conv3d(num_channel[1], num_channel[1], (3, 3, 3), stride=1, padding=pad[1]),
+                                   nn.BatchNorm3d(num_channel[1]),
                                    nn.LeakyReLU(L_relu))
 
-        self.up3 = nn.Sequential(nn.Upsample(scale_factor=(2, 2), mode='bilinear', align_corners=False),
-                                 nn.ReplicationPad2d(1),
-                                 nn.Conv2d(num_channel[1], num_channel[0], 3, stride=(1, 1), padding=pad[0]),
-                                 nn.BatchNorm2d(num_channel[0]),
+        self.up3 = nn.Sequential(nn.Upsample(scale_factor=(2, 2, 2), mode='trilinear', align_corners=False),
+                                 nn.ReplicationPad3d(1),
+                                 nn.Conv3d(num_channel[1], num_channel[0], 3, stride=(1, 1, 1), padding=pad[0]),
+                                 nn.BatchNorm3d(num_channel[0]),
                                  nn.LeakyReLU(L_relu))
 
-        self.deep7 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[0], num_channel[0], (3, 3), stride=1, padding=pad[0]),
-                                   nn.BatchNorm2d(num_channel[0]),
+        self.deep7 = nn.Sequential(nn.ReplicationPad3d(1),
+                                   nn.Conv3d(num_channel[0], num_channel[0], (3, 3, 3), stride=1, padding=pad[0]),
+                                   nn.BatchNorm3d(num_channel[0]),
                                    nn.LeakyReLU(L_relu),
-                                   nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[0], 1, (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(1))
+                                   nn.ReplicationPad3d(1),
+                                   nn.Conv3d(num_channel[0], 1, (3, 3, 3), stride=1, padding=pad[1]),
+                                   nn.BatchNorm3d(1))
 
         self.positivity = nn.ReLU() # Final ReLU to enforce positivity of ouput image
         # self.positivity = nn.SiLU() # Final SiLU, smoother than ReLU but not positive

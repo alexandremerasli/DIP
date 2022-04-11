@@ -26,7 +26,10 @@ class vReconstruction(vGeneral):
         self.createDirectoryAndConfigFile(hyperparameters_config)
 
         # Specific hyperparameters for reconstruction module (Do it here to have raytune hyperparameters_config hyperparameters selection)
-        self.rho = hyperparameters_config["rho"]
+        if (fixed_config["method"] != "MLEM" and fixed_config["method"] != "AML"):
+            self.rho = hyperparameters_config["rho"]
+        else:
+            self.rho = 0
         if (fixed_config["method"] == "ADMMLim" or fixed_config["method"] == "nested"):
             self.alpha = hyperparameters_config["alpha"]
             self.sub_iter_MAP = hyperparameters_config["sub_iter_MAP"]
@@ -34,13 +37,13 @@ class vReconstruction(vGeneral):
 
         # Ininitializing DIP output and first image x with f_init and image_init
         if (self.method == "nested"): # Nested needs 1 to not add any prior information at the beginning, and to initialize x computation to uniform with 1
-            self.f_init = np.ones((self.PETImage_shape[0],self.PETImage_shape[1]), dtype='<f')
+            self.f_init = np.ones((self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2]), dtype='<f')
         elif (self.method == "Gong"): # Gong initialization with 60th iteration of MLEM (normally, DIP trained with this image as label...)
             #self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.img',shape=(self.PETImage_shape))
             self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape))
 
         # Initialize and save mu variable from ADMM
-        self.mu = 0* np.ones((self.PETImage_shape[0], self.PETImage_shape[1]), dtype='<f')
+        self.mu = 0* np.ones((self.PETImage_shape[0], self.PETImage_shape[1], self.PETImage_shape[2]), dtype='<f')
         print("self.suffix")
         print(self.suffix)
         self.save_img(self.mu,self.subroot+'Block2/mu/'+ format(self.experiment)+'/mu_' + format(-1) + self.suffix + '.img')
@@ -144,7 +147,7 @@ class vReconstruction(vGeneral):
                 print(x_reconstruction_command_line)
                 self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,'during_eq22',i,k,phantom,subroot_output_path,subroot)
 
-                x = self.fijii_np(full_output_path_k_next + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.img', shape=(PETImage_shape[0],PETImage_shape[1]))
+                x = self.fijii_np(full_output_path_k_next + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + '.img', shape=(PETImage_shape[0],PETImage_shape[1],PETImage_shape[2]))
                 if (k>=-1):
                     self.write_image_tensorboard(writer,x,"x in second ADMM over iterations",suffix,image_gt, k+1+i*nb_iter_second_admm) # Showing all corrupted images with same contrast to compare them together
                     self.write_image_tensorboard(writer,x,"x in second ADMM over iterations(FULL CONTRAST)",suffix,image_gt, k+1+i*nb_iter_second_admm,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
@@ -194,6 +197,8 @@ class vReconstruction(vGeneral):
 
         # Save x_label for load into block 2 - CNN as corrupted image (x_label)
         x_label = x + mu
+        print(x.shape)
+        print(mu.shape)
 
         # Save x_label in .img and .hdr format
         name=(subroot+'Block2/x_label/'+format(experiment) + '/' + format(i) +'_x_label' + suffix + '.img')

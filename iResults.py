@@ -119,7 +119,7 @@ class iResults(vDenoising):
 
             f = np.zeros(self.PETImage_shape,dtype='<f')
             for p in range(1,self.nb_replicates+1):
-                self.subroot_p = self.subroot_data + 'replicate_' + str(p) + '/'
+                self.subroot_p = self.subroot_data + 'debug/'*self.debug + 'replicate_' + str(p) + '/'
 
                 # Take NNEPPS images if NNEPPS is asked for this run
                 if (hyperparameters_config["NNEPPS"]):
@@ -136,9 +136,10 @@ class iResults(vDenoising):
                     if (config["method"] == 'ADMMLim'):
                         subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
                         f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                    #elif (config["method"] == 'BSREM'):
+                    #    f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                     else:
-                        f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
-                        print(np.min(f_p))
+                        f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                 print(self.subroot_p+'Comparison/' + config["method"] + '_beta_' + str(self.beta) + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img')
                 f += f_p
                 # Metrics for NN output 
