@@ -11,10 +11,11 @@ import os
 # Local files to import
 from vGeneral import vGeneral
 
-from models.ConvNet3D_real_lightning import ConvNet3D_real_lightning # DIP
-from models.ConvNet3D_VAE_lightning import ConvNet3D_VAE_lightning # DIP vae
-from models.DD_2D_lightning import DD_2D_lightning # DD
-from models.DD_AE_2D_lightning import DD_AE_2D_lightning # DD adding encoder part
+from models.DIP_2D import DIP_2D # DIP
+from models.DIP_3D import DIP_3D # DIP
+from models.VAE_DIP_2D import VAE_DIP_2D # DIP vae
+from models.DD_2D import DD_2D # DD
+from models.DD_AE_2D import DD_AE_2D # DD adding encoder part
 
 import abc
 class vDenoising(vGeneral):
@@ -57,7 +58,7 @@ class vDenoising(vGeneral):
         train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
 
         # Choose network architecture as model
-        model, model_class = self.choose_net(net, hyperparameters_config, method)
+        model, model_class = self.choose_net(net, hyperparameters_config, method, PETImage_shape)
 
         #checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(experiment)  + '/' + suffix + '/'
@@ -216,25 +217,28 @@ class vDenoising(vGeneral):
         # Saving image output
         self.save_img(out_descale, self.net_outputs_path)
 
-    def choose_net(self,net, hyperparameters_config, method):
-        if (net == 'DIP'):
-            model = ConvNet3D_real_lightning(hyperparameters_config,method) #Loading DIP architecture
-            model_class = ConvNet3D_real_lightning #Loading DIP architecture
-        elif (net == 'DIP_VAE'):
-            model = ConvNet3D_VAE_lightning(hyperparameters_config) #Loading DIP VAE architecture
-            model_class = ConvNet3D_VAE_lightning #Loading DIP VAE architecture
-        else:
-            if (net == 'DD'):
-                model = DD_2D_lightning(hyperparameters_config,method) #Loading Deep Decoder architecture
-                model_class = DD_2D_lightning #Loading Deep Decoder architecture
-            elif (net == 'DD_AE'):
-                model = DD_AE_2D_lightning(hyperparameters_config) #Loading Deep Decoder architecture
-                model_class = DD_AE_2D_lightning #Loading Deep Decoder architecture
+    def choose_net(self,net, hyperparameters_config, method, PETImage_shape):
+        if (net == 'DIP'): # Loading DIP architecture
+            if(PETImage_shape[2] == 1): # 2D
+                model = DIP_2D(hyperparameters_config,method) 
+                model_class = DIP_2D
+            else: # 3D
+                model = DIP_3D(hyperparameters_config,method)
+                model_class = DIP_3D
+        elif (net == 'DIP_VAE'): # Loading DIP VAE architecture
+            model = VAE_DIP_2D(hyperparameters_config)
+            model_class = VAE_DIP_2D
+        elif (net == 'DD'): # Loading Deep Decoder architecture
+                model = DD_2D(hyperparameters_config,method)
+                model_class = DD_2D
+        elif (net == 'DD_AE'): # Loading Deep Decoder based autoencoder architecture
+            model = DD_AE_2D(hyperparameters_config) 
+            model_class = DD_AE_2D
         return model, model_class
     
     def generate_nn_output(self,net, hyperparameters_config, method, image_net_input_torch, PETImage_shape, finetuning, admm_it, experiment, suffix, subroot):
         # Loading using previous model
-        model, model_class = self.choose_net(net, hyperparameters_config, method)
+        model, model_class = self.choose_net(net, hyperparameters_config, method, PETImage_shape)
         checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(experiment) + '/' + suffix + '/'
         model = self.load_model(image_net_input_torch, hyperparameters_config, finetuning, admm_it, model, model_class, subroot, checkpoint_simple_path_exp, training=False)
 

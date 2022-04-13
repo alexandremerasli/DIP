@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 
-class ConvNet3D_real_lightning(pl.LightningModule):
+class DIP_3D(pl.LightningModule):
 
     def __init__(self, hyperparameters_config, method):
         super().__init__()

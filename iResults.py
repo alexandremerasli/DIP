@@ -49,8 +49,11 @@ class iResults(vDenoising):
         self.AR_bkg_recon = np.zeros(self.total_nb_iter)
         self.IR_bkg_recon = np.zeros(self.total_nb_iter)
         
-    def writeBeginningImages(self,image_net_input,suffix):
-        self.write_image_tensorboard(self.writer,image_net_input,"DIP input (FULL CONTRAST)",suffix,self.image_gt,0,full_contrast=True) # DIP input in tensorboard
+    def writeBeginningImages(self,suffix,image_net_input=None):
+        self.write_image_tensorboard(self.writer,self.image_gt,"Ground Truth (emission map)",suffix,self.image_gt,0,full_contrast=True) # Ground truth in tensorboard
+        if (image_net_input is not None):
+            print(image_net_input)
+            self.write_image_tensorboard(self.writer,image_net_input,"DIP input (FULL CONTRAST)",suffix,image_net_input,0,full_contrast=True) # DIP input in tensorboard
 
     def writeCorruptedImage(self,i,max_iter,x_label,suffix,pet_algo,iteration_name='iterations'):
         if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
@@ -75,7 +78,6 @@ class iResults(vDenoising):
             # Saving this figure locally
             Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
             #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
-            print(self.subroot + 'Images/tmp/' + suffix + '/' + 'AR in hot region vs IR in background' + '_' + str(i) + '.png')
             plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + 'AR in hot region vs IR in background' + '_' + str(i) + '.png')
             from textwrap import wrap
             wrapped_title = "\n".join(wrap(suffix, 50))
@@ -94,7 +96,6 @@ class iResults(vDenoising):
             # Saving this figure locally
             Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
             #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
-            print(self.subroot + 'Images/tmp/' + suffix + '/' + 'MA in cold region vs IR in background' + '_' + str(i) + '.png')
             plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + 'MA in cold region vs IR in background' + '_' + str(i) + '.png')
             from textwrap import wrap
             wrapped_title = "\n".join(wrap(suffix, 50))
@@ -111,8 +112,10 @@ class iResults(vDenoising):
         beta_string = ', beta = ' + str(self.beta)
 
         if (fixed_config["method"] == "nested" or fixed_config["method"] == "Gong"):
-            self.writeBeginningImages(self.image_net_input,self.suffix)
+            self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
             #self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
+        else:
+            self.writeBeginningImages(self.suffix) # Write GT
 
         for i in range(1,self.total_nb_iter+1):
             print(i)
@@ -135,12 +138,11 @@ class iResults(vDenoising):
                     iteration_name="iterations"+beta_string
                     if (config["method"] == 'ADMMLim'):
                         subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
-                        f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                        f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                     #elif (config["method"] == 'BSREM'):
                     #    f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                     else:
                         f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
-                print(self.subroot_p+'Comparison/' + config["method"] + '_beta_' + str(self.beta) + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img')
                 f += f_p
                 # Metrics for NN output 
                 self.compute_IR_bkg(self.PETImage_shape,f_p,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,self.phantom,writer=self.writer,write_tensorboard=True)
@@ -159,7 +161,6 @@ class iResults(vDenoising):
         # Select only phantom ROI, not whole reconstructed image
         path_phantom_ROI = self.subroot_data+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[-1]) + '.raw'
         my_file = Path(path_phantom_ROI)
-        print(path_phantom_ROI)
         if (my_file.is_file()):
             phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(PETImage_shape),type='<f')
         else:
@@ -211,7 +212,6 @@ class iResults(vDenoising):
         #print('Image roughness in the cold cylinder', IR_cold_recon[i-1])
 
         # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
-        print(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw')
         hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
         hot_ROI_act = image_recon[hot_ROI==1]
         AR_hot_recon[i-1] = np.mean(hot_ROI_act) / 400.

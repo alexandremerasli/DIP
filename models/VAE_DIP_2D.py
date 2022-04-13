@@ -4,7 +4,7 @@ import torch.nn as nn
 import pytorch_lightning as pl
 import os
 
-class ConvNet3D_VAE_lightning(pl.LightningModule):
+class VAE_DIP_2D(pl.LightningModule):
 
     def __init__(self, hyperparameters_config):
         super().__init__()
@@ -186,9 +186,6 @@ class ConvNet3D_VAE_lightning(pl.LightningModule):
     def gaussian_likelihood(self, x_hat, logscale, x): # return logarithm of gaussian likelihood (so with minus...)
         scale = torch.experiment(logscale)
         mean = x_hat
-        print(mean)
-        print(torch.mean(mean),torch.max(mean),torch.min(mean))
-        print(scale)
         dist = torch.distributions.Normal(mean, scale) # normal distribution object, with mean x_hat (output of DIP) and std scale (experiment(logscale) = experiment(0) = 1)
         # log prob = ||x_hat
         # measure prob of seeing image under p(x|z)

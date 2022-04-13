@@ -76,7 +76,6 @@ class vGeneral(abc.ABC):
         Path(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
         Path(self.subroot+'Block2/out_cnn/vae').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
         Path(self.subroot+'Block2/out_cnn/cnn_metrics/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # DIP block metrics
-        Path(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/like/').mkdir(parents=True, exist_ok=True) # folder for Likelihood calculation (using CASTOR)
         Path(self.subroot+'Block2/x_label/'+format(self.experiment) + '/').mkdir(parents=True, exist_ok=True) # x corrupted - folder
 
         Path(self.subroot+'Block2/checkpoint/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
@@ -129,9 +128,10 @@ class vGeneral(abc.ABC):
                     config[key] = value["grid_search"][0]
 
             # Set every iteration values to 1 to be quicker
-            for iter in ["max_iter","nb_subsets","sub_iter_DIP","sub_iter_MAP","nb_iter_second_admm"]:
+            for iter in ["max_iter","nb_subsets","sub_iter_DIP","sub_iter_PLL","nb_iter_second_admm"]:
                 if iter in config.keys():
                     config[iter] = 1
+                config["mlem_sequence"] = False
 
             # Launch computation
             self.do_everything(config,root)
@@ -169,8 +169,8 @@ class vGeneral(abc.ABC):
         if (len(config["method"]['grid_search']) == 1):
             if (config["method"]['grid_search'][0] != "AML"):
                 config.pop("A_AML", None)
-            if (config["method"]['grid_search'][0] != "ADMMLim" and config["method"]['grid_search'][0] != "nested"):
-                config.pop("sub_iter_MAP", None)
+            if (config["method"]['grid_search'][0] != "ADMMLim" and config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong"):
+                config.pop("sub_iter_PLL", None)
                 config.pop("nb_iter_second_admm", None)
                 config.pop("alpha", None)
             if (config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong" and config["method"]['grid_search'][0] != "post_reco"):

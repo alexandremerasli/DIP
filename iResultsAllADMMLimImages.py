@@ -26,7 +26,7 @@ class iResults(vDenoising):
         
         if (fixed_config["method"] == 'ADMMLim'):
             self.total_nb_iter = hyperparameters_config["nb_iter_second_admm"]
-            self.total_nb_iter = hyperparameters_config["sub_iter_MAP"]
+            self.total_nb_iter = hyperparameters_config["sub_iter_PLL"]
             self.beta = hyperparameters_config["alpha"]
         else:
             self.total_nb_iter = self.max_iter
@@ -76,7 +76,6 @@ class iResults(vDenoising):
             # Saving this figure locally
             Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
             #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
-            print(self.subroot + 'Images/tmp/' + suffix + '/' + 'CRC in hot region vs IR in background' + '_' + str(i) + '.png')
             plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + 'CRC in hot region vs IR in background' + '_' + str(i) + '.png')
             from textwrap import wrap
             wrapped_title = "\n".join(wrap(suffix, 50))
@@ -95,7 +94,6 @@ class iResults(vDenoising):
             # Saving this figure locally
             Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
             #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
-            print(self.subroot + 'Images/tmp/' + suffix + '/' + 'MA in cold region vs IR in background' + '_' + str(i) + '.png')
             plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + 'MA in cold region vs IR in background' + '_' + str(i) + '.png')
             from textwrap import wrap
             wrapped_title = "\n".join(wrap(suffix, 50))
@@ -136,14 +134,13 @@ class iResults(vDenoising):
                         pet_algo=config["method"]
                         iteration_name="iterations"+beta_string + "outer_iter = " + str(j)
                         if (config["method"] == 'ADMMLim'):
-                            #f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_MAP"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                            #f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                             # also change total_nb_iter
                             subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
                             f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' + subdir + '/0_' + format(j) + '_it' + str(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         else:
                             f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                             print(np.min(f_p))
-                    print(self.subroot_p+'Comparison/' + config["method"] + '_beta_' + str(self.beta) + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img')
                     f += f_p
                     # Metrics for NN output 
                     self.compute_IR_bkg(self.PETImage_shape,f_p,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.CRC_hot_recon,self.CRC_bkg_recon,self.IR_bkg_recon,self.phantom,writer=self.writer,write_tensorboard=True)
@@ -214,7 +211,6 @@ class iResults(vDenoising):
         #print('Image roughness in the cold cylinder', IR_cold_recon[i-1])
 
         # Mean Concentration Recovery coefficient (CRCmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
-        print(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw')
         hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
         hot_ROI_act = image_recon[hot_ROI==1]
         CRC_hot_recon[i-1] = np.mean(hot_ROI_act) / 400.

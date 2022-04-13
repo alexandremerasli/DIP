@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 
-class DD_AE_2D_lightning(pl.LightningModule):
+class DD_AE_2D(pl.LightningModule):
 
     def __init__(self, hyperparameters_config):
         super().__init__()

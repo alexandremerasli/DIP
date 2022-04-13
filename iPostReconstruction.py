@@ -44,7 +44,7 @@ class iPostReconstruction(vDenoising):
         out_descale = self.fijii_np(self.net_outputs_path,shape=(self.PETImage_shape)) # loading DIP output
         #writer = model.logger.experiment # Assess to new variable, otherwise error : weakly-referenced object ...
      
-        classResults.writeBeginningImages(self.image_net_input,self.suffix)
+        classResults.writeBeginningImages(self.suffix,self.image_net_input)
         classResults.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
         
         for epoch in range(0,self.total_nb_iter,self.total_nb_iter//10):      

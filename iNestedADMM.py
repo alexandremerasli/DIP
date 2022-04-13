@@ -26,14 +26,14 @@ class iNestedADMM(vReconstruction):
         classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
         
         for i in range(self.max_iter):
-            print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Outer iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', i)
+            print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Global iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', i)
             start_time_outer_iter = time.time()
             
             # Reconstruction with CASToR (tomographic reconstruction part of ADMM)
-            self.x_label = self.castor_reconstruction(classResults.writer, i, self.subroot, self.sub_iter_MAP, self.experiment, hyperparameters_config, self.method, self.phantom, self.replicate, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.rho, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
+            self.x_label = self.castor_reconstruction(classResults.writer, i, self.subroot, self.sub_iter_PLL, self.experiment, hyperparameters_config, self.method, self.phantom, self.replicate, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.rho, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
 
             # Write corrupted image over ADMM iterations
-            classResults.writeCorruptedImage(i,hyperparameters_config["sub_iter_MAP"],self.x_label,self.suffix,pet_algo="nested ADMM")
+            classResults.writeCorruptedImage(i,hyperparameters_config["sub_iter_PLL"],self.x_label,self.suffix,pet_algo="nested ADMM")
 
             # Block 2 - CNN         
             start_time_block2= time.time()            
@@ -48,12 +48,12 @@ class iNestedADMM(vReconstruction):
             self.mu += self.x_label - self.f
             self.save_img(self.mu,self.subroot+'Block2/mu/'+ format(self.experiment)+'/mu_' + format(i) + self.suffix + '.img') # saving mu
             # Write corrupted image over ADMM iterations
-            classResults.writeCorruptedImage(i,hyperparameters_config["sub_iter_MAP"],self.mu,self.suffix,pet_algo="mmmmmuuuuuuu")
+            classResults.writeCorruptedImage(i,hyperparameters_config["sub_iter_PLL"],self.mu,self.suffix,pet_algo="mmmmmuuuuuuu")
 
             print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))
 
             # Write output image and metrics to tensorboard
-            classResults.writeEndImagesAndMetrics(i,hyperparameters_config["sub_iter_MAP"],self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo="nested ADMM")
+            classResults.writeEndImagesAndMetrics(i,hyperparameters_config["sub_iter_PLL"],self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo="nested ADMM")
 
         # Saving final image output
         self.save_img(self.f, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')

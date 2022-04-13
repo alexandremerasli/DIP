@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
-class DD_2D_lightning(pl.LightningModule):
+class DD_2D(pl.LightningModule):
 
     def __init__(self, hyperparameters_config, method):
         super().__init__()
