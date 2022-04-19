@@ -3,6 +3,8 @@
 # Useful
 import time
 
+import numpy
+
 # Local files to import
 from vReconstruction import vReconstruction
 from iDenoisingInReconstruction import iDenoisingInReconstruction
@@ -42,8 +44,9 @@ class iNestedADMM(vReconstruction):
             classDenoising.debug = self.debug
             classDenoising.do_everything(config,root)
             print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
-            self.f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + self.suffix + '.img',shape=(self.PETImage_shape)) # loading DIP output
-
+            self.f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + self.suffix + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+            self.f.astype(numpy.float64)
+            
             # Block 3 - mu update
             self.mu += self.x_label - self.f
             self.save_img(self.mu,self.subroot+'Block2/mu/'+ format(self.experiment)+'/mu_' + format(i) + self.suffix + '.img') # saving mu

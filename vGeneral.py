@@ -49,6 +49,8 @@ class vGeneral(abc.ABC):
         self.post_smoothing = fixed_config["post_smoothing"]
         self.penalty = fixed_config["penalty"]
 
+        self.FLTNB = fixed_config["FLTNB"]
+
         # Initialize useful variables
         self.subroot = root + '/data/Algo/' + 'debug/'*self.debug + 'replicate_' + str(self.replicate) + '/' # Directory root
         self.subroot_data = root + '/data/Algo/' # Directory root
@@ -289,8 +291,14 @@ class vGeneral(abc.ABC):
     def input_dim_str_to_list(self,PETImage_shape_str):
         return [int(e.strip()) for e in PETImage_shape_str.split(',')]#[:-1]
 
-    def fijii_np(self,path,shape,type='<f'):
+    def fijii_np(self,path,shape,type=None):
         """"Transforming raw data to numpy array"""
+        if (type is None):
+            if (self.FLTNB == 'float'):
+                type = '<f'
+            elif (self.FLTNB == 'double'):
+                type = '<d'
+
         file_path=(path)
         dtype = np.dtype(type)
         fid = open(file_path, 'rb')
@@ -462,7 +470,7 @@ class vGeneral(abc.ABC):
             header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[-1] + '_' + str(replicates) + '/data' + phantom[-1] + '_' + str(replicates) + '.cdh' # PET data path
         dim = ' -dim ' + PETImage_shape_str
         vox = ' -vox 4,4,4'
-        vb = ' -vb 3'
+        vb = ' -vb 0'
         th = ' -th ' + str(self.nb_threads) # must be set to 1 for ADMMLim, as multithreading does not work for now with ADMMLim optimizer
         proj = ' -proj incrementalSiddon'
         psf = ' -conv gaussian,4,1,3.5::psf'

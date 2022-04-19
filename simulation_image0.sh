@@ -7,7 +7,7 @@
 
 dim1=112
 dim2=112
-dim3=2
+dim3=1
 
 #nb_counts=100000000 # high statistics
 nb_counts=1500000*dim3 # low statistics
@@ -25,7 +25,7 @@ export PATH=$PATH:/home/meraslia/sgld/simulator_mmr_2d/bin
 fi
 
 
-nb_replicates=1
+nb_replicates=10
 for ((replicate_id=1;replicate_id<=nb_replicates;replicate_id++)); do
     echo "replicate_id"$replicate_id
     if [[ $1 = 'biograph' ]]
@@ -69,7 +69,7 @@ for ((replicate_id=1;replicate_id<=nb_replicates;replicate_id++)); do
     # Si tu mets 10, cela tire au hasard une efficacite entre 0.9 et 1.1.
     # 10 est une valeur plus ou moins realiste.
     eff=10
-    CMmaker.exe -m mmr -r ${eff} -o cmap0 -w -v 2
+    CMmaker.exe -m mmr2d -r ${eff} -o cmap0 -w -v 2
 
     ## Etape 2: Simulation des sinogrammes a partir des images d'emission et d'attenuation (en cm-1).
 
@@ -83,13 +83,13 @@ for ((replicate_id=1;replicate_id<=nb_replicates;replicate_id++)); do
     # -i l'image d'emission en entree
     # -a la mumap en cm-1, doit etre de la meme taille que l'image d'emission
     # -P le nombre de prompts a simuler
-    SMprojector.exe -m mmr -c cmap0/cmap0.ecm -i image0.hdr -a image0_atn.hdr -s 0.35 -r 0.9 -l 0.8 -p 4. -v 5 -P $nb_counts -o simu0_${replicate_id} -D
+    SMprojector.exe -m mmr2d -c cmap0/cmap0.ecm -i image0.hdr -a image0_atn.hdr -s 0.35 -r 0.9 -l 0.8 -p 4. -v 5 -P $nb_counts -o simu0_${replicate_id} -D
 
     ## Etape 3: Creation du ficher castor a partir des sinogrammes simules
 
     # En gros tu redonnes tous les sinogrammes simules en entree. Il faut donner les header, sauf pour
     # l'attenuation -A ou il faut donner directement le sinogramme. N'oublie pas l'option -castor.
-    SMmaker.exe -m mmr -o data0_${replicate_id} -p simu0_${replicate_id}/simu0_${replicate_id}_pt.s.hdr -r simu0_${replicate_id}/simu0_${replicate_id}_rd.s.hdr -s simu0_${replicate_id}/simu0_${replicate_id}_sc.s.hdr -n simu0_${replicate_id}/simu0_${replicate_id}_nm.s.hdr -A simu0_${replicate_id}/simu0_${replicate_id}_at.s -c cmap0/cmap0.ecm -castor -v 2
+    SMmaker.exe -m mmr2d -o data0_${replicate_id} -p simu0_${replicate_id}/simu0_${replicate_id}_pt.s.hdr -r simu0_${replicate_id}/simu0_${replicate_id}_rd.s.hdr -s simu0_${replicate_id}/simu0_${replicate_id}_sc.s.hdr -n simu0_${replicate_id}/simu0_${replicate_id}_nm.s.hdr -A simu0_${replicate_id}/simu0_${replicate_id}_at.s -c cmap0/cmap0.ecm -castor -v 2
 
     fi
 

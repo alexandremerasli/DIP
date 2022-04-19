@@ -32,7 +32,7 @@ class iResults(vDenoising):
 
             if (fixed_config["method"] == 'AML'):
                 self.beta = hyperparameters_config["A_AML"]
-            else:                
+            if (fixed_config["method"] == 'BSREM' or fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
                 self.beta = self.rho
         # Create summary writer from tensorboard
         self.writer = SummaryWriter()
@@ -109,7 +109,9 @@ class iResults(vDenoising):
 
 
     def runComputation(self,config,fixed_config,hyperparameters_config,root):
-        beta_string = ', beta = ' + str(self.beta)
+        print('ccccccccccccccc')
+        if (hasattr(self,'beta')):
+            beta_string = ', beta = ' + str(self.beta)
 
         if (fixed_config["method"] == "nested" or fixed_config["method"] == "Gong"):
             self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
@@ -135,13 +137,19 @@ class iResults(vDenoising):
                     f_p = self.fijii_np(self.subroot_p+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i) + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading DIP output
                 elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML'):
                     pet_algo=config["method"]
-                    iteration_name="iterations"+beta_string
+                    iteration_name = "iterations"
+                    if (hasattr(self,'beta')):
+                        iteration_name += beta_string
                     if (config["method"] == 'ADMMLim'):
                         subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
+                        print('aaaaaaaaaaaaaaaaaaaaa')
+                        print(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + NNEPPS_string + '.img')
                         f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                     #elif (config["method"] == 'BSREM'):
                     #    f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                     else:
+                        print('bbbbbbbbbbbbbbb')
+                        print(self.subroot_p)
                         f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                 f += f_p
                 # Metrics for NN output 

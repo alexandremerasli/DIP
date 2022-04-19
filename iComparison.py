@@ -21,7 +21,8 @@ class iComparison(vReconstruction):
             self.beta = self.rho
         # castor-recon command line
         castor_command_line = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho)
-        
+        print("commmmmmmmmmmm")
+        print(castor_command_line)
         if (self.method == 'ADMMLim'):
             self.ADMMLim(fixed_config,hyperparameters_config)
         else:
@@ -49,16 +50,16 @@ class iComparison(vReconstruction):
             print("NNEPPS")        
             for it in range(1,max_it + 1):
                 self.NNEPPS_function(fixed_config,hyperparameters_config,it)
-
-        # Initializing results class
-        from iResults import iResults
-        classResults = iResults(config)
-        classResults.nb_replicates = self.nb_replicates
-        classResults.debug = self.debug
-        classResults.rho = self.rho
-        classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
         
-        classResults.runComputation(config,fixed_config,hyperparameters_config,root)
+        # Initializing results class
+        if (self.replicate == 1):
+            from iResults import iResults
+            classResults = iResults(config)
+            classResults.nb_replicates = self.nb_replicates
+            classResults.debug = self.debug
+            classResults.rho = self.rho
+            classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
+            classResults.runComputation(config,fixed_config,hyperparameters_config,root)
 
     def ADMMLim(self,fixed_config,hyperparameters_config):
         # Path variables

@@ -165,7 +165,11 @@ class vDenoising(vGeneral):
         elif (net == 'DD_AE'):   
             PETImage_shape = (PETImage_shape[0],PETImage_shape[1],PETImage_shape[2]) # if auto encoder based on Deep Decoder
 
-        im_input = self.fijii_np(file_path, shape=(PETImage_shape),type='<f') # Load input of the DNN (CT image)
+        if (self.input == 'CT'):
+            type = '<f'
+        else:
+            type = None
+        im_input = self.fijii_np(file_path, shape=(PETImage_shape),type=type) # Load input of the DNN (CT image)
         return im_input
 
 
@@ -246,7 +250,7 @@ class vDenoising(vGeneral):
         out, mu, logvar, z = model(image_net_input_torch)
 
         # Loading X_label from block1 to destandardize NN output
-        image_corrupt = self.fijii_np(subroot+'Block2/x_label/' + format(experiment)+'/'+ format(admm_it - 1) +'_x_label' + suffix + '.img',shape=(PETImage_shape),type='<f')
+        image_corrupt = self.fijii_np(subroot+'Block2/x_label/' + format(experiment)+'/'+ format(admm_it - 1) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
         image_corrupt_scale,param1_scale_im_corrupt,param2_scale_im_corrupt = self.rescale_imag(image_corrupt)
 
         # Reverse scaling like at the beginning and add it to list of samples

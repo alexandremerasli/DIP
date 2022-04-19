@@ -37,13 +37,13 @@ class vReconstruction(vGeneral):
 
         # Ininitializing DIP output and first image x with f_init and image_init
         if (self.method == "nested"): # Nested needs 1 to not add any prior information at the beginning, and to initialize x computation to uniform with 1
-            self.f_init = np.ones((self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2]), dtype='<f')
+            self.f_init = np.ones((self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2]))
         elif (self.method == "Gong"): # Gong initialization with 60th iteration of MLEM (normally, DIP trained with this image as label...)
-            self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.img',shape=(self.PETImage_shape))
-            #self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape))
+            self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
+            #self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
 
         # Initialize and save mu variable from ADMM
-        self.mu = 0* np.ones((self.PETImage_shape[0], self.PETImage_shape[1], self.PETImage_shape[2]), dtype='<f')
+        self.mu = 0* np.ones((self.PETImage_shape[0], self.PETImage_shape[1], self.PETImage_shape[2]))
         self.save_img(self.mu,self.subroot+'Block2/mu/'+ format(self.experiment)+'/mu_' + format(-1) + self.suffix + '.img')
 
         # Launch short MLEM reconstruction
