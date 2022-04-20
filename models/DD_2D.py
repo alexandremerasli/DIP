@@ -15,6 +15,7 @@ class DD_2D(pl.LightningModule):
         self.lr = hyperparameters_config['lr']
         self.opti_DIP = hyperparameters_config['opti_DIP']
         self.sub_iter_DIP = hyperparameters_config['sub_iter_DIP']
+        self.method = method
         if (hyperparameters_config['mlem_sequence'] is None):
             self.post_reco_mode = True
             self.suffix = self.suffix_func(hyperparameters_config)

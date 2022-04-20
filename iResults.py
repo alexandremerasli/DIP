@@ -27,6 +27,8 @@ class iResults(vDenoising):
         if (fixed_config["method"] == 'ADMMLim'):
             self.total_nb_iter = hyperparameters_config["nb_iter_second_admm"]
             self.beta = hyperparameters_config["alpha"]
+        elif (fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
+            self.total_nb_iter = hyperparameters_config["sub_iter_DIP"]
         else:
             self.total_nb_iter = self.max_iter
 
@@ -40,8 +42,8 @@ class iResults(vDenoising):
         
         #Loading Ground Truth image to compute metrics
         self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
-        if fixed_config["FLTNB"] == "float":
-            self.image_gt = np.astype(np.float64)
+        if fixed_config["FLTNB"] == "double":
+            self.image_gt.astype(np.float64)
 
         # Metrics arrays
         self.PSNR_recon = np.zeros(self.total_nb_iter)
@@ -127,10 +129,6 @@ class iResults(vDenoising):
             f = np.zeros(self.PETImage_shape,dtype='<f')
             IR = 0
             for p in range(1,self.nb_replicates+1):
-                print("aaaaaaaaaaaaaa")
-                print(self.nb_replicates)
-                print(fixed_config["average_replicates"])
-                print(self.replicate)
                 if (fixed_config["average_replicates"] or (fixed_config["average_replicates"] == False and p == self.replicate)):
                     self.subroot_p = self.subroot_data + 'debug/'*self.debug + 'replicate_' + str(p) + '/'
 

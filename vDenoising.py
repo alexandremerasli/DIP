@@ -26,10 +26,12 @@ class vDenoising(vGeneral):
     def initializeSpecific(self,fixed_config,hyperparameters_config,root):
         self.createDirectoryAndConfigFile(hyperparameters_config)
         # Specific hyperparameters for reconstruction module (Do it here to have raytune hyperparameters_config hyperparameters selection)
+        if (fixed_config["net"] == "DD" or fixed_config["net"] == "DD_AE"):
+            self.d_DD = hyperparameters_config["d_DD"]
+            self.k_DD = hyperparameters_config["k_DD"]
         if (fixed_config["method"] == "nested" or fixed_config["method"] == "Gong"):
             self.input = hyperparameters_config["input"]
             self.scaling_input = hyperparameters_config["scaling"]
-
             # Loading DIP input
             # Creating random image input for DIP while we do not have CT, but need to be removed after
             self.create_input(self.net,self.PETImage_shape,hyperparameters_config,self.subroot_data) # to be removed when CT will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
@@ -162,13 +164,14 @@ class vDenoising(vGeneral):
         if (net == 'DD'):
             input_size_DD = int(PETImage_shape[0] / (2**self.d_DD)) # if original Deep Decoder (i.e. only with decoder part)
             PETImage_shape = (self.k_DD,input_size_DD,input_size_DD) # if original Deep Decoder (i.e. only with decoder part)
-        elif (net == 'DD_AE'):   
-            PETImage_shape = (PETImage_shape[0],PETImage_shape[1],PETImage_shape[2]) # if auto encoder based on Deep Decoder
+        #elif (net == 'DD_AE'):   
+        #    PETImage_shape = (PETImage_shape[0],PETImage_shape[1],PETImage_shape[2]) # if auto encoder based on Deep Decoder
 
-        if (self.input == 'CT'):
+        if (self.input == 'CT' and self.net != 'DD'):
             type = '<f'
         else:
             type = None
+
         im_input = self.fijii_np(file_path, shape=(PETImage_shape),type=type) # Load input of the DNN (CT image)
         return im_input
 
