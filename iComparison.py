@@ -52,7 +52,7 @@ class iComparison(vReconstruction):
                 self.NNEPPS_function(fixed_config,hyperparameters_config,it)
         
         # Initializing results class
-        if (self.replicate == 1):
+        if ((fixed_config["average_replicates"] and self.replicate == 1) or (fixed_config["average_replicates"] == False)):
             from iResults import iResults
             classResults = iResults(config)
             classResults.nb_replicates = self.nb_replicates

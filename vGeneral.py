@@ -145,8 +145,8 @@ class vGeneral(abc.ABC):
         # Additional variables needing every values in config
         # Number of replicates 
         self.nb_replicates = config["replicates"]['grid_search'][-1]
-        if (task == "show_results_replicates" or task == "show_results"):
-            config["replicates"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
+        #if (task == "show_results_replicates" or task == "show_results"):
+        #    config["replicates"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
 
         # Do not scale images if network input is uniform of if Gong's method
         if config["input"]['grid_search'] == 'uniform': # Do not standardize or normalize if uniform, otherwise NaNs
@@ -154,9 +154,6 @@ class vGeneral(abc.ABC):
         if (len(config["method"]['grid_search']) == 1):
             if config["method"]['grid_search'][0] == 'Gong':
                 config["scaling"]['grid_search'] = ["nothing"]
-            # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMLim in CASToR
-            if config["method"]['grid_search'][0] == "nested":
-                config["mlem_sequence"]['grid_search'] = [False]
 
         # Remove hyperparameters list
         self.hyperparameters_list = config["hyperparameters"]
@@ -186,6 +183,9 @@ class vGeneral(abc.ABC):
                 config.pop("k_DD", None)
             if (config["method"]['grid_search'][0] == 'MLEM' or config["method"]['grid_search'][0] == 'AML'):
                 config.pop("rho", None)
+            # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMLim in CASToR
+            if (config["method"]['grid_search'][0] == "nested" or config["method"]['grid_search'][0] == "ADMMLim"):
+                config["mlem_sequence"]['grid_search'] = [False]
         else:
             if ('results' not in task):
                 raise ValueError("Please do not put several methods at the same time for computation.")

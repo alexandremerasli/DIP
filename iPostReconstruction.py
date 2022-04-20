@@ -31,11 +31,12 @@ class iPostReconstruction(vDenoising):
     def runComputation(self,config,fixed_config,hyperparameters_config,root):
 
         # Initializing results class
-        from iResults import iResults
-        classResults = iResults(config)
-        classResults.nb_replicates = self.nb_replicates
-        classResults.debug = self.debug
-        classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
+        if ((fixed_config["average_replicates"] and self.replicate == 1) or (fixed_config["average_replicates"] == False)):
+            from iResults import iResults
+            classResults = iResults(config)
+            classResults.nb_replicates = self.nb_replicates
+            classResults.debug = self.debug
+            classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
 
         self.finetuning = 'False' # to ignore last.ckpt file
         vDenoising.runComputation(self,config,fixed_config,hyperparameters_config,root)

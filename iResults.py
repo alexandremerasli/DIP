@@ -39,7 +39,9 @@ class iResults(vDenoising):
         
         #Loading Ground Truth image to compute metrics
         self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
-        
+        if fixed_config["FLTNB"] == "float":
+            self.image_gt = np.astype(np.float64)
+
         # Metrics arrays
         self.PSNR_recon = np.zeros(self.total_nb_iter)
         self.PSNR_norm_recon = np.zeros(self.total_nb_iter)
@@ -109,7 +111,6 @@ class iResults(vDenoising):
 
 
     def runComputation(self,config,fixed_config,hyperparameters_config,root):
-        print('ccccccccccccccc')
         if (hasattr(self,'beta')):
             beta_string = ', beta = ' + str(self.beta)
 
@@ -123,43 +124,56 @@ class iResults(vDenoising):
             print(i)
 
             f = np.zeros(self.PETImage_shape,dtype='<f')
+            IR = 0
             for p in range(1,self.nb_replicates+1):
-                self.subroot_p = self.subroot_data + 'debug/'*self.debug + 'replicate_' + str(p) + '/'
+                print("aaaaaaaaaaaaaa")
+                print(self.nb_replicates)
+                print(fixed_config["average_replicates"])
+                print(self.replicate)
+                if (fixed_config["average_replicates"] or (fixed_config["average_replicates"] == False and p == self.replicate)):
+                    self.subroot_p = self.subroot_data + 'debug/'*self.debug + 'replicate_' + str(p) + '/'
 
-                # Take NNEPPS images if NNEPPS is asked for this run
-                if (hyperparameters_config["NNEPPS"]):
-                    NNEPPS_string = "_NNEPPS"
-                else:
-                    NNEPPS_string = ""
-                if (config["method"] == 'Gong' or config["method"] == 'nested'):
-                    pet_algo=config["method"]+"to fit"
-                    iteration_name="(post reconstruction)"
-                    f_p = self.fijii_np(self.subroot_p+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i) + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading DIP output
-                elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML'):
-                    pet_algo=config["method"]
-                    iteration_name = "iterations"
-                    if (hasattr(self,'beta')):
-                        iteration_name += beta_string
-                    if (config["method"] == 'ADMMLim'):
-                        subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
-                        print('aaaaaaaaaaaaaaaaaaaaa')
-                        print(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + NNEPPS_string + '.img')
-                        f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
-                    #elif (config["method"] == 'BSREM'):
-                    #    f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                    # Take NNEPPS images if NNEPPS is asked for this run
+                    if (hyperparameters_config["NNEPPS"]):
+                        NNEPPS_string = "_NNEPPS"
                     else:
-                        print('bbbbbbbbbbbbbbb')
-                        print(self.subroot_p)
-                        f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
-                f += f_p
-                # Metrics for NN output 
-                self.compute_IR_bkg(self.PETImage_shape,f_p,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,self.phantom,writer=self.writer,write_tensorboard=True)
-    
-            print("Metrics saved in tensorboard")
+                        NNEPPS_string = ""
+                    if (config["method"] == 'Gong' or config["method"] == 'nested'):
+                        pet_algo=config["method"]+"to fit"
+                        iteration_name="(post reconstruction)"
+                        f_p = self.fijii_np(self.subroot_p+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i) + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading DIP output
+                    elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML'):
+                        pet_algo=config["method"]
+                        iteration_name = "iterations"
+                        if (hasattr(self,'beta')):
+                            iteration_name += beta_string
+                        if (config["method"] == 'ADMMLim'):
+                            subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
+                            f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                        #elif (config["method"] == 'BSREM'):
+                        #    f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                        else:
+                            f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+
+                    # Compute IR metric (different from others with several replicates)
+                    self.compute_IR_bkg(self.PETImage_shape,f_p,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,self.phantom,writer=self.writer,write_tensorboard=True)
+                    # Specific average for IR
+                    if (fixed_config["average_replicates"] == False and p == self.replicate):
+                        IR = self.IR_bkg_recon[i-1]
+                    elif (fixed_config["average_replicates"]):
+                        IR += self.IR_bkg_recon[i-1] / self.nb_replicates
+                        
+                    if (fixed_config["average_replicates"]): # Average images across replicates (for metrics except IR)
+                        f += f_p / self.nb_replicates
+                    elif (fixed_config["average_replicates"] == False and p == self.replicate):
+                        f = f_p
+                
+            print("IR saved in tensorboard")
+            print(IR)
+            self.IR_bkg_recon[i-1] = IR
             self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[i-1], i)
 
-            # Compute metrics after averaging images across replicates
-            f = f / self.nb_replicates
+            # Show images and metrics in tensorboard (averaged images if asked in fixed_config)           
             self.writeEndImagesAndMetrics(i,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
 
 
@@ -177,7 +191,8 @@ class iResults(vDenoising):
               
         bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
         bkg_ROI_act = image_recon[bkg_ROI==1]
-        IR_bkg_recon[i-1] += (np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)) / self.nb_replicates
+        #IR_bkg_recon[i-1] += (np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)) / self.nb_replicates
+        IR_bkg_recon[i-1] = (np.std(bkg_ROI_act) / np.mean(bkg_ROI_act))
         print("IR_bkg_recon",IR_bkg_recon)
         print('Image roughness in the background', IR_bkg_recon[i-1],' , must be as small as possible')
 
@@ -271,4 +286,4 @@ class iResults(vDenoising):
             writer.add_scalar('Mean activity in cold cylinder (best : 0)', MA_cold_recon[i-1], i)
             writer.add_scalar('Mean Concentration Recovery coefficient in hot cylinder (best : 1)', AR_hot_recon[i-1], i)
             writer.add_scalar('Mean Concentration Recovery coefficient in background (best : 1)', AR_bkg_recon[i-1], i)
-            writer.add_scalar('Image roughness in the background (best : 0)', IR_bkg_recon[i-1], i)
+            #writer.add_scalar('Image roughness in the background (best : 0)', IR_bkg_recon[i-1], i)

@@ -20,12 +20,13 @@ class iNestedADMM(vReconstruction):
         self.f = self.f_init
 
         # Initializing results class
-        from iResults import iResults
-        classResults = iResults(config)
-        classResults.nb_replicates = self.nb_replicates
-        classResults.rho = self.rho
-        classResults.debug = self.debug
-        classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
+        if ((fixed_config["average_replicates"] and self.replicate == 1) or (fixed_config["average_replicates"] == False)):
+            from iResults import iResults
+            classResults = iResults(config)
+            classResults.nb_replicates = self.nb_replicates
+            classResults.rho = self.rho
+            classResults.debug = self.debug
+            classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
         
         for i in range(self.max_iter):
             print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Global iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', i)
