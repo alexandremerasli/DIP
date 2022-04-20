@@ -33,6 +33,7 @@ class iResults(vDenoising):
             if (fixed_config["method"] == 'AML'):
                 self.beta = hyperparameters_config["A_AML"]
             if (fixed_config["method"] == 'BSREM' or fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
+                self.rho = hyperparameters_config["rho"]
                 self.beta = self.rho
         # Create summary writer from tensorboard
         self.writer = SummaryWriter()
@@ -141,7 +142,8 @@ class iResults(vDenoising):
                     if (config["method"] == 'Gong' or config["method"] == 'nested'):
                         pet_algo=config["method"]+"to fit"
                         iteration_name="(post reconstruction)"
-                        f_p = self.fijii_np(self.subroot_p+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i) + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading DIP output
+                        f_p = self.fijii_np(self.subroot_p+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+                        f_p.astype(np.float64)
                     elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML'):
                         pet_algo=config["method"]
                         iteration_name = "iterations"
