@@ -125,8 +125,6 @@ class DIP_2D(pl.LightningModule):
         # self.positivity = nn.Softplus() # Final SiLU to enforce positivity of ouput image, smoother than ReLU
 
     def forward(self, x):
-        if (len(x.shape) == 5): # if 3D but with dim3 = 1 -> 2D
-            x = x[:,:,:,:,0]
         # Encoder
         out1 = self.deep1(x)
         out = self.down1(out1)

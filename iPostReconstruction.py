@@ -19,6 +19,8 @@ class iPostReconstruction(vDenoising):
         self.checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         self.name_run = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.total_nb_iter = hyperparameters_config["sub_iter_DIP"]
+        print(self.total_nb_iter)
+        print('aaaaaaaaaaS')
         self.sub_iter_DIP = 1 # For first iteration, then everything is in for loop with total_nb_iter variable
         '''
         ckpt_file_path = self.subroot+'Block2/checkpoint/'+format(self.experiment)  + '/' + suffix_func(hyperparameters_config) + '/' + '/last.ckpt'
