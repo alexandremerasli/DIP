@@ -92,11 +92,13 @@ class vDenoising(vGeneral):
             #sub_iter_DIP = 100 if net.startswith('DD') else 100
             print(admm_it)
         elif (admm_it == -1): # First ADMM iteration in block2 post reconstruction
-            sub_iter_DIP = 1 if net.startswith('DD') else 1
             print("admmm_it = -1 must be remooooooooooooooooooooooooooooooooooooooooooooooooooooooooved")
-            import sys
-            sys.exit()
-
+            if (self.method != 'Gong'):
+                sub_iter_DIP = 1 if net.startswith('DD') else 1
+                import sys
+                sys.exit()
+            else:
+                sub_iter_DIP = 3
         if (finetuning == 'False'): # Do not save and use checkpoints (still save hparams and event files for now ...)
             logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
             #checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=0, save_weights_only=True) # Do not save any checkpoint (save_top_k = 0)
@@ -118,11 +120,15 @@ class vDenoising(vGeneral):
 
     def create_input(self,net,PETImage_shape,hyperparameters_config,subroot): #CT map for high-count data, but not CT yet...
         constant_uniform = 1
+        if (self.FLTNB == 'float'):
+            type = 'float32'
+        elif (self.FLTNB == 'double'):
+            type = 'float64'
         if (net == 'DIP' or net == 'DIP_VAE'):
             if hyperparameters_config["input"] == "random":
-                im_input = np.random.normal(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype('float32') # initializing input image with random image (for DIP)
+                im_input = np.random.normal(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type) # initializing input image with random image (for DIP)
             elif hyperparameters_config["input"] == "uniform":
-                im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype('float32') # initializing input image with random image (for DIP)
+                im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type) # initializing input image with random image (for DIP)
             else:
                 return "CT input, do not need to create input"
             im_input = im_input.reshape(PETImage_shape) # reshaping (for DIP)
@@ -130,18 +136,18 @@ class vDenoising(vGeneral):
             if (net == 'DD'):
                 input_size_DD = int(PETImage_shape[0] / (2**hyperparameters_config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
                 if hyperparameters_config["input"] == "random":
-                    im_input = np.random.normal(0,1,hyperparameters_config["k_DD"]*input_size_DD*input_size_DD).astype('float32') # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+                    im_input = np.random.normal(0,1,hyperparameters_config["k_DD"]*input_size_DD*input_size_DD).astype(type) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
                 elif hyperparameters_config["input"] == "uniform":
-                    im_input = constant_uniform*np.ones((hyperparameters_config["k_DD"],input_size_DD,input_size_DD)).astype('float32') # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+                    im_input = constant_uniform*np.ones((hyperparameters_config["k_DD"],input_size_DD,input_size_DD)).astype(type) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
                 else:
                     return "CT input, do not need to create input"
                 im_input = im_input.reshape(hyperparameters_config["k_DD"],input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
                 
             elif (net == 'DD_AE'):
                 if hyperparameters_config["input"] == "random":
-                    im_input = np.random.normal(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype('float32') # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+                    im_input = np.random.normal(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
                 elif hyperparameters_config["input"] == "uniform":
-                    im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype('float32') # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+                    im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
                 else:
                     return "CT input, do not need to create input"
                 im_input = im_input.reshape(PETImage_shape[0],PETImage_shape[1],PETImage_shape[2]) # reshaping (for Deep Decoder) # if auto encoder based on Deep Decoder

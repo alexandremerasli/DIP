@@ -31,7 +31,7 @@ class vReconstruction(vGeneral):
         else:
             self.rho = 0
         if (fixed_config["method"] == "ADMMLim" or fixed_config["method"] == "nested" or fixed_config["method"] == "Gong"):
-            self.alpha = hyperparameters_config["alpha"]
+            self.alpha = hyperparameters_config["alpha"] # Not useful for Gong
             self.sub_iter_PLL = hyperparameters_config["sub_iter_PLL"]
         self.image_init_path_without_extension = fixed_config["image_init_path_without_extension"]
 
@@ -39,8 +39,8 @@ class vReconstruction(vGeneral):
         if (self.method == "nested"): # Nested needs 1 to not add any prior information at the beginning, and to initialize x computation to uniform with 1
             self.f_init = np.ones((self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2]))
         elif (self.method == "Gong"): # Gong initialization with 60th iteration of MLEM (normally, DIP trained with this image as label...)
-            self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
-            #self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
+            #self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
+            self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
 
         # Initialize and save mu variable from ADMM
         self.mu = 0* np.ones((self.PETImage_shape[0], self.PETImage_shape[1], self.PETImage_shape[2]))
@@ -116,7 +116,6 @@ class vReconstruction(vGeneral):
             it = ' -it 16:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, 2D
         else:
             it = ' -it ' + str(sub_iter_PLL) + ':1' # Only 2 iterations (Gong) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
-            #it = ' -it ' + '5:14' # Only 2 iterations to compute argmax, if we estimate it is an enough precise approximation 
         
         # Whole computation
         if (method == 'nested'):
@@ -174,6 +173,7 @@ class vReconstruction(vGeneral):
             base_name_k_next = format(i)
             full_output_path_k_next = subroot_output_path + '/during_eq22/' + base_name_k_next
             x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + f_mu_for_penalty + initialimage            
+            print(x_reconstruction_command_line)
             os.system(x_reconstruction_command_line)
 
             if (mlem_sequence):
