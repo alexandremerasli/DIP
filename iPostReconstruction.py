@@ -47,10 +47,11 @@ class iPostReconstruction(vDenoising):
         classResults.writeBeginningImages(self.suffix,self.image_net_input)
         classResults.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
         
-        for epoch in range(0,self.total_nb_iter,self.total_nb_iter//10):
+        for epoch in range(0,self.total_nb_iter):#,self.total_nb_iter//10):
             if (epoch > 0):
                 # Train model using previously trained network (at iteration before)
-                model = self.train_process(self.suffix,hyperparameters_config, self.finetuning, self.processing_unit, self.total_nb_iter//10, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot)
+                #model = self.train_process(self.suffix,hyperparameters_config, self.finetuning, self.processing_unit, self.total_nb_iter//10, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot)
+                model = self.train_process(self.suffix,hyperparameters_config, self.finetuning, self.processing_unit, 1, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot)
                 # Do finetuning now
                 self.admm_it = 1 # Set it to 1, to take last.ckpt file into account
                 self.finetuning = 'last' # Put finetuning back to 'last' as if we did not split network training
