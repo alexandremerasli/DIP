@@ -57,7 +57,6 @@ class iResults(vDenoising):
     def writeBeginningImages(self,suffix,image_net_input=None):
         self.write_image_tensorboard(self.writer,self.image_gt,"Ground Truth (emission map)",suffix,self.image_gt,0,full_contrast=True) # Ground truth in tensorboard
         if (image_net_input is not None):
-            print(image_net_input)
             self.write_image_tensorboard(self.writer,image_net_input,"DIP input (FULL CONTRAST)",suffix,image_net_input,0,full_contrast=True) # DIP input in tensorboard
 
     def writeCorruptedImage(self,i,max_iter,x_label,suffix,pet_algo,iteration_name='iterations'):
@@ -169,7 +168,6 @@ class iResults(vDenoising):
                         f = f_p
                 
             print("IR saved in tensorboard")
-            print(IR)
             self.IR_bkg_recon[i-1] = IR
             self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[i-1], i)
 

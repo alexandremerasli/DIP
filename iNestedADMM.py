@@ -49,7 +49,7 @@ class iNestedADMM(vReconstruction):
             self.f.astype(numpy.float64)
             
             # Block 3 - mu update
-            self.mu += self.x_label - self.f
+            self.mu = self.x_label - self.f
             self.save_img(self.mu,self.subroot+'Block2/mu/'+ format(self.experiment)+'/mu_' + format(i) + self.suffix + '.img') # saving mu
             # Write corrupted image over ADMM iterations
             classResults.writeCorruptedImage(i,hyperparameters_config["sub_iter_PLL"],self.mu,self.suffix,pet_algo="mmmmmuuuuuuu")

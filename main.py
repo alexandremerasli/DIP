@@ -23,28 +23,30 @@ from iResultsAlreadyComputed import iResultsAlreadyComputed
 fixed_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "method" : tune.grid_search(['Gong']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
-    "debug" : True, # Debug mode = run without raytune and with one iteration
-    "max_iter" : tune.grid_search([10]), # 
+    "FLTNB" : tune.grid_search(['double']), # Number of desired threads. 0 means all the available threads
+    "debug" : False, # Debug mode = run without raytune and with one iteration
+    "max_iter" : tune.grid_search([3]), # 
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
     "finetuning" : tune.grid_search(['last']),
     "experiment" : tune.grid_search([24]),
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
     #"f_init" : tune.grid_search(['1_im_value_cropped']),
     "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
-    "post_smoothing" : tune.grid_search([True]), # Post smoothing by CASToR after reconstruction
+    "post_smoothing" : tune.grid_search([False]), # Post smoothing by CASToR after reconstruction
     "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
+    "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
-    "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms
+    "rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms
     ## network hyperparameters
     "lr" : tune.grid_search([0.041]), # 0.01 for DIP, 0.001 for DD
     "sub_iter_DIP" : tune.grid_search([200]), # 10 for DIP, 100 for DD
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
-    "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+    "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
     "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
@@ -53,7 +55,7 @@ hyperparameters_config = {
     "sub_iter_PLL" : tune.grid_search([10]), # Number of inner iterations in ADMMLim (if mlem_sequence is False)
     "nb_iter_second_admm": tune.grid_search([10]), # Number outer iterations in ADMMLim
     "alpha" : tune.grid_search([0.0005,0.005,0.05,0.5]), # alpha (penalty parameter) in ADMMLim
-    "alpha" : tune.grid_search([0.005]), # alpha (penalty parameter) in ADMMLim
+    "alpha" : tune.grid_search([0.01]), # alpha (penalty parameter) in ADMMLim
     ## hyperparameters from CASToR algorithms 
     # Optimization transfer (OPTITR) hyperparameters
     "mlem_sequence" : tune.grid_search([True]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False
@@ -81,7 +83,7 @@ elif (config["method"]["grid_search"][0] == 'ADMMLim' or config["method"]["grid_
 
 #task = 'full_reco_with_network'
 #task = 'castor_reco'
-#task = 'post_reco'
+task = 'post_reco'
 #task = 'show_results'
 #task = 'show_results_replicates'
 #task = 'show_metrics_results_already_computed'
@@ -98,6 +100,16 @@ elif (task == 'show_results_replicates'): # Show already computed results averag
     classTask = iResultsReplicates(config)
 elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
     classTask = iResultsAlreadyComputed(config)
+
+
+# Incompatible parameters (should be written in vGeneral I think)
+if (config["method"]["grid_search"][0] == 'ADMMLim' and config["rho"]["grid_search"][0] != 0):
+    raise ValueError("ADMMLim must be launch with rho = 0 for now")
+elif (config["method"]["grid_search"][0] == 'nested' and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
+    raise ValueError("nested must be launch with rho > 0")
+elif (config["method"]["grid_search"][0] == 'ADMMLim' and task == "post_reco"):
+    raise ValueError("nested must be launch with rho > 0")
+
 
 #'''
 for method in config["method"]['grid_search']:

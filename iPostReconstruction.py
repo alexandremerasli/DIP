@@ -14,13 +14,11 @@ class iPostReconstruction(vDenoising):
         print("Denoising in post reconstruction")
         vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
         # Loading DIP x_label (corrupted image) from block1
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning.img',shape=(self.PETImage_shape),type='<f')
+        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning.img',shape=(self.PETImage_shape))
         self.net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_post_reco_epoch=' + format(0) + self.suffix + '.img'
         self.checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         self.name_run = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.total_nb_iter = hyperparameters_config["sub_iter_DIP"]
-        print(self.total_nb_iter)
-        print('aaaaaaaaaaS')
         self.sub_iter_DIP = 1 # For first iteration, then everything is in for loop with total_nb_iter variable
         '''
         ckpt_file_path = self.subroot+'Block2/checkpoint/'+format(self.experiment)  + '/' + suffix_func(hyperparameters_config) + '/' + '/last.ckpt'
