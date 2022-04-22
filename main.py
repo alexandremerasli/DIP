@@ -25,10 +25,10 @@ fixed_config = {
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "method" : tune.grid_search(['nested']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
-    "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
-    "FLTNB" : tune.grid_search(['double']), # Number of desired threads. 0 means all the available threads
+    "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
+    "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
-    "max_iter" : tune.grid_search([3]), # 
+    "max_iter" : tune.grid_search([2]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
     "finetuning" : tune.grid_search(['last']),
     "experiment" : tune.grid_search([24]),
@@ -41,10 +41,10 @@ fixed_config = {
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
-    "rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms
+    "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms
     ## network hyperparameters
-    "lr" : tune.grid_search([0.041]), # 0.01 for DIP, 0.001 for DD
-    "sub_iter_DIP" : tune.grid_search([200]), # 10 for DIP, 100 for DD
+    "lr" : tune.grid_search([0.041]), # Learning rate in network optimization
+    "sub_iter_DIP" : tune.grid_search([200]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
     "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
@@ -54,7 +54,6 @@ hyperparameters_config = {
     ## ADMMLim hyperparameters
     "sub_iter_PLL" : tune.grid_search([10]), # Number of inner iterations in ADMMLim (if mlem_sequence is False)
     "nb_iter_second_admm": tune.grid_search([10]), # Number outer iterations in ADMMLim
-    "alpha" : tune.grid_search([0.0005,0.005,0.05,0.5]), # alpha (penalty parameter) in ADMMLim
     "alpha" : tune.grid_search([0.01]), # alpha (penalty parameter) in ADMMLim
     ## hyperparameters from CASToR algorithms 
     # Optimization transfer (OPTITR) hyperparameters
@@ -62,8 +61,7 @@ hyperparameters_config = {
     # AML hyperparameters
     "A_AML" : tune.grid_search([-10000,-500,-100]), # AML lower bound A
     # NNEPPS post processing
-    "NNEPPS" : tune.grid_search([True,False]), # NNEPPS post-processing. True or False
-    "NNEPPS" : tune.grid_search([False]),
+    "NNEPPS" : tune.grid_search([False]), # NNEPPS post-processing. True or False
 }
 
 # Merge 2 dictionaries
@@ -83,8 +81,8 @@ elif (config["method"]["grid_search"][0] == 'ADMMLim' or config["method"]["grid_
 
 #task = 'full_reco_with_network'
 #task = 'castor_reco'
-task = 'post_reco'
-#task = 'show_results'
+#task = 'post_reco'
+task = 'show_results'
 #task = 'show_results_replicates'
 #task = 'show_metrics_results_already_computed'
 
@@ -104,11 +102,11 @@ elif (task == 'show_metrics_results_already_computed'): # Show already computed 
 
 # Incompatible parameters (should be written in vGeneral I think)
 if (config["method"]["grid_search"][0] == 'ADMMLim' and config["rho"]["grid_search"][0] != 0):
-    raise ValueError("ADMMLim must be launch with rho = 0 for now")
+    raise ValueError("ADMMLim must be launched with rho = 0 for now")
 elif (config["method"]["grid_search"][0] == 'nested' and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
-    raise ValueError("nested must be launch with rho > 0")
+    raise ValueError("nested must be launched with rho > 0")
 elif (config["method"]["grid_search"][0] == 'ADMMLim' and task == "post_reco"):
-    raise ValueError("nested must be launch with rho > 0")
+    raise ValueError("ADMMLim cannot be launched in post_reco mode. Please comment this line.")
 
 
 #'''
@@ -139,12 +137,12 @@ for ROI in ['hot','cold']:
         PSNR_norm_recon = []
         MSE_recon = []
         MA_cold_recon = []
-        CRC_hot_recon = []
-        CRC_bkg_recon = []
+        AR_hot_recon = []
+        AR_bkg_recon = []
         IR_bkg_recon = []
 
         if ROI == 'hot':
-            metrics = CRC_hot_recon
+            metrics = AR_hot_recon
         else:
             metrics = MA_cold_recon 
 
@@ -172,8 +170,8 @@ for ROI in ['hot','cold']:
                 PSNR_norm_recon.append(np.array(rows_csv[1]))
                 MSE_recon.append(np.array(rows_csv[2]))
                 MA_cold_recon.append(np.array(rows_csv[3]))
-                CRC_hot_recon.append(np.array(rows_csv[4]))
-                CRC_bkg_recon.append(np.array(rows_csv[5]))
+                AR_hot_recon.append(np.array(rows_csv[4]))
+                AR_bkg_recon.append(np.array(rows_csv[5]))
                 IR_bkg_recon.append(np.array(rows_csv[6]))
 
                 '''
@@ -181,8 +179,8 @@ for ROI in ['hot','cold']:
                 print(PSNR_norm_recon)
                 print(MSE_recon)
                 print(MA_cold_recon)
-                print(CRC_hot_recon)
-                print(CRC_bkg_recon)
+                print(AR_hot_recon)
+                print(AR_bkg_recon)
                 print(IR_bkg_recon)
                 '''
 
@@ -191,7 +189,10 @@ for ROI in ['hot','cold']:
             plt.plot(IR_bkg_recon[run_id],metrics[run_id],'-o')
 
         plt.xlabel('IR')
-        plt.ylabel('CRC')
+        if ROI == 'hot':
+            plt.ylabel('AR')
+        elif ROI == 'cold':
+            plt.ylabel('MA')
 
         for i in range(len(suffixes[0])):
             
@@ -206,8 +207,12 @@ for ROI in ['hot','cold']:
                     legend += "NNEPPS : " + l[p+1]
             suffixes_legend.append(legend)
     plt.legend(suffixes_legend)
+
     # Saving this figure locally
-    plt.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'CRC in ' + ROI + ' region vs IR in background' + '.png')
+    if ROI == 'hot':
+        plt.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'AR in ' + ROI + ' region vs IR in background' + '.png')
+    elif ROI == 'cold':
+        plt.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'MA in ' + ROI + ' region vs IR in background' + '.png')
     from textwrap import wrap
     wrapped_title = "\n".join(wrap(suffix, 50))
     plt.title(wrapped_title,fontsize=12)

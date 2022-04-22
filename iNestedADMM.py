@@ -57,7 +57,7 @@ class iNestedADMM(vReconstruction):
             print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))
 
             # Write output image and metrics to tensorboard
-            classResults.writeEndImagesAndMetrics(i,hyperparameters_config["sub_iter_PLL"],self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo="nested ADMM")
+            classResults.writeEndImagesAndMetrics(i,hyperparameters_config["sub_iter_PLL"],self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo=fixed_config["method"])
 
         # Saving final image output
         self.save_img(self.f, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')

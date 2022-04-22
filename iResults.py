@@ -1,6 +1,7 @@
 ## Python libraries
 
 # Pytorch
+from torch import fix
 from torch.utils.tensorboard import SummaryWriter
 
 # Math
@@ -28,7 +29,10 @@ class iResults(vDenoising):
             self.total_nb_iter = hyperparameters_config["nb_iter_second_admm"]
             self.beta = hyperparameters_config["alpha"]
         elif (fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
-            self.total_nb_iter = hyperparameters_config["sub_iter_DIP"]
+            if (fixed_config["task"] == 'post_reco'):
+                self.total_nb_iter = hyperparameters_config["sub_iter_DIP"]
+            else:
+                self.total_nb_iter = fixed_config["max_iter"]
         else:
             self.total_nb_iter = self.max_iter
 
@@ -123,8 +127,6 @@ class iResults(vDenoising):
             self.writeBeginningImages(self.suffix) # Write GT
 
         for i in range(1,self.total_nb_iter+1):
-            print(i)
-
             f = np.zeros(self.PETImage_shape,dtype='<f')
             IR = 0
             for p in range(1,self.nb_replicates+1):
@@ -137,8 +139,12 @@ class iResults(vDenoising):
                     else:
                         NNEPPS_string = ""
                     if (config["method"] == 'Gong' or config["method"] == 'nested'):
-                        pet_algo=config["method"]+"to fit"
-                        iteration_name="(post reconstruction)"
+                        if (fixed_config["task"] == "post_reco"):
+                            pet_algo=config["method"]+"to fit"
+                            iteration_name="(post reconstruction)"
+                        else:
+                            pet_algo=config["method"]
+                            iteration_name="iterations"
                         f_p = self.fijii_np(self.subroot_p+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
                         f_p.astype(np.float64)
                     elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML'):
@@ -263,6 +269,7 @@ class iResults(vDenoising):
             wr.writerow(AR_bkg_recon)
             wr.writerow(IR_bkg_recon)
 
+        '''
         print(PSNR_recon)
         print(PSNR_norm_recon)
         print(MSE_recon)
@@ -270,7 +277,8 @@ class iResults(vDenoising):
         print(AR_hot_recon)
         print(AR_bkg_recon)
         print(IR_bkg_recon)
-
+        '''
+        
         if (write_tensorboard):
             print("Metrics saved in tensorboard")
             '''
