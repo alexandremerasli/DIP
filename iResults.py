@@ -131,7 +131,7 @@ class iResults(vDenoising):
             IR = 0
             for p in range(1,self.nb_replicates+1):
                 if (fixed_config["average_replicates"] or (fixed_config["average_replicates"] == False and p == self.replicate)):
-                    self.subroot_p = self.subroot_data + 'debug/'*self.debug + 'replicate_' + str(p) + '/'
+                    self.subroot_p = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
 
                     # Take NNEPPS images if NNEPPS is asked for this run
                     if (hyperparameters_config["NNEPPS"]):

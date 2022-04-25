@@ -51,7 +51,7 @@ class vGeneral(abc.ABC):
         self.FLTNB = fixed_config["FLTNB"]
 
         # Initialize useful variables
-        self.subroot = root + '/data/Algo/' + 'debug/'*self.debug + 'replicate_' + str(self.replicate) + '/' # Directory root
+        self.subroot = root + '/data/Algo/' + 'debug/'*self.debug + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' + self.method + '/' # Directory root
         self.subroot_data = root + '/data/Algo/' # Directory root
         self.suffix = self.suffix_func(hyperparameters_config) # self.suffix to make difference between raytune runs (different hyperparameters)
         self.suffix_metrics = self.suffix_func(hyperparameters_config,NNEPPS=True) # self.suffix with NNEPPS information

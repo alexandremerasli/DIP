@@ -23,7 +23,7 @@ from iResultsAlreadyComputed import iResultsAlreadyComputed
 fixed_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "method" : tune.grid_search(['Gong']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['ADMMLim']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
@@ -41,7 +41,7 @@ fixed_config = {
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
-    "rho" : tune.grid_search([0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     ## network hyperparameters
     "lr" : tune.grid_search([1]), # Learning rate in network optimization
     #"lr" : tune.grid_search([0.001,0.041,0.01]), # Learning rate in network optimization
