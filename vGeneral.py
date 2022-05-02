@@ -230,11 +230,19 @@ class vGeneral(abc.ABC):
                 ref_numbers = format(i) + '_' + variable_name
             else:
                 ref_numbers = format(i)
-        else:
+        elif (len(L) == 2):
             i = L[0]
             k = L[1]
             if variable_name != '':
                 ref_numbers = format(i) + '_' + format(k) + '_' + variable_name
+            else:
+                ref_numbers = format(i)
+        elif (len(L) == 3):
+            i = L[0]
+            k = L[1]
+            inner_it = L[2]
+            if variable_name != '':
+                ref_numbers = format(i) + '_' + format(k) + '_' + format(inner_it) + '_' + variable_name
             else:
                 ref_numbers = format(i)
         filename = subroot_output_path + '/'+ subpath + '/' + ref_numbers +'.hdr'
@@ -468,7 +476,7 @@ class vGeneral(abc.ABC):
             header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[-1] + '_' + str(replicates) + '/data' + phantom[-1] + '_' + str(replicates) + '.cdh' # PET data path
         dim = ' -dim ' + PETImage_shape_str
         vox = ' -vox 4,4,4'
-        vb = ' -vb 3'
+        vb = ' -vb 0'
         th = ' -th ' + str(self.nb_threads) # must be set to 1 for ADMMLim, as multithreading does not work for now with ADMMLim optimizer
         proj = ' -proj incrementalSiddon'
         psf = ' -conv gaussian,4,1,3.5::psf'
@@ -517,8 +525,8 @@ class vGeneral(abc.ABC):
             if (i==0): # For first iteration, put rho to zero
                 rho = 0
             penaltyStrength = ' -pnlt-beta ' + str(rho)
-        elif (method == 'ADMMLim'):
-            opti = ' -opti ADMMLim' + ',' + str(self.alpha)
+        elif ('ADMMLim' in method):
+            opti = ' -opti ' + method + ',' + str(self.alpha) # ADMMLim dirty 1 or 2
             pnlt = ' -pnlt ' + penalty
             if penalty == "MRF":
                 pnlt += ':' + self.subroot_data + method + '_MRF.conf'
