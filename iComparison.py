@@ -65,6 +65,9 @@ class iComparison(vReconstruction):
         Path(self.subroot+'Comparison/' + self.method + '/').mkdir(parents=True, exist_ok=True) # CASTor path
         Path(self.subroot+'Comparison/' + self.method + '/' + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
 
+        self.ADMMLim_general(hyperparameters_config, fixed_config, 0, subdir, subroot_output_path)
+
+        '''
         i = 0
         k_init = -1
         full_output_path_k_next = subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k_init+1)
@@ -149,6 +152,8 @@ class iComparison(vReconstruction):
                 print("")
                 print(x_reconstruction_command_line_2)
                 self.compute_x_v_u_ADMM(x_reconstruction_command_line_2,full_output_path_k_next,subdir,i,k,self.phantom,subroot_output_path,self.subroot_data)
+
+        '''
 
     def NNEPPS_function(self,fixed_config,hyperparameters_config,it):
         executable='removeNegativeValues.exe'

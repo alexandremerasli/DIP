@@ -208,9 +208,11 @@ class vReconstruction(vGeneral):
         self.write_hdr(subroot,[i,k+1],subdir,phantom,'u',subroot_output_path=subroot_output_path,matrix_type='sino')
 
 
-    def ADMMLim_general(self, hyperparameters_config, i, subdir, subroot_output_path):
+    def ADMMLim_general(self, hyperparameters_config, fixed_config, i, subdir, subroot_output_path):
         
         k_init = -1
+        full_output_path_k_next = subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k_init+1)
+        f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/1_im_value_cropped.hdr' # its value is not useful to compute v^0
 
         # Define command line to run ADMM with CASToR, to compute v^0
         if (i == 0):   # choose initial image for CASToR reconstruction
@@ -228,14 +230,14 @@ class vReconstruction(vGeneral):
         self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k_init-1,self.phantom,subroot_output_path,self.subroot_data)
         # Copy u^-1 coming from CASToR to v^0
         copy(full_output_path_k_next + '_u.img', full_output_path_k_next + '_v.img')
-        self.write_hdr(self.subroot_data,[i,k_init+1],'during_eq22',self.phantom,'v',subroot_output_path,matrix_type='sino')
+        self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'v',subroot_output_path,matrix_type='sino')
 
         # Then initialize u^0 (u^-1 in CASToR)
         if (i == 0):   # choose initial image for CASToR reconstruction
             copy(self.subroot_data + 'Data/initialization/0_sino_value.img', full_output_path_k_next + '_u.img')
         elif (i >= 1):
-            copy(subroot_output_path + '/during_eq22/' +format(i-1) + '_' + format(hyperparameters_config["nb_iter_second_admm"]) + '_u.img', full_output_path_k_next + '_u.img')
-        self.write_hdr(self.subroot_data,[i,k_init+1],'during_eq22',self.phantom,'u',subroot_output_path,matrix_type='sino')
+            copy(subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(hyperparameters_config["nb_iter_second_admm"]) + '_u.img', full_output_path_k_next + '_u.img')
+        self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'u',subroot_output_path,matrix_type='sino')
             
 
 
@@ -256,11 +258,18 @@ class vReconstruction(vGeneral):
             base_name_k = format(i) + '_' + format(k)
             base_name_k_next = format(i) + '_' + format(k+1)
             full_output_path_k = subroot_output_path + '/' + subdir + '/' + base_name_k
-            f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'
+            if (self.method != 'ADMMLim'):
+                f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'
             v_for_additional_data = ' -additional-data ' + full_output_path_k + '_v.hdr'
             u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
-
+            if (self.method == 'ADMMLim'):
+                # Compute one ADMM iteration (x, v, u)
+                if ((k == hyperparameters_config["nb_iter_second_admm"] - 1) and fixed_config["post_smoothing"]): # For last iteration, apply post smoothing for vizualization
+                    #conv = ''
+                    conv = ' -conv gaussian,18,1,3.5::post'
+                else:
+                    conv = ''
 
             # Number of iterations from config dictionnary
             print("k = ",k)
