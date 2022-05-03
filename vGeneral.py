@@ -476,7 +476,7 @@ class vGeneral(abc.ABC):
             header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[-1] + '_' + str(replicates) + '/data' + phantom[-1] + '_' + str(replicates) + '.cdh' # PET data path
         dim = ' -dim ' + PETImage_shape_str
         vox = ' -vox 4,4,4'
-        vb = ' -vb 0'
+        vb = ' -vb 3'
         th = ' -th ' + str(self.nb_threads) # must be set to 1 for ADMMLim, as multithreading does not work for now with ADMMLim optimizer
         proj = ' -proj incrementalSiddon'
         psf = ' -conv gaussian,4,1,3.5::psf'
