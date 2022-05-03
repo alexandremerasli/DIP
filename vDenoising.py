@@ -2,11 +2,17 @@
 
 # Pytorch
 import torch
+
 import pytorch_lightning as pl
 
 # Useful
 import numpy as np
 import os
+if (os.path.isfile(os.getcwd() + "/seed.txt")):
+    with open(os.getcwd() + "/seed.txt", 'r') as file:
+        random_seed = file.read().rstrip()
+    if (eval(random_seed)):
+        np.random.seed(1)
 
 # Local files to import
 from vGeneral import vGeneral
@@ -98,6 +104,9 @@ class vDenoising(vGeneral):
                 import sys
                 sys.exit()
             else:
+                print('whaaaaaaaaaaaaaaaaaaat ????????????')
+                import sys
+                sys.exit()
                 sub_iter_DIP = 3
         if (finetuning == 'False'): # Do not save and use checkpoints (still save hparams and event files for now ...)
             logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
