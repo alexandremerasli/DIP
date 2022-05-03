@@ -76,12 +76,19 @@ class vReconstruction(vGeneral):
         self.save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
         self.write_hdr(self.subroot_data,[i],'before_eq22',phantom,'f_mu',subroot_output_path)
         f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'        
-        k_init = -1
+
         subdir = 'during_eq22'
+        '''
+        k_init = -1
         castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i)
+        '''
+        
+        x = self.ADMMLim_general(hyperparameters_config, 0, subdir, subroot_output_path, f_mu_for_penalty,writer,image_gt)
+
 
         # Initialization
         if (method == 'nested'):            
+            '''
             # Useful variables for command line
             base_name_k_next = format(i) + '_' + format(k_init+1)
             full_output_path_k_next = subroot_output_path + '/' + subdir + '/' + base_name_k_next
@@ -110,15 +117,6 @@ class vReconstruction(vGeneral):
                 copy(subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_u.img', full_output_path_k_next + '_u.img')
             self.write_hdr(subroot,[i,k_init+1],subdir,phantom,'u',subroot_output_path,matrix_type='sino')
                 
-        # Choose number of argmax iteration for (second) x computation
-        if (mlem_sequence):
-            #it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, too many subsets for 2D, but maybe ok for 3D
-            it = ' -it 16:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, 2D
-        else:
-            it = ' -it ' + str(sub_iter_PLL) + ':1' # Only 2 iterations (Gong) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
-        
-        # Whole computation
-        if (method == 'nested'):
             # Second ADMM computation
             for k in range(k_init+1,hyperparameters_config["nb_iter_second_admm"]):
                 # Initialize variables for command line
@@ -147,17 +145,23 @@ class vReconstruction(vGeneral):
                 print('xxxxxxxxxuuuuuuuuuuuvvvvvvvvv')
                 print(x_reconstruction_command_line)
                 self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k,phantom,subroot_output_path,subroot)
-
-                if (mlem_sequence):
-                    x = self.fijii_np(full_output_path_k_next + '_it30.img', shape=(PETImage_shape))
-                else:
-                    x = self.fijii_np(full_output_path_k_next + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + '.img', shape=(PETImage_shape))
+            
+                x = self.fijii_np(full_output_path_k_next + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + '.img', shape=(PETImage_shape))
                 
                 if (k>=-1):
                     self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations",suffix,image_gt, k+1+i*nb_iter_second_admm) # Showing all corrupted images with same contrast to compare them together
                     self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations(FULL CONTRAST)",suffix,image_gt, k+1+i*nb_iter_second_admm,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
-
+            '''
         elif (method == 'Gong'):
+
+            # Choose number of argmax iteration for (second) x computation
+            if (mlem_sequence):
+                #it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, too many subsets for 2D, but maybe ok for 3D
+                it = ' -it 16:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, 2D
+            else:
+                it = ' -it ' + str(sub_iter_PLL) + ':1' # Only 2 iterations (Gong) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
+            
+
             # Define command line to run OPTITR with CASToR
             castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i)
             # Initialize image
@@ -208,11 +212,10 @@ class vReconstruction(vGeneral):
         self.write_hdr(subroot,[i,k+1],subdir,phantom,'u',subroot_output_path=subroot_output_path,matrix_type='sino')
 
 
-    def ADMMLim_general(self, hyperparameters_config, fixed_config, i, subdir, subroot_output_path):
+    def ADMMLim_general(self, hyperparameters_config, i, subdir, subroot_output_path,f_mu_for_penalty,writer=None,image_gt=None):
         
         k_init = -1
         full_output_path_k_next = subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k_init+1)
-        f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/1_im_value_cropped.hdr' # its value is not useful to compute v^0
 
         # Define command line to run ADMM with CASToR, to compute v^0
         if (i == 0):   # choose initial image for CASToR reconstruction
@@ -258,18 +261,18 @@ class vReconstruction(vGeneral):
             base_name_k = format(i) + '_' + format(k)
             base_name_k_next = format(i) + '_' + format(k+1)
             full_output_path_k = subroot_output_path + '/' + subdir + '/' + base_name_k
-            if (self.method != 'ADMMLim'):
-                f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'
             v_for_additional_data = ' -additional-data ' + full_output_path_k + '_v.hdr'
             u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
 
             if (self.method == 'ADMMLim'):
                 # Compute one ADMM iteration (x, v, u)
-                if ((k == hyperparameters_config["nb_iter_second_admm"] - 1) and fixed_config["post_smoothing"]): # For last iteration, apply post smoothing for vizualization
+                if ((k == hyperparameters_config["nb_iter_second_admm"] - 1) and self.post_smoothing): # For last iteration, apply post smoothing for vizualization
                     #conv = ''
                     conv = ' -conv gaussian,18,1,3.5::post'
                 else:
                     conv = ''
+            else:
+                conv = ''
 
             # Number of iterations from config dictionnary
             print("k = ",k)
@@ -308,3 +311,13 @@ class vReconstruction(vGeneral):
                 print("")
                 print(x_reconstruction_command_line_2)
                 self.compute_x_v_u_ADMM(x_reconstruction_command_line_2,full_output_path_k_next,subdir,i,k,self.phantom,subroot_output_path,self.subroot_data)
+
+            if (self.method == "nested"):
+                x = self.fijii_np(full_output_path_k_next + '_it1.img', shape=(self.PETImage_shape))
+                
+                if (k>=-1):
+                    self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations",self.suffix,500, k+1+i*hyperparameters_config["nb_iter_second_admm"]) # Showing all corrupted images with same contrast to compare them together
+                    self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations(FULL CONTRAST)",self.suffix,500, k+1+i*hyperparameters_config["nb_iter_second_admm"],full_contrast=True) # Showing all corrupted images with same contrast to compare them together
+
+        if (self.method == "nested"):
+            return x

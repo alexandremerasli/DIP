@@ -503,8 +503,9 @@ class vGeneral(abc.ABC):
             opti = ' -opti ' + method + ':' + self.subroot_data + 'BSREM.conf'
             pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
             penaltyStrength = ' -pnlt-beta ' + str(self.beta)
-        elif (method == 'nested'):
-            opti = ' -opti ADMMLim' + ',' + str(self.alpha)
+        elif ('nested' in method):
+            method = 'ADMMLim' + method[6:]
+            opti = ' -opti ' + method + ',' + str(self.alpha) # ADMMLim dirty 1 or 2
             pnlt = ' -pnlt DIP_ADMM'
             '''
             if (i==0): # For first iteration, put rho to zero

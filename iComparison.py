@@ -62,10 +62,11 @@ class iComparison(vReconstruction):
         # Path variables
         subroot_output_path = (self.subroot + 'Comparison/' + self.method + '/' + self.suffix)
         subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
+        f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/1_im_value_cropped.hdr' # its value is not useful to compute v^0
         Path(self.subroot+'Comparison/' + self.method + '/').mkdir(parents=True, exist_ok=True) # CASTor path
         Path(self.subroot+'Comparison/' + self.method + '/' + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
 
-        self.ADMMLim_general(hyperparameters_config, fixed_config, 0, subdir, subroot_output_path)
+        self.ADMMLim_general(hyperparameters_config, 0, subdir, subroot_output_path, f_mu_for_penalty)
 
         '''
         i = 0
