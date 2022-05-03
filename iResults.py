@@ -1,7 +1,6 @@
 ## Python libraries
 
 # Pytorch
-from torch import fix
 from torch.utils.tensorboard import SummaryWriter
 
 # Math
@@ -63,19 +62,27 @@ class iResults(vDenoising):
         if (image_net_input is not None):
             self.write_image_tensorboard(self.writer,image_net_input,"DIP input (FULL CONTRAST)",suffix,image_net_input,0,full_contrast=True) # DIP input in tensorboard
 
-    def writeCorruptedImage(self,i,max_iter,x_label,suffix,pet_algo,iteration_name='iterations'):
-        if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
+    def writeCorruptedImage(self,i,max_iter,x_label,suffix,pet_algo,iteration_name='iterations',all_images=1):
+        if (all_images == 1):
             self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name,suffix,self.image_gt,i) # Showing all corrupted images with same contrast to compare them together
             self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name + " (FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
+        else:       
+            if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
+                self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name,suffix,self.image_gt,i) # Showing all corrupted images with same contrast to compare them together
+                self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name + " (FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
 
-    def writeEndImagesAndMetrics(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):
+    def writeEndImagesAndMetrics(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations',all_images=1):
         # Metrics for NN output
         self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer,write_tensorboard=True)
 
         # Write image over ADMM iterations
-        if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
+        if (all_images == 1):
             self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
             self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
+        else:          
+            if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
+                self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
+                self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
 
         # Display AR (hot) /MA (cold) vs STD curve in tensorboard
         if (i == self.total_nb_iter):
