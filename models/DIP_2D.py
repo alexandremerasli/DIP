@@ -2,12 +2,19 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 
+import os
+if (os.path.isfile(os.getcwd() + "/seed.txt")):
+    with open(os.getcwd() + "/seed.txt", 'r') as file:
+        random_seed = file.read().rstrip()
+    if (eval(random_seed)):
+        pl.seed_everything(1)
+
 class DIP_2D(pl.LightningModule):
 
     def __init__(self, hyperparameters_config, method):
         super().__init__()
 
-        # Defining variables from hyperparameters_config
+        # Defining variables from hyperparameters_config        
         self.lr = hyperparameters_config['lr']
         self.opti_DIP = hyperparameters_config['opti_DIP']
         self.sub_iter_DIP = hyperparameters_config['sub_iter_DIP']
