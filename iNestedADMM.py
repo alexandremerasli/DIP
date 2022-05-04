@@ -44,7 +44,8 @@ class iNestedADMM(vReconstruction):
                 # Create label corresponding to initial value of image_init
                 #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.img',shape=(self.PETImage_shape),type='<f')
                 # Fit MLEM 60it for first global iteration
-                x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
+                #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
+                x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it200_REF_cropped.img',shape=(self.PETImage_shape),type='<d')
                 self.save_img(x_label,self.subroot+'Block2/x_label/' + format(self.experiment)+'/'+ format(-1) +'_x_label' + self.suffix + '.img')
 
                 # For first epoch, change number of epochs to 300

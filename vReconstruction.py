@@ -82,12 +82,10 @@ class vReconstruction(vGeneral):
         k_init = -1
         castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i)
         '''
-        
-        x = self.ADMMLim_general(hyperparameters_config, 0, subdir, subroot_output_path, f_mu_for_penalty,writer,image_gt)
-
 
         # Initialization
         if (method == 'nested'):            
+            x = self.ADMMLim_general(hyperparameters_config, 0, subdir, subroot_output_path, f_mu_for_penalty,writer,image_gt)
             '''
             # Useful variables for command line
             base_name_k_next = format(i) + '_' + format(k_init+1)
