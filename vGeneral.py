@@ -495,7 +495,7 @@ class vGeneral(abc.ABC):
 
         return executable + dim + vox + header_file + vb + th + proj + opti_like + psf + conv
 
-    def castor_opti_and_penalty(self, method, penalty, rho, i=None ,k=None):
+    def castor_opti_and_penalty(self, method, penalty, rho, i):
         if (method == 'MLEM'):
             opti = ' -opti ' + method
             pnlt = ''

@@ -223,7 +223,7 @@ class vReconstruction(vGeneral):
             x_for_init_v = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(hyperparameters_config["nb_iter_second_admm"]) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + '.hdr'
                         
 
-        castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho)
+        castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i)
         x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
 
         print('vvvvvvvvvvv0000000000')
@@ -293,7 +293,7 @@ class vReconstruction(vGeneral):
                 else:
                     initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k) + '_' + format(inner_it) + '_it1.hdr'
 
-                x_reconstruction_command_line_1 = castor_command_line_x + self.castor_opti_and_penalty(self.method + "_dirty1", self.penalty, self.rho) + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + conv # we need f-mu so that ADMM optimizer works, even if we will not use it...
+                x_reconstruction_command_line_1 = castor_command_line_x + self.castor_opti_and_penalty(self.method + "_dirty1", self.penalty, self.rho, i) + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + conv # we need f-mu so that ADMM optimizer works, even if we will not use it...
                 print(x_reconstruction_command_line_1)
                 self.compute_x_v_u_ADMM(x_reconstruction_command_line_1,full_output_path_k_next,subdir,i,k,self.phantom,subroot_output_path,self.subroot_data)
 
@@ -305,7 +305,7 @@ class vReconstruction(vGeneral):
                     g_for_multimodal_image = ' -multimodal ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k) + '_' + format(inner_it+1) + '_g_OSadvance.hdr' # gradient is overwritten at each inner iteration, but it does not matter
                     self.write_hdr(self.subroot_data,[i,k,inner_it+1],subdir,self.phantom,'g_OSadvance',subroot_output_path=subroot_output_path,matrix_type='img')
                 
-                x_reconstruction_command_line_2 = castor_command_line_x + self.castor_opti_and_penalty(self.method + "_dirty2", self.penalty, self.rho) + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + conv + g_for_multimodal_image # we need f-mu so that ADMM optimizer works, even if we will not use it...
+                x_reconstruction_command_line_2 = castor_command_line_x + self.castor_opti_and_penalty(self.method + "_dirty2", self.penalty, self.rho, i) + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + conv + g_for_multimodal_image # we need f-mu so that ADMM optimizer works, even if we will not use it...
                 print("")
                 print(x_reconstruction_command_line_2)
                 self.compute_x_v_u_ADMM(x_reconstruction_command_line_2,full_output_path_k_next,subdir,i,k,self.phantom,subroot_output_path,self.subroot_data)
