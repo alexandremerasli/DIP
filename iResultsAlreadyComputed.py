@@ -27,19 +27,27 @@ class iResultsAlreadyComputed(vDenoising):
         if (fixed_config["method"] == 'ADMMLim'):
             self.total_nb_iter = hyperparameters_config["nb_iter_second_admm"]
             self.beta = hyperparameters_config["alpha"]
+        elif (fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
+            if (fixed_config["task"] == 'post_reco'):
+                self.total_nb_iter = hyperparameters_config["sub_iter_DIP"]
+            else:
+                self.total_nb_iter = fixed_config["max_iter"]
         else:
             self.total_nb_iter = self.max_iter
 
             if (fixed_config["method"] == 'AML'):
                 self.beta = hyperparameters_config["A_AML"]
-            else:                
+            if (fixed_config["method"] == 'BSREM' or fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
+                self.rho = hyperparameters_config["rho"]
                 self.beta = self.rho
         # Create summary writer from tensorboard
         self.writer = SummaryWriter()
         
         #Loading Ground Truth image to compute metrics
         self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
-        
+        if fixed_config["FLTNB"] == "double":
+            self.image_gt.astype(np.float64)
+            
         # Metrics arrays
         self.PSNR_recon = np.zeros(self.total_nb_iter)
         self.PSNR_norm_recon = np.zeros(self.total_nb_iter)

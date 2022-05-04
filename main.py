@@ -24,7 +24,7 @@ fixed_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['MLEM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['BSREM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
@@ -108,7 +108,7 @@ elif (config["method"]["grid_search"][0] == 'ADMMLim' or config["method"]["grid_
 #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
 #task = 'show_results'
 #task = 'show_results_replicates'
-#task = 'show_metrics_results_already_computed'
+task = 'show_metrics_results_already_computed'
 
 if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
     classTask = iNestedADMM(hyperparameters_config)
@@ -164,6 +164,11 @@ for ROI in ['hot','cold']:
         AR_bkg_recon = []
         IR_bkg_recon = []
 
+        IR_final = []
+        AR_final = []
+        MA_final = []
+        metrics_final = []
+        
         if ROI == 'hot':
             metrics = AR_hot_recon
         else:
@@ -208,8 +213,17 @@ for ROI in ['hot','cold']:
                 '''
 
         plt.figure()
-        for run_id in range(len(PSNR_recon)):
-            plt.plot(IR_bkg_recon[run_id],metrics[run_id],'-o')
+        #for run_id in range(len(PSNR_recon)):
+        #    plt.plot(IR_bkg_recon[run_id],metrics[run_id],'-o')
+
+        print('aaaaaaaaaaaaaaaa')
+        IR_final.append(np.array(IR_bkg_recon)[:,-1])
+        metrics_final.append(np.array(metrics)[:,-1])
+
+        if ROI == 'hot':
+            AR_final.append(metrics[-1])
+        else:
+            MA_final.append(metrics[-1])
 
         plt.xlabel('IR')
         if ROI == 'hot':
@@ -229,6 +243,12 @@ for ROI in ['hot','cold']:
                 if l[p] == "NNEPP":
                     legend += "NNEPPS : " + l[p+1]
             suffixes_legend.append(legend)
+    idx_sort = np.argsort(IR_final[0])
+    print(IR_final)
+    print(metrics_final)
+    plt.plot(IR_final[0][idx_sort],metrics_final[0][idx_sort],'-o')
+    print(IR_final[0][idx_sort])
+    print(metrics_final[0][idx_sort])
     plt.legend(suffixes_legend)
 
     # Saving this figure locally

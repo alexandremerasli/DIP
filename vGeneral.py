@@ -166,6 +166,8 @@ class vGeneral(abc.ABC):
         if (len(config["method"]['grid_search']) == 1):
             if (config["method"]['grid_search'][0] != "AML"):
                 config.pop("A_AML", None)
+            if (config["method"]['grid_search'][0] == 'BSREM' or config["method"]['grid_search'][0] == 'nested' or config["method"]['grid_search'][0] == 'Gong'):
+                config.pop("post_smoothing", None)
             if (config["method"]['grid_search'][0] != "ADMMLim" and config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong"):
                 config.pop("sub_iter_PLL", None)
                 config.pop("nb_iter_second_admm", None)
