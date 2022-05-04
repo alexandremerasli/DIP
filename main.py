@@ -25,7 +25,7 @@ fixed_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['Gong']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested','Gong','MLEM','BSREM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
@@ -88,6 +88,10 @@ for method in config["method"]['grid_search']:
 
     config_tmp = dict(config)
     config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from fixed_config and hyperparameters_config
+
+    if (method == 'BSREM'):
+        config_tmp["rho"]['grid_search'] = [0.01,0.03,0.05]
+
 
     # write random seed in a file to get it in network architectures
     os.system("rm -rf " + os.getcwd() +"/seed.txt")
@@ -166,6 +170,7 @@ for ROI in ['hot','cold']:
     else:
         method_list = config["method"]['grid_search']
     for method in method_list:
+
         print("method",method)
         suffixes = []
 
@@ -256,7 +261,8 @@ for ROI in ['hot','cold']:
             plt.plot(IR_final[case][idx_sort],metrics_final[case][idx_sort],'-o')
             print(IR_final[case][idx_sort])
             print(metrics_final[case][idx_sort])
-        plt.legend(method_list)
+            suffixes_legend.append(method)
+        plt.legend(suffixes_legend)
 
     # Saving this figure locally
     print(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'MA in ' + ROI + ' region vs IR in background' + '.png')
