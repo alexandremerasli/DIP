@@ -18,13 +18,14 @@ from iPostReconstruction import iPostReconstruction
 from iResults import iResults
 from iResultsReplicates import iResultsReplicates
 from iResultsAlreadyComputed import iResultsAlreadyComputed
+from vGeneral import vGeneral
 
 # Configuration dictionnary for general parameters (not hyperparameters)
 fixed_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['BSREM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['BSREM','MLEM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
@@ -78,73 +79,85 @@ config = {**fixed_config, **hyperparameters_config, **split_config}
 root = os.getcwd()
 
 
-# write random seed in a file to get it in network architectures
-os.system("rm -rf " + os.getcwd() +"/seed.txt")
-file_seed = open(os.getcwd() + "/seed.txt","w+")
-file_seed.write(str(fixed_config["random_seed"]["grid_search"][0]))
-file_seed.close()
+'''
+generalClass = vGeneral(config)
+generalClass.parametersIncompatibility(config,task)
+'''
 
-#'''
-# Gong reconstruction
-if (config["method"]["grid_search"][0] == 'Gong'):
-    print("configuration fiiiiiiiiiiiiiiiiiiile")
-    #config = np.load(root + 'config_Gong.npy',allow_pickle='TRUE').item()
-    from Gong_configuration import config_func, config_func_MIC
-    #config = config_func()
-    config = config_func_MIC()
-#'''
-
-
-
-# Choose task to do (move this after raytune !!!)
-if (config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested'):
-    task = 'full_reco_with_network'
-
-elif (config["method"]["grid_search"][0] == 'ADMMLim' or config["method"]["grid_search"][0] == 'MLEM' or config["method"]["grid_search"][0] == 'BSREM' or config["method"]["grid_search"][0] == 'AML'):
-    task = 'castor_reco'
-
-#task = 'full_reco_with_network' # Run Gong or nested ADMM
-#task = 'castor_reco' # Run CASToR reconstruction with given optimizer
-#task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
-#task = 'show_results'
-#task = 'show_results_replicates'
-task = 'show_metrics_results_already_computed'
-
-if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
-    classTask = iNestedADMM(hyperparameters_config)
-elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
-    classTask = iComparison(config)
-elif (task == 'post_reco'): # Run network denoising after a given reconstructed image im_corrupt
-    classTask = iPostReconstruction(config)
-elif (task == 'show_results'): # Show already computed results over iterations
-    classTask = iResults(config)
-elif (task == 'show_results_replicates'): # Show already computed results averaging over replicates
-    classTask = iResultsReplicates(config)
-elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
-    classTask = iResultsAlreadyComputed(config)
-
-
-# Incompatible parameters (should be written in vGeneral I think)
-if (config["method"]["grid_search"][0] == 'ADMMLim' and config["rho"]["grid_search"][0] != 0):
-    raise ValueError("ADMMLim must be launched with rho = 0 for now")
-elif (config["method"]["grid_search"][0] == 'nested' and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
-    raise ValueError("nested must be launched with rho > 0")
-elif (config["method"]["grid_search"][0] == 'ADMMLim' and task == "post_reco"):
-    raise ValueError("ADMMLim cannot be launched in post_reco mode. Please comment this line.")
-
-#'''
 for method in config["method"]['grid_search']:
+
+    config_tmp = dict(config)
+    config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from fixed_config and hyperparameters_config
+
+    # write random seed in a file to get it in network architectures
+    os.system("rm -rf " + os.getcwd() +"/seed.txt")
+    file_seed = open(os.getcwd() + "/seed.txt","w+")
+    file_seed.write(str(fixed_config["random_seed"]["grid_search"][0]))
+    file_seed.close()
+
+    #'''
+    # Gong reconstruction
+    if (config["method"]["grid_search"][0] == 'Gong'):
+        print("configuration fiiiiiiiiiiiiiiiiiiile")
+        #config = np.load(root + 'config_Gong.npy',allow_pickle='TRUE').item()
+        from Gong_configuration import config_func, config_func_MIC
+        #config = config_func()
+        config = config_func_MIC()
+    #'''
+
+
+
+    # Choose task to do (move this after raytune !!!)
+    if (config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested'):
+        task = 'full_reco_with_network'
+
+    elif (config["method"]["grid_search"][0] == 'ADMMLim' or config["method"]["grid_search"][0] == 'MLEM' or config["method"]["grid_search"][0] == 'BSREM' or config["method"]["grid_search"][0] == 'AML'):
+        task = 'castor_reco'
+
+    #task = 'full_reco_with_network' # Run Gong or nested ADMM
+    #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
+    #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
+    #task = 'show_results'
+    #task = 'show_results_replicates'
+    task = 'show_metrics_results_already_computed'
+
+    if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
+        classTask = iNestedADMM(hyperparameters_config)
+    elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
+        classTask = iComparison(config)
+    elif (task == 'post_reco'): # Run network denoising after a given reconstructed image im_corrupt
+        classTask = iPostReconstruction(config)
+    elif (task == 'show_results'): # Show already computed results over iterations
+        classTask = iResults(config)
+    elif (task == 'show_results_replicates'): # Show already computed results averaging over replicates
+        classTask = iResultsReplicates(config)
+    elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
+        classTask = iResultsAlreadyComputed(config)
+
+
+    # Incompatible parameters (should be written in vGeneral I think)
+    if (config["method"]["grid_search"][0] == 'ADMMLim' and config["rho"]["grid_search"][0] != 0):
+        raise ValueError("ADMMLim must be launched with rho = 0 for now")
+    elif (config["method"]["grid_search"][0] == 'nested' and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
+        raise ValueError("nested must be launched with rho > 0")
+    elif (config["method"]["grid_search"][0] == 'ADMMLim' and task == "post_reco"):
+        raise ValueError("ADMMLim cannot be launched in post_reco mode. Please comment this line.")
+
+
+
+    #'''
     os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + method + '.txt')
 
-# Launch task
-classTask.runRayTune(config,root,task)
-#'''
+    # Launch task
+    classTask.runRayTune(config_tmp,root,task)
+    #'''
 
 from csv import reader as reader_csv
 import numpy as np
 import matplotlib.pyplot as plt
 
 for ROI in ['hot','cold']:
+    plt.figure()
 
     suffixes_legend = []
 
@@ -212,7 +225,6 @@ for ROI in ['hot','cold']:
                 print(IR_bkg_recon)
                 '''
 
-        plt.figure()
         #for run_id in range(len(PSNR_recon)):
         #    plt.plot(IR_bkg_recon[run_id],metrics[run_id],'-o')
 
@@ -243,13 +255,14 @@ for ROI in ['hot','cold']:
                 if l[p] == "NNEPP":
                     legend += "NNEPPS : " + l[p+1]
             suffixes_legend.append(legend)
-    idx_sort = np.argsort(IR_final[0])
-    print(IR_final)
-    print(metrics_final)
-    plt.plot(IR_final[0][idx_sort],metrics_final[0][idx_sort],'-o')
-    print(IR_final[0][idx_sort])
-    print(metrics_final[0][idx_sort])
-    plt.legend(suffixes_legend)
+
+        idx_sort = np.argsort(IR_final[0])
+        print(IR_final)
+        print(metrics_final)
+        plt.plot(IR_final[0][idx_sort],metrics_final[0][idx_sort],'-o')
+        print(IR_final[0][idx_sort])
+        print(metrics_final[0][idx_sort])
+        plt.legend(suffixes_legend)
 
     # Saving this figure locally
     if ROI == 'hot':
