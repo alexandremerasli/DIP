@@ -216,6 +216,7 @@ for ROI in ['hot','cold']:
                 IR_bkg_recon.append(np.array(rows_csv[6]))
 
                 '''
+                print("metriiiiiiiiiiiiiiiics")
                 print(PSNR_recon)
                 print(PSNR_norm_recon)
                 print(MSE_recon)
@@ -229,10 +230,13 @@ for ROI in ['hot','cold']:
         #    plt.plot(IR_bkg_recon[run_id],metrics[run_id],'-o')
 
         print('aaaaaaaaaaaaaaaa')
-        print(IR_bkg_recon)
-        print(np.array(IR_bkg_recon).shape)
-        IR_final.append(np.array(IR_bkg_recon)[:,-1])
-        metrics_final.append(np.array(metrics)[:,-1])
+        if (method == "nested" or method == "Gong"):
+            for case in range(np.array(IR_bkg_recon).shape[0]):
+                IR_final.append(np.array(IR_bkg_recon)[case,:])
+                metrics_final.append(np.array(metrics)[case,:])
+        elif (method == "BSREM" or method == "MLEM"):
+            IR_final.append(np.array(IR_bkg_recon)[:,-1])
+            metrics_final.append(np.array(metrics)[:,-1])
 
         if ROI == 'hot':
             AR_final.append(metrics[-1])
@@ -248,12 +252,14 @@ for ROI in ['hot','cold']:
         idx_sort = np.argsort(IR_final[0])
         print(IR_final)
         print(metrics_final)
-        plt.plot(IR_final[0][idx_sort],metrics_final[0][idx_sort],'-o')
-        print(IR_final[0][idx_sort])
-        print(metrics_final[0][idx_sort])
+        for case in range(len(IR_final)):
+            plt.plot(IR_final[case][idx_sort],metrics_final[case][idx_sort],'-o')
+            print(IR_final[case][idx_sort])
+            print(metrics_final[case][idx_sort])
         plt.legend(method_list)
 
     # Saving this figure locally
+    print(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'MA in ' + ROI + ' region vs IR in background' + '.png')
     if ROI == 'hot':
         plt.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'AR in ' + ROI + ' region vs IR in background' + '.png')
     elif ROI == 'cold':
