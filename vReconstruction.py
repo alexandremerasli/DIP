@@ -85,7 +85,7 @@ class vReconstruction(vGeneral):
 
         # Initialization
         if (method == 'nested'):            
-            x = self.ADMMLim_general(hyperparameters_config, 0, subdir, subroot_output_path, f_mu_for_penalty,writer,image_gt)
+            x = self.ADMMLim_general(hyperparameters_config, i, subdir, subroot_output_path, f_mu_for_penalty,writer,image_gt)
             '''
             # Useful variables for command line
             base_name_k_next = format(i) + '_' + format(k_init+1)
@@ -220,7 +220,7 @@ class vReconstruction(vGeneral):
             x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
             #x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
         elif (i >= 1):
-            x_for_init_v = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(hyperparameters_config["nb_iter_second_admm"]) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + '.hdr'
+            x_for_init_v = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(hyperparameters_config["nb_iter_second_admm"]) + '_it1.hdr'
                         
 
         castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i)
