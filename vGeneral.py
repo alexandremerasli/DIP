@@ -45,7 +45,6 @@ class vGeneral(abc.ABC):
         self.experiment = fixed_config["experiment"] # Label of the experiment
         self.replicate = fixed_config["replicates"] # Label of the replicate
         self.nb_threads = fixed_config["nb_threads"]
-        self.post_smoothing = fixed_config["post_smoothing"]
         self.penalty = fixed_config["penalty"]
 
         self.FLTNB = fixed_config["FLTNB"]
@@ -67,22 +66,22 @@ class vGeneral(abc.ABC):
         return hyperparameters_config
 
     def createDirectoryAndConfigFile(self,hyperparameters_config):
-        Path(self.subroot+'Block1/' + self.suffix + '/before_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
-        Path(self.subroot+'Block1/' + self.suffix + '/during_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
-        Path(self.subroot+'Block1/' + self.suffix + '/out_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
+        if (self.method == 'nested' or self.method == 'Gong'):
+            Path(self.subroot+'Block1/' + self.suffix + '/before_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
+            Path(self.subroot+'Block1/' + self.suffix + '/during_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
+            Path(self.subroot+'Block1/' + self.suffix + '/out_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
 
-        Path(self.subroot+'Images/out_final/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the framework (Last output of the DIP)
+            Path(self.subroot+'Images/out_final/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the framework (Last output of the DIP)
 
-        Path(self.subroot+'Block2/checkpoint/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
-        Path(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
-        Path(self.subroot+'Block2/out_cnn/vae').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
-        Path(self.subroot+'Block2/out_cnn/cnn_metrics/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # DIP block metrics
-        Path(self.subroot+'Block2/x_label/'+format(self.experiment) + '/').mkdir(parents=True, exist_ok=True) # x corrupted - folder
+            Path(self.subroot+'Block2/checkpoint/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
+            Path(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
+            Path(self.subroot+'Block2/out_cnn/vae').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
+            Path(self.subroot+'Block2/out_cnn/cnn_metrics/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # DIP block metrics
+            Path(self.subroot+'Block2/x_label/'+format(self.experiment) + '/').mkdir(parents=True, exist_ok=True) # x corrupted - folder
+            Path(self.subroot+'Block2/mu/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
 
-        Path(self.subroot+'Block2/checkpoint/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
-        Path(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
-        Path(self.subroot+'Block2/mu/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
-        Path(self.subroot+'Block2/out_cnn/cnn_metrics/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
+        else:
+            Path(self.subroot + self.suffix + '/' + self.method).mkdir(parents=True, exist_ok=True) # CASToR path
 
         Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
                 
@@ -485,8 +484,8 @@ class vGeneral(abc.ABC):
         th = ' -th ' + str(self.nb_threads) # must be set to 1 for ADMMLim, as multithreading does not work for now with ADMMLim optimizer
         proj = ' -proj incrementalSiddon'
         psf = ' -conv gaussian,4,1,3.5::psf'
-        if (post_smoothing):
-            conv = ' -conv gaussian,8,1,3.5::post'
+        if (post_smoothing != 0):
+            conv = ' -conv gaussian,' + str(post_smoothing) + ',1,3.5::post'
         else:
             conv = ''
         # Computing likelihood
@@ -495,7 +494,7 @@ class vGeneral(abc.ABC):
 
         return executable + dim + vox + header_file + vb + th + proj + opti_like + psf + conv
 
-    def castor_opti_and_penalty(self, method, penalty, rho, i):
+    def castor_opti_and_penalty(self, method, penalty, rho, i=None):
         if (method == 'MLEM'):
             opti = ' -opti ' + method
             pnlt = ''

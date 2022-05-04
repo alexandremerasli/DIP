@@ -19,9 +19,16 @@ class iComparison(vReconstruction):
             self.beta = hyperparameters_config["alpha"]
         elif (self.method == 'BSREM'):
             self.beta = self.rho
+
+        self.post_smoothing = hyperparameters_config["post_smoothing"]
         # castor-recon command line
         if (self.method == 'ADMMLim'):
-            self.ADMMLim(fixed_config,hyperparameters_config)
+            # Path variables
+            subroot_output_path = (self.subroot + self.suffix)
+            subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
+            f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/1_im_value_cropped.hdr' # its value is not useful to compute v^0
+            Path(self.subroot + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
+            self.ADMMLim_general(hyperparameters_config, 0, subdir, subroot_output_path, f_mu_for_penalty)
         else:
             it = ' -it ' + str(self.max_iter) + ':' + str(fixed_config["nb_subsets"])
 
@@ -55,103 +62,6 @@ class iComparison(vReconstruction):
             classResults.rho = self.rho
             classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
             classResults.runComputation(config,fixed_config,hyperparameters_config,root)
-
-    def ADMMLim(self,fixed_config,hyperparameters_config):
-        # Path variables
-        subroot_output_path = (self.subroot + self.suffix)
-        subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
-        f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/1_im_value_cropped.hdr' # its value is not useful to compute v^0
-        Path(self.subroot + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
-
-        self.ADMMLim_general(hyperparameters_config, 0, subdir, subroot_output_path, f_mu_for_penalty)
-
-        '''
-        i = 0
-        k_init = -1
-        full_output_path_k_next = subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k_init+1)
-
-        castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing)
-        f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/1_im_value_cropped.hdr' # its value is not useful to compute v^0
-        
-        # Define command line to run ADMM with CASToR, to compute v^0
-        x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-        
-        # Compute one ADMM iteration (x, v, u) when only initializing x to compute v^0. x (i_0_it.img) and u (i_0_u.img) will be computed, but are useless
-        x_reconstruction_command_line = castor_command_line_x + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
-        
-        print('vvvvvvvvvvv0000000000')
-        print(x_reconstruction_command_line)
-        self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k_init-1,self.phantom,subroot_output_path,self.subroot_data)
-        # Copy u^-1 coming from CASToR to v^0
-        copy(full_output_path_k_next + '_u.img', full_output_path_k_next + '_v.img')
-        self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'v',subroot_output_path,matrix_type='sino')
-
-        # Then initialize u^0 (u^-1 in CASToR)
-        copy(self.subroot_data + 'Data/initialization/0_sino_value.img', full_output_path_k_next + '_u.img')
-        self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'u',subroot_output_path,matrix_type='sino')
-
-        # Compute one ADMM iteration (x, v, u)
-        print('xxxxxxxxxxxxxxxxxxxxx')
-        for k in range(k_init+1,hyperparameters_config["nb_iter_second_admm"]):
-            # Initialize variables for command line
-            if (k == k_init+1):
-                if (i == 0):   # choose initial image for CASToR reconstruction
-                    initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-            else:
-                initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + '.hdr'
-
-            base_name_k = format(i) + '_' + format(k)
-            base_name_k_next = format(i) + '_' + format(k+1)
-            full_output_path_k = subroot_output_path + '/' + subdir + '/' + base_name_k
-            v_for_additional_data = ' -additional-data ' + full_output_path_k + '_v.hdr'
-            u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
-
-            # Compute one ADMM iteration (x, v, u)
-            if ((k == hyperparameters_config["nb_iter_second_admm"] - 1) and fixed_config["post_smoothing"]): # For last iteration, apply post smoothing for vizualization
-                #conv = ''
-                conv = ' -conv gaussian,18,1,3.5::post'
-            else:
-                conv = ''
-            
-            # Number of iterations from config dictionnary
-            print("k = ",k)
-            for inner_it in range(hyperparameters_config["sub_iter_PLL"]):
-                print("")
-                print("")
-                print("iiiiiiiiiiiiiiiiiiinner iteration", inner_it)
-                it = ' -it 1:1' # 1 subset
-                if (inner_it == hyperparameters_config["sub_iter_PLL"] - 1):
-                    full_output_path_k_next = subroot_output_path + '/' + subdir + '/' + base_name_k_next
-
-                else:
-                    full_output_path_k_next = full_output_path_k + '_' + format(inner_it+1)
-
-                if (inner_it == 0):
-                    if (k == k_init+1):
-                        initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-                    else:
-                        initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k-1) + '_' + format(hyperparameters_config["sub_iter_PLL"] - 1) + '_it1.hdr'
-                else:
-                    initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k) + '_' + format(inner_it) + '_it1.hdr'
-
-                x_reconstruction_command_line_1 = castor_command_line_x + self.castor_opti_and_penalty(self.method + "_dirty1", self.penalty, self.rho) + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + conv # we need f-mu so that ADMM optimizer works, even if we will not use it...
-                print(x_reconstruction_command_line_1)
-                self.compute_x_v_u_ADMM(x_reconstruction_command_line_1,full_output_path_k_next,subdir,i,k,self.phantom,subroot_output_path,self.subroot_data)
-
-           
-                if (inner_it == hyperparameters_config["sub_iter_PLL"] - 1):
-                    g_for_multimodal_image = ' -multimodal ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k+1) + '_g_OSadvance.hdr' # gradient is overwritten at each inner iteration, but it does not matter
-                    self.write_hdr(self.subroot_data,[i,k+1],subdir,self.phantom,'g_OSadvance',subroot_output_path=subroot_output_path,matrix_type='img')
-                else:
-                    g_for_multimodal_image = ' -multimodal ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k) + '_' + format(inner_it+1) + '_g_OSadvance.hdr' # gradient is overwritten at each inner iteration, but it does not matter
-                    self.write_hdr(self.subroot_data,[i,k,inner_it+1],subdir,self.phantom,'g_OSadvance',subroot_output_path=subroot_output_path,matrix_type='img')
-                
-                x_reconstruction_command_line_2 = castor_command_line_x + self.castor_opti_and_penalty(self.method + "_dirty2", self.penalty, self.rho) + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + conv + g_for_multimodal_image # we need f-mu so that ADMM optimizer works, even if we will not use it...
-                print("")
-                print(x_reconstruction_command_line_2)
-                self.compute_x_v_u_ADMM(x_reconstruction_command_line_2,full_output_path_k_next,subdir,i,k,self.phantom,subroot_output_path,self.subroot_data)
-
-        '''
 
     def NNEPPS_function(self,fixed_config,hyperparameters_config,it):
         executable='removeNegativeValues.exe'

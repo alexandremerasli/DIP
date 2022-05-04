@@ -43,8 +43,9 @@ class vReconstruction(vGeneral):
             self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
 
         # Initialize and save mu variable from ADMM
-        self.mu = 0* np.ones((self.PETImage_shape[0], self.PETImage_shape[1], self.PETImage_shape[2]))
-        self.save_img(self.mu,self.subroot+'Block2/mu/'+ format(self.experiment)+'/mu_' + format(-1) + self.suffix + '.img')
+        if (self.method == "nested" or self.method == "Gong"):
+            self.mu = 0* np.ones((self.PETImage_shape[0], self.PETImage_shape[1], self.PETImage_shape[2]))
+            self.save_img(self.mu,self.subroot+'Block2/mu/'+ format(self.experiment)+'/mu_' + format(-1) + self.suffix + '.img')
 
         # Launch short MLEM reconstruction
         path_mlem_init = self.subroot_data + 'Data/MLEM_reco_for_init/' + self.phantom
@@ -266,7 +267,7 @@ class vReconstruction(vGeneral):
                 # Compute one ADMM iteration (x, v, u)
                 if ((k == hyperparameters_config["nb_iter_second_admm"] - 1) and self.post_smoothing): # For last iteration, apply post smoothing for vizualization
                     #conv = ''
-                    conv = ' -conv gaussian,18,1,3.5::post'
+                    conv = ' -conv gaussian,' + str(hyperparameters_config["post_smoothing"]) + ',1,3.5::post'
                 else:
                     conv = ''
             else:
