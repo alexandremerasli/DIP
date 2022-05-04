@@ -25,12 +25,10 @@ class iComparison(vReconstruction):
         else:
             it = ' -it ' + str(self.max_iter) + ':' + str(fixed_config["nb_subsets"])
 
-            output_path = ' -fout ' + self.subroot + 'Comparison/' + self.method + '/' + self.suffix + '/' + self.method # Output path for CASTOR framework
+            output_path = ' -fout ' + self.subroot + self.suffix + '/' + self.method # Output path for CASTOR framework
             #if (self.method == 'AML' or self.method == 'BSREM'):
             #    output_path += '_beta_' + str(self.beta)
             initialimage = ''
-
-            Path(self.subroot+'Comparison/' + self.method + '/' + self.suffix).mkdir(parents=True, exist_ok=True) # CASToR pat
         
             print("CASToR command line : ")
             print(self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
@@ -60,11 +58,10 @@ class iComparison(vReconstruction):
 
     def ADMMLim(self,fixed_config,hyperparameters_config):
         # Path variables
-        subroot_output_path = (self.subroot + 'Comparison/' + self.method + '/' + self.suffix)
+        subroot_output_path = (self.subroot + self.suffix)
         subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
         f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/1_im_value_cropped.hdr' # its value is not useful to compute v^0
-        Path(self.subroot+'Comparison/' + self.method + '/').mkdir(parents=True, exist_ok=True) # CASTor path
-        Path(self.subroot+'Comparison/' + self.method + '/' + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
+        Path(self.subroot + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
 
         self.ADMMLim_general(hyperparameters_config, 0, subdir, subroot_output_path, f_mu_for_penalty)
 
@@ -162,9 +159,9 @@ class iComparison(vReconstruction):
         if (self.method == 'ADMMLim'):
             i = 0
             subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
-            input_without_extension = self.subroot + 'Comparison/' + self.method + '/' + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(hyperparameters_config["sub_iter_PLL"])
+            input_without_extension = self.subroot + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(hyperparameters_config["sub_iter_PLL"])
         else:
-            input_without_extension = self.subroot + 'Comparison/' + self.method + '/' + self.suffix + '/' + self.method + '_beta_' + str(self.beta) + '_it' + format(it)
+            input_without_extension = self.subroot + self.suffix + '/' + self.method + '_beta_' + str(self.beta) + '_it' + format(it)
         
         input = ' -i ' + input_without_extension + '.img'
         output = ' -o ' + input_without_extension + '_NNEPPS' # Without extension !

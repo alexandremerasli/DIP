@@ -180,6 +180,11 @@ class vGeneral(abc.ABC):
                 config.pop("input", None)
                 config.pop("d_DD", None)
                 config.pop("k_DD", None)
+            if (config["net"]['grid_search'][0] == "DD"):
+                config.pop("skip_connections", None)
+            elif (config["net"]['grid_search'][0] != "DD_AE"): # not a Deep Decoder based architecture, so remove k and d
+                config.pop("d_DD", None)
+                config.pop("k_DD", None)
             if (config["method"]['grid_search'][0] == 'MLEM' or config["method"]['grid_search'][0] == 'AML'):
                 config.pop("rho", None)
             # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMLim in CASToR
