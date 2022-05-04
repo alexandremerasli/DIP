@@ -267,6 +267,7 @@ class iResults(vDenoising):
 
         # Save metrics in csv
         from csv import writer as writer_csv
+        Path(self.subroot_data+'metrics/' + self.method + '/' + self.suffix_metrics).mkdir(parents=True, exist_ok=True) # CASToR path
         with open(self.subroot_data + 'metrics/' + self.method + '/' + self.suffix_metrics + '/metrics.csv', 'w', newline='') as myfile:
             wr = writer_csv(myfile,delimiter=';')
             wr.writerow(PSNR_recon)

@@ -85,7 +85,6 @@ class vGeneral(abc.ABC):
 
         Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
                 
-        Path(self.subroot_data+'metrics/' + self.method + '/' + self.suffix_metrics).mkdir(parents=True, exist_ok=True) # CASToR path
         Path(self.subroot_data + 'debug/' +'metrics/' + self.method + '/' + self.suffix_metrics).mkdir(parents=True, exist_ok=True) # CASToR path
 
     def runRayTune(self,config,root,task):
@@ -168,7 +167,7 @@ class vGeneral(abc.ABC):
                 config.pop("A_AML", None)
             if (config["method"]['grid_search'][0] == 'BSREM' or config["method"]['grid_search'][0] == 'nested' or config["method"]['grid_search'][0] == 'Gong'):
                 config.pop("post_smoothing", None)
-            if (config["method"]['grid_search'][0] != "ADMMLim" and config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong"):
+            if (config["method"]['grid_search'][0] != "ADMMLim" and config["method"]['grid_search'][0] != "nested"):
                 config.pop("sub_iter_PLL", None)
                 config.pop("nb_iter_second_admm", None)
                 config.pop("alpha", None)

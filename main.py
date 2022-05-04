@@ -25,7 +25,7 @@ fixed_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['BSREM','MLEM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['Gong']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
@@ -42,9 +42,9 @@ fixed_config = {
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
-    "rho" : tune.grid_search([0.01,0.03,0.05]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "rho" : tune.grid_search([0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     ## network hyperparameters
-    "lr" : tune.grid_search([0.1,0.5]), # Learning rate in network optimization
+    "lr" : tune.grid_search([0.5]), # Learning rate in network optimization
     #"lr" : tune.grid_search([0.001,0.041,0.01]), # Learning rate in network optimization
     "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
@@ -229,6 +229,8 @@ for ROI in ['hot','cold']:
         #    plt.plot(IR_bkg_recon[run_id],metrics[run_id],'-o')
 
         print('aaaaaaaaaaaaaaaa')
+        print(IR_bkg_recon)
+        print(np.array(IR_bkg_recon).shape)
         IR_final.append(np.array(IR_bkg_recon)[:,-1])
         metrics_final.append(np.array(metrics)[:,-1])
 
@@ -243,26 +245,13 @@ for ROI in ['hot','cold']:
         elif ROI == 'cold':
             plt.ylabel('MA')
 
-        for i in range(len(suffixes[0])):
-            
-            l = suffixes[0][i].replace('=','_')
-            l = l.replace('\n','_')
-            l = l.split('_')
-            legend = ''
-            for p in range(len(l)):
-                if l[p] == "AML":
-                    legend += "A : " + l[p+1] + ' / ' 
-                if l[p] == "NNEPP":
-                    legend += "NNEPPS : " + l[p+1]
-            suffixes_legend.append(legend)
-
         idx_sort = np.argsort(IR_final[0])
         print(IR_final)
         print(metrics_final)
         plt.plot(IR_final[0][idx_sort],metrics_final[0][idx_sort],'-o')
         print(IR_final[0][idx_sort])
         print(metrics_final[0][idx_sort])
-        plt.legend(suffixes_legend)
+        plt.legend(method_list)
 
     # Saving this figure locally
     if ROI == 'hot':
