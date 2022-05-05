@@ -49,7 +49,7 @@ hyperparameters_config = {
     "lr" : tune.grid_search([0.05]), # Learning rate in network optimization
     "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
-    "skip_connections" : tune.grid_search([0,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+    "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     #"skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
     "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
@@ -67,7 +67,7 @@ hyperparameters_config = {
     "A_AML" : tune.grid_search([-100]), # AML lower bound A
     # Post smoothing by CASToR after reconstruction
     #"post_smoothing" : tune.grid_search([0]), # Post smoothing by CASToR after reconstruction
-    "post_smoothing" : tune.grid_search([3,6,9,12,15]), # Post smoothing by CASToR after reconstruction
+    "post_smoothing" : tune.grid_search([6,9,12,15]), # Post smoothing by CASToR after reconstruction
     # NNEPPS post processing
     "NNEPPS" : tune.grid_search([False]), # NNEPPS post-processing. True or False
 }
@@ -80,15 +80,11 @@ config = {**fixed_config, **hyperparameters_config, **split_config}
 
 root = os.getcwd()
 
-
-'''
-generalClass = vGeneral(config)
-generalClass.parametersIncompatibility(config,task)
-'''
+#config["method"]['grid_search'] = ['Gong']
 
 for method in config["method"]['grid_search']:
 
-    #'''
+    '''
     # Gong reconstruction
     if (config["method"]["grid_search"][0] == 'Gong' and len(config["method"]["grid_search"]) == 1):
         print("configuration fiiiiiiiiiiiiiiiiiiile")
@@ -103,7 +99,6 @@ for method in config["method"]['grid_search']:
         from nested_configuration import config_func, config_func_MIC
         #config = config_func()
         config = config_func_MIC()
-    #'''
 
     # MLEM reconstruction
     if (config["method"]["grid_search"][0] == 'MLEM' and len(config["method"]["grid_search"]) == 1):
@@ -111,7 +106,6 @@ for method in config["method"]['grid_search']:
         from MLEM_configuration import config_func_MIC
         #config = config_func()
         config = config_func_MIC()
-    #'''
 
     # BSREM reconstruction
     if (config["method"]["grid_search"][0] == 'BSREM' and len(config["method"]["grid_search"]) == 1):
@@ -119,7 +113,7 @@ for method in config["method"]['grid_search']:
         from BSREM_configuration import config_func_MIC
         #config = config_func()
         config = config_func_MIC()
-    #'''
+    '''
     config_tmp = dict(config)
     config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from fixed_config and hyperparameters_config
 
@@ -128,11 +122,16 @@ for method in config["method"]['grid_search']:
 
     if (method == 'Gong'):
         config_tmp["sub_iter_PLL"]['grid_search'] = [50]
+        #config_tmp["lr"]['grid_search'] = [0.5]
+        #config_tmp["rho"]['grid_search'] = [0.0003]
         config_tmp["lr"]['grid_search'] = [0.5]
-        config_tmp["rho"]['grid_search'] = [0.0003,0.00003]
+        config_tmp["rho"]['grid_search'] = [0.0003]
     elif (method == 'nested'):
         config_tmp["sub_iter_PLL"]['grid_search'] = [10]
-        config_tmp["lr"]['grid_search'] = [0.01,0.05]
+        #config_tmp["lr"]['grid_search'] = [0.01] # super nested
+        #config_tmp["rho"]['grid_search'] = [0.003] # super nested
+        config_tmp["lr"]['grid_search'] = [0.05]
+        config_tmp["rho"]['grid_search'] = [0.0003]
 
     # write random seed in a file to get it in network architectures
     os.system("rm -rf " + os.getcwd() +"/seed.txt")
@@ -233,6 +232,10 @@ for ROI in ['hot','cold']:
         for suffix in suffixes[0]:
             metrics_file = root + '/data/Algo' + '/metrics/' + method + '/' + suffix.rstrip("\n") + '/' + 'metrics.csv'
             with open(metrics_file, 'r') as myfile:
+                #if (method == "Gong"):
+                #    spamreader = reader_csv(myfile,delimiter=',')
+                #else:
+                #    spamreader = reader_csv(myfile,delimiter=';')
                 spamreader = reader_csv(myfile,delimiter=';')
                 rows_csv = list(spamreader)
                 rows_csv[0] = [float(i) for i in rows_csv[0]]
@@ -271,9 +274,9 @@ for ROI in ['hot','cold']:
                 if (method == "Gong"):
                     IR_final.append(np.array(IR_bkg_recon)[case,:-1])
                     metrics_final.append(np.array(metrics)[case,:-1])
-                else:
-                    IR_final.append(np.array(IR_bkg_recon)[case,:])
-                    metrics_final.append(np.array(metrics)[case,:])
+                if (method == "nested"):
+                    IR_final.append(np.array(IR_bkg_recon)[case,:10])
+                    metrics_final.append(np.array(metrics)[case,:10])
         elif (method == "BSREM" or method == "MLEM"):
             IR_final.append(np.array(IR_bkg_recon)[:,-1])
             metrics_final.append(np.array(metrics)[:,-1])
@@ -289,16 +292,15 @@ for ROI in ['hot','cold']:
         elif ROI == 'cold':
             plt.ylabel('MA')
 
-        #print(IR_final)
-        #print(metrics_final)
+        print(IR_final)
+        print(metrics_final)
         for case in range(len(IR_final)):
             idx_sort = np.argsort(IR_final[case])
             plt.plot(IR_final[case][idx_sort],metrics_final[case][idx_sort],'-o')
-            print(IR_final[case][idx_sort])
-            print(metrics_final[case][idx_sort])
             if (method == "nested" or method == "Gong"):
                 plt.plot(IR_final[case][0],metrics_final[case][0],'o', mfc='none',color='black',label='_nolegend_')
 
+        '''
         if (method == "nested" or method == "Gong"):
             for i in range(len(suffixes[0])):
                 l = suffixes[0][i].replace('=','_')
@@ -313,7 +315,8 @@ for ROI in ['hot','cold']:
                 suffixes_legend.append(legend)
 
         else:
-            suffixes_legend.append(method)
+        '''
+        suffixes_legend.append(method)
         plt.legend(suffixes_legend)
 
     # Saving this figure locally

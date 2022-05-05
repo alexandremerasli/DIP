@@ -16,8 +16,8 @@ class iPostReconstruction(vDenoising):
         vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
         # Loading DIP x_label (corrupted image) from block1
         self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'initialization/MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f') # MLEM for Gong
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning_10.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
+        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'initialization/MLEM_it300_REF_cropped.img',shape=(self.PETImage_shape),type='<d') # MLEM for Gong
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning_10.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
         self.net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_post_reco_epoch=' + format(0) + self.suffix + '.img'
         self.checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         self.name_run = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -94,7 +94,7 @@ class iPostReconstruction(vDenoising):
                 self.save_img(out_descale, net_outputs_path)
 
             # Compute IR metric (different from others with several replicates)
-            classResults.compute_IR_bkg(self.PETImage_shape,self.f,epoch,classResults.IR_bkg_recon,self.phantom)
+            classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch,classResults.IR_bkg_recon,self.phantom)
             # Write images over epochs
             print("aaaaaaaaaaaaaaaa")
             classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)",all_images=all_images)

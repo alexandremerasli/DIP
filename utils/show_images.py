@@ -28,7 +28,6 @@ def parametersIncompatibility(config,task=None):
         config.pop("k_DD", None)
     if method == 'Gong':
         config["scaling"] = "nothing"
-        config["scaling"] = "normalization"
         config["sub_iter_PLL"] = 50
     if method == 'nested':
         config["scaling"] = "standardization"
@@ -60,6 +59,7 @@ def path_from_config(hyperparameters_config,config,root):
     path = root + 'image0/replicate_1/' + method + '/'
     if (method == "Gong" or method == "nested"):
         path += 'Block2/out_cnn/24/out_DIP9' + suffix_func(hyperparameters_config) + '.img'
+        #path += 'Block2/out_cnn/24/out_DIP0' + suffix_func(hyperparameters_config) + '.img'
     elif (method == "BSREM"):
         path += "config_rho=" + str(config["rho"]) + "_mlem_=False/BSREM_it30.img"
     elif (method == "MLEM"):
@@ -87,11 +87,25 @@ def show_image(hyperparameters_config,config):
 
     plt.figure()
     #plt.imshow(np.abs(img1_np), cmap='gray_r')
-    plt.imshow(img1_np, cmap='gray_r')
+    plt.imshow(img1_np, cmap='gray_r',vmin=0,vmax=500)
     plt.title('img1')
     plt.colorbar()
     print("image saved")
     plt.savefig(root+'img1.png')
+
+def show_image_path(path):
+    root = os.getcwd() + '/data/Algo/'
+    PETImage_shape = (112,112)
+    img1_np = fijii_np(path, shape=(PETImage_shape),type='<f')
+
+    plt.figure()
+    #plt.imshow(np.abs(img1_np), cmap='gray_r')
+    plt.imshow(img1_np, cmap='gray_r',vmin=0,vmax=500)
+    #plt.imshow(img1_np, cmap='gray_r')
+    plt.title('img1')
+    plt.colorbar()
+    print("image saved")
+    plt.savefig(root+'img_non_Gong.png')
 
 
 # Configuration dictionnary for general parameters (not hyperparameters)
@@ -99,7 +113,7 @@ fixed_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['nested']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['BSREM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
@@ -116,13 +130,13 @@ fixed_config = {
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
-    "rho" : tune.grid_search([0.0003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "rho" : tune.grid_search([0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     #"rho" : tune.grid_search([0.003,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     ## network hyperparameters
     "lr" : tune.grid_search([0.05]), # Learning rate in network optimization
     "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
-    "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+    "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     #"skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     "scaling" : tune.grid_search(['normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
     "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
@@ -164,3 +178,7 @@ for key, value in hyperparameters_config_copy.items():
 method = config_copy["method"]
 
 show_image(hyperparameters_config_copy,config_copy)
+
+#show_image_path("/home/meraslia/workspace_reco/nested_admm/data/Algo/image0/replicate_1/Gong/Block2/out_cnn/24/out_DIP_post_reco_epoch=99config_rho=0.0003_lr=0.5_sub_i=100_opti_=Adam_skip_=3_scali=nothing_input=CT_sub_i=50_mlem_=False.img")
+#show_image_path("/home/meraslia/workspace_reco/nested_admm/data/Algo/Data/im_corrupt_beginning_10.img")
+show_image_path("/home/meraslia/workspace_reco/nested_admm/data/Algo/Data/database_v2/image0/image0_atn.raw")
