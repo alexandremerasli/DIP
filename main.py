@@ -18,20 +18,19 @@ from iPostReconstruction import iPostReconstruction
 from iResults import iResults
 from iResultsReplicates import iResultsReplicates
 from iResultsAlreadyComputed import iResultsAlreadyComputed
-from vGeneral import vGeneral
 
 # Configuration dictionnary for general parameters (not hyperparameters)
 fixed_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['nested','Gong','MLEM','BSREM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['Gong','MLEM','BSREM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
-    "max_iter" : tune.grid_search([300]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
-    "nb_subsets" : tune.grid_search([1]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
+    "max_iter" : tune.grid_search([30]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
+    "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
     "finetuning" : tune.grid_search(['last']),
     "experiment" : tune.grid_search([24]),
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
@@ -42,20 +41,21 @@ fixed_config = {
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
-    "rho" : tune.grid_search([0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "rho" : tune.grid_search([0.0003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    #"rho" : tune.grid_search([0.003,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     ## network hyperparameters
     "lr" : tune.grid_search([0.5]), # Learning rate in network optimization
-    #"lr" : tune.grid_search([0.001,0.041,0.01]), # Learning rate in network optimization
     "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
-    "skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+    "skip_connections" : tune.grid_search([0,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+    #"skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
     "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
     #"input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMLim - OPTITR hyperparameters
-    "sub_iter_PLL" : tune.grid_search([10]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for Gong)
+    "sub_iter_PLL" : tune.grid_search([50]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for Gong)
     "nb_iter_second_admm": tune.grid_search([10]), # Number outer iterations in ADMMLim
     "alpha" : tune.grid_search([0.005]), # alpha (penalty parameter) in ADMMLim
     ## hyperparameters from CASToR algorithms 
@@ -64,7 +64,7 @@ hyperparameters_config = {
     # AML hyperparameters
     "A_AML" : tune.grid_search([-100]), # AML lower bound A
     # Post smoothing by CASToR after reconstruction
-    "post_smoothing" : tune.grid_search([0]), # Post smoothing by CASToR after reconstruction
+    #"post_smoothing" : tune.grid_search([0]), # Post smoothing by CASToR after reconstruction
     "post_smoothing" : tune.grid_search([3,6,9,12,15]), # Post smoothing by CASToR after reconstruction
     # NNEPPS post processing
     "NNEPPS" : tune.grid_search([False]), # NNEPPS post-processing. True or False
@@ -86,11 +86,43 @@ generalClass.parametersIncompatibility(config,task)
 
 for method in config["method"]['grid_search']:
 
+    #'''
+    # Gong reconstruction
+    if (config["method"]["grid_search"][0] == 'Gong' and len(config["method"]["grid_search"]) == 1):
+        print("configuration fiiiiiiiiiiiiiiiiiiile")
+        #config = np.load(root + 'config_Gong.npy',allow_pickle='TRUE').item()
+        from Gong_configuration import config_func, config_func_MIC
+        #config = config_func()
+        config = config_func_MIC()
+
+    # nested reconstruction
+    if (config["method"]["grid_search"][0] == 'nested' and len(config["method"]["grid_search"]) == 1):
+        print("configuration fiiiiiiiiiiiiiiiiiiile")
+        from nested_configuration import config_func, config_func_MIC
+        #config = config_func()
+        config = config_func_MIC()
+    #'''
+
+    # MLEM reconstruction
+    if (config["method"]["grid_search"][0] == 'MLEM' and len(config["method"]["grid_search"]) == 1):
+        print("configuration fiiiiiiiiiiiiiiiiiiile")
+        from MLEM_configuration import config_func_MIC
+        #config = config_func()
+        config = config_func_MIC()
+    #'''
+
+    # BSREM reconstruction
+    if (config["method"]["grid_search"][0] == 'BSREM' and len(config["method"]["grid_search"]) == 1):
+        print("configuration fiiiiiiiiiiiiiiiiiiile")
+        from BSREM_configuration import config_func_MIC
+        #config = config_func()
+        config = config_func_MIC()
+    #'''
     config_tmp = dict(config)
     config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from fixed_config and hyperparameters_config
 
     if (method == 'BSREM'):
-        config_tmp["rho"]['grid_search'] = [0.01,0.03,0.05]
+        config_tmp["rho"]['grid_search'] = [0.01,0.02,0.03,0.04,0.05]
 
 
     # write random seed in a file to get it in network architectures
@@ -98,18 +130,6 @@ for method in config["method"]['grid_search']:
     file_seed = open(os.getcwd() + "/seed.txt","w+")
     file_seed.write(str(fixed_config["random_seed"]["grid_search"][0]))
     file_seed.close()
-
-    #'''
-    # Gong reconstruction
-    if (config["method"]["grid_search"][0] == 'Gong'):
-        print("configuration fiiiiiiiiiiiiiiiiiiile")
-        #config = np.load(root + 'config_Gong.npy',allow_pickle='TRUE').item()
-        from Gong_configuration import config_func, config_func_MIC
-        #config = config_func()
-        config = config_func_MIC()
-    #'''
-
-
 
     # Choose task to do (move this after raytune !!!)
     if (config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested'):
@@ -146,7 +166,8 @@ for method in config["method"]['grid_search']:
         raise ValueError("nested must be launched with rho > 0")
     elif (config["method"]["grid_search"][0] == 'ADMMLim' and task == "post_reco"):
         raise ValueError("ADMMLim cannot be launched in post_reco mode. Please comment this line.")
-
+    elif (config["method"]["grid_search"][0] == 'Gong' and config["max_iter"]["grid_search"][0]  == 1):
+        raise ValueError("Gong must be run with at least 2 global iterations to compute metrics")
 
 
     #'''
@@ -237,8 +258,12 @@ for ROI in ['hot','cold']:
         print('aaaaaaaaaaaaaaaa')
         if (method == "nested" or method == "Gong"):
             for case in range(np.array(IR_bkg_recon).shape[0]):
-                IR_final.append(np.array(IR_bkg_recon)[case,:])
-                metrics_final.append(np.array(metrics)[case,:])
+                if (method == "Gong"):
+                    IR_final.append(np.array(IR_bkg_recon)[case,:-1])
+                    metrics_final.append(np.array(metrics)[case,:-1])
+                else:
+                    IR_final.append(np.array(IR_bkg_recon)[case,:])
+                    metrics_final.append(np.array(metrics)[case,:])
         elif (method == "BSREM" or method == "MLEM"):
             IR_final.append(np.array(IR_bkg_recon)[:,-1])
             metrics_final.append(np.array(metrics)[:,-1])
@@ -254,10 +279,10 @@ for ROI in ['hot','cold']:
         elif ROI == 'cold':
             plt.ylabel('MA')
 
-        idx_sort = np.argsort(IR_final[0])
         print(IR_final)
         print(metrics_final)
         for case in range(len(IR_final)):
+            idx_sort = np.argsort(IR_final[case])
             plt.plot(IR_final[case][idx_sort],metrics_final[case][idx_sort],'-o')
             print(IR_final[case][idx_sort])
             print(metrics_final[case][idx_sort])

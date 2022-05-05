@@ -169,7 +169,8 @@ class iResults(vDenoising):
                             f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
 
                     # Compute IR metric (different from others with several replicates)
-                    self.compute_IR_bkg(self.PETImage_shape,f_p,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,self.phantom,writer=self.writer,write_tensorboard=True)
+                    self.compute_IR_bkg(self.PETImage_shape,f_p,i,self.IR_bkg_recon,self.phantom)
+
                     # Specific average for IR
                     if (fixed_config["average_replicates"] == False and p == self.replicate):
                         IR = self.IR_bkg_recon[i-1]
@@ -189,7 +190,7 @@ class iResults(vDenoising):
             self.writeEndImagesAndMetrics(i,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
 
 
-    def compute_IR_bkg(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,AR_hot_recon,AR_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
+    def compute_IR_bkg(self, PETImage_shape, image_recon,i,IR_bkg_recon,image):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
         
         # Select only phantom ROI, not whole reconstructed image

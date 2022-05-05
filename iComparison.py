@@ -22,6 +22,8 @@ class iComparison(vReconstruction):
 
         if (self.method != 'BSREM' and self.method != 'nested' and self.method != 'Gong'):
             self.post_smoothing = hyperparameters_config["post_smoothing"]
+        else:
+            self.post_smoothing = 0
         # castor-recon command line
         if (self.method == 'ADMMLim'):
             # Path variables

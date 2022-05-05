@@ -93,6 +93,8 @@ class iPostReconstruction(vDenoising):
                 # Saving (now DESCALED) image output
                 self.save_img(out_descale, net_outputs_path)
 
+            # Compute IR metric (different from others with several replicates)
+            classResults.compute_IR_bkg(self.PETImage_shape,self.f,epoch,classResults.IR_bkg_recon,self.phantom)
             # Write images over epochs
             print("aaaaaaaaaaaaaaaa")
             classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)",all_images=all_images)

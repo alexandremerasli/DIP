@@ -31,8 +31,13 @@ class vReconstruction(vGeneral):
         else:
             self.rho = 0
         if (fixed_config["method"] == "ADMMLim" or fixed_config["method"] == "nested" or fixed_config["method"] == "Gong"):
-            self.alpha = hyperparameters_config["alpha"] # Not useful for Gong
             self.sub_iter_PLL = hyperparameters_config["sub_iter_PLL"]
+            print(self.sub_iter_PLL)
+            print('aaaaaaaaaaaaaaaaaaaa')
+            if (fixed_config["method"] == "Gong"):
+                self.alpha = None
+            else:
+                self.alpha = hyperparameters_config["alpha"]
         self.image_init_path_without_extension = fixed_config["image_init_path_without_extension"]
 
         # Ininitializing DIP output and first image x with f_init and image_init
@@ -69,7 +74,8 @@ class vReconstruction(vGeneral):
     def castor_reconstruction(self,writer, i, subroot, sub_iter_PLL, experiment, hyperparameters_config, method, phantom, replicate, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension):
         start_time_block1 = time.time()
         mlem_sequence = hyperparameters_config['mlem_sequence']
-        nb_iter_second_admm = hyperparameters_config["nb_iter_second_admm"]
+        if (method != "Gong"):
+            nb_iter_second_admm = hyperparameters_config["nb_iter_second_admm"]
 
         # Save image f-mu in .img and .hdr format - block 1
         subroot_output_path = (subroot + 'Block1/' + suffix)
@@ -162,12 +168,12 @@ class vReconstruction(vGeneral):
             
 
             # Define command line to run OPTITR with CASToR
-            castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i)
+            castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i)
             # Initialize image
             if (i == 0):   # choose initial image for CASToR reconstruction
                 initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
             elif (i >= 1):
-                initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_' + format(nb_iter_second_admm) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + '.hdr'
+                #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_' + format(hyperparameters_config["nb_iter_second_admm"]) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + '.hdr'
                 # Trying to initialize OPTITR
                 #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
                 initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
@@ -224,6 +230,8 @@ class vReconstruction(vGeneral):
             x_for_init_v = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(hyperparameters_config["nb_iter_second_admm"]) + '_it1.hdr'
                         
 
+        if (self.method == "nested"):
+            self.post_smoothing = 0
         castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i)
         x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
 
