@@ -7,7 +7,7 @@ if (os.path.isfile(os.getcwd() + "/seed.txt")):
     with open(os.getcwd() + "/seed.txt", 'r') as file:
         random_seed = file.read().rstrip()
     if (eval(random_seed)):
-        pl.seed_everything(1)
+        pl.seed_everything(2)
 
 class DD_AE_2D(pl.LightningModule):
 
