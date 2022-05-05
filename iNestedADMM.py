@@ -28,7 +28,12 @@ class iNestedADMM(vReconstruction):
             classResults.debug = self.debug
             classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
         
-        for i in range(self.max_iter):
+        if (fixed_config["method"] == "Gong"):
+            i_init = 0 #-1 after MIC
+        else:
+            i_init = 0
+
+        for i in range(i_init, self.max_iter):
             print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Global iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', i)
             start_time_outer_iter = time.time()
             

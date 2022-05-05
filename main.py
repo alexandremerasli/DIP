@@ -24,7 +24,7 @@ fixed_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['nested','MLEM','BSREM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested','Gong','MLEM','BSREM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     #"method" : tune.grid_search(['Gong']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
@@ -128,8 +128,11 @@ for method in config["method"]['grid_search']:
 
     if (method == 'Gong'):
         config_tmp["sub_iter_PLL"]['grid_search'] = [50]
+        config_tmp["lr"]['grid_search'] = [0.5]
+        config_tmp["rho"]['grid_search'] = [0.0003,0.00003]
     elif (method == 'nested'):
         config_tmp["sub_iter_PLL"]['grid_search'] = [10]
+        config_tmp["lr"]['grid_search'] = [0.01,0.05]
 
     # write random seed in a file to get it in network architectures
     os.system("rm -rf " + os.getcwd() +"/seed.txt")
@@ -291,8 +294,8 @@ for ROI in ['hot','cold']:
         for case in range(len(IR_final)):
             idx_sort = np.argsort(IR_final[case])
             plt.plot(IR_final[case][idx_sort],metrics_final[case][idx_sort],'-o')
-            #print(IR_final[case][idx_sort])
-            #print(metrics_final[case][idx_sort])
+            print(IR_final[case][idx_sort])
+            print(metrics_final[case][idx_sort])
             if (method == "nested" or method == "Gong"):
                 plt.plot(IR_final[case][0],metrics_final[case][0],'o', mfc='none',color='black',label='_nolegend_')
 
@@ -307,17 +310,13 @@ for ROI in ['hot','cold']:
                         legend += "skip : " + l[p+2] + ' / ' 
                     if l[p] == "input":
                         legend += "input : " + l[p+1]
-                print(legend)
-                print('bbbbbbbbbbbbbbbb')
                 suffixes_legend.append(legend)
-                print(suffixes_legend)
 
         else:
             suffixes_legend.append(method)
         plt.legend(suffixes_legend)
 
     # Saving this figure locally
-    print(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'MA in ' + ROI + ' region vs IR in background' + '.png')
     if ROI == 'hot':
         plt.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'AR in ' + ROI + ' region vs IR in background' + '.png')
     elif ROI == 'cold':

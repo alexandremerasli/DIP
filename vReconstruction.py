@@ -74,8 +74,6 @@ class vReconstruction(vGeneral):
     def castor_reconstruction(self,writer, i, subroot, sub_iter_PLL, experiment, hyperparameters_config, method, phantom, replicate, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension):
         start_time_block1 = time.time()
         mlem_sequence = hyperparameters_config['mlem_sequence']
-        if (method != "Gong"):
-            nb_iter_second_admm = hyperparameters_config["nb_iter_second_admm"]
 
         # Save image f-mu in .img and .hdr format - block 1
         subroot_output_path = (subroot + 'Block1/' + suffix)
@@ -83,80 +81,11 @@ class vReconstruction(vGeneral):
         self.save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
         self.write_hdr(self.subroot_data,[i],'before_eq22',phantom,'f_mu',subroot_output_path)
         f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'        
-
         subdir = 'during_eq22'
-        '''
-        k_init = -1
-        castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i)
-        '''
 
         # Initialization
         if (method == 'nested'):            
             x = self.ADMMLim_general(hyperparameters_config, i, subdir, subroot_output_path, f_mu_for_penalty,writer,image_gt)
-            '''
-            # Useful variables for command line
-            base_name_k_next = format(i) + '_' + format(k_init+1)
-            full_output_path_k_next = subroot_output_path + '/' + subdir + '/' + base_name_k_next
-
-            # Define command line to run ADMM with CASToR, to compute v^0
-            if (i == 0):   # choose initial image for CASToR reconstruction
-                x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-                #x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-            elif (i >= 1):
-                x_for_init_v = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + '.hdr'
-                        
-            # Compute one ADMM iteration (x, v, u) when only initializing x to compute v^0. x (i_0_it.img) and u (i_0_u.img) will be computed, but are useless
-            x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
-            
-            print('vvvvvvvvvvv0000000000')
-            print(x_reconstruction_command_line)
-            self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k_init-1,self.phantom,subroot_output_path,self.subroot_data)
-            # Copy u^-1 coming from CASToR to v^0
-            copy(full_output_path_k_next + '_u.img', full_output_path_k_next + '_v.img')
-            self.write_hdr(subroot,[i,k_init+1],subdir,phantom,'v',subroot_output_path,matrix_type='sino')
-
-            # Then initialize u^0 (u^-1 in CASToR)
-            if (i == 0):   # choose initial image for CASToR reconstruction
-                copy(self.subroot_data + 'Data/initialization/0_sino_value.img', full_output_path_k_next + '_u.img')
-            elif (i >= 1):
-                copy(subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_u.img', full_output_path_k_next + '_u.img')
-            self.write_hdr(subroot,[i,k_init+1],subdir,phantom,'u',subroot_output_path,matrix_type='sino')
-                
-            # Second ADMM computation
-            for k in range(k_init+1,hyperparameters_config["nb_iter_second_admm"]):
-                # Initialize variables for command line
-                if (k == k_init+1):
-                    if (i == 0):   # choose initial image for CASToR reconstruction
-                        initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-                    elif (i >= 1):
-                        initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(nb_iter_second_admm) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + '.hdr'
-                        # Trying to initialize ADMMLim
-                        #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
-                        initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
-                else:
-                    initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + '.hdr'
-
-                base_name_k = format(i) + '_' + format(k)
-                base_name_k_next = format(i) + '_' + format(k+1)
-                full_output_path_k = subroot_output_path + '/' + subdir + '/' + base_name_k
-                full_output_path_k_next = subroot_output_path + '/' + subdir + '/' + base_name_k_next
-                f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'
-                v_for_additional_data = ' -additional-data ' + full_output_path_k + '_v.hdr'
-                u_for_additional_data = ' -additional-data ' + full_output_path_k + '_u.hdr'
-
-                # Define command line to run ADMM with CASToR
-                # Compute one ADMM iteration (x, v, u)
-                x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + f_mu_for_penalty + u_for_additional_data + v_for_additional_data + initialimage    
-                print('xxxxxxxxxuuuuuuuuuuuvvvvvvvvv')
-                print(x_reconstruction_command_line)
-                self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k,phantom,subroot_output_path,subroot)
-            
-                x = self.fijii_np(full_output_path_k_next + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + '.img', shape=(PETImage_shape))
-                
-                if (k>=-1):
-                    self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations",suffix,image_gt, k+1+i*nb_iter_second_admm) # Showing all corrupted images with same contrast to compare them together
-                    self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations(FULL CONTRAST)",suffix,image_gt, k+1+i*nb_iter_second_admm,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
-            '''
         elif (method == 'Gong'):
 
             # Choose number of argmax iteration for (second) x computation
@@ -165,14 +94,13 @@ class vReconstruction(vGeneral):
                 it = ' -it 16:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, 2D
             else:
                 it = ' -it ' + str(sub_iter_PLL) + ':1' # Only 2 iterations (Gong) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
-            
 
             # Define command line to run OPTITR with CASToR
             castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i)
             # Initialize image
-            if (i == 0):   # choose initial image for CASToR reconstruction
+            if (i == -1):   # choose initial image for CASToR reconstruction
                 initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-            elif (i >= 1):
+            elif (i >= 0):
                 #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_' + format(hyperparameters_config["nb_iter_second_admm"]) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + '.hdr'
                 # Trying to initialize OPTITR
                 #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
