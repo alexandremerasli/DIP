@@ -24,7 +24,8 @@ fixed_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['Gong','MLEM','BSREM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested','MLEM','BSREM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    #"method" : tune.grid_search(['Gong']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
@@ -45,6 +46,7 @@ hyperparameters_config = {
     #"rho" : tune.grid_search([0.003,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     ## network hyperparameters
     "lr" : tune.grid_search([0.5]), # Learning rate in network optimization
+    "lr" : tune.grid_search([0.05]), # Learning rate in network optimization
     "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
     "skip_connections" : tune.grid_search([0,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
@@ -124,6 +126,10 @@ for method in config["method"]['grid_search']:
     if (method == 'BSREM'):
         config_tmp["rho"]['grid_search'] = [0.01,0.02,0.03,0.04,0.05]
 
+    if (method == 'Gong'):
+        config_tmp["sub_iter_PLL"]['grid_search'] = [50]
+    elif (method == 'nested'):
+        config_tmp["sub_iter_PLL"]['grid_search'] = [10]
 
     # write random seed in a file to get it in network architectures
     os.system("rm -rf " + os.getcwd() +"/seed.txt")
@@ -191,6 +197,7 @@ for ROI in ['hot','cold']:
     else:
         method_list = config["method"]['grid_search']
     for method in method_list:
+
 
         print("method",method)
         suffixes = []
@@ -279,13 +286,33 @@ for ROI in ['hot','cold']:
         elif ROI == 'cold':
             plt.ylabel('MA')
 
-        print(IR_final)
-        print(metrics_final)
+        #print(IR_final)
+        #print(metrics_final)
         for case in range(len(IR_final)):
             idx_sort = np.argsort(IR_final[case])
             plt.plot(IR_final[case][idx_sort],metrics_final[case][idx_sort],'-o')
-            print(IR_final[case][idx_sort])
-            print(metrics_final[case][idx_sort])
+            #print(IR_final[case][idx_sort])
+            #print(metrics_final[case][idx_sort])
+            if (method == "nested" or method == "Gong"):
+                plt.plot(IR_final[case][0],metrics_final[case][0],'o', mfc='none',color='black',label='_nolegend_')
+
+        if (method == "nested" or method == "Gong"):
+            for i in range(len(suffixes[0])):
+                l = suffixes[0][i].replace('=','_')
+                l = l.replace('\n','_')
+                l = l.split('_')
+                legend = method + ' - '
+                for p in range(len(l)):
+                    if l[p] == "skip":
+                        legend += "skip : " + l[p+2] + ' / ' 
+                    if l[p] == "input":
+                        legend += "input : " + l[p+1]
+                print(legend)
+                print('bbbbbbbbbbbbbbbb')
+                suffixes_legend.append(legend)
+                print(suffixes_legend)
+
+        else:
             suffixes_legend.append(method)
         plt.legend(suffixes_legend)
 
