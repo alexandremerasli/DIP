@@ -161,6 +161,7 @@ class iResults(vDenoising):
                             iteration_name += beta_string
                         if (config["method"] == 'ADMMLim'):
                             subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
+                            subdir = ''
                             #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                             f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it1' + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         #elif (config["method"] == 'BSREM'):
@@ -269,8 +270,8 @@ class iResults(vDenoising):
 
         # Save metrics in csv
         from csv import writer as writer_csv
-        Path(self.subroot_data+'metrics/' + self.method + '/' + self.suffix_metrics).mkdir(parents=True, exist_ok=True) # CASToR path
-        with open(self.subroot_data + 'metrics/' + self.method + '/' + self.suffix_metrics + '/metrics.csv', 'w', newline='') as myfile:
+        Path(self.subroot_metrics + self.method + '/' + self.suffix_metrics).mkdir(parents=True, exist_ok=True) # CASToR path
+        with open(self.subroot_metrics + self.method + '/' + self.suffix_metrics + '/metrics.csv', 'w', newline='') as myfile:
             wr = writer_csv(myfile,delimiter=';')
             wr.writerow(PSNR_recon)
             wr.writerow(PSNR_norm_recon)
