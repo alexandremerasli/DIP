@@ -137,7 +137,7 @@ class vReconstruction(vGeneral):
 
         return x_label
 
-    def compute_x_v_u_ADMM(self,x_reconstruction_command_line,full_output_path,subdir,i,k,phantom,subroot_output_path,subroot):
+    def compute_x_v_u_ADMM(self,x_reconstruction_command_line,subdir,i,k,phantom,subroot_output_path,subroot):
         # Compute x,u,v
         os.system(x_reconstruction_command_line)
         # Write v and u hdr files
@@ -165,7 +165,7 @@ class vReconstruction(vGeneral):
 
         print('vvvvvvvvvvv0000000000')
         print(x_reconstruction_command_line)
-        self.compute_x_v_u_ADMM(x_reconstruction_command_line,full_output_path_k_next,subdir,i,k_init-1,self.phantom,subroot_output_path,self.subroot_data)
+        self.compute_x_v_u_ADMM(x_reconstruction_command_line,subdir,i,k_init-1,self.phantom,subroot_output_path,self.subroot_data)
         # Copy u^-1 coming from CASToR to v^0
         copy(full_output_path_k_next + '_u.img', full_output_path_k_next + '_v.img')
         self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'v',subroot_output_path,matrix_type='sino')
@@ -179,7 +179,7 @@ class vReconstruction(vGeneral):
             
 
 
-
+        print("xxxxxxxxxxxxxxxxxxxxxxx")
         for k in range(k_init+1,hyperparameters_config["nb_iter_second_admm"]):
             # Initialize variables for command line
             if (k == k_init+1):
@@ -226,20 +226,30 @@ class vReconstruction(vGeneral):
                     if (k == k_init+1):
                         initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
                     else:
-                        initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k-1) + '_' + format(hyperparameters_config["sub_iter_PLL"] - 1) + '_it1.hdr'
+                        if (hyperparameters_config["sub_iter_PLL"] != 1):
+                            initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k-1) + '_' + format(hyperparameters_config["sub_iter_PLL"] - 1) + '_it1.hdr'
+                        else:
+                            initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k) + '_it1.hdr'
                 else:
                     initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k) + '_' + format(inner_it) + '_it1.hdr'
 
                 x_reconstruction_command_line_1 = castor_command_line_x + self.castor_opti_and_penalty(self.method + "_dirty1", self.penalty, self.rho, i) + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + conv # we need f-mu so that ADMM optimizer works, even if we will not use it...
                 #x_reconstruction_command_line_1 = castor_command_line_x + self.castor_opti_and_penalty(self.method + "_dirty1", self.penalty, self.rho, i) + ' -fout /home/meraslia/workspace_reco/nested_admm/test/' + base_name_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + conv # we need f-mu so that ADMM optimizer works, even if we will not use it...
                 print(x_reconstruction_command_line_1)
-                self.compute_x_v_u_ADMM(x_reconstruction_command_line_1,full_output_path_k_next,subdir,i,k,self.phantom,subroot_output_path,self.subroot_data)
+                self.compute_x_v_u_ADMM(x_reconstruction_command_line_1,subdir,i,k,self.phantom,subroot_output_path,self.subroot_data)
 
+                # conjugate gradient
                 if (inner_it == 0):
-                    g_for_multimodal_before = ' -multimodal ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k) + '_' + format(inner_it+1) + '_g_OSadvance.hdr' # gradient is overwritten at each inner iteration, but it does not matter
+                    if (hyperparameters_config["sub_iter_PLL"] != 1):
+                        g_for_multimodal_before = ' -multimodal ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k) + '_' + format(inner_it+1) + '_g_OSadvance.hdr' # gradient is overwritten at each inner iteration, but it does not matter
+                    else:
+                        g_for_multimodal_before = ' -multimodal ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k+1) + '_g_OSadvance.hdr' # gradient is overwritten at each inner iteration, but it does not matter
                 else:
                     g_for_multimodal_before = ' -multimodal ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k) + '_' + format(inner_it) + '_g_OSadvance.hdr' # gradient is overwritten at each inner iteration, but it does not matter
                 
+                # no conjugate gradient
+                #g_for_multimodal_before = ""
+
                 if (inner_it == hyperparameters_config["sub_iter_PLL"] - 1):
                     g_for_multimodal_image = ' -multimodal ' + subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k+1) + '_g_OSadvance.hdr' # gradient is overwritten at each inner iteration, but it does not matter
                     self.write_hdr(self.subroot_data,[i,k+1],subdir,self.phantom,'g_OSadvance',subroot_output_path=subroot_output_path,matrix_type='img')
@@ -250,7 +260,7 @@ class vReconstruction(vGeneral):
                 x_reconstruction_command_line_2 = castor_command_line_x + self.castor_opti_and_penalty(self.method + "_dirty2", self.penalty, self.rho, i) + ' -fout ' + full_output_path_k_next + it + u_for_additional_data + v_for_additional_data + initialimage + f_mu_for_penalty + conv + g_for_multimodal_image + g_for_multimodal_before # we need f-mu so that ADMM optimizer works, even if we will not use it...
                 print("")
                 print(x_reconstruction_command_line_2)
-                self.compute_x_v_u_ADMM(x_reconstruction_command_line_2,full_output_path_k_next,subdir,i,k,self.phantom,subroot_output_path,self.subroot_data)
+                self.compute_x_v_u_ADMM(x_reconstruction_command_line_2,subdir,i,k,self.phantom,subroot_output_path,self.subroot_data)
 
             if (self.method == "nested"):
                 x = self.fijii_np(full_output_path_k_next + '_it1.img', shape=(self.PETImage_shape))
