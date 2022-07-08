@@ -79,10 +79,28 @@ class iResults(vDenoising):
         if (all_images == 1):
             self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
             self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
+
+            # Select only phantom ROI, not whole reconstructed image
+            path_phantom_ROI = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + str(self.phantom[-1]) + '.raw'
+            my_file = Path(path_phantom_ROI)
+            if (my_file.is_file()):
+                phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(PETImage_shape),type='<f')
+            else:
+                phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[-1] + '.raw', shape=(PETImage_shape),type='<f')
+            self.write_image_tensorboard(self.writer,f*phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
         else:          
             if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
                 self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
                 self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
+
+                # Select only phantom ROI, not whole reconstructed image
+                path_phantom_ROI = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + str(self.phantom[-1]) + '.raw'
+                my_file = Path(path_phantom_ROI)
+                if (my_file.is_file()):
+                    phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(PETImage_shape),type='<f')
+                else:
+                    phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[-1] + '.raw', shape=(PETImage_shape),type='<f')
+                self.write_image_tensorboard(self.writer,f*phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
 
         # Display AR (hot) /MA (cold) vs STD curve in tensorboard
         if (i == self.total_nb_iter):
