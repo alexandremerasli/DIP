@@ -22,12 +22,16 @@ class iComparison(vReconstruction):
 
         if (self.method != 'BSREM' and self.method != 'nested' and self.method != 'Gong'):
             self.post_smoothing = hyperparameters_config["post_smoothing"]
+        else:
+            self.post_smoothing = 0
         # castor-recon command line
         if (self.method == 'ADMMLim'):
             # Path variables
             subroot_output_path = (self.subroot + self.suffix)
             subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
+            subdir = ''
             f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/1_im_value_cropped.hdr' # its value is not useful to compute v^0
+            #f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/BSREM_it30_REF_cropped.hdr' # Test for DIP_ADMM (its value is not useful to compute v^0)
             Path(self.subroot + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
             self.ADMMLim_general(hyperparameters_config, 0, subdir, subroot_output_path, f_mu_for_penalty)
         else:
@@ -37,6 +41,8 @@ class iComparison(vReconstruction):
             #if (self.method == 'AML' or self.method == 'BSREM'):
             #    output_path += '_beta_' + str(self.beta)
             initialimage = ''
+
+            Path(self.subroot + self.suffix).mkdir(parents=True, exist_ok=True) # CASToR path
         
             print("CASToR command line : ")
             print(self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
@@ -70,6 +76,7 @@ class iComparison(vReconstruction):
         if (self.method == 'ADMMLim'):
             i = 0
             subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
+            subdir = ''
             input_without_extension = self.subroot + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(hyperparameters_config["sub_iter_PLL"])
         else:
             input_without_extension = self.subroot + self.suffix + '/' + self.method + '_beta_' + str(self.beta) + '_it' + format(it)

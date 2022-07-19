@@ -12,7 +12,7 @@ if (os.path.isfile(os.getcwd() + "/seed.txt")):
     with open(os.getcwd() + "/seed.txt", 'r') as file:
         random_seed = file.read().rstrip()
     if (eval(random_seed)):
-        np.random.seed(1)
+        np.random.seed(2)
 
 # Local files to import
 from vGeneral import vGeneral
@@ -92,6 +92,8 @@ class vDenoising(vGeneral):
             gpus = -1
             #if (torch.cuda.device_count() > 1):
             #    accelerator = 'dp'
+
+        print("admm_iiiiiiiiiiiiit",admm_it)
 
         if (admm_it == 0): # First ADMM iteration in block 1
             #sub_iter_DIP = 1000 if net.startswith('DD') else 200

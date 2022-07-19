@@ -44,13 +44,13 @@ class vGeneral(abc.ABC):
         self.max_iter = fixed_config["max_iter"] # Outer iterations
         self.experiment = fixed_config["experiment"] # Label of the experiment
         self.replicate = fixed_config["replicates"] # Label of the replicate
-        self.nb_threads = fixed_config["nb_threads"]
         self.penalty = fixed_config["penalty"]
 
         self.FLTNB = fixed_config["FLTNB"]
 
         # Initialize useful variables
         self.subroot = root + '/data/Algo/' + 'debug/'*self.debug + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' + self.method + '/' # Directory root
+        self.subroot_metrics = root + '/data/Algo/' + 'debug/'*self.debug + 'metrics/' + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' # Directory root for metrics
         self.subroot_data = root + '/data/Algo/' # Directory root
         self.suffix = self.suffix_func(hyperparameters_config) # self.suffix to make difference between raytune runs (different hyperparameters)
         self.suffix_metrics = self.suffix_func(hyperparameters_config,NNEPPS=True) # self.suffix with NNEPPS information
@@ -80,13 +80,8 @@ class vGeneral(abc.ABC):
             Path(self.subroot+'Block2/x_label/'+format(self.experiment) + '/').mkdir(parents=True, exist_ok=True) # x corrupted - folder
             Path(self.subroot+'Block2/mu/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
 
-        else:
-            Path(self.subroot + self.suffix + '/' + self.method).mkdir(parents=True, exist_ok=True) # CASToR path
-
         Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
                 
-        Path(self.subroot_data + 'debug/' +'metrics/' + self.method + '/' + self.suffix_metrics).mkdir(parents=True, exist_ok=True) # CASToR path
-
     def runRayTune(self,config,root,task):
         # Check parameters incompatibility
         self.parametersIncompatibility(config,task)
@@ -168,10 +163,11 @@ class vGeneral(abc.ABC):
             if (config["method"]['grid_search'][0] == 'BSREM' or config["method"]['grid_search'][0] == 'nested' or config["method"]['grid_search'][0] == 'Gong'):
                 config.pop("post_smoothing", None)
             if (config["method"]['grid_search'][0] != "ADMMLim" and config["method"]['grid_search'][0] != "nested"):
-                config.pop("sub_iter_PLL", None)
                 config.pop("nb_iter_second_admm", None)
                 config.pop("alpha", None)
-            if (config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong" and config["method"]['grid_search'][0] != "post_reco"):
+            if (config["method"]['grid_search'][0] != "ADMMLim" and config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong"):
+                config.pop("sub_iter_PLL", None)
+            if (config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong" and task != "post_reco"):
                 config.pop("lr", None)
                 config.pop("sub_iter_DIP", None)
                 config.pop("opti_DIP", None)
@@ -473,7 +469,7 @@ class vGeneral(abc.ABC):
         # Adding this figure to tensorboard
         writer.add_figure(name,plt.gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
 
-    def castor_common_command_line(self, subroot, PETImage_shape_str, phantom, replicates, post_smoothing):
+    def castor_common_command_line(self, subroot, PETImage_shape_str, phantom, replicates, post_smoothing=0):
         executable = 'castor-recon'
         if (self.nb_replicates == 1):
             header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[-1] + '/data' + phantom[-1] + '.cdh' # PET data path

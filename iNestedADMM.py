@@ -28,7 +28,12 @@ class iNestedADMM(vReconstruction):
             classResults.debug = self.debug
             classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
         
-        for i in range(self.max_iter):
+        if (fixed_config["method"] == "Gong"):
+            i_init = 0 #-1 after MIC
+        else:
+            i_init = 0
+
+        for i in range(i_init, self.max_iter):
             print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Global iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', i)
             start_time_outer_iter = time.time()
             
@@ -75,6 +80,8 @@ class iNestedADMM(vReconstruction):
                 # Write corrupted image over ADMM iterations
                 classResults.writeCorruptedImage(i,hyperparameters_config["sub_iter_PLL"],self.mu,self.suffix,pet_algo="mmmmmuuuuuuu")
                 print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))
+                # Compute IR metric (different from others with several replicates)
+                classResults.compute_IR_bkg(self.PETImage_shape,self.f,i,classResults.IR_bkg_recon,self.phantom)
                 # Write output image and metrics to tensorboard
                 classResults.writeEndImagesAndMetrics(i,hyperparameters_config["sub_iter_PLL"],self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo=fixed_config["method"],all_images=1)
 

@@ -79,10 +79,28 @@ class iResults(vDenoising):
         if (all_images == 1):
             self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
             self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
+
+            # Select only phantom ROI, not whole reconstructed image
+            path_phantom_ROI = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + str(self.phantom[-1]) + '.raw'
+            my_file = Path(path_phantom_ROI)
+            if (my_file.is_file()):
+                phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(PETImage_shape),type='<f')
+            else:
+                phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[-1] + '.raw', shape=(PETImage_shape),type='<f')
+            self.write_image_tensorboard(self.writer,f*phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
         else:          
             if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
                 self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
                 self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
+
+                # Select only phantom ROI, not whole reconstructed image
+                path_phantom_ROI = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + str(self.phantom[-1]) + '.raw'
+                my_file = Path(path_phantom_ROI)
+                if (my_file.is_file()):
+                    phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(PETImage_shape),type='<f')
+                else:
+                    phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[-1] + '.raw', shape=(PETImage_shape),type='<f')
+                self.write_image_tensorboard(self.writer,f*phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
 
         # Display AR (hot) /MA (cold) vs STD curve in tensorboard
         if (i == self.total_nb_iter):
@@ -161,6 +179,7 @@ class iResults(vDenoising):
                             iteration_name += beta_string
                         if (config["method"] == 'ADMMLim'):
                             subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
+                            subdir = ''
                             #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                             f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it1' + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         #elif (config["method"] == 'BSREM'):
@@ -169,7 +188,8 @@ class iResults(vDenoising):
                             f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
 
                     # Compute IR metric (different from others with several replicates)
-                    self.compute_IR_bkg(self.PETImage_shape,f_p,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,self.phantom,writer=self.writer,write_tensorboard=True)
+                    self.compute_IR_bkg(self.PETImage_shape,f_p,i,self.IR_bkg_recon,self.phantom)
+
                     # Specific average for IR
                     if (fixed_config["average_replicates"] == False and p == self.replicate):
                         IR = self.IR_bkg_recon[i]
@@ -189,7 +209,7 @@ class iResults(vDenoising):
             self.writeEndImagesAndMetrics(i,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
 
 
-    def compute_IR_bkg(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,AR_hot_recon,AR_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
+    def compute_IR_bkg(self, PETImage_shape, image_recon,i,IR_bkg_recon,image):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
         
         # Select only phantom ROI, not whole reconstructed image
@@ -268,8 +288,8 @@ class iResults(vDenoising):
 
         # Save metrics in csv
         from csv import writer as writer_csv
-        Path(self.subroot_data+'metrics/' + self.method + '/' + self.suffix_metrics).mkdir(parents=True, exist_ok=True) # CASToR path
-        with open(self.subroot_data + 'metrics/' + self.method + '/' + self.suffix_metrics + '/metrics.csv', 'w', newline='') as myfile:
+        Path(self.subroot_metrics + self.method + '/' + self.suffix_metrics).mkdir(parents=True, exist_ok=True) # CASToR path
+        with open(self.subroot_metrics + self.method + '/' + self.suffix_metrics + '/metrics.csv', 'w', newline='') as myfile:
             wr = writer_csv(myfile,delimiter=';')
             wr.writerow(PSNR_recon)
             wr.writerow(PSNR_norm_recon)
