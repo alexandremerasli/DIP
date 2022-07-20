@@ -11,7 +11,7 @@ if (os.path.isfile(os.getcwd() + "/seed.txt")):
 
 class DIP_2D(pl.LightningModule):
 
-    def __init__(self, hyperparameters_config, method):
+    def __init__(self, hyperparameters_config, method, all_images):
         super().__init__()
 
         # Defining variables from hyperparameters_config        
@@ -20,12 +20,18 @@ class DIP_2D(pl.LightningModule):
         self.sub_iter_DIP = hyperparameters_config['sub_iter_DIP']
         self.skip = hyperparameters_config['skip_connections']
         self.method = method
+        self.all_images = all_images
+        
+        self.post_reco_mode = True
+        self.suffix = self.suffix_func(hyperparameters_config)
+    
+        '''
         if (hyperparameters_config['mlem_sequence'] is None):
             self.post_reco_mode = True
             self.suffix = self.suffix_func(hyperparameters_config)
         else:
             self.post_reco_mode = False
-
+        '''
         # Defining CNN variables
         L_relu = 0.2
         num_channel = [16, 32, 64, 128]
@@ -176,14 +182,6 @@ class DIP_2D(pl.LightningModule):
         if (self.post_reco_mode):
             self.post_reco(out)
 
-        #'''
-        # Save image
-        out_np = out.detach().numpy()[0,0,:,:]
-        experiment = 24
-        subroot = '/home/meraslia/workspace_reco/nested_admm/data/Algo/image0/replicate_1/nested/'
-        self.save_img(out_np, subroot+'Block2/out_cnn/' + format(experiment) + '/out_' + 'DIP' + '_post_reco_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
-        #'''
-
         loss = self.DIP_loss(out, image_corrupt_torch)
         # logging using tensorboard logger
         self.logger.experiment.add_scalar('loss', loss,self.current_epoch)        
@@ -203,15 +201,29 @@ class DIP_2D(pl.LightningModule):
         return optimizer
 
     def post_reco(self,out):
-        if ((self.current_epoch%(self.sub_iter_DIP // 10) == 0)):
-            try:
-                out_np = out.detach().numpy()[0,0,:,:]
-            except:
-                out_np = out.cpu().detach().numpy()[0,0,:,:]
-            subroot = '/home/meraslia/workspace_reco/nested_admm/data/Algo/'
-            experiment = 24
-            self.save_img(out_np, subroot+'Block2/out_cnn/' + format(experiment) + '/out_' + 'DIP' + '_post_reco_epoch=' + format(self.current_epoch) + self.suffix + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
-                    
+        print("self.all_images",self.all_images)
+        if (self.all_images == "False"):
+            print('rpoch1',self.current_epoch,self.sub_iter_DIP-1)
+            if ((self.current_epoch%(self.sub_iter_DIP // 10) == 0)):
+                self.post_reco_task(out)
+        elif (self.all_images == "True"):
+            print('rpoch2',self.current_epoch,self.sub_iter_DIP-1)
+            self.post_reco_task(out)
+        elif (self.all_images == 1):
+            print('rpoch3',self.current_epoch,self.sub_iter_DIP-1)
+            if (self.current_epoch == self.sub_iter_DIP - 1):
+                self.post_reco_task(out)
+
+    def post_reco_task(self,out):
+        try:
+            out_np = out.detach().numpy()[0,0,:,:]
+        except:
+            out_np = out.cpu().detach().numpy()[0,0,:,:]
+
+        experiment = 24
+        subroot = '/home/meraslia/workspace_reco/nested_admm/data/Algo/image0/replicate_1/nested/'
+        self.save_img(out_np, subroot+'Block2/out_cnn/' + format(experiment) + '/out_' + 'DIP' + '_post_reco_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+                            
     def suffix_func(self,hyperparameters_config):
         suffix = "config"
         for key, value in hyperparameters_config.items():
