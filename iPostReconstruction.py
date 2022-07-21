@@ -19,7 +19,7 @@ class iPostReconstruction(vDenoising):
         self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'initialization/MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f') # MLEM for Gong
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning_10.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
-        self.net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_post_reco_epoch=' + format(0) + self.suffix + '.img'
+        self.net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_epoch=' + format(0) + self.suffix + '.img'
         self.checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         self.name_run = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.total_nb_iter = hyperparameters_config["sub_iter_DIP"]
@@ -32,12 +32,6 @@ class iPostReconstruction(vDenoising):
         '''
 
     def runComputation(self,config,fixed_config,hyperparameters_config,root):
-
-        # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to True by default)
-        #all_images = "False" # Only 10 images
-        all_images = "True" # Images for all iterations
-        #all_images = 1 # Only last image
-
         # Initializing results class
         if ((fixed_config["average_replicates"] and self.replicate == 1) or (fixed_config["average_replicates"] == False)):
             from iResults import iResults
@@ -64,7 +58,7 @@ class iPostReconstruction(vDenoising):
         classResults.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
         
         # Train model using previously trained network (at iteration before)
-        model = self.train_process(self.suffix,hyperparameters_config, self.finetuning, self.processing_unit, self.total_nb_iter, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, all_images = all_images)
+        model = self.train_process(self.suffix,hyperparameters_config, self.finetuning, self.processing_unit, self.total_nb_iter, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, all_images_DIP = self.all_images_DIP)
 
         # Saving variables
         if (self.net == 'DIP_VAE'):
@@ -73,25 +67,25 @@ class iPostReconstruction(vDenoising):
             out = model(self.image_net_input_torch)
 
         # Write descaled images in files
-        if (all_images == "True"):
+        if (self.all_images_DIP == "True"):
             epoch_values = np.arange(0,self.total_nb_iter)
-        elif (all_images == "False"):
+        elif (self.all_images_DIP == "False"):
             if (self.total_nb_iter < 10):
                 epoch_values = np.arange(0,self.total_nb_iter)
             else:
                 epoch_values = np.arange(0,self.total_nb_iter,self.total_nb_iter//10)
-        elif (all_images == 1):
+        elif (self.all_images_DIP == "Last"):
             epoch_values = np.array([self.total_nb_iter-1])
 
         for epoch in epoch_values:
-            net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.admm_it) + '_post_reco_epoch=' + format(epoch) + '.img'
+            net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.admm_it) + '_epoch=' + format(epoch) + '.img'
             out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type='<f')
             out = torch.from_numpy(out)
             # Descale like at the beginning
             out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
             #'''
             # Saving image output
-            net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_post_reco_epoch=' + format(epoch) + self.suffix + '.img'
+            net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_epoch=' + format(epoch) + self.suffix + '.img'
             self.save_img(out_descale, net_outputs_path)
             # Squeeze image by loading it
             out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type='<f') # loading DIP output
@@ -102,4 +96,4 @@ class iPostReconstruction(vDenoising):
             classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch,classResults.IR_bkg_recon,self.phantom)
             classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[epoch], epoch+1)
             # Write images over epochs
-            classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)",all_images=all_images)
+            classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")

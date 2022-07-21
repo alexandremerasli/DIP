@@ -11,7 +11,7 @@ if (os.path.isfile(os.getcwd() + "/seed.txt")):
 
 class DIP_2D(pl.LightningModule):
 
-    def __init__(self, hyperparameters_config, method, all_images, admm_it):
+    def __init__(self, hyperparameters_config, method, all_images_DIP, admm_it):
         super().__init__()
 
         # Defining variables from hyperparameters_config        
@@ -20,18 +20,18 @@ class DIP_2D(pl.LightningModule):
         self.sub_iter_DIP = hyperparameters_config['sub_iter_DIP']
         self.skip = hyperparameters_config['skip_connections']
         self.method = method
-        self.all_images = all_images
+        self.all_images_DIP = all_images_DIP
         self.admm_it = admm_it
         
-        self.post_reco_mode = True
+        self.write_current_img_mode = True
         self.suffix = self.suffix_func(hyperparameters_config)
     
         '''
         if (hyperparameters_config['mlem_sequence'] is None):
-            self.post_reco_mode = True
+            self.write_current_img_mode = True
             self.suffix = self.suffix_func(hyperparameters_config)
         else:
-            self.post_reco_mode = False
+            self.write_current_img_mode = False
         '''
         # Defining CNN variables
         L_relu = 0.2
@@ -180,8 +180,8 @@ class DIP_2D(pl.LightningModule):
         image_net_input_torch, image_corrupt_torch = train_batch
         out = self.forward(image_net_input_torch)
         # Save image over epochs
-        if (self.post_reco_mode):
-            self.post_reco(out)
+        if (self.write_current_img_mode):
+            self.write_current_img(out)
 
         loss = self.DIP_loss(out, image_corrupt_torch)
         # logging using tensorboard logger
@@ -201,21 +201,17 @@ class DIP_2D(pl.LightningModule):
             optimizer = torch.optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4) # Optimizing using L-BFGS
         return optimizer
 
-    def post_reco(self,out):
-        print("self.all_images",self.all_images)
-        if (self.all_images == "False"):
-            print('rpoch1',self.current_epoch,self.sub_iter_DIP-1)
+    def write_current_img(self,out):
+        if (self.all_images_DIP == "False"):
             if ((self.current_epoch%(self.sub_iter_DIP // 10) == 0)):
-                self.post_reco_task(out)
-        elif (self.all_images == "True"):
-            print('rpoch2',self.current_epoch,self.sub_iter_DIP-1)
-            self.post_reco_task(out)
-        elif (self.all_images == 1):
-            print('rpoch3',self.current_epoch,self.sub_iter_DIP-1)
+                self.write_current_img_task(out)
+        elif (self.all_images_DIP == "True"):
+            self.write_current_img_task(out)
+        elif (self.all_images_DIP == "Last"):
             if (self.current_epoch == self.sub_iter_DIP - 1):
-                self.post_reco_task(out)
+                self.write_current_img_task(out)
 
-    def post_reco_task(self,out):
+    def write_current_img_task(self,out):
         try:
             out_np = out.detach().numpy()[0,0,:,:]
         except:
@@ -223,7 +219,7 @@ class DIP_2D(pl.LightningModule):
 
         experiment = 24
         subroot = '/home/meraslia/workspace_reco/nested_admm/data/Algo/image0/replicate_1/nested/'
-        self.save_img(out_np, subroot+'Block2/out_cnn/' + format(experiment) + '/out_' + 'DIP' + format(self.admm_it) + '_post_reco_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+        self.save_img(out_np, subroot+'Block2/out_cnn/' + format(experiment) + '/out_' + 'DIP' + format(self.admm_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,hyperparameters_config):
         suffix = "config"

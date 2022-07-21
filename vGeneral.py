@@ -35,7 +35,7 @@ class vGeneral(abc.ABC):
 
         # Initialize some parameters from fixed_config
         self.finetuning = fixed_config["finetuning"]
-        print(fixed_config["image"])
+        self.all_images_DIP = fixed_config["all_images_DIP"]
         self.phantom = fixed_config["image"]
         self.net = fixed_config["net"]
         self.method = fixed_config["method"]

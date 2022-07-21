@@ -68,9 +68,9 @@ class iNestedADMM(vReconstruction):
             print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
             
             if (i == 0 and fixed_config["method"] == "Gong"): # Gong at first epoch -> only pre train the network
-                self.f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i-1) + self.suffix + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+                self.f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i-1) + "_epoch=" + format(hyperparameters_config["sub_iter_DIP"] - 1) + self.suffix + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
             else:
-                self.f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + self.suffix + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+                self.f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "_epoch=" + format(hyperparameters_config["sub_iter_DIP"] - 1) + self.suffix + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
             self.f.astype(numpy.float64)
             
             if (i != 0 or fixed_config["method"] != "Gong"): # Gong at first epoch -> only pre train the network
@@ -84,7 +84,7 @@ class iNestedADMM(vReconstruction):
                 classResults.compute_IR_bkg(self.PETImage_shape,self.f,i,classResults.IR_bkg_recon,self.phantom)
                 classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[i], i+1)
                 # Write output image and metrics to tensorboard
-                classResults.writeEndImagesAndMetrics(i,hyperparameters_config["sub_iter_PLL"],self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo=fixed_config["method"],all_images=1)
+                classResults.writeEndImagesAndMetrics(i,hyperparameters_config["sub_iter_PLL"],self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo=fixed_config["method"])
 
         # Saving final image output
         self.save_img(self.f, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')

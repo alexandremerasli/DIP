@@ -32,6 +32,7 @@ fixed_config = {
     "max_iter" : tune.grid_search([2]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
     "finetuning" : tune.grid_search(['False']),
+    "all_images_DIP" : tune.grid_search(['False']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
     #"f_init" : tune.grid_search(['1_im_value_cropped']),
@@ -47,7 +48,7 @@ hyperparameters_config = {
     #"rho" : tune.grid_search([0.003,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     ## network hyperparameters
     "lr" : tune.grid_search([0.005]), # Learning rate in network optimization
-    "sub_iter_DIP" : tune.grid_search([10]), # Number of epochs in network optimization
+    "sub_iter_DIP" : tune.grid_search([20]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
     "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     #"skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
@@ -59,7 +60,7 @@ hyperparameters_config = {
     ## ADMMLim - OPTITR hyperparameters
     "sub_iter_PLL" : tune.grid_search([1]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for Gong)
     "nb_iter_second_admm": tune.grid_search([50]), # Number outer iterations in ADMMLim
-    "nb_iter_second_admm": tune.grid_search([10]), # Number outer iterations in ADMMLim
+    "nb_iter_second_admm": tune.grid_search([5]), # Number outer iterations in ADMMLim
     "alpha" : tune.grid_search([0.005,0.05,0.5]), # alpha (penalty parameter) in ADMMLim
     "alpha" : tune.grid_search([0.05]), # alpha (penalty parameter) in ADMMLim
     ## hyperparameters from CASToR algorithms 
@@ -178,6 +179,8 @@ for method in config["method"]['grid_search']:
         raise ValueError("Gong must be run with at least 2 global iterations to compute metrics")
     elif ((config["method"]["grid_search"][0] != 'Gong' and config["method"]["grid_search"][0] != 'nested') and task == "post_reco"):
         raise ValueError("Only Gong or nested can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
+    elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and task != "post_reco"):
+        raise ValueError("Please set all_images_DIP to True to save all images for nested or Gong reconstruction.")
 
 
     #'''
