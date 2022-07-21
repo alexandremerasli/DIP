@@ -34,8 +34,8 @@ class iPostReconstruction(vDenoising):
     def runComputation(self,config,fixed_config,hyperparameters_config,root):
 
         # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to True by default)
-        all_images = "False" # Only 10 images
-        #all_images = "True" # Images for all iterations
+        #all_images = "False" # Only 10 images
+        all_images = "True" # Images for all iterations
         #all_images = 1 # Only last image
 
         # Initializing results class
@@ -94,6 +94,8 @@ class iPostReconstruction(vDenoising):
             # Saving (now DESCALED) image output
             self.save_img(out_descale, net_outputs_path)
 
+            # Compute IR metric (different from others with several replicates)
+            classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch,classResults.IR_bkg_recon,self.phantom)
+            classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[epoch], epoch+1)
             # Write images over epochs
-            print("ccccccccccccccccccc")
             classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)",all_images=all_images)

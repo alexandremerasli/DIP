@@ -130,7 +130,16 @@ class vGeneral(abc.ABC):
             # Launch computation
             self.do_everything(config,root)
         else:
-            tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
+            # tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
+
+            # Remove grid search if debug mode and choose first element of each config key. The result does not matter, just if the code runs.
+            for key, value in config.items():
+                if key != "hyperparameters":
+                    config[key] = value["grid_search"][0]
+
+            # Launch computation
+            self.do_everything(config,root)
+
 
     def parametersIncompatibility(self,config,task):
         config["task"] = {'grid_search': [task]}

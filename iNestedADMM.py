@@ -82,6 +82,7 @@ class iNestedADMM(vReconstruction):
                 print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))
                 # Compute IR metric (different from others with several replicates)
                 classResults.compute_IR_bkg(self.PETImage_shape,self.f,i,classResults.IR_bkg_recon,self.phantom)
+                classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[i], i+1)
                 # Write output image and metrics to tensorboard
                 classResults.writeEndImagesAndMetrics(i,hyperparameters_config["sub_iter_PLL"],self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo=fixed_config["method"],all_images=1)
 

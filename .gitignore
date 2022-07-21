@@ -27,8 +27,15 @@ env/
 data/Algo/Data/ADMMLim_*
 
 data/Algo/Data/database_v2/
-data/Algo/im_corrupt_beginning.img
+data/Algo/Data/im_corrupt_beginning.img
 data/Algo/metrics
+
+data/Algo/image0_MIC
+data/Algo/image0/
+diff_all.py
+BSREM quad pas bcp it/
+MIC runs/
+
 
 data/Algo/suffixes*
 data/Algo/replicate_*

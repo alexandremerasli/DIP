@@ -188,13 +188,13 @@ class iResults(vDenoising):
                             f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
 
                     # Compute IR metric (different from others with several replicates)
-                    self.compute_IR_bkg(self.PETImage_shape,f_p,i,self.IR_bkg_recon,self.phantom)
+                    self.compute_IR_bkg(self.PETImage_shape,f_p,i-1,self.IR_bkg_recon,self.phantom)
 
                     # Specific average for IR
                     if (fixed_config["average_replicates"] == False and p == self.replicate):
-                        IR = self.IR_bkg_recon[i]
+                        IR = self.IR_bkg_recon[i-1]
                     elif (fixed_config["average_replicates"]):
-                        IR += self.IR_bkg_recon[i] / self.nb_replicates
+                        IR += self.IR_bkg_recon[i-1] / self.nb_replicates
                         
                     if (fixed_config["average_replicates"]): # Average images across replicates (for metrics except IR)
                         f += f_p / self.nb_replicates
@@ -202,11 +202,11 @@ class iResults(vDenoising):
                         f = f_p
                 
             print("IR saved in tensorboard")
-            self.IR_bkg_recon[i] = IR
-            self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[i], i)
+            self.IR_bkg_recon[i-1] = IR
+            self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[i-1], i)
 
             # Show images and metrics in tensorboard (averaged images if asked in fixed_config)           
-            self.writeEndImagesAndMetrics(i,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
+            self.writeEndImagesAndMetrics(i-1,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
 
 
     def compute_IR_bkg(self, PETImage_shape, image_recon,i,IR_bkg_recon,image):
