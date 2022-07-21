@@ -48,10 +48,18 @@ class iPostReconstruction(vDenoising):
 
         self.finetuning = 'False' # to ignore last.ckpt file
         self.admm_it = 0 # Set it to 0, to ignore last.ckpt file
-        vDenoising.runComputation(self,config,fixed_config,hyperparameters_config,root)
-        self.finetuning = 'last' # to take into account last.ckpt file
-        self.admm_it = 1 # Set it to 1, to take into account last.ckpt file
-        
+
+        # Initialize variables
+        # Scaling of x_label image
+        image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image
+
+        # Corrupted image x_label, numpy --> torch
+        self.image_corrupt_torch = torch.Tensor(image_corrupt_input_scale)
+        # Adding dimensions to fit network architecture
+        self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
+        if (len(self.image_corrupt_torch.shape) == 5): # if 3D but with dim3 = 1 -> 2D
+            self.image_corrupt_torch = self.image_corrupt_torch[:,:,:,:,0]
+
         # Squeeze image by loading it
         out_descale = self.fijii_np(self.net_outputs_path,shape=(self.PETImage_shape),type='<f') # loading DIP output
         #writer = model.logger.experiment # Assess to new variable, otherwise error : weakly-referenced object ...

@@ -24,14 +24,14 @@ fixed_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['ADMMLim']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
-    "max_iter" : tune.grid_search([15]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
+    "max_iter" : tune.grid_search([2]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
-    "finetuning" : tune.grid_search(['last']),
+    "finetuning" : tune.grid_search(['False']),
     "experiment" : tune.grid_search([24]),
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
     #"f_init" : tune.grid_search(['1_im_value_cropped']),
@@ -43,7 +43,7 @@ fixed_config = {
 hyperparameters_config = {
     "rho" : tune.grid_search([0,3,3e-1,3e-2,3e-3,3e-4,3e-5,3e-6,3e-7]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     "rho" : tune.grid_search([0,3e-1,3e-2,3e-3,3e-4,3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    "rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "rho" : tune.grid_search([0.0003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     #"rho" : tune.grid_search([0.003,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     ## network hyperparameters
     "lr" : tune.grid_search([0.005]), # Learning rate in network optimization
@@ -59,7 +59,7 @@ hyperparameters_config = {
     ## ADMMLim - OPTITR hyperparameters
     "sub_iter_PLL" : tune.grid_search([1]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for Gong)
     "nb_iter_second_admm": tune.grid_search([50]), # Number outer iterations in ADMMLim
-    "nb_iter_second_admm": tune.grid_search([100]), # Number outer iterations in ADMMLim
+    "nb_iter_second_admm": tune.grid_search([10]), # Number outer iterations in ADMMLim
     "alpha" : tune.grid_search([0.005,0.05,0.5]), # alpha (penalty parameter) in ADMMLim
     "alpha" : tune.grid_search([0.05]), # alpha (penalty parameter) in ADMMLim
     ## hyperparameters from CASToR algorithms 
@@ -152,7 +152,7 @@ for method in config["method"]['grid_search']:
 
     #task = 'full_reco_with_network' # Run Gong or nested ADMM
     #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
-    #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
+    task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
     #task = 'show_results'
     #task = 'show_results_replicates'
     #task = 'show_metrics_results_already_computed'
