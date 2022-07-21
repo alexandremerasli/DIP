@@ -60,10 +60,6 @@ class iPostReconstruction(vDenoising):
         if (len(self.image_corrupt_torch.shape) == 5): # if 3D but with dim3 = 1 -> 2D
             self.image_corrupt_torch = self.image_corrupt_torch[:,:,:,:,0]
 
-        # Squeeze image by loading it
-        out_descale = self.fijii_np(self.net_outputs_path,shape=(self.PETImage_shape),type='<f') # loading DIP output
-        #writer = model.logger.experiment # Assess to new variable, otherwise error : weakly-referenced object ...
-     
         classResults.writeBeginningImages(self.suffix,self.image_net_input)
         classResults.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
         
@@ -88,7 +84,7 @@ class iPostReconstruction(vDenoising):
             epoch_values = np.array([self.total_nb_iter-1])
 
         for epoch in epoch_values:
-            net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_post_reco_epoch=' + format(epoch) + '.img'
+            net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.admm_it) + '_post_reco_epoch=' + format(epoch) + '.img'
             out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type='<f')
             out = torch.from_numpy(out)
             # Descale like at the beginning
