@@ -59,10 +59,10 @@ class iResultsReplicates(iResults):
                     pet_algo=config["method"]+"to fit"
                     iteration_name="(post reconstruction)"
                     f_p = self.fijii_np(self.subroot_p+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(hyperparameters_config["max_iter"]) + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading DIP output
-                elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML'):
+                elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML'):
                     pet_algo=config["method"]
                     iteration_name="iterations"+beta_string
-                    if (config["method"] == 'ADMMLim'):
+                    if ('ADMMLim' in config["method"]):
                         subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
                         subdir = ''
                         f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' + subdir + '/0_' + format(hyperparameters_config["nb_iter_second_admm"]) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output

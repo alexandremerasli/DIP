@@ -171,10 +171,10 @@ class vGeneral(abc.ABC):
                 config.pop("A_AML", None)
             if (config["method"]['grid_search'][0] == 'BSREM' or config["method"]['grid_search'][0] == 'nested' or config["method"]['grid_search'][0] == 'Gong'):
                 config.pop("post_smoothing", None)
-            if (config["method"]['grid_search'][0] != "ADMMLim" and config["method"]['grid_search'][0] != "nested"):
+            if ('ADMMLim' not in config["method"]['grid_search'][0] and config["method"]['grid_search'][0] != "nested"):
                 config.pop("nb_iter_second_admm", None)
                 config.pop("alpha", None)
-            if (config["method"]['grid_search'][0] != "ADMMLim" and config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong"):
+            if ('ADMMLim' not in config["method"]['grid_search'][0] and config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong"):
                 config.pop("sub_iter_PLL", None)
             if (config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong" and task != "post_reco"):
                 config.pop("lr", None)
@@ -193,7 +193,7 @@ class vGeneral(abc.ABC):
             if (config["method"]['grid_search'][0] == 'MLEM' or config["method"]['grid_search'][0] == 'AML'):
                 config.pop("rho", None)
             # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMLim in CASToR
-            if (config["method"]['grid_search'][0] == "nested" or config["method"]['grid_search'][0] == "ADMMLim"):
+            if ('ADMMLim' in config["method"]['grid_search'][0] == "nested" or config["method"]['grid_search'][0]):
                 config["mlem_sequence"]['grid_search'] = [False]
         else:
             if ('results' not in task):
@@ -202,7 +202,7 @@ class vGeneral(abc.ABC):
         if (task == "show_results_replicates"):
             # List of beta values
             if (len(config["method"]['grid_search']) == 1):
-                if (config["method"]['grid_search'][0] == 'ADMMLim'):
+                if ('ADMMLim' in config["method"]['grid_search'][0]):
                     self.beta_list = config["alpha"]['grid_search']
                     config["alpha"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
                 else:
@@ -515,7 +515,10 @@ class vGeneral(abc.ABC):
             penaltyStrength = ' -pnlt-beta ' + str(self.beta)
         elif ('nested' in method):
             method = 'ADMMLim' + method[6:]
-            opti = ' -opti ' + method + ',' + str(self.alpha) # ADMMLim dirty 1 or 2
+            mu = 10
+            tau = 2
+            xi = 1
+            opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(mu) + ',' + str(tau) + ',' + str(xi) # ADMMLim dirty 1 or 2
             pnlt = ' -pnlt DIP_ADMM'
             '''
             if (i==0): # For first iteration, put rho to zero
@@ -537,7 +540,13 @@ class vGeneral(abc.ABC):
                 rho = 0
             penaltyStrength = ' -pnlt-beta ' + str(rho)
         elif ('ADMMLim' in method):
-            opti = ' -opti ' + method + ',' + str(self.alpha) # ADMMLim dirty 1 or 2
+            mu = 10
+            tau = 2
+            xi = 1
+            if method == 'ADMMLim':
+                opti = ' -opti ' + method + ',' + str(self.alpha)
+            else:
+                opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(mu) + ',' + str(tau) + ',' + str(xi)
             pnlt = ' -pnlt ' + penalty
             if penalty == "MRF":
                 pnlt += ':' + self.subroot_data + method + '_MRF.conf'

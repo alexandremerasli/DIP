@@ -24,7 +24,7 @@ class iResultsAlreadyComputed(vDenoising):
         self.initializeGeneralVariables(fixed_config,hyperparameters_config,root)
         vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
         
-        if (fixed_config["method"] == 'ADMMLim'):
+        if ('ADMMLim' in fixed_config["method"]):
             self.total_nb_iter = hyperparameters_config["nb_iter_second_admm"]
             self.beta = hyperparameters_config["alpha"]
         elif (fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):

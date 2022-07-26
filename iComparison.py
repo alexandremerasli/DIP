@@ -15,7 +15,7 @@ class iComparison(vReconstruction):
         if (self.method == 'AML'):
             self.beta = hyperparameters_config["A_AML"]
             self.A_AML = hyperparameters_config["A_AML"]
-        elif (self.method == 'ADMMLim'):
+        elif ('ADMMLim' in self.method):
             self.beta = hyperparameters_config["alpha"]
         elif (self.method == 'BSREM'):
             self.beta = self.rho
@@ -25,7 +25,7 @@ class iComparison(vReconstruction):
         else:
             self.post_smoothing = 0
         # castor-recon command line
-        if (self.method == 'ADMMLim'):
+        if ('ADMMLim' in self.method):
             # Path variables
             subroot_output_path = (self.subroot + self.suffix)
             subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
@@ -50,7 +50,7 @@ class iComparison(vReconstruction):
 
 
         # NNEPPS
-        if (self.method == 'ADMMLim'):
+        if ('ADMMLim' in self.method):
             max_it = hyperparameters_config["nb_iter_second_admm"]
         else:
             max_it = fixed_config["max_iter"]
@@ -73,7 +73,7 @@ class iComparison(vReconstruction):
     def NNEPPS_function(self,fixed_config,hyperparameters_config,it):
         executable='removeNegativeValues.exe'
 
-        if (self.method == 'ADMMLim'):
+        if ('ADMMLim' in self.method):
             i = 0
             subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
             subdir = ''

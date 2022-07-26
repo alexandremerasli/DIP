@@ -24,7 +24,7 @@ class iResults(vDenoising):
         self.initializeGeneralVariables(fixed_config,hyperparameters_config,root)
         vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
         
-        if (fixed_config["method"] == 'ADMMLim'):
+        if ('ADMMLim' in fixed_config["method"]):
             self.total_nb_iter = hyperparameters_config["nb_iter_second_admm"]
             self.beta = hyperparameters_config["alpha"]
         elif (fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
@@ -172,12 +172,12 @@ class iResults(vDenoising):
                             iteration_name="iterations"
                         f_p = self.fijii_np(self.subroot_p+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
                         f_p.astype(np.float64)
-                    elif (config["method"] == 'ADMMLim' or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML'):
+                    elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML'):
                         pet_algo=config["method"]
                         iteration_name = "iterations"
                         if (hasattr(self,'beta')):
                             iteration_name += beta_string
-                        if (config["method"] == 'ADMMLim'):
+                        if ('ADMMLim' in config["method"]):
                             subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
                             subdir = ''
                             #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output

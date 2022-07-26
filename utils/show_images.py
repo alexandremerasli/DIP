@@ -12,10 +12,10 @@ def parametersIncompatibility(config,task=None):
         config.pop("A_AML", None)
     if (method == 'BSREM' or method == 'nested' or method == 'Gong'):
         config.pop("post_smoothing", None)
-    if (method != "ADMMLim" and method != "nested"):
+    if ('ADMMLim' not in method and method != "nested"):
         config.pop("nb_iter_second_admm", None)
         config.pop("alpha", None)
-    if (method != "ADMMLim" and method != "nested" and method != "Gong"):
+    if ('ADMMLim' not in method and method != "nested" and method != "Gong"):
         config.pop("sub_iter_PLL", None)
     if (method != "nested" and method != "Gong" and task != "post_reco"):
         config.pop("lr", None)

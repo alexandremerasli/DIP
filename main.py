@@ -24,7 +24,7 @@ fixed_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['nested']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['ADMMLim_new']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
@@ -45,7 +45,7 @@ hyperparameters_config = {
     "rho" : tune.grid_search([0,3,3e-1,3e-2,3e-3,3e-4,3e-5,3e-6,3e-7]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     "rho" : tune.grid_search([0,3e-1,3e-2,3e-3,3e-4,3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     "rho" : tune.grid_search([0.0003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    #"rho" : tune.grid_search([0.003,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     ## network hyperparameters
     "lr" : tune.grid_search([0.005]), # Learning rate in network optimization
     "sub_iter_DIP" : tune.grid_search([20]), # Number of epochs in network optimization
@@ -58,11 +58,11 @@ hyperparameters_config = {
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMLim - OPTITR hyperparameters
-    "sub_iter_PLL" : tune.grid_search([1]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for Gong)
+    "sub_iter_PLL" : tune.grid_search([10]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for Gong). CASToR output is doubled because of 2 inner iterations for 1 inner iteration
     "nb_iter_second_admm": tune.grid_search([50]), # Number outer iterations in ADMMLim
-    "nb_iter_second_admm": tune.grid_search([5]), # Number outer iterations in ADMMLim
+    "nb_iter_second_admm": tune.grid_search([10]), # Number outer iterations in ADMMLim
     "alpha" : tune.grid_search([0.005,0.05,0.5]), # alpha (penalty parameter) in ADMMLim
-    "alpha" : tune.grid_search([0.05]), # alpha (penalty parameter) in ADMMLim
+    "alpha" : tune.grid_search([0.005]), # alpha (penalty parameter) in ADMMLim
     ## hyperparameters from CASToR algorithms 
     # Optimization transfer (OPTITR) hyperparameters
     "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False
@@ -148,12 +148,12 @@ for method in config["method"]['grid_search']:
     if (config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested'):
         task = 'full_reco_with_network'
 
-    elif (config["method"]["grid_search"][0] == 'ADMMLim' or config["method"]["grid_search"][0] == 'MLEM' or config["method"]["grid_search"][0] == 'BSREM' or config["method"]["grid_search"][0] == 'AML'):
+    elif ('ADMMLim' in config["method"]["grid_search"][0] or config["method"]["grid_search"][0] == 'MLEM' or config["method"]["grid_search"][0] == 'BSREM' or config["method"]["grid_search"][0] == 'AML'):
         task = 'castor_reco'
 
     #task = 'full_reco_with_network' # Run Gong or nested ADMM
     #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
-    task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
+    #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
     #task = 'show_results'
     #task = 'show_results_replicates'
     #task = 'show_metrics_results_already_computed'
