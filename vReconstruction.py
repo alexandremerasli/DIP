@@ -164,7 +164,7 @@ class vReconstruction(vGeneral):
         castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing)
         
         print('vvvvvvvvvvv0000000000')
-        x_reconstruction_command_line = castor_command_line_x + self.castor_opti_and_penalty("ADMMLim_new", self.penalty, self.rho, i) + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
+        x_reconstruction_command_line = castor_command_line_x + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i) + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
         print(x_reconstruction_command_line)
         self.compute_x_v_u_ADMM(x_reconstruction_command_line,subdir,i,k_init-1,self.phantom,subroot_output_path,self.subroot_data)
         # Copy u^-1 coming from CASToR to v^0

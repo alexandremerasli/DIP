@@ -151,8 +151,13 @@ class iResults(vDenoising):
         else:
             self.writeBeginningImages(self.suffix) # Write GT
 
+        if (self.FLTNB == 'float'):
+            type = '<f'
+        elif (self.FLTNB == 'double'):
+            type = '<d'
+
         for i in range(1,self.total_nb_iter+1):
-            f = np.zeros(self.PETImage_shape,dtype='<f')
+            f = np.zeros(self.PETImage_shape,dtype=type)
             IR = 0
             for p in range(1,self.nb_replicates+1):
                 if (fixed_config["average_replicates"] or (fixed_config["average_replicates"] == False and p == self.replicate)):
@@ -231,6 +236,8 @@ class iResults(vDenoising):
     def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,AR_hot_recon,AR_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
         
+        image_gt = image_gt.astype(np.float64)
+
         # Select only phantom ROI, not whole reconstructed image
         path_phantom_ROI = self.subroot_data+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[-1]) + '.raw'
         my_file = Path(path_phantom_ROI)
@@ -248,6 +255,8 @@ class iResults(vDenoising):
 
         # PSNR calculation
         PSNR_recon[i] = peak_signal_noise_ratio(image_gt*phantom_ROI, image_recon*phantom_ROI, data_range=np.amax(image_recon*phantom_ROI) - np.amin(image_recon*phantom_ROI)) # PSNR with true values
+        print(image_gt_norm.dtype)
+        print(image_recon_norm.dtype)
         PSNR_norm_recon[i] = peak_signal_noise_ratio(image_gt_norm,image_recon_norm) # PSNR with scaled values [0-1]
         print('PSNR calculation', PSNR_norm_recon[i],' , must be as high as possible')
 
