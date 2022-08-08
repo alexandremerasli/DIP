@@ -13,10 +13,10 @@ def parametersIncompatibility(config,task=None):
     if (method == 'BSREM' or method == 'nested' or method == 'Gong'):
         config.pop("post_smoothing", None)
     if ('ADMMLim' not in method and method != "nested"):
-        config.pop("nb_iter_second_admm", None)
+        config.pop("nb_outer_iteration", None)
         config.pop("alpha", None)
     if ('ADMMLim' not in method and method != "nested" and method != "Gong"):
-        config.pop("sub_iter_PLL", None)
+        config.pop("nb_inner_iteration", None)
     if (method != "nested" and method != "Gong" and task != "post_reco"):
         config.pop("lr", None)
         config.pop("sub_iter_DIP", None)
@@ -28,10 +28,10 @@ def parametersIncompatibility(config,task=None):
         config.pop("k_DD", None)
     if method == 'Gong':
         config["scaling"] = "nothing"
-        config["sub_iter_PLL"] = 50
+        config["nb_inner_iteration"] = 50
     if method == 'nested':
         config["scaling"] = "standardization"
-        config["sub_iter_PLL"] = 10
+        config["nb_inner_iteration"] = 10
     config.pop("d_DD", None)
     config.pop("k_DD", None)
     
@@ -49,7 +49,7 @@ def suffix_func(hyperparameters_config,NNEPPS=False):
     print(hyperparameters_config_copy)
     if (NNEPPS==False):
         hyperparameters_config_copy.pop('NNEPPS',None)
-    hyperparameters_config_copy.pop('nb_iter_second_admm',None)
+    hyperparameters_config_copy.pop('nb_outer_iteration',None)
     suffix = "config"
     for key, value in hyperparameters_config_copy.items():
         suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
@@ -144,8 +144,8 @@ hyperparameters_config = {
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMLim - OPTITR hyperparameters
-    "sub_iter_PLL" : tune.grid_search([50]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for Gong)
-    "nb_iter_second_admm": tune.grid_search([10]), # Number outer iterations in ADMMLim
+    "nb_inner_iteration" : tune.grid_search([50]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for Gong)
+    "nb_outer_iteration": tune.grid_search([10]), # Number outer iterations in ADMMLim
     "alpha" : tune.grid_search([0.005]), # alpha (penalty parameter) in ADMMLim
     ## hyperparameters from CASToR algorithms 
     # Optimization transfer (OPTITR) hyperparameters

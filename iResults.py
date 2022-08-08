@@ -25,7 +25,7 @@ class iResults(vDenoising):
         vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
         
         if ('ADMMLim' in fixed_config["method"]):
-            self.total_nb_iter = hyperparameters_config["nb_iter_second_admm"]
+            self.total_nb_iter = hyperparameters_config["nb_outer_iteration"]
             self.beta = hyperparameters_config["alpha"]
         elif (fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
             if (fixed_config["task"] == 'post_reco'):
@@ -185,8 +185,10 @@ class iResults(vDenoising):
                         if ('ADMMLim' in config["method"]):
                             subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
                             subdir = ''
-                            f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                            #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(hyperparameters_config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                             #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it1' + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                            #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_1'  + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                            f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/1'  + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         #elif (config["method"] == 'BSREM'):
                         #    f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         else:

@@ -122,7 +122,7 @@ class vGeneral(abc.ABC):
                     config[key] = value["grid_search"][0]
 
             # Set every iteration values to 1 to be quicker
-            for iter in ["max_iter","nb_subsets","sub_iter_DIP","sub_iter_PLL","nb_iter_second_admm"]:
+            for iter in ["max_iter","nb_subsets","sub_iter_DIP","nb_inner_iteration","nb_outer_iteration"]:
                 if iter in config.keys():
                     config[iter] = 1
                 config["mlem_sequence"] = False
@@ -172,10 +172,10 @@ class vGeneral(abc.ABC):
             if (config["method"]['grid_search'][0] == 'BSREM' or config["method"]['grid_search'][0] == 'nested' or config["method"]['grid_search'][0] == 'Gong'):
                 config.pop("post_smoothing", None)
             if ('ADMMLim' not in config["method"]['grid_search'][0] and config["method"]['grid_search'][0] != "nested"):
-                config.pop("nb_iter_second_admm", None)
+                config.pop("nb_outer_iteration", None)
                 config.pop("alpha", None)
             if ('ADMMLim' not in config["method"]['grid_search'][0] and config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong"):
-                config.pop("sub_iter_PLL", None)
+                config.pop("nb_inner_iteration", None)
             if (config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong" and task != "post_reco"):
                 config.pop("lr", None)
                 config.pop("sub_iter_DIP", None)
@@ -282,7 +282,7 @@ class vGeneral(abc.ABC):
         hyperparameters_config_copy = dict(hyperparameters_config)
         if (NNEPPS==False):
             hyperparameters_config_copy.pop('NNEPPS',None)
-        hyperparameters_config_copy.pop('nb_iter_second_admm',None)
+        hyperparameters_config_copy.pop('nb_outer_iteration',None)
         suffix = "config"
         for key, value in hyperparameters_config_copy.items():
             suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)

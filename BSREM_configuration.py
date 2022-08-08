@@ -37,8 +37,8 @@ def config_func_MIC():
         "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
         "k_DD" : tune.grid_search([32]), # k for Deep Decoder
         ## ADMMLim - OPTITR hyperparameters
-        "sub_iter_PLL" : tune.grid_search([50]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for Gong)
-        "nb_iter_second_admm": tune.grid_search([10]), # Number outer iterations in ADMMLim
+        "nb_inner_iteration" : tune.grid_search([50]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for Gong)
+        "nb_outer_iteration": tune.grid_search([10]), # Number outer iterations in ADMMLim
         "alpha" : tune.grid_search([0.005]), # alpha (penalty parameter) in ADMMLim
         ## hyperparameters from CASToR algorithms 
         # Optimization transfer (OPTITR) hyperparameters

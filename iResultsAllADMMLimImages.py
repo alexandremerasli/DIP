@@ -25,8 +25,8 @@ class iResults(vDenoising):
         vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
         
         if ('ADMMLim' in fixed_config["method"]):
-            self.total_nb_iter = hyperparameters_config["nb_iter_second_admm"]
-            self.total_nb_iter = hyperparameters_config["sub_iter_PLL"]
+            self.total_nb_iter = hyperparameters_config["nb_outer_iteration"]
+            self.total_nb_iter = hyperparameters_config["nb_inner_iteration"]
             self.beta = hyperparameters_config["alpha"]
         else:
             self.total_nb_iter = self.max_iter
@@ -113,7 +113,7 @@ class iResults(vDenoising):
             self.writeBeginningImages(self.image_net_input,self.suffix)
             #self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
 
-        for j in range(1,hyperparameters_config["nb_iter_second_admm"]+1):
+        for j in range(1,hyperparameters_config["nb_outer_iteration"]+1):
             for i in range(1,self.total_nb_iter+1):
                 print(i)
 
@@ -134,7 +134,7 @@ class iResults(vDenoising):
                         pet_algo=config["method"]
                         iteration_name="iterations"+beta_string + "outer_iter = " + str(j)
                         if ('ADMMLim' in config["method"]):
-                            #f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(i) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                            #f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(i) + '_it' + str(hyperparameters_config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                             # also change total_nb_iter
                             subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
                             subdir = ''

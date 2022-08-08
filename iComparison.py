@@ -51,7 +51,7 @@ class iComparison(vReconstruction):
 
         # NNEPPS
         if ('ADMMLim' in self.method):
-            max_it = hyperparameters_config["nb_iter_second_admm"]
+            max_it = hyperparameters_config["nb_outer_iteration"]
         else:
             max_it = fixed_config["max_iter"]
         
@@ -77,7 +77,7 @@ class iComparison(vReconstruction):
             i = 0
             subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
             subdir = ''
-            input_without_extension = self.subroot + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(hyperparameters_config["sub_iter_PLL"])
+            input_without_extension = self.subroot + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(hyperparameters_config["nb_inner_iteration"])
         else:
             input_without_extension = self.subroot + self.suffix + '/' + self.method + '_beta_' + str(self.beta) + '_it' + format(it)
         

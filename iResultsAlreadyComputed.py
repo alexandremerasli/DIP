@@ -25,7 +25,7 @@ class iResultsAlreadyComputed(vDenoising):
         vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
         
         if ('ADMMLim' in fixed_config["method"]):
-            self.total_nb_iter = hyperparameters_config["nb_iter_second_admm"]
+            self.total_nb_iter = hyperparameters_config["nb_outer_iteration"]
             self.beta = hyperparameters_config["alpha"]
         elif (fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
             if (fixed_config["task"] == 'post_reco'):

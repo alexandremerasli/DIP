@@ -65,7 +65,7 @@ class iResultsReplicates(iResults):
                     if ('ADMMLim' in config["method"]):
                         subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
                         subdir = ''
-                        f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' + subdir + '/0_' + format(hyperparameters_config["nb_iter_second_admm"]) + '_it' + str(hyperparameters_config["sub_iter_PLL"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                        f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' + subdir + '/0_' + format(hyperparameters_config["nb_outer_iteration"]) + '_it' + str(hyperparameters_config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                     else:
                         f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '_beta_' + str(self.beta_list[i-1]) + '/' +  config["method"] + '_beta_' + str(self.beta_list[i-1]) + '_it' + str(fixed_config["max_iter"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                 f += f_p
