@@ -40,6 +40,14 @@ class vReconstruction(vGeneral):
             else:
                 self.alpha = hyperparameters_config["alpha"]
                 self.adaptive_parameters = hyperparameters_config["adaptive_parameters"]
+                if (self.adaptive_parameters == "nothing"): # set mu, tau, xi to any values, there will not be used in CASToR
+                    self.mu_adaptive = np.NaN
+                    self.tau = np.NaN
+                    self.xi = np.NaN
+                else:
+                    self.mu_adaptive = hyperparameters_config["mu_adaptive"]
+                    self.tau = hyperparameters_config["tau"]
+                    self.xi = hyperparameters_config["xi"]
         self.image_init_path_without_extension = fixed_config["image_init_path_without_extension"]
 
         # Ininitializing DIP output and first image x with f_init and image_init

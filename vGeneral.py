@@ -175,6 +175,13 @@ class vGeneral(abc.ABC):
                 config.pop("nb_outer_iteration", None)
                 config.pop("alpha", None)
                 config.pop("adaptive_parameters", None)
+                config.pop("mu_adaptive", None)
+                config.pop("tau", None)
+                config.pop("xi", None)
+            elif (('ADMMLim' in config["method"]['grid_search'][0] or config["method"]['grid_search'][0] == "nested") and config["adaptive_parameters"]['grid_search'][0] == "nothing"):
+                config.pop("mu_adaptive", None)
+                config.pop("tau", None)
+                config.pop("xi", None)
             if ('ADMMLim' not in config["method"]['grid_search'][0] and config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong"):
                 config.pop("nb_inner_iteration", None)
             if (config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong" and task != "post_reco"):
@@ -516,10 +523,7 @@ class vGeneral(abc.ABC):
             penaltyStrength = ' -pnlt-beta ' + str(self.beta)
         elif ('nested' in method):
             method = 'ADMMLim' + method[6:]
-            mu = 10
-            tau = 2
-            xi = 1
-            opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(mu) + ',' + str(tau) + ',' + str(xi) # ADMMLim dirty 1 or 2
+            opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) # ADMMLim dirty 1 or 2
             pnlt = ' -pnlt DIP_ADMM'
             '''
             if (i==0): # For first iteration, put rho to zero
@@ -541,10 +545,7 @@ class vGeneral(abc.ABC):
                 rho = 0
             penaltyStrength = ' -pnlt-beta ' + str(rho)
         elif ('ADMMLim' in method):
-            mu = 10
-            tau = 2
-            xi = 1
-            opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(mu) + ',' + str(tau) + ',' + str(xi) # ADMMLim dirty 1 or 2
+            opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) # ADMMLim dirty 1 or 2
             pnlt = ' -pnlt ' + penalty
             if penalty == "MRF":
                 pnlt += ':' + self.subroot_data + method + '_MRF.conf'

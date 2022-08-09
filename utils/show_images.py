@@ -16,6 +16,9 @@ def parametersIncompatibility(config,task=None):
         config.pop("nb_outer_iteration", None)
         config.pop("alpha", None)
         config.pop("adaptive_parameters", None)
+        config.pop("mu_adaptive", None)
+        config.pop("tau", None)
+        config.pop("xi", None)
     if ('ADMMLim' not in method and method != "nested" and method != "Gong"):
         config.pop("nb_inner_iteration", None)
     if (method != "nested" and method != "Gong" and task != "post_reco"):
