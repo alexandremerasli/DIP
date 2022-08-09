@@ -558,6 +558,9 @@ class vGeneral(abc.ABC):
         elif (method == 'Gong'):
             opti = ' -opti OPTITR'
             pnlt = ' -pnlt OPTITR'
+            
+            if (i==1): # For first iteration, put rho to zero
+                rho = 0
             penaltyStrength = ' -pnlt-beta ' + str(rho)
 
         return opti + pnlt + penaltyStrength

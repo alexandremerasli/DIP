@@ -110,7 +110,7 @@ class vDenoising(vGeneral):
                 print("300 initial iterations for Gong")
                 #import sys
                 #sys.exit()
-                sub_iter_DIP = 100
+                sub_iter_DIP = 10
         if (finetuning == 'False'): # Do not save and use checkpoints (still save hparams and event files for now ...)
             logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
             #checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=0, save_weights_only=True) # Do not save any checkpoint (save_top_k = 0)
