@@ -174,6 +174,7 @@ class vGeneral(abc.ABC):
             if ('ADMMLim' not in config["method"]['grid_search'][0] and config["method"]['grid_search'][0] != "nested"):
                 config.pop("nb_outer_iteration", None)
                 config.pop("alpha", None)
+                config.pop("adaptive_parameters", None)
             if ('ADMMLim' not in config["method"]['grid_search'][0] and config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong"):
                 config.pop("nb_inner_iteration", None)
             if (config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong" and task != "post_reco"):
@@ -518,7 +519,7 @@ class vGeneral(abc.ABC):
             mu = 10
             tau = 2
             xi = 1
-            opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(mu) + ',' + str(tau) + ',' + str(xi) # ADMMLim dirty 1 or 2
+            opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(mu) + ',' + str(tau) + ',' + str(xi) # ADMMLim dirty 1 or 2
             pnlt = ' -pnlt DIP_ADMM'
             '''
             if (i==0): # For first iteration, put rho to zero
@@ -543,10 +544,7 @@ class vGeneral(abc.ABC):
             mu = 10
             tau = 2
             xi = 1
-            if method == 'ADMMLim':
-                opti = ' -opti ' + method + ',' + str(self.alpha)
-            else:
-                opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(mu) + ',' + str(tau) + ',' + str(xi)
+            opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(mu) + ',' + str(tau) + ',' + str(xi) # ADMMLim dirty 1 or 2
             pnlt = ' -pnlt ' + penalty
             if penalty == "MRF":
                 pnlt += ':' + self.subroot_data + method + '_MRF.conf'
@@ -560,3 +558,11 @@ class vGeneral(abc.ABC):
             penaltyStrength = ' -pnlt-beta ' + str(rho)
 
         return opti + pnlt + penaltyStrength
+
+def castor_adaptive_to_int(adaptive_parameters):
+    if (adaptive_parameters == "nothing"): # not adaptive
+        return 0
+    if (adaptive_parameters == "alpha"): # only adative alpha
+        return 1
+    if (adaptive_parameters == "tau"): # both adaptive alpha and tau
+        return 2

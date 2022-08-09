@@ -39,6 +39,7 @@ class vReconstruction(vGeneral):
                 self.alpha = None
             else:
                 self.alpha = hyperparameters_config["alpha"]
+                self.adaptive_parameters = hyperparameters_config["adaptive_parameters"]
         self.image_init_path_without_extension = fixed_config["image_init_path_without_extension"]
 
         # Ininitializing DIP output and first image x with f_init and image_init
