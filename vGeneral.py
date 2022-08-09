@@ -154,7 +154,7 @@ class vGeneral(abc.ABC):
             config["scaling"] = "nothing"
         if (len(config["method"]['grid_search']) == 1):
             if config["method"]['grid_search'][0] == 'Gong':
-                config["scaling"]['grid_search'] = ["nothing"]
+                config["scaling"]['grid_search'] = ["normalization"]
 
         # Remove hyperparameters list
         self.hyperparameters_list = config["hyperparameters"]
@@ -172,7 +172,7 @@ class vGeneral(abc.ABC):
             if (config["method"]['grid_search'][0] == 'BSREM' or config["method"]['grid_search'][0] == 'nested' or config["method"]['grid_search'][0] == 'Gong'):
                 config.pop("post_smoothing", None)
             if ('ADMMLim' not in config["method"]['grid_search'][0] and config["method"]['grid_search'][0] != "nested"):
-                config.pop("nb_outer_iteration", None)
+                config.pop("nb_inner_iteration", None)
                 config.pop("alpha", None)
                 config.pop("adaptive_parameters", None)
                 config.pop("mu_adaptive", None)
@@ -183,7 +183,7 @@ class vGeneral(abc.ABC):
                 config.pop("tau", None)
                 config.pop("xi", None)
             if ('ADMMLim' not in config["method"]['grid_search'][0] and config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong"):
-                config.pop("nb_inner_iteration", None)
+                config.pop("nb_outer_iteration", None)
             if (config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong" and task != "post_reco"):
                 config.pop("lr", None)
                 config.pop("sub_iter_DIP", None)

@@ -32,9 +32,6 @@ class vReconstruction(vGeneral):
         else:
             self.rho = 0
         if ('ADMMLim' in fixed_config["method"] or fixed_config["method"] == "nested" or fixed_config["method"] == "Gong"):
-            self.nb_inner_iteration = hyperparameters_config["nb_inner_iteration"]
-            print(self.nb_inner_iteration)
-            print('aaaaaaaaaaaaaaaaaaaa')
             if (fixed_config["method"] == "Gong"):
                 self.alpha = None
             else:
@@ -81,7 +78,7 @@ class vReconstruction(vGeneral):
             opti = ' -opti ' + optimizer
             os.system(executable + dim + vox + output_path + header_file + vb + it + opti) # + ' -fov-out 95')
 
-    def castor_reconstruction(self,writer, i, subroot, nb_inner_iteration, experiment, hyperparameters_config, method, phantom, replicate, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension):
+    def castor_reconstruction(self,writer, i, subroot, nb_outer_iteration, experiment, hyperparameters_config, method, phantom, replicate, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension):
         start_time_block1 = time.time()
         mlem_sequence = hyperparameters_config['mlem_sequence']
 
@@ -103,7 +100,7 @@ class vReconstruction(vGeneral):
                 #it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, too many subsets for 2D, but maybe ok for 3D
                 it = ' -it 16:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, 2D
             else:
-                it = ' -it ' + str(nb_inner_iteration) + ':1' # Only 2 iterations (Gong) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
+                it = ' -it ' + str(nb_outer_iteration) + ':1' # Only 2 iterations (Gong) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
 
             # Define command line to run OPTITR with CASToR
             castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i)
@@ -126,7 +123,7 @@ class vReconstruction(vGeneral):
             if (mlem_sequence):
                 x = self.fijii_np(full_output_path_k_next + '_it30.img', shape=(PETImage_shape))
             else:
-                x = self.fijii_np(full_output_path_k_next + '_it' + str(hyperparameters_config["nb_inner_iteration"]) + '.img', shape=(PETImage_shape))
+                x = self.fijii_np(full_output_path_k_next + '_it' + str(hyperparameters_config["nb_outer_iteration"]) + '.img', shape=(PETImage_shape))
 
             self.write_image_tensorboard(writer,x,"x after optimization transfer over iterations",suffix,image_gt, i) # Showing all corrupted images with same contrast to compare them together
             self.write_image_tensorboard(writer,x,"x after optimization transfer over iterations (FULL CONTRAST)",suffix,image_gt, i,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
@@ -156,54 +153,21 @@ class vReconstruction(vGeneral):
 
 
     def ADMMLim_general(self, hyperparameters_config, i, subdir, subroot_output_path,f_mu_for_penalty,writer=None,image_gt=None):
-        
-        k_init = -1
-        full_output_path_k_next = subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(k_init+1)
-
-        # Define command line to run ADMM with CASToR, to compute v^0
-        if (i == 0):   # choose initial image for CASToR reconstruction
-            x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-            #x_for_init_v = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value' + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-        elif (i >= 1):
-            x_for_init_v = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(hyperparameters_config["nb_outer_iteration"]) + '_it1.hdr'
-                        
-
         if (self.method == "nested"):
             self.post_smoothing = 0
         castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing)
-        
-        '''
-        print('vvvvvvvvvvv0000000000')
-        x_reconstruction_command_line = castor_command_line_x + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i) + ' -fout ' + full_output_path_k_next + ' -it 1:1' + x_for_init_v + f_mu_for_penalty # we need f-mu so that ADMM optimizer works, even if we will not use it...
-        print(x_reconstruction_command_line)
-        self.compute_x_v_u_ADMM(x_reconstruction_command_line,subdir,i-1,self.phantom,subroot_output_path,self.subroot_data)
-        # Copy u^-1 coming from CASToR to v^0
-        copy(full_output_path_k_next + '_u.img', full_output_path_k_next + '_v.img')
-        self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'v',subroot_output_path,matrix_type='sino')
-        
-        # Then initialize u^0 (u^-1 in CASToR)
-        if (i == 0):   # choose initial image for CASToR reconstruction
-            copy(self.subroot_data + 'Data/initialization/0_sino_value.img', full_output_path_k_next + '_u.img')
-        elif (i >= 1):
-            copy(subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(hyperparameters_config["nb_outer_iteration"]) + '_u.img', full_output_path_k_next + '_u.img')
-        self.write_hdr(self.subroot_data,[i,k_init+1],subdir,self.phantom,'u',subroot_output_path,matrix_type='sino')
-        '''
 
-        print("xxxxxxxxxxxxxxxxxxxxxxx")
         if (i == 0):   # choose initial image for CASToR reconstruction
             initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
         elif (i >= 1):
-            initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(hyperparameters_config["nb_outer_iteration"]) + '_it' + str(hyperparameters_config["nb_inner_iteration"]) + '.hdr'
+            #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(hyperparameters_config["nb_outer_iteration"]) + '_it' + str(hyperparameters_config["nb_inner_iteration"]) + '.hdr'
+            initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_it' + str(hyperparameters_config["nb_outer_iteration"]) + '.hdr'
             # Trying to initialize ADMMLim
             #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
             initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
     
         base_name_i = format(i)
-        base_name_i_next = format(i+1)
         full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
-        full_output_path_i_next = subroot_output_path + '/' + subdir + '/' + base_name_i_next
-        v_for_additional_data = ' -additional-data ' + full_output_path_i + '_v.hdr'
-        u_for_additional_data = ' -additional-data ' + full_output_path_i + '_u.hdr'
 
         if ('ADMMLim' in self.method):
             # Compute one ADMM iteration (x, v, u)
@@ -220,38 +184,15 @@ class vReconstruction(vGeneral):
 
         x_reconstruction_command_line = castor_command_line_x \
                                         + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) \
-                                        + ' -fout ' + full_output_path_i_next + it \
+                                        + ' -fout ' + full_output_path_i + it \
                                         + initialimage + f_mu_for_penalty \
                                         + conv # we need f-mu so that ADMM optimizer works, even if we will not use it...
 
         print(x_reconstruction_command_line)
         self.compute_x_v_u_ADMM(x_reconstruction_command_line, subdir, i, self.phantom, subroot_output_path, self.subroot_data)
 
-        # -- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho --
-        '''
-        path_adaptive = subroot_output_path + '/' + subdir + '/' + format(i) + '_' + format(
-            k+1) + '_adaptive.log'
-        theLog = pd.read_table(path_adaptive)
-        theAdaptiveAlphaRow = theLog.loc[[0]]
-        theAdaptiveAlphaRowArray = np.array(theAdaptiveAlphaRow)
-        theAdaptiveAlphaRowString = theAdaptiveAlphaRowArray[0, 0]
-        adaptiveAlpha = float(theAdaptiveAlphaRowString)
-        print('*************************************************************************************************************************************', 'k+1 =', k+1, 'adaptive alpha =', adaptiveAlpha)
-        self.alpha = adaptiveAlpha
-        castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str,
-                                                                self.phantom, self.replicate,
-                                                                self.post_smoothing)
-        '''
-
-
-
-
-
-
-
         if (self.method == "nested"):
-            x = self.fijii_np(full_output_path_k_next + '_it1.img', shape=(self.PETImage_shape))
-            
+            x = self.fijii_np(full_output_path_i + '_it' + str(hyperparameters_config["nb_outer_iteration"]) + '.img', shape=(self.PETImage_shape))
             self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations",self.suffix,500, 0+1+i*hyperparameters_config["nb_outer_iteration"]) # Showing all corrupted images with same contrast to compare them together
             self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations(FULL CONTRAST)",self.suffix,500, 0+1+i*hyperparameters_config["nb_outer_iteration"],full_contrast=True) # Showing all corrupted images with same contrast to compare them together
 
