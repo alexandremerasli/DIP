@@ -31,3 +31,5 @@ class iDenoisingInReconstruction(vDenoising):
         self.checkpoint_simple_path = self.subroot+'Block2/checkpoint/'
         self.name_run = ""
         self.sub_iter_DIP = hyperparameters_config["sub_iter_DIP"]
+        self.sub_iter_DIP_initial = hyperparameters_config["sub_iter_DIP_initial"]
+        print(self.sub_iter_DIP)

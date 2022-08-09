@@ -53,25 +53,16 @@ class iNestedADMM(vReconstruction):
                 #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
                 x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it300_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
                 self.save_img(x_label,self.subroot+'Block2/x_label/' + format(self.experiment)+'/'+ format(-1) +'_x_label' + self.suffix + '.img')
+                #classDenoising.sub_iter_DIP = classDenoising.self.sub_iter_DIP_initial
 
-                # For first epoch, change number of epochs to 300
-                sub_iter_DIP = hyperparameters_config["sub_iter_DIP"]
-                hyperparameters_config["sub_iter_DIP"] = 300
-                self.sub_iter_DIP = 300
-                classDenoising = iDenoisingInReconstruction(hyperparameters_config,i)
-                # Set sub_iter_DIP back to initial value
-                hyperparameters_config["sub_iter_DIP"] = sub_iter_DIP
-            else:
-                classDenoising = iDenoisingInReconstruction(hyperparameters_config,i)
+            classDenoising = iDenoisingInReconstruction(hyperparameters_config,i)
             classDenoising.hyperparameters_list = self.hyperparameters_list
             classDenoising.debug = self.debug
             classDenoising.do_everything(config,root)
+            
             print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
             
-            if (i == 0 and fixed_config["method"] == "Gong"): # Gong at first epoch -> only pre train the network
-                self.f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i-1) + "_epoch=" + format(hyperparameters_config["sub_iter_DIP"] - 1) + self.suffix + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
-            else:
-                self.f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "_epoch=" + format(hyperparameters_config["sub_iter_DIP"] - 1) + self.suffix + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+            self.f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + self.suffix + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
             self.f.astype(numpy.float64)
             
             if (i != i_init or fixed_config["method"] != "Gong"): # Gong at first epoch -> only pre train the network
