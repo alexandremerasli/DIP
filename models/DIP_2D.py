@@ -14,6 +14,13 @@ class DIP_2D(pl.LightningModule):
     def __init__(self, hyperparameters_config, method, all_images_DIP, admm_it):
         super().__init__()
 
+        # Set the random seed ALSO here !!!
+        if (os.path.isfile(os.getcwd() + "/seed.txt")):
+            with open(os.getcwd() + "/seed.txt", 'r') as file:
+                random_seed = file.read().rstrip()
+            if (eval(random_seed)):
+                pl.seed_everything(2)
+
         # Defining variables from hyperparameters_config        
         self.lr = hyperparameters_config['lr']
         self.opti_DIP = hyperparameters_config['opti_DIP']

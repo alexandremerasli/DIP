@@ -66,7 +66,7 @@ class vDenoising(vGeneral):
 
         # Choose network architecture as model
         model, model_class = self.choose_net(net, hyperparameters_config, method, all_images_DIP, admm_it, PETImage_shape)
-
+        
         #checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(experiment)  + '/' + suffix + '/'
 
@@ -230,7 +230,6 @@ class vDenoising(vGeneral):
         self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
         if (len(self.image_corrupt_torch.shape) == 5): # if 3D but with dim3 = 1 -> 2D
             self.image_corrupt_torch = self.image_corrupt_torch[:,:,:,:,0]
-
         # Training model with sub_iter_DIP iterations
         model = self.train_process(self.suffix, hyperparameters_config, self.finetuning, self.processing_unit, self.sub_iter_DIP, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, self.all_images_DIP) # Not useful to make iterations, we just want to initialize writer. admm_it must be set to -1, otherwise seeking for a checkpoint file...
         if (self.net == 'DIP_VAE'):
@@ -283,7 +282,7 @@ class vDenoising(vGeneral):
     def choose_net(self,net, hyperparameters_config, method, all_images_DIP, admm_it, PETImage_shape):
         if (net == 'DIP'): # Loading DIP architecture
             if(PETImage_shape[2] == 1): # 2D
-                model = DIP_2D(hyperparameters_config,method,all_images_DIP,admm_it) 
+                model = DIP_2D(hyperparameters_config,method,all_images_DIP,admm_it)
                 model_class = DIP_2D
             else: # 3D
                 model = DIP_3D(hyperparameters_config,method)

@@ -11,27 +11,19 @@ from cProfile import run
 import os
 from ray import tune
 
-# Local files to import
-from iNestedADMM import iNestedADMM
-from iComparison import iComparison
-from iPostReconstruction import iPostReconstruction
-from iResults import iResults
-from iResultsReplicates import iResultsReplicates
-from iResultsAlreadyComputed import iResultsAlreadyComputed
-
 # Configuration dictionnary for general parameters (not hyperparameters)
 fixed_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['nested']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['Gong']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
-    "max_iter" : tune.grid_search([2]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
+    "max_iter" : tune.grid_search([10]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
-    "finetuning" : tune.grid_search(['last']),
+    "finetuning" : tune.grid_search(['False']),
     "all_images_DIP" : tune.grid_search(['True']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
@@ -45,10 +37,10 @@ hyperparameters_config = {
     "rho" : tune.grid_search([0,3,3e-1,3e-2,3e-3,3e-4,3e-5,3e-6,3e-7]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     "rho" : tune.grid_search([0,3e-1,3e-2,3e-3,3e-4,3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     "rho" : tune.grid_search([0.0003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    "rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    #"rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     ## network hyperparameters
     "lr" : tune.grid_search([0.005]), # Learning rate in network optimization
-    "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
+    "sub_iter_DIP" : tune.grid_search([5]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
     "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     #"skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
@@ -59,7 +51,7 @@ hyperparameters_config = {
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMLim - OPTITR hyperparameters
     "nb_inner_iteration" : tune.grid_search([1]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for Gong). CASToR output is doubled because of 2 inner iterations for 1 inner iteration
-    "nb_outer_iteration": tune.grid_search([10]), # Number outer iterations in ADMMLim
+    "nb_outer_iteration": tune.grid_search([2]), # Number outer iterations in ADMMLim
     "alpha" : tune.grid_search([0.005]), # alpha (penalty parameter) in ADMMLim
     "adaptive_parameters" : tune.grid_search(["alpha"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
     "mu_adaptive" : tune.grid_search([10]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
@@ -85,7 +77,19 @@ config = {**fixed_config, **hyperparameters_config, **split_config}
 
 root = os.getcwd()
 
-#config["method"]['grid_search'] = ['Gong']
+# write random seed in a file to get it in network architectures
+os.system("rm -rf " + os.getcwd() +"/seed.txt")
+file_seed = open(os.getcwd() + "/seed.txt","w+")
+file_seed.write(str(fixed_config["random_seed"]["grid_search"][0]))
+file_seed.close()
+
+# Local files to import, AFTER CONFIG TO SET RANDOM SEED OR NOT
+from iNestedADMM import iNestedADMM
+from iComparison import iComparison
+from iPostReconstruction import iPostReconstruction
+from iResults import iResults
+from iResultsReplicates import iResultsReplicates
+from iResultsAlreadyComputed import iResultsAlreadyComputed
 
 for method in config["method"]['grid_search']:
 
@@ -140,12 +144,6 @@ for method in config["method"]['grid_search']:
         config_tmp["rho"]['grid_search'] = [0.0003]
     '''
 
-    # write random seed in a file to get it in network architectures
-    os.system("rm -rf " + os.getcwd() +"/seed.txt")
-    file_seed = open(os.getcwd() + "/seed.txt","w+")
-    file_seed.write(str(fixed_config["random_seed"]["grid_search"][0]))
-    file_seed.close()
-
     # Choose task to do (move this after raytune !!!)
     if (config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested'):
         task = 'full_reco_with_network'
@@ -173,7 +171,6 @@ for method in config["method"]['grid_search']:
     elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
         classTask = iResultsAlreadyComputed(config)
 
-
     # Incompatible parameters (should be written in vGeneral I think)
     if (config["method"]["grid_search"][0] == 'nested' and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
         raise ValueError("nested must be launched with rho > 0")
@@ -183,6 +180,8 @@ for method in config["method"]['grid_search']:
         raise ValueError("Only Gong or nested can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
     elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["all_images_DIP"]["grid_search"][0] != "True"):
         raise ValueError("Please set all_images_DIP to True to save all images for nested or Gong reconstruction.")
+    elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["rho"]["grid_search"][0] == 0):
+        raise ValueError("Please set rho > 0 for nested or Gong reconstruction.")
 
 
     #'''

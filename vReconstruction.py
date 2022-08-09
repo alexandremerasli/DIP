@@ -192,9 +192,10 @@ class vReconstruction(vGeneral):
         self.compute_x_v_u_ADMM(x_reconstruction_command_line, subdir, i, self.phantom, subroot_output_path, self.subroot_data)
 
         if (self.method == "nested"):
-            x = self.fijii_np(full_output_path_i + '_it' + str(hyperparameters_config["nb_outer_iteration"]) + '.img', shape=(self.PETImage_shape))
-            self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations",self.suffix,500, 0+1+i*hyperparameters_config["nb_outer_iteration"]) # Showing all corrupted images with same contrast to compare them together
-            self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations(FULL CONTRAST)",self.suffix,500, 0+1+i*hyperparameters_config["nb_outer_iteration"],full_contrast=True) # Showing all corrupted images with same contrast to compare them together
+            for k in range(1,hyperparameters_config["nb_outer_iteration"]+1):
+                x = self.fijii_np(full_output_path_i + '_it' + str(k) + '.img', shape=(self.PETImage_shape))
+                self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations",self.suffix,500, 0+k+i*hyperparameters_config["nb_outer_iteration"]) # Showing all corrupted images with same contrast to compare them together
+                self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations(FULL CONTRAST)",self.suffix,500, 0+k+i*hyperparameters_config["nb_outer_iteration"],full_contrast=True) # Showing all corrupted images with same contrast to compare them together
 
         if (self.method == "nested"):
             return x

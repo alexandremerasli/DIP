@@ -373,6 +373,8 @@ class vGeneral(abc.ABC):
         mean=np.mean(image_corrupt)
         std=np.std(image_corrupt)
         image_center = image_corrupt - mean
+        if (std == 0.):
+            raise ValueError("std 0")
         image_corrupt_std = image_center / std
         return image_corrupt_std,mean,std
 
