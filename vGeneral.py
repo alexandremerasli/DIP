@@ -511,7 +511,7 @@ class vGeneral(abc.ABC):
 
         return executable + dim + vox + header_file + vb + th + proj + opti_like + psf + conv
 
-    def castor_opti_and_penalty(self, method, penalty, rho, i=None):
+    def castor_opti_and_penalty(self, method, penalty, rho, i=None, unnested_1st_global_iter=None):
         if (method == 'MLEM'):
             opti = ' -opti ' + method
             pnlt = ''
@@ -525,45 +525,31 @@ class vGeneral(abc.ABC):
             pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
             penaltyStrength = ' -pnlt-beta ' + str(self.beta)
         elif ('nested' in method):
+            if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
+                rho = 0
             method = 'ADMMLim' + method[6:]
             opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) # ADMMLim dirty 1 or 2
             pnlt = ' -pnlt DIP_ADMM'
-            '''
-            if (i==0): # For first iteration, put rho to zero
-                if (k!=-1): # For first iteration, do not put both rho and alpha to zero
-                    rho = 0
-            if (k==-1): # For first iteration, put alpha to zero (small value to be accepted by CASToR)
-                self.alpha = 0
-            if (rho == 0): # Special case where we do not want to penalize reconstruction (not taking into account network output)
-                # Seg fault in CASToR...
-                # Not clean, but works to put rho == 0 in CASToR
-                penaltyStrength = ' -pnlt-beta ' + str(rho)
-            else:      
-                penaltyStrength = ' -pnlt-beta ' + str(rho)
-            
-            if (self.alpha == 0): # Special case where we only want to fit network output (when v has not been initialized with data)
-                self.alpha = 1E-10 # Do not put 0, otherwise CASToR will not work
-            '''
-            if (i==0): # For first iteration, put rho to zero
-                rho = 0
             penaltyStrength = ' -pnlt-beta ' + str(rho)
         elif ('ADMMLim' in method):
             opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) # ADMMLim dirty 1 or 2
             pnlt = ' -pnlt ' + penalty
             if penalty == "MRF":
                 pnlt += ':' + self.subroot_data + method + '_MRF.conf'
-
             penaltyStrength = ' -pnlt-beta ' + str(rho)
-            #pnlt = '' # Testing ADMMLim without penalty for now
-
         elif (method == 'Gong'):
+            if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
+                rho = 0
+                self.rho = 0
             opti = ' -opti OPTITR'
             pnlt = ' -pnlt OPTITR'
-            
-            if (i==-1): # For first iteration, put rho to zero
-                rho = 0
             penaltyStrength = ' -pnlt-beta ' + str(rho)
-
+        
+        # For all optimizers, remove penalty if rho == 0
+        if (rho == 0):
+            pnlt = ''
+            penaltyStrength = ''
+        
         return opti + pnlt + penaltyStrength
 
 def castor_adaptive_to_int(adaptive_parameters):

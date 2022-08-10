@@ -32,6 +32,10 @@ class vReconstruction(vGeneral):
         else:
             self.rho = 0
         if ('ADMMLim' in fixed_config["method"] or fixed_config["method"] == "nested" or fixed_config["method"] == "Gong"):
+            if (fixed_config["method"] != "ADMMLim"):
+                self.unnested_1st_global_iter = hyperparameters_config["unnested_1st_global_iter"]
+            else:
+                self.unnested_1st_global_iter = None
             if (fixed_config["method"] == "Gong"):
                 self.alpha = None
             else:
@@ -71,7 +75,7 @@ class vReconstruction(vGeneral):
             opti = ' -opti ' + optimizer
             os.system(executable + dim + vox + output_path + header_file + vb + it + opti) # + ' -fov-out 95')
 
-    def castor_reconstruction(self,writer, i, subroot, nb_outer_iteration, experiment, hyperparameters_config, method, phantom, replicate, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, rho, alpha, image_init_path_without_extension):
+    def castor_reconstruction(self,writer, i, subroot, nb_outer_iteration, experiment, hyperparameters_config, method, phantom, replicate, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, alpha, image_init_path_without_extension):
         start_time_block1 = time.time()
         mlem_sequence = hyperparameters_config['mlem_sequence']
 
@@ -80,7 +84,7 @@ class vReconstruction(vGeneral):
         path_before_eq_22 = (subroot_output_path + '/before_eq22/')
         self.save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
         self.write_hdr(self.subroot_data,[i],'before_eq22',phantom,'f_mu',subroot_output_path)
-        f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'        
+        f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr' # Will be removed if first global iteration and unnested_1st_global_iter (rho == 0)
         subdir = 'during_eq22'
 
         # Initialization
@@ -96,7 +100,7 @@ class vReconstruction(vGeneral):
                 it = ' -it ' + str(nb_outer_iteration) + ':1' # Only 2 iterations (Gong) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
 
             # Define command line to run OPTITR with CASToR
-            castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i)
+            castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i, self.unnested_1st_global_iter)
             # Initialize image
             if (i == -1):   # choose initial image for CASToR reconstruction
                 initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
@@ -172,11 +176,17 @@ class vReconstruction(vGeneral):
         else:
             conv = ''
 
+        # Optimizer and penalty in command line, change rho if first global iteration and unnested_1st_global_iter
+        opti_and_penalty = self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i, self.unnested_1st_global_iter)
+        # If rho is 0, remove f_mu_for_penalty
+        if ((self.rho == 0) or (i==0 and self.unnested_1st_global_iter) or (i==-1 and not self.unnested_1st_global_iter)): # For first iteration, put rho to zero
+            f_mu_for_penalty = ''
+
         # Number of iterations from config dictionnary
         it = ' -it ' + str(hyperparameters_config["nb_outer_iteration"]) + ':1'  # 1 subset
 
         x_reconstruction_command_line = castor_command_line_x \
-                                        + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) \
+                                        + opti_and_penalty \
                                         + ' -fout ' + full_output_path_i + it \
                                         + initialimage + f_mu_for_penalty \
                                         + conv # we need f-mu so that ADMM optimizer works, even if we will not use it...

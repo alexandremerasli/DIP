@@ -42,7 +42,7 @@ class iNestedADMM(vReconstruction):
             
             if (i != i_init or hyperparameters_config["unnested_1st_global_iter"]): # Gong at first epoch -> only pre train the network
                 # Block 1 - Reconstruction with CASToR (tomographic reconstruction part of ADMM)
-                self.x_label = self.castor_reconstruction(classResults.writer, i, self.subroot, hyperparameters_config["nb_outer_iteration"], self.experiment, hyperparameters_config, self.method, self.phantom, self.replicate, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.rho, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
+                self.x_label = self.castor_reconstruction(classResults.writer, i, self.subroot, hyperparameters_config["nb_outer_iteration"], self.experiment, hyperparameters_config, self.method, self.phantom, self.replicate, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
                 # Write corrupted image over ADMM iterations
                 classResults.writeCorruptedImage(i,hyperparameters_config["nb_outer_iteration"],self.x_label,self.suffix,pet_algo="nested ADMM")
 
