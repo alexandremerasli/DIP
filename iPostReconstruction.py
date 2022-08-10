@@ -10,8 +10,9 @@ from vDenoising import vDenoising
 
 class iPostReconstruction(vDenoising):
     def __init__(self,config):
-        self.admm_it = 1 # Set it to 1, 0 is for ADMM reconstruction with hard coded values
-    
+        self.finetuning = 'False' # to ignore last.ckpt file
+        self.global_it = 0 # Set it to 0, to ignore last.ckpt file
+
     def initializeSpecific(self,fixed_config,hyperparameters_config,root):
         print("Denoising in post reconstruction")
         vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
@@ -40,9 +41,6 @@ class iPostReconstruction(vDenoising):
             classResults.debug = self.debug
             classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
 
-        self.finetuning = 'False' # to ignore last.ckpt file
-        self.admm_it = 0 # Set it to 0, to ignore last.ckpt file
-
         # Initialize variables
         # Scaling of x_label image
         image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image
@@ -58,7 +56,7 @@ class iPostReconstruction(vDenoising):
         classResults.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
         
         # Train model using previously trained network (at iteration before)
-        model = self.train_process(self.suffix,hyperparameters_config, self.finetuning, self.processing_unit, self.total_nb_iter, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, all_images_DIP = self.all_images_DIP)
+        model = self.train_process(self.suffix,hyperparameters_config, self.finetuning, self.processing_unit, self.total_nb_iter, self.method, self.global_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, all_images_DIP = self.all_images_DIP)
 
         # Saving variables
         if (self.net == 'DIP_VAE'):
@@ -78,7 +76,7 @@ class iPostReconstruction(vDenoising):
             epoch_values = np.array([self.total_nb_iter-1])
 
         for epoch in epoch_values:
-            net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.admm_it) + '_epoch=' + format(epoch) + '.img'
+            net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
             out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type='<f')
             out = torch.from_numpy(out)
             # Descale like at the beginning

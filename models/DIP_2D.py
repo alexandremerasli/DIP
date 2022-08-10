@@ -11,7 +11,7 @@ if (os.path.isfile(os.getcwd() + "/seed.txt")):
 
 class DIP_2D(pl.LightningModule):
 
-    def __init__(self, hyperparameters_config, method, all_images_DIP, admm_it):
+    def __init__(self, hyperparameters_config, method, all_images_DIP, global_it):
         super().__init__()
 
         # Set the random seed ALSO here !!!
@@ -28,7 +28,7 @@ class DIP_2D(pl.LightningModule):
         self.skip = hyperparameters_config['skip_connections']
         self.method = method
         self.all_images_DIP = all_images_DIP
-        self.admm_it = admm_it
+        self.global_it = global_it
         
         self.write_current_img_mode = True
         self.suffix = self.suffix_func(hyperparameters_config)
@@ -226,7 +226,7 @@ class DIP_2D(pl.LightningModule):
 
         experiment = 24
         subroot = '/home/meraslia/workspace_reco/nested_admm/data/Algo/image0/replicate_1/' + self.method + '/'
-        self.save_img(out_np, subroot+'Block2/out_cnn/' + format(experiment) + '/out_' + 'DIP' + format(self.admm_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+        self.save_img(out_np, subroot+'Block2/out_cnn/' + format(experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,hyperparameters_config):
         suffix = "config"
