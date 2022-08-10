@@ -85,58 +85,54 @@ class vGeneral(abc.ABC):
     def runRayTune(self,config,root,task):
         # Check parameters incompatibility
         self.parametersIncompatibility(config,task)
-        # Remove debug key from config
+        # Remove debug and ray keys from config
         self.debug = config["debug"]
+        self.ray = config["ray"]
         config.pop("debug",None)
+        config.pop("ray",None)
+    
+        if (self.ray): # Launch raytune
+            config_combination = 1
+            for i in range(len(config)): # List of hyperparameters keys is still in config dictionary
+                config_combination *= len(list(list(config.values())[i].values())[0])
+                config_combination *= len(list(list(config.values())[i].values())[0])
 
-        # Launch raytune
-        config_combination = 1
-        for i in range(len(config)): # List of hyperparameters keys is still in config dictionary
-            config_combination *= len(list(list(config.values())[i].values())[0])
-            config_combination *= len(list(list(config.values())[i].values())[0])
-
-        self.processing_unit = config["processing_unit"]
-        resources_per_trial = {"cpu": 1, "gpu": 0}
-        if self.processing_unit == 'CPU':
+            self.processing_unit = config["processing_unit"]
             resources_per_trial = {"cpu": 1, "gpu": 0}
-        elif self.processing_unit == 'GPU':
-            resources_per_trial = {"cpu": 0, "gpu": 0.1} # "gpu": 1 / config_combination
-            #resources_per_trial = {"cpu": 0, "gpu": 1} # "gpu": 1 / config_combination
-        elif self.processing_unit == 'both':
-            resources_per_trial = {"cpu": 10, "gpu": 1} # not efficient
+            if self.processing_unit == 'CPU':
+                resources_per_trial = {"cpu": 1, "gpu": 0}
+            elif self.processing_unit == 'GPU':
+                resources_per_trial = {"cpu": 0, "gpu": 0.1} # "gpu": 1 / config_combination
+                #resources_per_trial = {"cpu": 0, "gpu": 1} # "gpu": 1 / config_combination
+            elif self.processing_unit == 'both':
+                resources_per_trial = {"cpu": 10, "gpu": 1} # not efficient
 
-        #reporter = CLIReporter(
-        #    parameter_columns=['lr'],
-        #    metric_columns=['mse'])
+            #reporter = CLIReporter(
+            #    parameter_columns=['lr'],
+            #    metric_columns=['mse'])
 
-        # Start tuning of hyperparameters = start each admm computation in parallel
-        #try: # resume previous run (if it exists)
-        #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(hyperparameters_config) + str(config["max_iter"]), resources_per_trial = resources_per_trial, resume = "ERRORED_ONLY")#, progress_reporter = reporter)
-        #except: # do not resume previous run because there is no previous one
-        #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(hyperparameters_config) + "_max_iter=" + str(config["max_iter"], resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
+            # Start tuning of hyperparameters = start each admm computation in parallel
+            #try: # resume previous run (if it exists)
+            #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(hyperparameters_config) + str(config["max_iter"]), resources_per_trial = resources_per_trial, resume = "ERRORED_ONLY")#, progress_reporter = reporter)
+            #except: # do not resume previous run because there is no previous one
+            #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(hyperparameters_config) + "_max_iter=" + str(config["max_iter"], resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
 
-        if (self.debug):
-            # Remove grid search if debug mode and choose first element of each config key. The result does not matter, just if the code runs.
+            tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
+        else: # Without raytune
+        # Remove grid search if not using ray and choose first element of each config key.
             for key, value in config.items():
                 if key != "hyperparameters":
-                    config[key] = value["grid_search"][0]
-
-            # Set every iteration values to 1 to be quicker
-            for iter in ["max_iter","nb_subsets","sub_iter_DIP","nb_inner_iteration","nb_outer_iteration"]:
-                if iter in config.keys():
-                    config[iter] = 1
-                config["mlem_sequence"] = False
-
-            # Launch computation
-            self.do_everything(config,root)
-        else:
-            # tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
-
-            # Remove grid search if debug mode and choose first element of each config key. The result does not matter, just if the code runs.
-            for key, value in config.items():
-                if key != "hyperparameters":
-                    config[key] = value["grid_search"][0]
-
+                    if (len(value["grid_search"]) == 1 or self.debug):
+                        config[key] = value["grid_search"][0]
+                    else:
+                        raise ValueError("Please put one value for " + key + " in config variable in main.py if ray is deactivated.")
+                    
+                    if (self.debug):
+                        # Set every iteration values to 1 to be quicker
+                        if key in ["max_iter","nb_subsets","sub_iter_DIP","nb_inner_iteration","nb_outer_iteration"]:
+                            config[key] = 1
+                        elif key == "mlem_sequence":
+                            config["mlem_sequence"] = False
             # Launch computation
             self.do_everything(config,root)
 
