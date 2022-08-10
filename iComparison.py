@@ -10,7 +10,7 @@ class iComparison(vReconstruction):
     def __init__(self,config):
         print("__init__")
 
-    def runComputation(self,config,fixed_config,hyperparameters_config,root):
+    def runComputation(self,config,settings_config,fixed_config,hyperparameters_config,root):
 
         if (self.method == 'AML'):
             self.beta = hyperparameters_config["A_AML"]
@@ -28,7 +28,7 @@ class iComparison(vReconstruction):
         if ('ADMMLim' in self.method):
             # Path variables
             subroot_output_path = (self.subroot + self.suffix)
-            subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
+            subdir = 'ADMM' + '_' + str(settings_config["nb_threads"])
             subdir = ''
             f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/1_im_value_cropped.hdr' # Will be removed if first global iteration and unnested_1st_global_iter (rho == 0)
             #f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/BSREM_it30_REF_cropped.hdr' # Test for DIP_ADMM (will be removed if first global iteration and unnested_1st_global_iter (rho == 0))
@@ -58,26 +58,26 @@ class iComparison(vReconstruction):
         if (hyperparameters_config["NNEPPS"]):
             print("NNEPPS")        
             for it in range(1,max_it + 1):
-                self.NNEPPS_function(fixed_config,hyperparameters_config,it)
+                self.NNEPPS_function(settings_config,fixed_config,hyperparameters_config,it)
         
         # Initializing results class
-        if ((fixed_config["average_replicates"] and self.replicate == 1) or (fixed_config["average_replicates"] == False)):
+        if ((settings_config["average_replicates"] and self.replicate == 1) or (settings_config["average_replicates"] == False)):
             from iResults import iResults
             classResults = iResults(config)
             classResults.nb_replicates = self.nb_replicates
             classResults.debug = self.debug
             classResults.rho = self.rho
-            classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
-            classResults.runComputation(config,fixed_config,hyperparameters_config,root)
+            classResults.initializeSpecific(settings_config,fixed_config,hyperparameters_config,root)
+            classResults.runComputation(config,settings_config,fixed_config,hyperparameters_config,root)
 
-    def NNEPPS_function(self,fixed_config,hyperparameters_config,it):
+    def NNEPPS_function(self,settings_config,fixed_config,hyperparameters_config,it):
         executable='removeNegativeValues.exe'
 
         if ('ADMMLim' in self.method):
             i = 0
-            subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
+            subdir = 'ADMM' + '_' + str(settings_config["nb_threads"])
             subdir = ''
-            input_without_extension = self.subroot + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(hyperparameters_config["nb_inner_iteration"])
+            input_without_extension = self.subroot + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(fixed_config["nb_inner_iteration"])
         else:
             input_without_extension = self.subroot + self.suffix + '/' + self.method + '_beta_' + str(self.beta) + '_it' + format(it)
         

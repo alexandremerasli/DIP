@@ -1,7 +1,7 @@
 from ray import tune
 
 def config_func():
-    fixed_config = {
+    settings_config = {
         "image" : tune.grid_search(['image0']), # Image from database
         "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
         "method" : tune.grid_search(['Gong']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
@@ -51,13 +51,13 @@ def config_func():
     split_config = {
         "hyperparameters" : list(hyperparameters_config.keys())
     }
-    config = {**fixed_config, **hyperparameters_config, **split_config}
+    config = {**settings_config, **hyperparameters_config, **split_config}
 
     return config
 
 def config_func_MIC():
 
-    fixed_config = {
+    settings_config = {
         "image" : tune.grid_search(['image0']), # Image from database
         "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
         "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
@@ -109,6 +109,6 @@ def config_func_MIC():
     split_config = {
         "hyperparameters" : list(hyperparameters_config.keys())
     }
-    config = {**fixed_config, **hyperparameters_config, **split_config}
+    config = {**settings_config, **hyperparameters_config, **split_config}
 
     return config

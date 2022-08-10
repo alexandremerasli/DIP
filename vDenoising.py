@@ -29,13 +29,13 @@ class vDenoising(vGeneral):
     def __init__(self,config,root):
         print('__init__')
 
-    def initializeSpecific(self,fixed_config,hyperparameters_config,root):
+    def initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root):
         self.createDirectoryAndConfigFile(hyperparameters_config)
         # Specific hyperparameters for reconstruction module (Do it here to have raytune hyperparameters_config hyperparameters selection)
         if (fixed_config["net"] == "DD" or fixed_config["net"] == "DD_AE"):
             self.d_DD = hyperparameters_config["d_DD"]
             self.k_DD = hyperparameters_config["k_DD"]
-        if (fixed_config["method"] == "nested" or fixed_config["method"] == "Gong"):
+        if (settings_config["method"] == "nested" or settings_config["method"] == "Gong"):
             self.input = hyperparameters_config["input"]
             self.scaling_input = hyperparameters_config["scaling"]
             # Loading DIP input
@@ -207,7 +207,7 @@ class vDenoising(vGeneral):
         
         return model
 
-    def runComputation(self,config,fixed_config,hyperparameters_config,root):
+    def runComputation(self,config,settings_config,fixed_config,hyperparameters_config,root):
         # Scaling of x_label image
         image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image
 

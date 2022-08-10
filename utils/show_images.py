@@ -113,7 +113,7 @@ def show_image_path(path):
 
 
 # Configuration dictionnary for general parameters (not hyperparameters)
-fixed_config = {
+settings_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
@@ -167,7 +167,7 @@ hyperparameters_config = {
 split_config = {
     "hyperparameters" : list(hyperparameters_config.keys())
 }
-config = {**fixed_config, **hyperparameters_config, **split_config}
+config = {**settings_config, **hyperparameters_config, **split_config}
 
 
 config_copy = dict(config)

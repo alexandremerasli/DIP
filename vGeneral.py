@@ -20,33 +20,41 @@ class vGeneral(abc.ABC):
         self.experiment = "not updated"
 
     def split_config(self,config):
+        settings_config = dict(config)
         fixed_config = dict(config)
         hyperparameters_config = dict(config)
         for key in config.keys():
             if key in self.hyperparameters_list:
+                settings_config.pop(key, None)
                 fixed_config.pop(key, None)
+            elif key in self.fixed_hyperparameters_list:
+                settings_config.pop(key, None)
+                hyperparameters_config.pop(key, None)
             else:
+                fixed_config.pop(key, None)
                 hyperparameters_config.pop(key, None)
 
-        return fixed_config, hyperparameters_config
 
-    def initializeGeneralVariables(self,fixed_config,hyperparameters_config,root):
+
+        return settings_config, fixed_config, hyperparameters_config
+
+    def initializeGeneralVariables(self,settings_config,fixed_config,hyperparameters_config,root):
         """General variables"""
 
-        # Initialize some parameters from fixed_config
+        # Initialize some parameters from settings_config
         self.finetuning = fixed_config["finetuning"]
-        self.all_images_DIP = fixed_config["all_images_DIP"]
-        self.phantom = fixed_config["image"]
+        self.all_images_DIP = settings_config["all_images_DIP"]
+        self.phantom = settings_config["image"]
         self.net = fixed_config["net"]
-        self.method = fixed_config["method"]
-        self.processing_unit = fixed_config["processing_unit"]
-        self.nb_threads = fixed_config["nb_threads"]
+        self.method = settings_config["method"]
+        self.processing_unit = settings_config["processing_unit"]
+        self.nb_threads = settings_config["nb_threads"]
         self.max_iter = fixed_config["max_iter"] # Outer iterations
-        self.experiment = fixed_config["experiment"] # Label of the experiment
-        self.replicate = fixed_config["replicates"] # Label of the replicate
+        self.experiment = settings_config["experiment"] # Label of the experiment
+        self.replicate = settings_config["replicates"] # Label of the replicate
         self.penalty = fixed_config["penalty"]
 
-        self.FLTNB = fixed_config["FLTNB"]
+        self.FLTNB = settings_config["FLTNB"]
 
         # Initialize useful variables
         self.subroot = root + '/data/Algo/' + 'debug/'*self.debug + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' + self.method + '/' # Directory root
@@ -152,7 +160,9 @@ class vGeneral(abc.ABC):
             if config["method"]['grid_search'][0] == 'Gong':
                 config["scaling"]['grid_search'] = ["normalization"]
 
-        # Remove hyperparameters list
+        # Remove hyperparameters lists
+        self.fixed_hyperparameters_list = config["fixed_hyperparameters"]
+        config.pop("fixed_hyperparameters", None)
         self.hyperparameters_list = config["hyperparameters"]
         config.pop("hyperparameters", None)
         
@@ -222,15 +232,15 @@ class vGeneral(abc.ABC):
 
     def do_everything(self,config,root):
         # Retrieve fixed parameters and hyperparameters from config dictionnary
-        fixed_config, hyperparameters_config = self.split_config(config)
-        fixed_config["task"] = config["task"]
+        settings_config, fixed_config, hyperparameters_config = self.split_config(config)
+        settings_config["task"] = config["task"]
         # Initialize variables
-        self.initializeGeneralVariables(fixed_config,hyperparameters_config,root)
-        self.initializeSpecific(fixed_config,hyperparameters_config,root)
+        self.initializeGeneralVariables(settings_config,fixed_config,hyperparameters_config,root)
+        self.initializeSpecific(settings_config,fixed_config,hyperparameters_config,root)
         # Run task computation
-        self.runComputation(config,fixed_config,hyperparameters_config,root)
+        self.runComputation(config,settings_config,fixed_config,hyperparameters_config,root)
         # Store suffix to retrieve all suffixes in main.py for metrics
-        text_file = open(self.subroot_data + 'suffixes_for_last_run_' + fixed_config["method"] + '.txt', "a")
+        text_file = open(self.subroot_data + 'suffixes_for_last_run_' + settings_config["method"] + '.txt', "a")
         text_file.write(self.suffix_metrics + "\n")
         text_file.close()
 

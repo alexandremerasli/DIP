@@ -19,19 +19,19 @@ class iResults(vDenoising):
     def __init__(self,config):
         print("__init__")
 
-    def initializeSpecific(self,fixed_config,hyperparameters_config,root):
+    def initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root):
         # Initialize general variables
-        self.initializeGeneralVariables(fixed_config,hyperparameters_config,root)
-        vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
+        self.initializeGeneralVariables(settings_config,fixed_config,hyperparameters_config,root)
+        vDenoising.initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root)
         
-        if ('ADMMLim' in fixed_config["method"]):
+        if ('ADMMLim' in settings_config["method"]):
             self.total_nb_iter = hyperparameters_config["nb_outer_iteration"]
-            self.total_nb_iter = hyperparameters_config["nb_inner_iteration"]
+            self.total_nb_iter = fixed_config["nb_inner_iteration"]
             self.beta = hyperparameters_config["alpha"]
         else:
             self.total_nb_iter = self.max_iter
 
-            if (fixed_config["method"] == 'AML'):
+            if (settings_config["method"] == 'AML'):
                 self.beta = hyperparameters_config["A_AML"]
             else:                
                 self.beta = self.rho
@@ -106,10 +106,10 @@ class iResults(vDenoising):
 
 
 
-    def runComputation(self,config,fixed_config,hyperparameters_config,root):
+    def runComputation(self,config,settings_config,fixed_config,hyperparameters_config,root):
         beta_string = ', beta = ' + str(self.beta)
 
-        if (fixed_config["method"] == "nested" or fixed_config["method"] == "Gong"):
+        if (settings_config["method"] == "nested" or settings_config["method"] == "Gong"):
             self.writeBeginningImages(self.image_net_input,self.suffix)
             #self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
 
@@ -134,9 +134,9 @@ class iResults(vDenoising):
                         pet_algo=config["method"]
                         iteration_name="iterations"+beta_string + "outer_iter = " + str(j)
                         if ('ADMMLim' in config["method"]):
-                            #f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(i) + '_it' + str(hyperparameters_config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                            #f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/ADMM/0_' + format(i) + '_it' + str(fixed_config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                             # also change total_nb_iter
-                            subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
+                            subdir = 'ADMM' + '_' + str(settings_config["nb_threads"])
                             subdir = ''
                             f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' + subdir + '/0_' + format(j) + '_it' + str(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         else:

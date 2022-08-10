@@ -13,9 +13,9 @@ class iPostReconstruction(vDenoising):
         self.finetuning = 'False' # to ignore last.ckpt file
         self.global_it = 0 # Set it to 0, to ignore last.ckpt file
 
-    def initializeSpecific(self,fixed_config,hyperparameters_config,root):
+    def initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root):
         print("Denoising in post reconstruction")
-        vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
+        vDenoising.initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root)
         # Loading DIP x_label (corrupted image) from block1
         self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'initialization/MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f') # MLEM for Gong
@@ -32,14 +32,14 @@ class iPostReconstruction(vDenoising):
             os.system('rm -rf ' + ckpt_file_path) # Otherwise, pl will use checkpoint from other run
         '''
 
-    def runComputation(self,config,fixed_config,hyperparameters_config,root):
+    def runComputation(self,config,settings_config,fixed_config,hyperparameters_config,root):
         # Initializing results class
-        if ((fixed_config["average_replicates"] and self.replicate == 1) or (fixed_config["average_replicates"] == False)):
+        if ((settings_config["average_replicates"] and self.replicate == 1) or (settings_config["average_replicates"] == False)):
             from iResults import iResults
             classResults = iResults(config)
             classResults.nb_replicates = self.nb_replicates
             classResults.debug = self.debug
-            classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
+            classResults.initializeSpecific(settings_config,fixed_config,hyperparameters_config,root)
 
         # Initialize variables
         # Scaling of x_label image

@@ -18,10 +18,10 @@ class iResultsReplicates(iResults):
     def __init__(self,config):
         print("__init__")
 
-    def initializeSpecific(self,fixed_config,hyperparameters_config,root):
+    def initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root):
         # Initialize general variables
-        self.initializeGeneralVariables(fixed_config,hyperparameters_config,root)
-        iResults.initializeSpecific(self,fixed_config,hyperparameters_config,root)
+        self.initializeGeneralVariables(settings_config,fixed_config,hyperparameters_config,root)
+        iResults.initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root)
 
         # Create summary writer from tensorboard
         self.writer = SummaryWriter()
@@ -39,7 +39,7 @@ class iResultsReplicates(iResults):
         self.AR_bkg_recon = np.zeros(self.total_nb_iter)
         self.IR_bkg_recon = np.zeros(self.total_nb_iter)
 
-    def runComputation(self,config,fixed_config,hyperparameters_config,root): 
+    def runComputation(self,config,settings_config,fixed_config,hyperparameters_config,root): 
         self.writeBeginningImages(self.image_net_input,self.suffix)
         #self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
 
@@ -63,9 +63,9 @@ class iResultsReplicates(iResults):
                     pet_algo=config["method"]
                     iteration_name="iterations"+beta_string
                     if ('ADMMLim' in config["method"]):
-                        subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
+                        subdir = 'ADMM' + '_' + str(settings_config["nb_threads"])
                         subdir = ''
-                        f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' + subdir + '/0_' + format(hyperparameters_config["nb_outer_iteration"]) + '_it' + str(hyperparameters_config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                        f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '/' + self.suffix + '/' + subdir + '/0_' + format(hyperparameters_config["nb_outer_iteration"]) + '_it' + str(fixed_config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                     else:
                         f_p = self.fijii_np(self.subroot_p+'Comparison/' + config["method"] + '_beta_' + str(self.beta_list[i-1]) + '/' +  config["method"] + '_beta_' + str(self.beta_list[i-1]) + '_it' + str(fixed_config["max_iter"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                 f += f_p

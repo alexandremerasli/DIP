@@ -19,25 +19,25 @@ class iResults(vDenoising):
     def __init__(self,config):
         print("__init__")
 
-    def initializeSpecific(self,fixed_config,hyperparameters_config,root):
+    def initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root):
         # Initialize general variables
-        self.initializeGeneralVariables(fixed_config,hyperparameters_config,root)
-        vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
+        self.initializeGeneralVariables(settings_config,fixed_config,hyperparameters_config,root)
+        vDenoising.initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root)
         
-        if ('ADMMLim' in fixed_config["method"]):
+        if ('ADMMLim' in settings_config["method"]):
             self.total_nb_iter = hyperparameters_config["nb_outer_iteration"]
             self.beta = hyperparameters_config["alpha"]
-        elif (fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
-            if (fixed_config["task"] == 'post_reco'):
+        elif (settings_config["method"] == 'nested' or settings_config["method"] == 'Gong'):
+            if (settings_config["task"] == 'post_reco'):
                 self.total_nb_iter = hyperparameters_config["sub_iter_DIP"]
             else:
                 self.total_nb_iter = fixed_config["max_iter"]
         else:
             self.total_nb_iter = self.max_iter
 
-            if (fixed_config["method"] == 'AML'):
+            if (settings_config["method"] == 'AML'):
                 self.beta = hyperparameters_config["A_AML"]
-            if (fixed_config["method"] == 'BSREM' or fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
+            if (settings_config["method"] == 'BSREM' or settings_config["method"] == 'nested' or settings_config["method"] == 'Gong'):
                 self.rho = hyperparameters_config["rho"]
                 self.beta = self.rho
         # Create summary writer from tensorboard
@@ -45,7 +45,7 @@ class iResults(vDenoising):
         
         #Loading Ground Truth image to compute metrics
         self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
-        if fixed_config["FLTNB"] == "double":
+        if settings_config["FLTNB"] == "double":
             self.image_gt.astype(np.float64)
 
         # Metrics arrays
@@ -141,11 +141,11 @@ class iResults(vDenoising):
 
 
 
-    def runComputation(self,config,fixed_config,hyperparameters_config,root):
+    def runComputation(self,config,settings_config,fixed_config,hyperparameters_config,root):
         if (hasattr(self,'beta')):
             beta_string = ', beta = ' + str(self.beta)
 
-        if (fixed_config["method"] == "nested" or fixed_config["method"] == "Gong"):
+        if (settings_config["method"] == "nested" or settings_config["method"] == "Gong"):
             self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
             #self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
         else:
@@ -160,7 +160,7 @@ class iResults(vDenoising):
             f = np.zeros(self.PETImage_shape,dtype=type)
             IR = 0
             for p in range(1,self.nb_replicates+1):
-                if (fixed_config["average_replicates"] or (fixed_config["average_replicates"] == False and p == self.replicate)):
+                if (settings_config["average_replicates"] or (settings_config["average_replicates"] == False and p == self.replicate)):
                     self.subroot_p = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
 
                     # Take NNEPPS images if NNEPPS is asked for this run
@@ -169,7 +169,7 @@ class iResults(vDenoising):
                     else:
                         NNEPPS_string = ""
                     if (config["method"] == 'Gong' or config["method"] == 'nested'):
-                        if (fixed_config["task"] == "post_reco"):
+                        if (settings_config["task"] == "post_reco"):
                             pet_algo=config["method"]+"to fit"
                             iteration_name="(post reconstruction)"
                         else:
@@ -183,9 +183,9 @@ class iResults(vDenoising):
                         if (hasattr(self,'beta')):
                             iteration_name += beta_string
                         if ('ADMMLim' in config["method"]):
-                            subdir = 'ADMM' + '_' + str(fixed_config["nb_threads"])
+                            subdir = 'ADMM' + '_' + str(settings_config["nb_threads"])
                             subdir = ''
-                            #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(hyperparameters_config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                            #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(fixed_config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                             #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it1' + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                             #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_1'  + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                             f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0'  + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
@@ -198,21 +198,21 @@ class iResults(vDenoising):
                     self.compute_IR_bkg(self.PETImage_shape,f_p,i-1,self.IR_bkg_recon,self.phantom)
 
                     # Specific average for IR
-                    if (fixed_config["average_replicates"] == False and p == self.replicate):
+                    if (settings_config["average_replicates"] == False and p == self.replicate):
                         IR = self.IR_bkg_recon[i-1]
-                    elif (fixed_config["average_replicates"]):
+                    elif (settings_config["average_replicates"]):
                         IR += self.IR_bkg_recon[i-1] / self.nb_replicates
                         
-                    if (fixed_config["average_replicates"]): # Average images across replicates (for metrics except IR)
+                    if (settings_config["average_replicates"]): # Average images across replicates (for metrics except IR)
                         f += f_p / self.nb_replicates
-                    elif (fixed_config["average_replicates"] == False and p == self.replicate):
+                    elif (settings_config["average_replicates"] == False and p == self.replicate):
                         f = f_p
                 
             print("IR saved in tensorboard")
             self.IR_bkg_recon[i-1] = IR
             self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[i-1], i)
 
-            # Show images and metrics in tensorboard (averaged images if asked in fixed_config)           
+            # Show images and metrics in tensorboard (averaged images if asked in settings_config)           
             self.writeEndImagesAndMetrics(i-1,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
 
 

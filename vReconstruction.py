@@ -19,24 +19,24 @@ class vReconstruction(vGeneral):
     def __init__(self,config):
         print('__init__')
 
-    def runComputation(self,config,fixed_config,hyperparameters_config,root):
+    def runComputation(self,config,settings_config,fixed_config,hyperparameters_config,root):
         """ Implement me! """
         pass
 
-    def initializeSpecific(self,fixed_config,hyperparameters_config,root):
+    def initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root):
         self.createDirectoryAndConfigFile(hyperparameters_config)
 
         # Specific hyperparameters for reconstruction module (Do it here to have raytune hyperparameters_config hyperparameters selection)
-        if (fixed_config["method"] != "MLEM" and fixed_config["method"] != "AML"):
+        if (settings_config["method"] != "MLEM" and settings_config["method"] != "AML"):
             self.rho = hyperparameters_config["rho"]
         else:
             self.rho = 0
-        if ('ADMMLim' in fixed_config["method"] or fixed_config["method"] == "nested" or fixed_config["method"] == "Gong"):
-            if (fixed_config["method"] != "ADMMLim"):
-                self.unnested_1st_global_iter = hyperparameters_config["unnested_1st_global_iter"]
+        if ('ADMMLim' in settings_config["method"] or settings_config["method"] == "nested" or settings_config["method"] == "Gong"):
+            if (settings_config["method"] != "ADMMLim"):
+                self.unnested_1st_global_iter = fixed_config["unnested_1st_global_iter"]
             else:
                 self.unnested_1st_global_iter = None
-            if (fixed_config["method"] == "Gong"):
+            if (settings_config["method"] == "Gong"):
                 self.alpha = None
             else:
                 self.alpha = hyperparameters_config["alpha"]
@@ -48,8 +48,8 @@ class vReconstruction(vGeneral):
                 else:
                     self.mu_adaptive = hyperparameters_config["mu_adaptive"]
                     self.tau = hyperparameters_config["tau"]
-                    self.xi = hyperparameters_config["xi"]
-        self.image_init_path_without_extension = fixed_config["image_init_path_without_extension"]
+                    self.xi = fixed_config["xi"]
+        self.image_init_path_without_extension = settings_config["image_init_path_without_extension"]
         
         # Initialize and save mu variable from ADMM
         if (self.method == "nested" or self.method == "Gong"):
@@ -64,7 +64,7 @@ class vReconstruction(vGeneral):
             if (self.nb_replicates == 1):
                 header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[-1] + '/data' + self.phantom[-1] + '.cdh' # PET data path
             else:
-                header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[-1] + '_' + str(fixed_config["replicates"]) + '/data' + self.phantom[-1] + '_' + str(fixed_config["replicates"]) + '.cdh' # PET data path
+                header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[-1] + '_' + str(settings_config["replicates"]) + '/data' + self.phantom[-1] + '_' + str(settings_config["replicates"]) + '.cdh' # PET data path
             executable = 'castor-recon'
             optimizer = 'MLEM'
             output_path = ' -dout ' + path_mlem_init # Output path for CASTOR framework
@@ -105,11 +105,11 @@ class vReconstruction(vGeneral):
             if (i == -1):   # choose initial image for CASToR reconstruction
                 initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
             elif (i >= 0):
-                #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_' + format(hyperparameters_config["nb_outer_iteration"]) + '_it' + str(hyperparameters_config["nb_inner_iteration"]) + '.hdr'
+                #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_' + format(hyperparameters_config["nb_outer_iteration"]) + '_it' + str(fixed_config["nb_inner_iteration"]) + '.hdr'
                 # Trying to initialize OPTITR
                 #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
                 initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
-                #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(hyperparameters_config["nb_inner_iteration"]) + '.hdr'
+                #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(fixed_config["nb_inner_iteration"]) + '.hdr'
 
             base_name_i = format(i)
             full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
@@ -157,7 +157,7 @@ class vReconstruction(vGeneral):
         if (i == 0):   # choose initial image for CASToR reconstruction
             initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
         elif (i >= 1):
-            #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(hyperparameters_config["nb_outer_iteration"]) + '_it' + str(hyperparameters_config["nb_inner_iteration"]) + '.hdr'
+            #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(hyperparameters_config["nb_outer_iteration"]) + '_it' + str(fixed_config["nb_inner_iteration"]) + '.hdr'
             initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_it' + str(hyperparameters_config["nb_outer_iteration"]) + '.hdr'
             # Trying to initialize ADMMLim
             #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'

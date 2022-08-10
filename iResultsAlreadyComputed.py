@@ -19,25 +19,25 @@ class iResultsAlreadyComputed(vDenoising):
     def __init__(self,config):
         print("__init__")
 
-    def initializeSpecific(self,fixed_config,hyperparameters_config,root):
+    def initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root):
         # Initialize general variables
-        self.initializeGeneralVariables(fixed_config,hyperparameters_config,root)
-        vDenoising.initializeSpecific(self,fixed_config,hyperparameters_config,root)
+        self.initializeGeneralVariables(settings_config,fixed_config,hyperparameters_config,root)
+        vDenoising.initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root)
         
-        if ('ADMMLim' in fixed_config["method"]):
+        if ('ADMMLim' in settings_config["method"]):
             self.total_nb_iter = hyperparameters_config["nb_outer_iteration"]
             self.beta = hyperparameters_config["alpha"]
-        elif (fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
-            if (fixed_config["task"] == 'post_reco'):
+        elif (settings_config["method"] == 'nested' or settings_config["method"] == 'Gong'):
+            if (settings_config["task"] == 'post_reco'):
                 self.total_nb_iter = hyperparameters_config["sub_iter_DIP"]
             else:
                 self.total_nb_iter = fixed_config["max_iter"]
         else:
             self.total_nb_iter = self.max_iter
 
-            if (fixed_config["method"] == 'AML'):
+            if (settings_config["method"] == 'AML'):
                 self.beta = hyperparameters_config["A_AML"]
-            if (fixed_config["method"] == 'BSREM' or fixed_config["method"] == 'nested' or fixed_config["method"] == 'Gong'):
+            if (settings_config["method"] == 'BSREM' or settings_config["method"] == 'nested' or settings_config["method"] == 'Gong'):
                 self.rho = hyperparameters_config["rho"]
                 self.beta = self.rho
         # Create summary writer from tensorboard
@@ -45,7 +45,7 @@ class iResultsAlreadyComputed(vDenoising):
         
         #Loading Ground Truth image to compute metrics
         self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
-        if fixed_config["FLTNB"] == "double":
+        if settings_config["FLTNB"] == "double":
             self.image_gt.astype(np.float64)
             
         # Metrics arrays
@@ -57,5 +57,5 @@ class iResultsAlreadyComputed(vDenoising):
         self.AR_bkg_recon = np.zeros(self.total_nb_iter)
         self.IR_bkg_recon = np.zeros(self.total_nb_iter)
         
-    def runComputation(self,config,fixed_config,hyperparameters_config,root):
+    def runComputation(self,config,settings_config,fixed_config,hyperparameters_config,root):
         print('run computation')
