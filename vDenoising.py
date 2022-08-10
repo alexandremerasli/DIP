@@ -93,16 +93,11 @@ class vDenoising(vGeneral):
             #if (torch.cuda.device_count() > 1):
             #    accelerator = 'dp'
 
-        print("admm_iiiiiiiiiiiiit",admm_it)
-        if (admm_it == -1): # First time in block2. For first epoch, change number of epochs to sub_iter_DIP_initial for Gong
-            if (self.method != 'Gong'):
-                sub_iter_DIP = 1 if net.startswith('DD') else 1
-                import sys
-                sys.exit()
-            else:
-                print(str(self.sub_iter_DIP_initial) + " initial iterations for Gong")
-                self.sub_iter_DIP = self.sub_iter_DIP_initial
-                sub_iter_DIP = self.sub_iter_DIP
+        print("admm_it",admm_it)
+        if (admm_it == -1): # Beginning nested or Gong in block2. For first epoch, change number of epochs to sub_iter_DIP_initial for Gong
+            print(str(self.sub_iter_DIP_initial) + " initial iterations for Gong")
+            self.sub_iter_DIP = self.sub_iter_DIP_initial
+            sub_iter_DIP = self.sub_iter_DIP
         if (finetuning == 'False'): # Do not save and use checkpoints (still save hparams and event files for now ...)
             logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
             #checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=0, save_weights_only=True) # Do not save any checkpoint (save_top_k = 0)

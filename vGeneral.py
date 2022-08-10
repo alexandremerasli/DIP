@@ -193,6 +193,7 @@ class vGeneral(abc.ABC):
                 config.pop("input", None)
                 config.pop("d_DD", None)
                 config.pop("k_DD", None)
+                config.pop("unnested_1st_global_iter",None)
             if (config["net"]['grid_search'][0] == "DD"):
                 config.pop("skip_connections", None)
             elif (config["net"]['grid_search'][0] != "DD_AE"): # not a Deep Decoder based architecture, so remove k and d

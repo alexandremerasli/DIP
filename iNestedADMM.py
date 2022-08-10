@@ -3,7 +3,7 @@
 # Useful
 import time
 
-import numpy
+import numpy as np
 
 # Local files to import
 from vReconstruction import vReconstruction
@@ -16,9 +16,12 @@ class iNestedADMM(vReconstruction):
     def runComputation(self,config,fixed_config,hyperparameters_config,root):
         print("Nested ADMM reconstruction")
 
+        '''
         # Initializing DIP output with f_init
         self.f = self.f_init
-
+        '''
+        self.f = np.ones((self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2]))
+        
         # Initializing results class
         if ((fixed_config["average_replicates"] and self.replicate == 1) or (fixed_config["average_replicates"] == False)):
             from iResults import iResults
@@ -28,17 +31,16 @@ class iNestedADMM(vReconstruction):
             classResults.debug = self.debug
             classResults.initializeSpecific(fixed_config,hyperparameters_config,root)
         
-        if (fixed_config["method"] == "Gong"):
-            i_init = 0 #-1 after MIC
-            i_init = -1
-        else:
+        if (hyperparameters_config["unnested_1st_global_iter"]):
             i_init = 0
+        else:
+            i_init = -1
 
         for i in range(i_init, self.max_iter):
             print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Global iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', i)
             start_time_outer_iter = time.time()
             
-            if (i != i_init or fixed_config["method"] != "Gong"): # Gong at first epoch -> only pre train the network
+            if (i != i_init or hyperparameters_config["unnested_1st_global_iter"]): # Gong at first epoch -> only pre train the network
                 # Block 1 - Reconstruction with CASToR (tomographic reconstruction part of ADMM)
                 self.x_label = self.castor_reconstruction(classResults.writer, i, self.subroot, hyperparameters_config["nb_outer_iteration"], self.experiment, hyperparameters_config, self.method, self.phantom, self.replicate, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.rho, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
                 # Write corrupted image over ADMM iterations
@@ -46,14 +48,26 @@ class iNestedADMM(vReconstruction):
 
             # Block 2 - CNN
             start_time_block2= time.time()
-            if (i == i_init and fixed_config["method"] == "Gong"): # Gong at first epoch -> only pre train the network
+            if (i == i_init and not hyperparameters_config["unnested_1st_global_iter"]): # Gong at first epoch -> only pre train the network
                 # Create label corresponding to initial value of image_init
                 #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.img',shape=(self.PETImage_shape),type='<f')
-                # Fit MLEM 60it for first global iteration
-                #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
-                x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it300_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
-                self.save_img(x_label,self.subroot+'Block2/x_label/' + format(self.experiment)+'/'+ format(-1) +'_x_label' + self.suffix + '.img')
+                if (fixed_config["method"] == "nested"): # Nested needs 1 to not add any prior information at the beginning, and to initialize x computation to uniform with 1
+                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
+                elif (fixed_config["method"] == "Gong"): # Fit MLEM 60it for first global iteration
+                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
+                self.save_img(x_label,self.subroot+'Block2/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
                 #classDenoising.sub_iter_DIP = classDenoising.self.sub_iter_DIP_initial
+
+
+            '''
+            if (not hyperparameters_config["unnested_1st_global_iter"]): # Rho is not zero, so initialize the network with f_init
+                # Ininitializing DIP output and first image x with f_init and image_init
+                if (self.method == "nested"): # Nested needs 1 to not add any prior information at the beginning, and to initialize x computation to uniform with 1
+                    self.f_init = np.ones((self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2]))
+                elif (self.method == "Gong"): # Gong initialization with 60th iteration of MLEM (normally, DIP trained with this image as label...)
+                    #self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
+                    self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
+            '''
 
             classDenoising = iDenoisingInReconstruction(hyperparameters_config,i)
             classDenoising.hyperparameters_list = self.hyperparameters_list
@@ -63,9 +77,9 @@ class iNestedADMM(vReconstruction):
             print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
             
             self.f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + self.suffix + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
-            self.f.astype(numpy.float64)
+            self.f.astype(np.float64)
             
-            if (i != i_init or fixed_config["method"] != "Gong"): # Gong at first epoch -> only pre train the network
+            if (i != i_init or hyperparameters_config["unnested_1st_global_iter"]): # Gong at first epoch -> only pre train the network
                 # Block 3 - mu update
                 self.mu = self.x_label - self.f
                 self.save_img(self.mu,self.subroot+'Block2/mu/'+ format(self.experiment)+'/mu_' + format(i) + self.suffix + '.img') # saving mu

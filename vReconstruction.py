@@ -46,14 +46,7 @@ class vReconstruction(vGeneral):
                     self.tau = hyperparameters_config["tau"]
                     self.xi = hyperparameters_config["xi"]
         self.image_init_path_without_extension = fixed_config["image_init_path_without_extension"]
-
-        # Ininitializing DIP output and first image x with f_init and image_init
-        if (self.method == "nested"): # Nested needs 1 to not add any prior information at the beginning, and to initialize x computation to uniform with 1
-            self.f_init = np.ones((self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2]))
-        elif (self.method == "Gong"): # Gong initialization with 60th iteration of MLEM (normally, DIP trained with this image as label...)
-            #self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
-            self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
-
+        
         # Initialize and save mu variable from ADMM
         if (self.method == "nested" or self.method == "Gong"):
             self.mu = 0* np.ones((self.PETImage_shape[0], self.PETImage_shape[1], self.PETImage_shape[2]))
@@ -62,7 +55,7 @@ class vReconstruction(vGeneral):
         # Launch short MLEM reconstruction
         path_mlem_init = self.subroot_data + 'Data/MLEM_reco_for_init/' + self.phantom
         my_file = Path(path_mlem_init + '/' + self.phantom + '/' + self.phantom + '_it1.img')
-        if (~my_file.is_file()):
+        if (not my_file.is_file()):
             print("self.nb_replicates",self.nb_replicates)
             if (self.nb_replicates == 1):
                 header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[-1] + '/data' + self.phantom[-1] + '.cdh' # PET data path
@@ -114,16 +107,17 @@ class vReconstruction(vGeneral):
                 initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
                 #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(hyperparameters_config["nb_inner_iteration"]) + '.hdr'
 
-            base_name_k_next = format(i)
-            full_output_path_k_next = subroot_output_path + '/' + subdir + '/' + base_name_k_next
-            x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_k_next + it + f_mu_for_penalty + initialimage            
+            base_name_i = format(i)
+            full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
+            x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_i + it + f_mu_for_penalty + initialimage            
             print(x_reconstruction_command_line)
             os.system(x_reconstruction_command_line)
 
             if (mlem_sequence):
-                x = self.fijii_np(full_output_path_k_next + '_it30.img', shape=(PETImage_shape))
+                x = self.fijii_np(full_output_path_i + '_it30.img', shape=(PETImage_shape))
             else:
-                x = self.fijii_np(full_output_path_k_next + '_it' + str(hyperparameters_config["nb_outer_iteration"]) + '.img', shape=(PETImage_shape))
+                x = self.fijii_np(full_output_path_i + '_it' + str(hyperparameters_config["nb_outer_iteration"]) + '.img', shape=(PETImage_shape))
+            print(full_output_path_i + '_it' + str(hyperparameters_config["nb_outer_iteration"]) + '.img')
 
             self.write_image_tensorboard(writer,x,"x after optimization transfer over iterations",suffix,image_gt, i) # Showing all corrupted images with same contrast to compare them together
             self.write_image_tensorboard(writer,x,"x after optimization transfer over iterations (FULL CONTRAST)",suffix,image_gt, i,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
@@ -137,7 +131,6 @@ class vReconstruction(vGeneral):
 
         # Save x_label for load into block 2 - CNN as corrupted image (x_label)
         x_label = x + mu
-
         # Save x_label in .img and .hdr format
         name=(subroot+'Block2/x_label/'+format(experiment) + '/' + format(i) +'_x_label' + suffix + '.img')
         self.save_img(x_label, name)
@@ -196,6 +189,4 @@ class vReconstruction(vGeneral):
                 x = self.fijii_np(full_output_path_i + '_it' + str(k) + '.img', shape=(self.PETImage_shape))
                 self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations",self.suffix,500, 0+k+i*hyperparameters_config["nb_outer_iteration"]) # Showing all corrupted images with same contrast to compare them together
                 self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations(FULL CONTRAST)",self.suffix,500, 0+k+i*hyperparameters_config["nb_outer_iteration"],full_contrast=True) # Showing all corrupted images with same contrast to compare them together
-
-        if (self.method == "nested"):
             return x
