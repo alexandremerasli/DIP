@@ -53,7 +53,7 @@ class vGeneral(abc.ABC):
         self.experiment = settings_config["experiment"] # Label of the experiment
         self.replicate = settings_config["replicates"] # Label of the replicate
         self.penalty = fixed_config["penalty"]
-
+        self.castor_foms = settings_config["castor_foms"]
         self.FLTNB = settings_config["FLTNB"]
 
         # Initialize useful variables
@@ -178,12 +178,12 @@ class vGeneral(abc.ABC):
             if (config["method"]['grid_search'][0] == 'BSREM' or config["method"]['grid_search'][0] == 'nested' or config["method"]['grid_search'][0] == 'Gong'):
                 config.pop("post_smoothing", None)
             if ('ADMMLim' not in config["method"]['grid_search'][0] and config["method"]['grid_search'][0] != "nested"):
-                config.pop("nb_inner_iteration", None)
+                #config.pop("nb_inner_iteration", None)
                 config.pop("alpha", None)
                 config.pop("adaptive_parameters", None)
                 config.pop("mu_adaptive", None)
                 config.pop("tau", None)
-                config.pop("xi", None)
+                #config.pop("xi", None)
             elif (('ADMMLim' in config["method"]['grid_search'][0] or config["method"]['grid_search'][0] == "nested") and config["adaptive_parameters"]['grid_search'][0] == "nothing"):
                 config.pop("mu_adaptive", None)
                 config.pop("tau", None)
@@ -199,7 +199,7 @@ class vGeneral(abc.ABC):
                 config.pop("input", None)
                 config.pop("d_DD", None)
                 config.pop("k_DD", None)
-                config.pop("unnested_1st_global_iter",None)
+                #config.pop("unnested_1st_global_iter",None)
             if (config["net"]['grid_search'][0] == "DD"):
                 config.pop("skip_connections", None)
             elif (config["net"]['grid_search'][0] != "DD_AE"): # not a Deep Decoder based architecture, so remove k and d
@@ -512,8 +512,10 @@ class vGeneral(abc.ABC):
         else:
             conv = ''
         # Computing likelihood
-        #opti_like = ' -opti-fom'
-        opti_like = ''
+        if (self.castor_foms):
+            opti_like = ' -opti-fom'
+        else:
+            opti_like = ''
 
         return executable + dim + vox + header_file + vb + th + proj + opti_like + psf + conv
 
