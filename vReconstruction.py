@@ -1,6 +1,7 @@
 ## Python libraries
 
 # Useful
+from genericpath import isfile
 import os
 from pathlib import Path
 import time
@@ -194,6 +195,41 @@ class vReconstruction(vGeneral):
         print(x_reconstruction_command_line)
         self.compute_x_v_u_ADMM(x_reconstruction_command_line, subdir, i, self.phantom, subroot_output_path, self.subroot_data)
 
+        #'''
+        # -- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho --
+
+
+        self.path_stopping_criterion = subroot_output_path + '/' + subdir + '/' + format(i) + '_adaptive_stopping_criteria.log'
+        if(isfile(self.path_stopping_criterion)):
+            theLog = pd.read_table(self.path_stopping_criterion)
+            finalOuterIterRow = theLog.loc[[0]]
+
+            finalOuterIterRowArray = np.array(finalOuterIterRow)
+            finalOuterIterRowString = finalOuterIterRowArray[0, 0]
+            finalOuterIter = int(finalOuterIterRowString)
+            print("finalOuterIter",finalOuterIter)
+        else:
+            finalOuterIter = hyperparameters_config["nb_outer_iteration"]
+
+        for outer_it in range(1,finalOuterIter+1):
+            path_adaptive = subroot_output_path + '/' + subdir + '/' + format(i) + '_adaptive_it' + format(outer_it) + '.log'
+            theLog = pd.read_table(path_adaptive)
+            relativePrimalResidualRow = theLog.loc[[6]]
+            relativePrimalResidualRowArray = np.array(relativePrimalResidualRow)
+            relativePrimalResidualRowString = relativePrimalResidualRowArray[0, 0]
+            relativePrimalResidual = float(relativePrimalResidualRowString)
+            print("relPrimal",relativePrimalResidual)
+
+        for outer_it in range(1,finalOuterIter+1):
+            path_adaptive = subroot_output_path + '/' + subdir + '/' + format(i) + '_adaptive_it' + format(outer_it) + '.log'
+            theLog = pd.read_table(path_adaptive)
+            relativeDualResidualRow = theLog.loc[[8]]
+            relativeDualResidualRowArray = np.array(relativeDualResidualRow)
+            relativeDualResidualRowString = relativeDualResidualRowArray[0, 0]
+            relativeDualResidual = float(relativeDualResidualRowString)
+            print("relDual",relativeDualResidual)
+        #'''
+        
         if (self.method == "nested"):
             for k in range(1,hyperparameters_config["nb_outer_iteration"]+1):
                 x = self.fijii_np(full_output_path_i + '_it' + str(k) + '.img', shape=(self.PETImage_shape))

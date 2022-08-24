@@ -67,6 +67,7 @@ class iComparison(vReconstruction):
             classResults.nb_replicates = self.nb_replicates
             classResults.debug = self.debug
             classResults.rho = self.rho
+            classResults.path_stopping_criterion = self.path_stopping_criterion
             classResults.initializeSpecific(settings_config,fixed_config,hyperparameters_config,root)
             classResults.runComputation(config,settings_config,fixed_config,hyperparameters_config,root)
 

@@ -25,7 +25,10 @@ class iResults(vDenoising):
         vDenoising.initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root)
         
         if ('ADMMLim' in settings_config["method"]):
-            self.total_nb_iter = hyperparameters_config["nb_outer_iteration"]
+            with open(self.path_stopping_criterion) as f:
+                first_line = f.readline()
+                self.total_nb_iter = int(f.readline().rstrip()) - 1
+            #self.total_nb_iter = hyperparameters_config["nb_outer_iteration"]
             self.beta = hyperparameters_config["alpha"]
         elif (settings_config["method"] == 'nested' or settings_config["method"] == 'Gong'):
             if (settings_config["task"] == 'post_reco'):
