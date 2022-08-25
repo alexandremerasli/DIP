@@ -3,24 +3,22 @@ import torch.nn as nn
 import pytorch_lightning as pl
 
 import os
-if (os.path.isfile(os.getcwd() + "/seed.txt")):
-    with open(os.getcwd() + "/seed.txt", 'r') as file:
-        random_seed = file.read().rstrip()
-    if (eval(random_seed)):
-        pl.seed_everything(2)
 
 class DIP_2D(pl.LightningModule):
 
     def __init__(self, hyperparameters_config, method, all_images_DIP, global_it):
         super().__init__()
 
-        # Set the random seed ALSO here !!!
+        #'''
+        # Set random seed if asked (for NN weights here)
         if (os.path.isfile(os.getcwd() + "/seed.txt")):
             with open(os.getcwd() + "/seed.txt", 'r') as file:
                 random_seed = file.read().rstrip()
             if (eval(random_seed)):
-                pl.seed_everything(2)
+                pl.seed_everything(1)
 
+        #'''
+        
         # Defining variables from hyperparameters_config        
         self.lr = hyperparameters_config['lr']
         self.opti_DIP = hyperparameters_config['opti_DIP']
@@ -204,6 +202,7 @@ class DIP_2D(pl.LightningModule):
 
         if (self.opti_DIP == 'Adam'):
             optimizer = torch.optim.Adam(self.parameters(), lr=self.lr, weight_decay=5E-8) # Optimizing using Adam
+            #optimizer = torch.optim.SGD(self.parameters(), lr=self.lr) # Optimizing using SGD
         elif (self.opti_DIP == 'LBFGS' or self.opti_DIP is None): # None means no argument was given in command line
             optimizer = torch.optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4) # Optimizing using L-BFGS
         return optimizer

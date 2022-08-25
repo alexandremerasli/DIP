@@ -4,16 +4,18 @@ import torch.nn as nn
 import pytorch_lightning as pl
 
 import os
-if (os.path.isfile(os.getcwd() + "/seed.txt")):
-    with open(os.getcwd() + "/seed.txt", 'r') as file:
-        random_seed = file.read().rstrip()
-    if (eval(random_seed)):
-        pl.seed_everything(2)
 
 class VAE_DIP_2D(pl.LightningModule):
 
     def __init__(self, hyperparameters_config):
         super().__init__()
+
+        # Set random seed if asked (for NN weights here)
+        if (os.path.isfile(os.getcwd() + "/seed.txt")):
+            with open(os.getcwd() + "/seed.txt", 'r') as file:
+                random_seed = file.read().rstrip()
+            if (eval(random_seed)):
+                pl.seed_everything(1)
 
         # Defining variables from hyperparameters_config
         self.lr = hyperparameters_config['lr']

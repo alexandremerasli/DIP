@@ -8,11 +8,13 @@ import pytorch_lightning as pl
 # Useful
 import numpy as np
 import os
+
+# Set random seed if asked (for random input here)
 if (os.path.isfile(os.getcwd() + "/seed.txt")):
     with open(os.getcwd() + "/seed.txt", 'r') as file:
         random_seed = file.read().rstrip()
     if (eval(random_seed)):
-        np.random.seed(2)
+        np.random.seed(1)
 
 # Local files to import
 from vGeneral import vGeneral

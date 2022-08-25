@@ -6,16 +6,18 @@ import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
 import os
-if (os.path.isfile(os.getcwd() + "/seed.txt")):
-    with open(os.getcwd() + "/seed.txt", 'r') as file:
-        random_seed = file.read().rstrip()
-    if (eval(random_seed)):
-        pl.seed_everything(2)
         
 class DD_2D(pl.LightningModule):
 
     def __init__(self, hyperparameters_config, method):
         super().__init__()
+
+        # Set random seed if asked (for NN weights here)
+        if (os.path.isfile(os.getcwd() + "/seed.txt")):
+            with open(os.getcwd() + "/seed.txt", 'r') as file:
+                random_seed = file.read().rstrip()
+            if (eval(random_seed)):
+                pl.seed_everything(1)
 
         self.writer = SummaryWriter()
         # Defining variables from hyperparameters_config

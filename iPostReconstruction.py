@@ -24,13 +24,6 @@ class iPostReconstruction(vDenoising):
         self.checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         self.name_run = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.total_nb_iter = hyperparameters_config["sub_iter_DIP"]
-        self.sub_iter_DIP = 1 # For first iteration, then everything is in for loop with total_nb_iter variable
-        '''
-        ckpt_file_path = self.subroot+'Block2/checkpoint/'+format(self.experiment)  + '/' + suffix_func(hyperparameters_config) + '/' + '/last.ckpt'
-        my_file = Path(ckpt_file_path)
-        if (my_file.is_file()):
-            os.system('rm -rf ' + ckpt_file_path) # Otherwise, pl will use checkpoint from other run
-        '''
 
     def runComputation(self,config,settings_config,fixed_config,hyperparameters_config,root):
         # Initializing results class
