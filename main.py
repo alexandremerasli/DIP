@@ -44,9 +44,9 @@ fixed_config = {
 hyperparameters_config = {
     "rho" : tune.grid_search([0.0003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     ## network hyperparameters
-    "lr" : tune.grid_search([0.5]), # Learning rate in network optimization
+    "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
     #"lr" : tune.grid_search([0.001,0.041,0.01]), # Learning rate in network optimization
-    "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
+    "sub_iter_DIP" : tune.grid_search([7]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
     "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     "scaling" : tune.grid_search(['normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
@@ -103,7 +103,7 @@ elif (config["method"]["grid_search"][0] == 'ADMMLim' or config["method"]["grid_
 
 #task = 'full_reco_with_network' # Run Gong or nested ADMM
 #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
-#task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
+task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
 #task = 'show_results'
 #task = 'show_results_replicates'
 #task = 'show_metrics_results_already_computed'

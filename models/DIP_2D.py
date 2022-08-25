@@ -1,21 +1,40 @@
+from pickletools import optimize
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 
 import os
-if (os.path.isfile(os.getcwd() + "/seed.txt")):
-    with open(os.getcwd() + "/seed.txt", 'r') as file:
+if (os.path.isfile("/home/meraslia/workspace_reco/nested_admm/seed.txt")):
+    with open("/home/meraslia/workspace_reco/nested_admm/seed.txt", 'r') as file:
         random_seed = file.read().rstrip()
     if (eval(random_seed)):
         pl.seed_everything(1)
 
 class DIP_2D(pl.LightningModule):
 
-    def __init__(self, hyperparameters_config, method):
+    def __init__(self, hyperparameters_config=None, method=None):
         super().__init__()
+        self.save_hyperparameters()
+
+        '''
+        # Set the random seed ALSO here !!!
+        if (os.path.isfile("/home/meraslia/workspace_reco/nested_admm/seed.txt")):
+            with open("/home/meraslia/workspace_reco/nested_admm/seed.txt", 'r') as file:
+                random_seed = file.read().rstrip()
+            if (eval(random_seed)):
+                pl.seed_everything(1)
+        '''
+
+        print("bbbbbbbbbbbbbbbbbbbbbbb")
 
         # Defining variables from hyperparameters_config        
         self.lr = hyperparameters_config['lr']
+        try:
+            print(self.hparams["hyperparameters_config"])
+            #print(self.hparams["hyperparameters_config"]["lr"])
+        except:
+            print("nope")
+        print("ooooooooooooooooooooooooo")
         self.opti_DIP = hyperparameters_config['opti_DIP']
         self.sub_iter_DIP = hyperparameters_config['sub_iter_DIP']
         self.skip = hyperparameters_config['skip_connections']
@@ -177,6 +196,13 @@ class DIP_2D(pl.LightningModule):
         loss = self.DIP_loss(out, image_corrupt_torch)
         # logging using tensorboard logger
         self.logger.experiment.add_scalar('loss', loss,self.current_epoch)        
+
+        print("self.current_epoch",self.current_epoch)
+        optimizer = self.optimizers()
+        optimizer = optimizer.optimizer
+        print("ffffffffffffffffff")
+        print(optimizer.state_dict)
+
         return loss
 
     def configure_optimizers(self):
@@ -188,8 +214,11 @@ class DIP_2D(pl.LightningModule):
 
         if (self.opti_DIP == 'Adam'):
             optimizer = torch.optim.Adam(self.parameters(), lr=self.lr, weight_decay=5E-8) # Optimizing using Adam
+            #optimizer = torch.optim.Adam(self.parameters(), lr=self.lr, weight_decay=0,betas=[0,0]) # Optimizing using Adam without momentum
+            optimizer = torch.optim.SGD(self.parameters(), lr=10*self.lr) # Optimizing using SGD
         elif (self.opti_DIP == 'LBFGS' or self.opti_DIP is None): # None means no argument was given in command line
             optimizer = torch.optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4) # Optimizing using L-BFGS
+
         return optimizer
 
     def post_reco(self,out):

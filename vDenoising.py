@@ -8,8 +8,8 @@ import pytorch_lightning as pl
 # Useful
 import numpy as np
 import os
-if (os.path.isfile(os.getcwd() + "/seed.txt")):
-    with open(os.getcwd() + "/seed.txt", 'r') as file:
+if (os.path.isfile("/home/meraslia/workspace_reco/nested_admm/seed.txt")):
+    with open("/home/meraslia/workspace_reco/nested_admm/seed.txt", 'r') as file:
         random_seed = file.read().rstrip()
     if (eval(random_seed)):
         np.random.seed(1)
@@ -18,10 +18,12 @@ if (os.path.isfile(os.getcwd() + "/seed.txt")):
 from vGeneral import vGeneral
 
 from models.DIP_2D import DIP_2D # DIP
+'''
 from models.DIP_3D import DIP_3D # DIP
 from models.VAE_DIP_2D import VAE_DIP_2D # DIP vae
 from models.DD_2D import DD_2D # DD
 from models.DD_AE_2D import DD_AE_2D # DD adding encoder part
+'''
 
 import abc
 class vDenoising(vGeneral):
@@ -77,6 +79,8 @@ class vDenoising(vGeneral):
         trainer = self.create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, admm_it, net, checkpoint_simple_path, experiment, checkpoint_simple_path_exp,name=name_run)
 
         trainer.fit(model, train_dataloader)
+
+        torch.save(model.state_dict(), "state.pkl")
 
         return model
 
@@ -194,7 +198,7 @@ class vDenoising(vGeneral):
     def load_model(self,image_net_input_torch, hyperparameters_config, finetuning, admm_it, model, model_class, method, checkpoint_simple_path_exp, training):
         if (finetuning == 'last'): # last model saved in checkpoint
             if (admm_it > 0): # if model has already been trained
-                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), hyperparameters_config=hyperparameters_config, method=method) # Load previous model in checkpoint        
+                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), hyperparameters_config=hyperparameters_config, method=method) # Load previous model in checkpoint
         # if (admm_it == 0):
             # DD finetuning, k=32, d=6
             #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), hyperparameters_config=hyperparameters_config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
@@ -231,6 +235,7 @@ class vDenoising(vGeneral):
 
         # Training model with sub_iter_DIP iterations
         model = self.train_process(self.suffix, hyperparameters_config, self.finetuning, self.processing_unit, self.sub_iter_DIP, self.method, self.admm_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot) # Not useful to make iterations, we just want to initialize writer. admm_it must be set to -1, otherwise seeking for a checkpoint file...
+
         if (self.net == 'DIP_VAE'):
             out, mu, logvar, z = model(self.image_net_input_torch)
         else:
