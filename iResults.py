@@ -208,9 +208,9 @@ class iResults(vDenoising):
             # Show images and metrics in tensorboard (averaged images if asked in settings_config)           
             self.writeEndImagesAndMetrics(i-1,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
 
-        self.WMV(settings_config)
+        self.WMV_plot(settings_config)
 
-    def WMV(self,settings_config):
+    def WMV_plot(self,settings_config):
 
         if (settings_config["task"] == 'post_reco'):
             # 1. initialise all the parameters used in the hardcoded path.
@@ -230,8 +230,8 @@ class iResults(vDenoising):
             plt.axvline(self.epochStar, c='g')  # plot a vertical line at self.epochStar(detection point)
             plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
             plt.axhline(y=np.min(self.VAR_recon), c="black", linewidth=0.5)
-            plt.savefig(self.mkdir(self.subroot + '/self.VAR_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNum)) + '/' + str(
-                lrs.index(lr)) + '-lr' + str(lr) + '+self.VAR_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNum) + '.png')
+            plt.savefig(self.mkdir(self.subroot + '/self.VAR_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                lrs.index(lr)) + '-lr' + str(lr) + '+self.VAR_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
             if not SHOW:
                 plt.clf()
 
@@ -248,8 +248,8 @@ class iResults(vDenoising):
             plt.axvline(self.epochStar, c='g')
             plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
             plt.axhline(y=np.min(self.MSE_recon), c="black", linewidth=0.5)
-            plt.savefig(self.mkdir(self.subroot + '/self.MSE_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNum)) + '/' + str(
-                lrs.index(lr)) + '-lr' + str(lr) + '+self.MSE_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNum) + '.png')
+            plt.savefig(self.mkdir(self.subroot + '/self.MSE_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                lrs.index(lr)) + '-lr' + str(lr) + '+self.MSE_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
             if not SHOW:
                 plt.clf()
 
@@ -260,8 +260,8 @@ class iResults(vDenoising):
             plt.axvline(self.epochStar, c='g')
             plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
             plt.axhline(y=np.max(self.PSNR_recon), c="black", linewidth=0.5)
-            plt.savefig(self.mkdir(self.subroot + '/self.PSNR_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNum)) + '/' + str(
-                lrs.index(lr)) + '-lr' + str(lr) + '+self.PSNR_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNum) + '.png')
+            plt.savefig(self.mkdir(self.subroot + '/self.PSNR_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                lrs.index(lr)) + '-lr' + str(lr) + '+self.PSNR_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
             if not SHOW:
                 plt.clf()
 
@@ -273,8 +273,8 @@ class iResults(vDenoising):
             plt.axvline(self.epochStar, c='g')
             plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
             plt.axhline(y=np.max(self.SSIM_recon), c="black", linewidth=0.5)
-            plt.savefig(self.mkdir(self.subroot + '/self.SSIM_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNum)) + '/' + str(
-                lrs.index(lr)) + '-lr' + str(lr) + '+self.SSIM_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNum) + '.png')
+            plt.savefig(self.mkdir(self.subroot + '/self.SSIM_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                lrs.index(lr)) + '-lr' + str(lr) + '+self.SSIM_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
             if not SHOW:
                 plt.clf()
             #'''
@@ -308,13 +308,13 @@ class iResults(vDenoising):
             ax1.legend(handles=[p1, p3, p2, p4])
             ax1.axvline(self.epochStar, c='g', linewidth=1, ls='--')
             ax1.axvline(self.windowSize-1, c='g', linewidth=1, ls=':')
-            ax1.axvline(self.epochStar+self.patienceNum, c='g', lw=1, ls=':')
-            if self.epochStar+self.patienceNum > self.epochStar:
-                plt.xticks([self.epochStar, self.windowSize-1, self.epochStar+self.patienceNum], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize), '+' + str(self.patienceNum)], color='green')
+            ax1.axvline(self.epochStar+self.patienceNumber, c='g', lw=1, ls=':')
+            if self.epochStar+self.patienceNumber > self.epochStar:
+                plt.xticks([self.epochStar, self.windowSize-1, self.epochStar+self.patienceNumber], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize), '+' + str(self.patienceNumber)], color='green')
             else:
                 plt.xticks([self.epochStar, self.windowSize-1], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize)], color='green')
-            plt.savefig(self.mkdir(self.subroot + '/combined/w' + str(self.windowSize) + 'p' + str(self.patienceNum)) + '/' + str(
-                lrs.index(lr)) + '-lr' + str(lr) + '+combined-w' + str(self.windowSize) + 'p' + str(self.patienceNum) + '.png')
+            plt.savefig(self.mkdir(self.subroot + '/combined/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                lrs.index(lr)) + '-lr' + str(lr) + '+combined-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
             if not SHOW:
                 plt.clf()
 

@@ -25,11 +25,13 @@ class iPostReconstruction(vDenoising):
         self.name_run = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.total_nb_iter = hyperparameters_config["sub_iter_DIP"]
 
+        '''
         ## Variables for WMV ##
         self.epochStar = -1
-        self.windowSize = 100
-        self.patienceNum = 500
+        self.windowSize = hyperparameters_config["windowSize"]
+        self.patienceNumber = hyperparameters_config["patienceNumber"]
         self.VAR_recon = []
+        '''
 
     def runComputation(self,config,settings_config,fixed_config,hyperparameters_config,root):
         # Initializing results class
@@ -57,6 +59,14 @@ class iPostReconstruction(vDenoising):
         # Train model using previously trained network (at iteration before)
         model = self.train_process(self.suffix,hyperparameters_config, self.finetuning, self.processing_unit, self.total_nb_iter, self.method, self.global_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, all_images_DIP = self.all_images_DIP)
 
+        ## Variables for WMV ##
+        self.epochStar = model.epochStar
+        self.windowSize = model.windowSize
+        self.patienceNumber = model.patienceNumber
+        self.VAR_recon = model.VAR_recon
+        if (self.epochStar != self.total_nb_iter - 1): # ES point is reached
+            self.total_nb_iter = self.epochStar + self.patienceNumber + 1
+
         # Saving variables
         if (self.net == 'DIP_VAE'):
             out, mu, logvar, z = model(self.image_net_input_torch)
@@ -77,8 +87,8 @@ class iPostReconstruction(vDenoising):
         ## Variables for WMV ##
         queueQ = []
         VAR_min = np.inf
+        #model.SUCCESS = False
         stagnate = 0
-        SUCCESS = False
 
         for epoch in epoch_values:
             net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
@@ -94,50 +104,22 @@ class iPostReconstruction(vDenoising):
             out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type='<f') # loading DIP output
             # Saving (now DESCALED) image output
             self.save_img(out_descale, net_outputs_path)
-
-            #####################################  Window Moving Variance  #############################################
-            x_out = out_descale * self.get_phantom_ROI()
-            queueQ.append(x_out.flatten())
-            if (len(queueQ) == self.windowSize):
-                mean = queueQ[0].copy()
-                for x in queueQ[1:self.windowSize]:
-                    mean += x
-                mean = mean / self.windowSize
-                VAR = np.linalg.norm(queueQ[0] - mean) ** 2
-                for x in queueQ[1:self.windowSize]:
-                    VAR += np.linalg.norm(x - mean) ** 2
-                VAR = VAR / self.windowSize
-                if VAR < VAR_min and not SUCCESS:
-                    VAR_min = VAR
-                    self.epochStar = epoch  # detection point
-                    stagnate = 1
-                else:
-                    stagnate += 1
-                if stagnate == self.patienceNum:
-                    SUCCESS = True
-                queueQ.pop(0)
-                self.VAR_recon.append(VAR)
-
+        
             # Compute IR metric (different from others with several replicates)
             classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch,classResults.IR_bkg_recon,self.phantom)
             classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[epoch], epoch+1)
             # Write images over epochs
             classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
 
-            #'''
-            if SUCCESS:
-                # Saving ES point image
-                net_outputs_path = self.subroot + 'Block2/out_cnn/' + format(self.experiment) + '/ES_out_' + self.net + '_epoch=' + format(self.epochStar) + self.suffix + '.img'
-                self.save_img(out_descale, net_outputs_path)
-                print("#### WMV ########################################################")
-                print("                 ES point found, epoch* =", self.epochStar)
-                print("#################################################################")
+            '''
+            model.SUCCESS,VAR_min,stagnate = self.WMV(out_descale,epoch,queueQ,model.SUCCESS,VAR_min,stagnate)
+            if(model.SUCCESS):
                 break
-            #'''
-      
+            '''
+
         classResults.epochStar = self.epochStar
         classResults.VAR_recon = self.VAR_recon
         classResults.windowSize = self.windowSize
-        classResults.patienceNum = self.patienceNum
+        classResults.patienceNumber = self.patienceNumber
   
-        classResults.WMV(settings_config)
+        classResults.WMV_plot(settings_config)

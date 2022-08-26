@@ -2,7 +2,6 @@
 
 # Pytorch
 import torch
-
 import pytorch_lightning as pl
 
 # Useful
@@ -95,6 +94,11 @@ class vDenoising(vGeneral):
             #if (torch.cuda.device_count() > 1):
             #    accelerator = 'dp'
 
+
+        # Early stopping callback
+        from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+        early_stopping_callback = EarlyStopping(monitor="SUCCESS", mode="max",stopping_threshold=0.9,patience=np.inf) # SUCCESS will be 1 when ES if found, which is greater than stopping_threshold = 0.9
+
         print("global_it",global_it)
         if (global_it == -1): # Beginning nested or Gong in block2. For first epoch, change number of epochs to sub_iter_DIP_initial for Gong
             print(str(self.sub_iter_DIP_initial) + " initial iterations for Gong")
@@ -104,18 +108,18 @@ class vDenoising(vGeneral):
             logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
             #checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=0, save_weights_only=True) # Do not save any checkpoint (save_top_k = 0)
             checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0). We do not use it a priori, except in post reconstruction to initialize
-            trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, callbacks=[checkpoint_callback, tuning_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple")
+            trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple")
         else:
             if (finetuning == 'last'): # last model saved in checkpoint
                 # Checkpoints pl variables
                 logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
                 checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0)
-                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all") # Prepare trainer model with callback to save checkpoint        
+                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all") # Prepare trainer model with callback to save checkpoint        
             if (finetuning == 'best'): # best model saved in checkpoint
                 # Checkpoints pl variables
                 logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
                 checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, filename = 'best_loss', monitor='loss_monitor', save_top_k=1) # Save best checkpoint (save_top_k = 1) (according to minimum loss (monitor)) as best_loss.ckpt
-                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback],gpus=gpus, accelerator=accelerator, profiler="simple") # Prepare trainer model with callback to save checkpoint
+                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator, profiler="simple") # Prepare trainer model with callback to save checkpoint
 
         return trainer
 
@@ -271,7 +275,7 @@ class vDenoising(vGeneral):
     def choose_net(self,net, hyperparameters_config, method, all_images_DIP, global_it, PETImage_shape):
         if (net == 'DIP'): # Loading DIP architecture
             if(PETImage_shape[2] == 1): # 2D
-                model = DIP_2D(hyperparameters_config,method,all_images_DIP,global_it)
+                model = DIP_2D(self.config,self.root,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug)
                 model_class = DIP_2D
             else: # 3D
                 model = DIP_3D(hyperparameters_config,method)
