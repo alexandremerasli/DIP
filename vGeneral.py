@@ -536,11 +536,11 @@ class vGeneral(abc.ABC):
             if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
                 rho = 0
             method = 'ADMMLim' + method[6:]
-            opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) # ADMMLim dirty 1 or 2
+            opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) # ADMMLim dirty 1 or 2
             pnlt = ' -pnlt DIP_ADMM'
             penaltyStrength = ' -pnlt-beta ' + str(rho)
         elif ('ADMMLim' in method):
-            opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) # ADMMLim dirty 1 or 2
+            opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) # ADMMLim dirty 1 or 2
             pnlt = ' -pnlt ' + penalty
             if penalty == "MRF":
                 pnlt += ':' + self.subroot_data + method + '_MRF.conf'
@@ -560,10 +560,30 @@ class vGeneral(abc.ABC):
         
         return opti + pnlt + penaltyStrength
 
-def castor_adaptive_to_int(adaptive_parameters):
-    if (adaptive_parameters == "nothing"): # not adaptive
-        return 0
-    if (adaptive_parameters == "alpha"): # only adative alpha
-        return 1
-    if (adaptive_parameters == "tau"): # both adaptive alpha and tau
-        return 2
+    def castor_adaptive_to_int(self,adaptive_parameters):
+        if (adaptive_parameters == "nothing"): # not adaptive
+            return 0
+        if (adaptive_parameters == "alpha"): # only adative alpha
+            return 1
+        if (adaptive_parameters == "tau"): # both adaptive alpha and tau
+            return 2
+
+    def get_phantom_ROI(self,image='image0'):
+        # Select only phantom ROI, not whole reconstructed image
+        path_phantom_ROI = self.subroot_data+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[-1]) + '.raw'
+        my_file = Path(path_phantom_ROI)
+        if (my_file.is_file()):
+            phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(self.PETImage_shape),type='<f')
+        else:
+            phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(self.PETImage_shape),type='<f')
+            
+        return phantom_ROI
+    
+    def mkdir(self,path):
+        # check path exists or no before saving files
+        folder = os.path.exists(path)
+
+        if not folder:
+            os.makedirs(path)
+
+        return path

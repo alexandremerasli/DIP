@@ -1,6 +1,7 @@
 ## Python libraries
 
 # Pytorch
+from distutils.command.config import config
 from torch.utils.tensorboard import SummaryWriter
 
 # Math
@@ -10,6 +11,7 @@ import matplotlib.pyplot as plt
 # Useful
 from pathlib import Path
 from skimage.metrics import peak_signal_noise_ratio
+from skimage.metrics import structural_similarity
 
 # Local files to import
 #from vGeneral import vGeneral
@@ -55,6 +57,7 @@ class iResults(vDenoising):
         self.PSNR_recon = np.zeros(self.total_nb_iter)
         self.PSNR_norm_recon = np.zeros(self.total_nb_iter)
         self.MSE_recon = np.zeros(self.total_nb_iter)
+        self.SSIM_recon = np.zeros(self.total_nb_iter)
         self.MA_cold_recon = np.zeros(self.total_nb_iter)
         self.AR_hot_recon = np.zeros(self.total_nb_iter)
         self.AR_bkg_recon = np.zeros(self.total_nb_iter)
@@ -76,33 +79,20 @@ class iResults(vDenoising):
 
     def writeEndImagesAndMetrics(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):
         # Metrics for NN output
-        self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer,write_tensorboard=True)
+        self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer,write_tensorboard=True)
 
         # Write image over ADMM iterations
         if (self.all_images_DIP == "Last"):
             self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
             self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
-
-            # Select only phantom ROI, not whole reconstructed image
-            path_phantom_ROI = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + str(self.phantom[-1]) + '.raw'
-            my_file = Path(path_phantom_ROI)
-            if (my_file.is_file()):
-                phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(PETImage_shape),type='<f')
-            else:
-                phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[-1] + '.raw', shape=(PETImage_shape),type='<f')
+            phantom_ROI = self.get_phantom_ROI()
             self.write_image_tensorboard(self.writer,f*phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
         else:          
             if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
                 self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
                 self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
 
-                # Select only phantom ROI, not whole reconstructed image
-                path_phantom_ROI = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + str(self.phantom[-1]) + '.raw'
-                my_file = Path(path_phantom_ROI)
-                if (my_file.is_file()):
-                    phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(PETImage_shape),type='<f')
-                else:
-                    phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[-1] + '.raw', shape=(PETImage_shape),type='<f')
+                phantom_ROI = self.get_phantom_ROI()
                 self.write_image_tensorboard(self.writer,f*phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
 
         # Display AR (hot) /MA (cold) vs STD curve in tensorboard
@@ -218,19 +208,125 @@ class iResults(vDenoising):
             # Show images and metrics in tensorboard (averaged images if asked in settings_config)           
             self.writeEndImagesAndMetrics(i-1,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
 
+        self.WMV(settings_config)
+
+    def WMV(self,settings_config):
+
+        if (settings_config["task"] == 'post_reco'):
+            # 1. initialise all the parameters used in the hardcoded path.
+            additionalTitle = 'ADMMadpATi1o100*100rep1'  # additional title of the combined figures
+
+            # lrs = Tuners.lrs4
+            lrs = [0.005]
+            lr = 0.005
+            SHOW = (len(lrs) == 1)
+            SHOW = False
+
+            # 2.2 plot window moving variance
+            plt.figure(1)
+            var_x = np.arange(self.windowSize-1, self.windowSize + len(self.VAR_recon)-1)  # define x axis of WMV
+            plt.plot(var_x, self.VAR_recon, 'r')
+            plt.title('Window Moving Variance,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
+            plt.axvline(self.epochStar, c='g')  # plot a vertical line at self.epochStar(detection point)
+            plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
+            plt.axhline(y=np.min(self.VAR_recon), c="black", linewidth=0.5)
+            plt.savefig(self.mkdir(self.subroot + '/self.VAR_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNum)) + '/' + str(
+                lrs.index(lr)) + '-lr' + str(lr) + '+self.VAR_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNum) + '.png')
+            if not SHOW:
+                plt.clf()
+
+            # Save WMV in tensorboard
+            print("WMV saved in tensorboard")
+            for i in range(len(self.VAR_recon)):
+                var_x = np.arange(self.windowSize-1, self.windowSize + len(self.VAR_recon)-1)  # define x axis of WMV
+                self.writer.add_scalar('WMV in the phantom (should follow MSE trend to find peak)', self.VAR_recon[i], var_x[i])
+
+            # 2.3 plot MSE
+            plt.figure(2)
+            plt.plot(self.MSE_recon, 'y')
+            plt.title('MSE,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
+            plt.axvline(self.epochStar, c='g')
+            plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
+            plt.axhline(y=np.min(self.MSE_recon), c="black", linewidth=0.5)
+            plt.savefig(self.mkdir(self.subroot + '/self.MSE_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNum)) + '/' + str(
+                lrs.index(lr)) + '-lr' + str(lr) + '+self.MSE_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNum) + '.png')
+            if not SHOW:
+                plt.clf()
+
+            # 2.4 plot PSNR
+            plt.figure(3)
+            plt.plot(self.PSNR_recon)
+            plt.title('PSNR,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
+            plt.axvline(self.epochStar, c='g')
+            plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
+            plt.axhline(y=np.max(self.PSNR_recon), c="black", linewidth=0.5)
+            plt.savefig(self.mkdir(self.subroot + '/self.PSNR_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNum)) + '/' + str(
+                lrs.index(lr)) + '-lr' + str(lr) + '+self.PSNR_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNum) + '.png')
+            if not SHOW:
+                plt.clf()
+
+            #'''
+            # 2.5 plot SSIM
+            plt.figure(4)
+            plt.plot(self.SSIM_recon, c='orange')
+            plt.title('SSIM,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
+            plt.axvline(self.epochStar, c='g')
+            plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
+            plt.axhline(y=np.max(self.SSIM_recon), c="black", linewidth=0.5)
+            plt.savefig(self.mkdir(self.subroot + '/self.SSIM_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNum)) + '/' + str(
+                lrs.index(lr)) + '-lr' + str(lr) + '+self.SSIM_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNum) + '.png')
+            if not SHOW:
+                plt.clf()
+            #'''
+            
+            # 2.6 plot all the curves together
+            fig, ax1 = plt.subplots()
+            fig.subplots_adjust(right=0.8, left=0.1, bottom=0.12)
+            ax2 = ax1.twinx()  # creat other y-axis for different scale
+            ax3 = ax1.twinx()  # creat other y-axis for different scale
+            ax4 = ax1.twinx()  # creat other y-axis for different scale
+            ax2.spines.right.set_position(("axes", 1.18))
+            p4, = ax4.plot(self.MSE_recon, "y", label="MSE")
+            p1, = ax1.plot(self.PSNR_recon, label="PSNR")
+            p2, = ax2.plot(var_x, self.VAR_recon, "r", label="WMV")
+            p3, = ax3.plot(self.SSIM_recon, "orange", label="SSIM")
+            ax1.set_xlim(0, self.total_nb_iter-1)
+            plt.title(additionalTitle + ' lr=' + str(lr))
+            ax1.set_ylabel("Peak Signal-Noise ratio")
+            ax2.set_ylabel("Window-Moving variance")
+            ax3.set_ylabel("Structural similarity")
+            ax4.yaxis.set_visible(False)
+            ax1.yaxis.label.set_color(p1.get_color())
+            ax2.yaxis.label.set_color(p2.get_color())
+            ax3.yaxis.label.set_color(p3.get_color())
+            tkw = dict(size=3, width=1)
+            ax1.tick_params(axis='y', colors=p1.get_color(), **tkw)
+            ax1.tick_params(axis='x', colors="green", **tkw)
+            ax2.tick_params(axis='y', colors=p2.get_color(), **tkw)
+            ax3.tick_params(axis='y', colors=p3.get_color(), **tkw)
+            ax1.tick_params(axis='x', **tkw)
+            ax1.legend(handles=[p1, p3, p2, p4])
+            ax1.axvline(self.epochStar, c='g', linewidth=1, ls='--')
+            ax1.axvline(self.windowSize-1, c='g', linewidth=1, ls=':')
+            ax1.axvline(self.epochStar+self.patienceNum, c='g', lw=1, ls=':')
+            if self.epochStar+self.patienceNum > self.epochStar:
+                plt.xticks([self.epochStar, self.windowSize-1, self.epochStar+self.patienceNum], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize), '+' + str(self.patienceNum)], color='green')
+            else:
+                plt.xticks([self.epochStar, self.windowSize-1], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize)], color='green')
+            plt.savefig(self.mkdir(self.subroot + '/combined/w' + str(self.windowSize) + 'p' + str(self.patienceNum)) + '/' + str(
+                lrs.index(lr)) + '-lr' + str(lr) + '+combined-w' + str(self.windowSize) + 'p' + str(self.patienceNum) + '.png')
+            if not SHOW:
+                plt.clf()
+
+        if SHOW:
+            plt.show()
+
 
     def compute_IR_bkg(self, PETImage_shape, image_recon,i,IR_bkg_recon,image):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
         
-        # Select only phantom ROI, not whole reconstructed image
-        path_phantom_ROI = self.subroot_data+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[-1]) + '.raw'
-        my_file = Path(path_phantom_ROI)
-        if (my_file.is_file()):
-            phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(PETImage_shape),type='<f')
-        else:
-            phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
-
-              
+        phantom_ROI = self.get_phantom_ROI()
+ 
         bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
         bkg_ROI_act = image_recon[bkg_ROI==1]
         #IR_bkg_recon[i] += (np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)) / self.nb_replicates
@@ -238,18 +334,11 @@ class iResults(vDenoising):
         print("IR_bkg_recon",IR_bkg_recon)
         print('Image roughness in the background', IR_bkg_recon[i],' , must be as small as possible')
 
-    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,MA_cold_recon,AR_hot_recon,AR_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
+    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,SSIM_recon,MA_cold_recon,AR_hot_recon,AR_bkg_recon,IR_bkg_recon,image,writer=None,write_tensorboard=False):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
         
         image_gt = image_gt.astype(np.float64)
-
-        # Select only phantom ROI, not whole reconstructed image
-        path_phantom_ROI = self.subroot_data+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[-1]) + '.raw'
-        my_file = Path(path_phantom_ROI)
-        if (my_file.is_file()):
-            phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(PETImage_shape),type='<f')
-        else:
-            phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
+        phantom_ROI = self.get_phantom_ROI()
         image_gt_norm = self.norm_imag(image_gt*phantom_ROI)[0]
 
         # Print metrics
@@ -270,6 +359,10 @@ class iResults(vDenoising):
         print('MSE gt', MSE_recon[i],' , must be as small as possible')
         MSE_recon[i] = np.mean((image_gt*phantom_ROI - image_recon*phantom_ROI)**2)
         print('MSE phantom gt', MSE_recon[i],' , must be as small as possible')
+        
+        # SSIM calculation
+        SSIM_recon[i] = structural_similarity(np.squeeze(image_gt * self.get_phantom_ROI()), np.squeeze(image_recon), data_range=image_gt.max() - image_gt.min())
+        print('SSIM calculation', SSIM_recon[i],' , must be close to 1')
 
         # Contrast Recovery Coefficient calculation    
         # Mean activity in cold cylinder calculation (-c -40. -40. 0. 40. 4. 0.)
@@ -308,6 +401,7 @@ class iResults(vDenoising):
             wr.writerow(PSNR_recon)
             wr.writerow(PSNR_norm_recon)
             wr.writerow(MSE_recon)
+            wr.writerow(SSIM_recon)
             wr.writerow(MA_cold_recon)
             wr.writerow(AR_hot_recon)
             wr.writerow(AR_bkg_recon)
@@ -317,6 +411,7 @@ class iResults(vDenoising):
         print(PSNR_recon)
         print(PSNR_norm_recon)
         print(MSE_recon)
+        print(SSIM_recon)
         print(MA_cold_recon)
         print(AR_hot_recon)
         print(AR_bkg_recon)
@@ -333,6 +428,7 @@ class iResults(vDenoising):
             #writer.add_scalars('Image roughness in the background (best : 0)', {'IR':  IR_bkg_recon[i], 'best': 0,}, i)
             '''
             writer.add_scalar('MSE gt (best : 0)', MSE_recon[i], i)
+            writer.add_scalar('SSIM gt (best : 0)', SSIM_recon[i], i)
             writer.add_scalar('Mean activity in cold cylinder (best : 0)', MA_cold_recon[i], i)
             writer.add_scalar('Mean Concentration Recovery coefficient in hot cylinder (best : 1)', AR_hot_recon[i], i)
             writer.add_scalar('Mean Concentration Recovery coefficient in background (best : 1)', AR_bkg_recon[i], i)

@@ -52,6 +52,7 @@ class iResultsAlreadyComputed(vDenoising):
         self.PSNR_recon = np.zeros(self.total_nb_iter)
         self.PSNR_norm_recon = np.zeros(self.total_nb_iter)
         self.MSE_recon = np.zeros(self.total_nb_iter)
+        self.SSIM_recon = np.zeros(self.total_nb_iter)
         self.MA_cold_recon = np.zeros(self.total_nb_iter)
         self.AR_hot_recon = np.zeros(self.total_nb_iter)
         self.AR_bkg_recon = np.zeros(self.total_nb_iter)
