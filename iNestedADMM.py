@@ -92,6 +92,9 @@ class iNestedADMM(vReconstruction):
             print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
             
             self.f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + self.suffix + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+            # Saving Final DIP output with name without epochs
+            self.save_img(self.f,self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "FINAL" + self.suffix + '.img')
+            
             self.f.astype(np.float64)
             
             if (i != i_init or fixed_config["unnested_1st_global_iter"]): # Gong at first epoch -> only pre train the network
@@ -117,7 +120,7 @@ class iNestedADMM(vReconstruction):
             classResults.patienceNumber = self.patienceNumber
             classResults.SUCCESS = self.SUCCESS
     
-            classResults.WMV_plot()
+            classResults.WMV_plot(fixed_config)
 
         # Saving final image output
         self.save_img(self.f, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')

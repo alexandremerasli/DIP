@@ -14,7 +14,7 @@ from iWMV import iWMV
 
 class DIP_2D(pl.LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug):
         super().__init__()
 
         #'''
@@ -37,7 +37,7 @@ class DIP_2D(pl.LightningModule):
         self.global_it = global_it
         self.param1_scale_im_corrupt = param1_scale_im_corrupt
         self.param2_scale_im_corrupt = param2_scale_im_corrupt
-
+        self.subroot = subroot
         '''
         ## Variables for WMV ##
         self.queueQ = []
@@ -269,8 +269,7 @@ class DIP_2D(pl.LightningModule):
             out_np = out.cpu().detach().numpy()[0,0,:,:]
 
         experiment = 24
-        subroot = '/home/meraslia/workspace_reco/nested_admm/data/Algo/image0/replicate_1/' + self.method + '/'
-        self.save_img(out_np, subroot+'Block2/out_cnn/' + format(experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+        self.save_img(out_np, self.subroot+'Block2/out_cnn/' + format(experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,config):
         suffix = "config"

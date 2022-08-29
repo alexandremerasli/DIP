@@ -283,7 +283,7 @@ class vDenoising(vGeneral):
     def choose_net(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, hyperparameters_config, method, all_images_DIP, global_it, PETImage_shape):
         if (net == 'DIP'): # Loading DIP architecture
             if(PETImage_shape[2] == 1): # 2D
-                model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug)
+                model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug)
                 model_class = DIP_2D
             else: # 3D
                 model = DIP_3D(hyperparameters_config,method)

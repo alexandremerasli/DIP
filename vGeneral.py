@@ -4,6 +4,7 @@
 from pathlib import Path
 import os
 from functools import partial
+from string import printable
 from ray import tune
 import numpy as np
 from itertools import product
@@ -33,8 +34,6 @@ class vGeneral(abc.ABC):
             else:
                 fixed_config.pop(key, None)
                 hyperparameters_config.pop(key, None)
-
-
 
         return settings_config, fixed_config, hyperparameters_config
 
@@ -91,8 +90,6 @@ class vGeneral(abc.ABC):
         Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
                 
     def runRayTune(self,config,root,task):
-        self.config = config
-        self.root = root
         # Check parameters incompatibility
         self.parametersIncompatibility(config,task)
         # Remove debug and ray keys from config
@@ -237,6 +234,8 @@ class vGeneral(abc.ABC):
         settings_config, fixed_config, hyperparameters_config = self.split_config(config)
         settings_config["task"] = config["task"]
         # Initialize variables
+        self.config = config
+        self.root = root
         self.initializeGeneralVariables(settings_config,fixed_config,hyperparameters_config,root)
         self.initializeSpecific(settings_config,fixed_config,hyperparameters_config,root)
         # Run task computation

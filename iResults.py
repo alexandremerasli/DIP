@@ -168,7 +168,8 @@ class iResults(vDenoising):
                         else:
                             pet_algo=config["method"]
                             iteration_name="iterations"
-                        f_p = self.fijii_np(self.subroot_p+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+                        #f_p = self.fijii_np(self.subroot_p+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+                        f_p = self.fijii_np(self.subroot_p+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + "FINAL" + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
                         f_p.astype(np.float64)
                     elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML'):
                         pet_algo=config["method"]
@@ -208,9 +209,9 @@ class iResults(vDenoising):
             # Show images and metrics in tensorboard (averaged images if asked in settings_config)           
             self.writeEndImagesAndMetrics(i-1,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
 
-        self.WMV_plot()
+        #self.WMV_plot(fixed_config)
 
-    def WMV_plot(self):
+    def WMV_plot(self,fixed_config):
 
         #if (settings_config["task"] == 'post_reco'):
         # 1. initialise all the parameters used in the hardcoded path.
@@ -221,6 +222,9 @@ class iResults(vDenoising):
         lr = 0.005
         SHOW = (len(lrs) == 1)
         SHOW = False
+
+        #self.windowSize = fixed_config["windowSize"]
+        #self.patienceNumber = fixed_config["patienceNumber"]
 
         # 2.2 plot window moving variance
         plt.figure(1)
@@ -289,7 +293,7 @@ class iResults(vDenoising):
         p4, = ax4.plot(self.MSE_WMV, "y", label="MSE")
         p1, = ax1.plot(self.PSNR_WMV, label="PSNR")
         p2, = ax2.plot(var_x, self.VAR_recon, "r", label="WMV")
-        p3, = ax3.plot(self.SSIM_recon, "orange", label="SSIM")
+        p3, = ax3.plot(self.SSIM_WMV, "orange", label="SSIM")
         ax1.set_xlim(0, self.total_nb_iter-1)
         plt.title(additionalTitle + ' lr=' + str(lr))
         ax1.set_ylabel("Peak Signal-Noise ratio")
