@@ -477,7 +477,7 @@ class vGeneral(abc.ABC):
     def write_image_tensorboard(self,writer,image,name,suffix,image_gt,i=0,full_contrast=False):
         # Creating matplotlib figure with colorbar
         plt.figure()
-        if (len(image.shape) != 2):
+        if (len(np.squeeze(image).shape) != 2):
             print('image is ' + str(len(image.shape)) + 'D, plotting only 2D slice')
             image = image[:,:,0]
         if (full_contrast):

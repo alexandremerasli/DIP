@@ -82,10 +82,7 @@ class iPostReconstruction(vDenoising):
         if (self.all_images_DIP == "True"):
             epoch_values = np.arange(0,self.total_nb_iter)
         elif (self.all_images_DIP == "False"):
-            if (self.total_nb_iter < 10):
-                epoch_values = np.arange(0,self.total_nb_iter)
-            else:
-                epoch_values = np.arange(0,self.total_nb_iter,self.total_nb_iter//10)
+            epoch_values = np.arange(0,self.total_nb_iter,max(self.total_nb_iter//10,1))
         elif (self.all_images_DIP == "Last"):
             epoch_values = np.array([self.total_nb_iter-1])
 

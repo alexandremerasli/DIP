@@ -252,10 +252,7 @@ class vDenoising(vGeneral):
         if (self.all_images_DIP == "True"):
             epoch_values = np.arange(0,self.sub_iter_DIP)
         elif (self.all_images_DIP == "False"):
-            if (self.sub_iter_DIP < 10):
-                epoch_values = np.arange(0,self.sub_iter_DIP)
-            else:
-                epoch_values = np.arange(0,self.sub_iter_DIP,self.sub_iter_DIP//10)
+            epoch_values = np.arange(0,self.sub_iter_DIP,max(self.sub_iter_DIP//10,1))
         elif (self.all_images_DIP == "Last"):
             epoch_values = np.array([self.sub_iter_DIP-1])
 
