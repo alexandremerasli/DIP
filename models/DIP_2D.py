@@ -1,12 +1,20 @@
+import imp
+from sre_constants import SUCCESS
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 
+from numpy import inf
+
 import os
+
+# Local files to import
+from iWMV import iWMV
+
 
 class DIP_2D(pl.LightningModule):
 
-    def __init__(self, hyperparameters_config, method, all_images_DIP, global_it):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug):
         super().__init__()
 
         #'''
@@ -19,22 +27,43 @@ class DIP_2D(pl.LightningModule):
 
         #'''
         
-        # Defining variables from hyperparameters_config        
-        self.lr = hyperparameters_config['lr']
-        self.opti_DIP = hyperparameters_config['opti_DIP']
-        self.sub_iter_DIP = hyperparameters_config['sub_iter_DIP']
-        self.skip = hyperparameters_config['skip_connections']
+        # Defining variables from config        
+        self.lr = config['lr']
+        self.opti_DIP = config['opti_DIP']
+        self.sub_iter_DIP = config['sub_iter_DIP']
+        self.skip = config['skip_connections']
         self.method = method
         self.all_images_DIP = all_images_DIP
         self.global_it = global_it
+        self.param1_scale_im_corrupt = param1_scale_im_corrupt
+        self.param2_scale_im_corrupt = param2_scale_im_corrupt
+
+        '''
+        ## Variables for WMV ##
+        self.queueQ = []
+        self.VAR_min = inf
+        self.SUCCESS = False
+        self.stagnate = 0
+        '''
+        self.classWMV = iWMV(config)
         
+        self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
+        self.classWMV.hyperparameters_list = hyperparameters_list
+        self.classWMV.debug = debug
+        self.classWMV.param1_scale_im_corrupt = param1_scale_im_corrupt
+        self.classWMV.param2_scale_im_corrupt = param2_scale_im_corrupt
+        self.classWMV.scaling_input = scaling_input
+
+        # Initialize variables
+        self.classWMV.do_everything(config,root)
+
         self.write_current_img_mode = True
-        self.suffix = self.suffix_func(hyperparameters_config)
+        self.suffix = self.suffix_func(config)
     
         '''
-        if (hyperparameters_config['mlem_sequence'] is None):
+        if (config['mlem_sequence'] is None):
             self.write_current_img_mode = True
-            self.suffix = self.suffix_func(hyperparameters_config)
+            self.suffix = self.suffix_func(config)
         else:
             self.write_current_img_mode = False
         '''
@@ -191,6 +220,22 @@ class DIP_2D(pl.LightningModule):
         loss = self.DIP_loss(out, image_corrupt_torch)
         # logging using tensorboard logger
         self.logger.experiment.add_scalar('loss', loss,self.current_epoch)        
+
+        # WMV
+        self.log("SUCCESS", int(self.classWMV.SUCCESS))
+        self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out.detach().numpy(),self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
+        self.VAR_recon = self.classWMV.VAR_recon
+        self.MSE_WMV = self.classWMV.MSE_WMV
+        self.PSNR_WMV = self.classWMV.PSNR_WMV
+        self.SSIM_WMV = self.classWMV.SSIM_WMV
+        self.epochStar = self.classWMV.epochStar
+        self.windowSize = self.classWMV.windowSize
+        self.patienceNumber = self.classWMV.patienceNumber
+        self.SUCCESS = self.classWMV.SUCCESS
+
+        if self.SUCCESS:
+            print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
+        
         return loss
 
     def configure_optimizers(self):
@@ -227,9 +272,9 @@ class DIP_2D(pl.LightningModule):
         subroot = '/home/meraslia/workspace_reco/nested_admm/data/Algo/image0/replicate_1/' + self.method + '/'
         self.save_img(out_np, subroot+'Block2/out_cnn/' + format(experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
-    def suffix_func(self,hyperparameters_config):
+    def suffix_func(self,config):
         suffix = "config"
-        for key, value in hyperparameters_config.items():
+        for key, value in config.items():
             suffix +=  "_" + key + "=" + str(value)
         return suffix
 

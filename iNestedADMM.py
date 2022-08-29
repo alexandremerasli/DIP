@@ -73,7 +73,21 @@ class iNestedADMM(vReconstruction):
             classDenoising.fixed_hyperparameters_list = self.fixed_hyperparameters_list
             classDenoising.hyperparameters_list = self.hyperparameters_list
             classDenoising.debug = self.debug
+            classDenoising.config = self.config
+            classDenoising.root = self.root
             classDenoising.do_everything(config,root)
+
+            ## Variables for WMV ##
+            self.epochStar = classDenoising.epochStar
+            self.windowSize = classDenoising.windowSize
+            self.patienceNumber = classDenoising.patienceNumber
+            self.VAR_recon = classDenoising.VAR_recon
+            self.MSE_WMV = classDenoising.MSE_WMV
+            self.PSNR_WMV = classDenoising.PSNR_WMV
+            self.SSIM_WMV = classDenoising.SSIM_WMV
+            self.SUCCESS = classDenoising.SUCCESS
+            #if (self.epochStar != self.total_nb_iter - 1): # ES point is reached
+            #    self.total_nb_iter = self.epochStar + self.patienceNumber + 1
             
             print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
             
@@ -92,6 +106,18 @@ class iNestedADMM(vReconstruction):
                 classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[i], i+1)
                 # Write output image and metrics to tensorboard
                 classResults.writeEndImagesAndMetrics(i,hyperparameters_config["nb_outer_iteration"],self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo=settings_config["method"])
+
+            # WMV
+            classResults.epochStar = self.epochStar
+            classResults.VAR_recon = self.VAR_recon
+            classResults.MSE_WMV = self.MSE_WMV
+            classResults.PSNR_WMV = self.PSNR_WMV
+            classResults.SSIM_WMV = self.SSIM_WMV
+            classResults.windowSize = self.windowSize
+            classResults.patienceNumber = self.patienceNumber
+            classResults.SUCCESS = self.SUCCESS
+    
+            classResults.WMV_plot()
 
         # Saving final image output
         self.save_img(self.f, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')

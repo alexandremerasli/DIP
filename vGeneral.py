@@ -91,6 +91,8 @@ class vGeneral(abc.ABC):
         Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
                 
     def runRayTune(self,config,root,task):
+        self.config = config
+        self.root = root
         # Check parameters incompatibility
         self.parametersIncompatibility(config,task)
         # Remove debug and ray keys from config

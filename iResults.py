@@ -208,115 +208,115 @@ class iResults(vDenoising):
             # Show images and metrics in tensorboard (averaged images if asked in settings_config)           
             self.writeEndImagesAndMetrics(i-1,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
 
-        self.WMV(settings_config)
+        self.WMV_plot()
 
-    def WMV(self,settings_config):
+    def WMV_plot(self):
 
-        if (settings_config["task"] == 'post_reco'):
-            # 1. initialise all the parameters used in the hardcoded path.
-            additionalTitle = 'ADMMadpATi1o100*100rep1'  # additional title of the combined figures
+        #if (settings_config["task"] == 'post_reco'):
+        # 1. initialise all the parameters used in the hardcoded path.
+        additionalTitle = 'ADMMadpATi1o100*100rep1'  # additional title of the combined figures
 
-            # lrs = Tuners.lrs4
-            lrs = [0.005]
-            lr = 0.005
-            SHOW = (len(lrs) == 1)
-            SHOW = False
+        # lrs = Tuners.lrs4
+        lrs = [0.005]
+        lr = 0.005
+        SHOW = (len(lrs) == 1)
+        SHOW = False
 
-            # 2.2 plot window moving variance
-            plt.figure(1)
+        # 2.2 plot window moving variance
+        plt.figure(1)
+        var_x = np.arange(self.windowSize-1, self.windowSize + len(self.VAR_recon)-1)  # define x axis of WMV
+        plt.plot(var_x, self.VAR_recon, 'r')
+        plt.title('Window Moving Variance,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
+        plt.axvline(self.epochStar, c='g')  # plot a vertical line at self.epochStar(detection point)
+        plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
+        plt.axhline(y=np.min(self.VAR_recon), c="black", linewidth=0.5)
+        plt.savefig(self.mkdir(self.subroot + '/self.VAR_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+            lrs.index(lr)) + '-lr' + str(lr) + '+self.VAR_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
+        if not SHOW:
+            plt.clf()
+
+        # Save WMV in tensorboard
+        print("WMV saved in tensorboard")
+        for i in range(len(self.VAR_recon)):
             var_x = np.arange(self.windowSize-1, self.windowSize + len(self.VAR_recon)-1)  # define x axis of WMV
-            plt.plot(var_x, self.VAR_recon, 'r')
-            plt.title('Window Moving Variance,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
-            plt.axvline(self.epochStar, c='g')  # plot a vertical line at self.epochStar(detection point)
-            plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
-            plt.axhline(y=np.min(self.VAR_recon), c="black", linewidth=0.5)
-            plt.savefig(self.mkdir(self.subroot + '/self.VAR_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNum)) + '/' + str(
-                lrs.index(lr)) + '-lr' + str(lr) + '+self.VAR_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNum) + '.png')
-            if not SHOW:
-                plt.clf()
+            self.writer.add_scalar('WMV in the phantom (should follow MSE trend to find peak)', self.VAR_recon[i], var_x[i])
 
-            # Save WMV in tensorboard
-            print("WMV saved in tensorboard")
-            for i in range(len(self.VAR_recon)):
-                var_x = np.arange(self.windowSize-1, self.windowSize + len(self.VAR_recon)-1)  # define x axis of WMV
-                self.writer.add_scalar('WMV in the phantom (should follow MSE trend to find peak)', self.VAR_recon[i], var_x[i])
+        # 2.3 plot MSE
+        plt.figure(2)
+        plt.plot(self.MSE_WMV, 'y')
+        plt.title('MSE,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
+        plt.axvline(self.epochStar, c='g')
+        plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
+        plt.axhline(y=np.min(self.MSE_WMV), c="black", linewidth=0.5)
+        plt.savefig(self.mkdir(self.subroot + '/self.MSE_WMV' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+            lrs.index(lr)) + '-lr' + str(lr) + '+self.MSE_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
+        if not SHOW:
+            plt.clf()
 
-            # 2.3 plot MSE
-            plt.figure(2)
-            plt.plot(self.MSE_recon, 'y')
-            plt.title('MSE,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
-            plt.axvline(self.epochStar, c='g')
-            plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
-            plt.axhline(y=np.min(self.MSE_recon), c="black", linewidth=0.5)
-            plt.savefig(self.mkdir(self.subroot + '/self.MSE_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNum)) + '/' + str(
-                lrs.index(lr)) + '-lr' + str(lr) + '+self.MSE_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNum) + '.png')
-            if not SHOW:
-                plt.clf()
+        # 2.4 plot PSNR
+        plt.figure(3)
+        plt.plot(self.PSNR_WMV)
+        plt.title('PSNR,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
+        plt.axvline(self.epochStar, c='g')
+        plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
+        plt.axhline(y=np.max(self.PSNR_WMV), c="black", linewidth=0.5)
+        plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+            lrs.index(lr)) + '-lr' + str(lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
+        if not SHOW:
+            plt.clf()
 
-            # 2.4 plot PSNR
-            plt.figure(3)
-            plt.plot(self.PSNR_recon)
-            plt.title('PSNR,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
-            plt.axvline(self.epochStar, c='g')
-            plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
-            plt.axhline(y=np.max(self.PSNR_recon), c="black", linewidth=0.5)
-            plt.savefig(self.mkdir(self.subroot + '/self.PSNR_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNum)) + '/' + str(
-                lrs.index(lr)) + '-lr' + str(lr) + '+self.PSNR_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNum) + '.png')
-            if not SHOW:
-                plt.clf()
-
-            #'''
-            # 2.5 plot SSIM
-            plt.figure(4)
-            plt.plot(self.SSIM_recon, c='orange')
-            plt.title('SSIM,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
-            plt.axvline(self.epochStar, c='g')
-            plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
-            plt.axhline(y=np.max(self.SSIM_recon), c="black", linewidth=0.5)
-            plt.savefig(self.mkdir(self.subroot + '/self.SSIM_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNum)) + '/' + str(
-                lrs.index(lr)) + '-lr' + str(lr) + '+self.SSIM_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNum) + '.png')
-            if not SHOW:
-                plt.clf()
-            #'''
-            
-            # 2.6 plot all the curves together
-            fig, ax1 = plt.subplots()
-            fig.subplots_adjust(right=0.8, left=0.1, bottom=0.12)
-            ax2 = ax1.twinx()  # creat other y-axis for different scale
-            ax3 = ax1.twinx()  # creat other y-axis for different scale
-            ax4 = ax1.twinx()  # creat other y-axis for different scale
-            ax2.spines.right.set_position(("axes", 1.18))
-            p4, = ax4.plot(self.MSE_recon, "y", label="MSE")
-            p1, = ax1.plot(self.PSNR_recon, label="PSNR")
-            p2, = ax2.plot(var_x, self.VAR_recon, "r", label="WMV")
-            p3, = ax3.plot(self.SSIM_recon, "orange", label="SSIM")
-            ax1.set_xlim(0, self.total_nb_iter-1)
-            plt.title(additionalTitle + ' lr=' + str(lr))
-            ax1.set_ylabel("Peak Signal-Noise ratio")
-            ax2.set_ylabel("Window-Moving variance")
-            ax3.set_ylabel("Structural similarity")
-            ax4.yaxis.set_visible(False)
-            ax1.yaxis.label.set_color(p1.get_color())
-            ax2.yaxis.label.set_color(p2.get_color())
-            ax3.yaxis.label.set_color(p3.get_color())
-            tkw = dict(size=3, width=1)
-            ax1.tick_params(axis='y', colors=p1.get_color(), **tkw)
-            ax1.tick_params(axis='x', colors="green", **tkw)
-            ax2.tick_params(axis='y', colors=p2.get_color(), **tkw)
-            ax3.tick_params(axis='y', colors=p3.get_color(), **tkw)
-            ax1.tick_params(axis='x', **tkw)
-            ax1.legend(handles=[p1, p3, p2, p4])
-            ax1.axvline(self.epochStar, c='g', linewidth=1, ls='--')
-            ax1.axvline(self.windowSize-1, c='g', linewidth=1, ls=':')
-            ax1.axvline(self.epochStar+self.patienceNum, c='g', lw=1, ls=':')
-            if self.epochStar+self.patienceNum > self.epochStar:
-                plt.xticks([self.epochStar, self.windowSize-1, self.epochStar+self.patienceNum], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize), '+' + str(self.patienceNum)], color='green')
-            else:
-                plt.xticks([self.epochStar, self.windowSize-1], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize)], color='green')
-            plt.savefig(self.mkdir(self.subroot + '/combined/w' + str(self.windowSize) + 'p' + str(self.patienceNum)) + '/' + str(
-                lrs.index(lr)) + '-lr' + str(lr) + '+combined-w' + str(self.windowSize) + 'p' + str(self.patienceNum) + '.png')
-            if not SHOW:
-                plt.clf()
+        #'''
+        # 2.5 plot SSIM
+        plt.figure(4)
+        plt.plot(self.SSIM_WMV, c='orange')
+        plt.title('SSIM,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
+        plt.axvline(self.epochStar, c='g')
+        plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
+        plt.axhline(y=np.max(self.SSIM_WMV), c="black", linewidth=0.5)
+        plt.savefig(self.mkdir(self.subroot + '/self.SSIM_WMV' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+            lrs.index(lr)) + '-lr' + str(lr) + '+self.SSIM_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
+        if not SHOW:
+            plt.clf()
+        #'''
+        
+        # 2.6 plot all the curves together
+        fig, ax1 = plt.subplots()
+        fig.subplots_adjust(right=0.8, left=0.1, bottom=0.12)
+        ax2 = ax1.twinx()  # creat other y-axis for different scale
+        ax3 = ax1.twinx()  # creat other y-axis for different scale
+        ax4 = ax1.twinx()  # creat other y-axis for different scale
+        ax2.spines.right.set_position(("axes", 1.18))
+        p4, = ax4.plot(self.MSE_WMV, "y", label="MSE")
+        p1, = ax1.plot(self.PSNR_WMV, label="PSNR")
+        p2, = ax2.plot(var_x, self.VAR_recon, "r", label="WMV")
+        p3, = ax3.plot(self.SSIM_recon, "orange", label="SSIM")
+        ax1.set_xlim(0, self.total_nb_iter-1)
+        plt.title(additionalTitle + ' lr=' + str(lr))
+        ax1.set_ylabel("Peak Signal-Noise ratio")
+        ax2.set_ylabel("Window-Moving variance")
+        ax3.set_ylabel("Structural similarity")
+        ax4.yaxis.set_visible(False)
+        ax1.yaxis.label.set_color(p1.get_color())
+        ax2.yaxis.label.set_color(p2.get_color())
+        ax3.yaxis.label.set_color(p3.get_color())
+        tkw = dict(size=3, width=1)
+        ax1.tick_params(axis='y', colors=p1.get_color(), **tkw)
+        ax1.tick_params(axis='x', colors="green", **tkw)
+        ax2.tick_params(axis='y', colors=p2.get_color(), **tkw)
+        ax3.tick_params(axis='y', colors=p3.get_color(), **tkw)
+        ax1.tick_params(axis='x', **tkw)
+        ax1.legend(handles=[p1, p3, p2, p4])
+        ax1.axvline(self.epochStar, c='g', linewidth=1, ls='--')
+        ax1.axvline(self.windowSize-1, c='g', linewidth=1, ls=':')
+        ax1.axvline(self.epochStar+self.patienceNumber, c='g', lw=1, ls=':')
+        if self.epochStar+self.patienceNumber > self.epochStar:
+            plt.xticks([self.epochStar, self.windowSize-1, self.epochStar+self.patienceNumber], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize), '+' + str(self.patienceNumber)], color='green')
+        else:
+            plt.xticks([self.epochStar, self.windowSize-1], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize)], color='green')
+        plt.savefig(self.mkdir(self.subroot + '/combined/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+            lrs.index(lr)) + '-lr' + str(lr) + '+combined-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
+        if not SHOW:
+            plt.clf()
 
         if SHOW:
             plt.show()
@@ -339,16 +339,17 @@ class iResults(vDenoising):
         
         image_gt = image_gt.astype(np.float64)
         phantom_ROI = self.get_phantom_ROI()
-        image_gt_norm = self.norm_imag(image_gt*phantom_ROI)[0]
+        image_recon_cropped = image_recon*phantom_ROI
+        image_recon_norm = self.norm_imag(image_recon_cropped)[0] # normalizing DIP output
+        image_gt_cropped = image_gt * phantom_ROI
+        image_gt_norm = self.norm_imag(image_gt_cropped)[0]
 
         # Print metrics
         print('Metrics for iteration',i)
-
-        image_recon_norm = self.norm_imag(image_recon*phantom_ROI)[0] # normalizing DIP output
-        print('Dif for PSNR calculation',np.amax(image_recon*phantom_ROI) - np.amin(image_recon*phantom_ROI),' , must be as small as possible')
+        print('Dif for PSNR calculation',np.amax(image_recon_cropped) - np.amin(image_recon_cropped),' , must be as small as possible')
 
         # PSNR calculation
-        PSNR_recon[i] = peak_signal_noise_ratio(image_gt*phantom_ROI, image_recon*phantom_ROI, data_range=np.amax(image_recon*phantom_ROI) - np.amin(image_recon*phantom_ROI)) # PSNR with true values
+        PSNR_recon[i] = peak_signal_noise_ratio(image_gt_cropped, image_recon_cropped, data_range=np.amax(image_recon_cropped) - np.amin(image_recon_cropped)) # PSNR with true values
         print(image_gt_norm.dtype)
         print(image_recon_norm.dtype)
         PSNR_norm_recon[i] = peak_signal_noise_ratio(image_gt_norm,image_recon_norm) # PSNR with scaled values [0-1]
@@ -357,11 +358,11 @@ class iResults(vDenoising):
         # MSE calculation
         MSE_recon[i] = np.mean((image_gt - image_recon)**2)
         print('MSE gt', MSE_recon[i],' , must be as small as possible')
-        MSE_recon[i] = np.mean((image_gt*phantom_ROI - image_recon*phantom_ROI)**2)
+        MSE_recon[i] = np.mean((image_gt_cropped - image_recon_cropped)**2)
         print('MSE phantom gt', MSE_recon[i],' , must be as small as possible')
         
         # SSIM calculation
-        SSIM_recon[i] = structural_similarity(np.squeeze(image_gt * self.get_phantom_ROI()), np.squeeze(image_recon), data_range=image_gt.max() - image_gt.min())
+        SSIM_recon[i] = structural_similarity(np.squeeze(image_gt_cropped), np.squeeze(image_recon_cropped), data_range=(image_recon_cropped).max() - (image_recon_cropped).min())
         print('SSIM calculation', SSIM_recon[i],' , must be close to 1')
 
         # Contrast Recovery Coefficient calculation    
@@ -383,7 +384,7 @@ class iResults(vDenoising):
         #print('Image roughness in the hot cylinder', IR_hot_recon[i])
 
         # Mean Activity Recovery (ARmean) in background calculation (-c 0. 0. 0. 150. 4. 100)
-        #m0_bkg = (np.sum(coord_to_value_array(bkg_ROI,image_recon*phantom_ROI)) - np.sum([coord_to_value_array(cold_ROI,image_recon*phantom_ROI),coord_to_value_array(hot_ROI,image_recon*phantom_ROI)])) / (len(bkg_ROI) - (len(cold_ROI) + len(hot_ROI)))
+        #m0_bkg = (np.sum(coord_to_value_array(bkg_ROI,image_recon_cropped)) - np.sum([coord_to_value_array(cold_ROI,image_recon_cropped),coord_to_value_array(hot_ROI,image_recon_cropped)])) / (len(bkg_ROI) - (len(cold_ROI) + len(hot_ROI)))
         #AR_bkg_recon[i] = m0_bkg / 100.
         #         
         bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')

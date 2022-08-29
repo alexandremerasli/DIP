@@ -7,7 +7,6 @@
 
 ## Python libraries
 # Useful
-from cProfile import run
 import os
 from ray import tune
 
@@ -31,7 +30,7 @@ settings_config = {
 }
 # Configuration dictionnary for previous hyperparameters, but fixed to simplify
 fixed_config = {
-    "max_iter" : tune.grid_search([3]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
+    "max_iter" : tune.grid_search([1]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
     "finetuning" : tune.grid_search(['False']),
     "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
@@ -40,6 +39,8 @@ fixed_config = {
     "nb_inner_iteration" : tune.grid_search([1]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for Gong). CASToR output is doubled because of 2 inner iterations for 1 inner iteration
     "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMLim
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
+    "windowSize" : tune.grid_search([100]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
+    "patienceNumber" : tune.grid_search([500]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
@@ -96,7 +97,6 @@ from iNestedADMM import iNestedADMM
 from iComparison import iComparison
 from iPostReconstruction import iPostReconstruction
 from iResults import iResults
-from iResultsReplicates import iResultsReplicates
 from iResultsAlreadyComputed import iResultsAlreadyComputed
 
 for method in config["method"]['grid_search']:
@@ -161,7 +161,7 @@ for method in config["method"]['grid_search']:
 
     #task = 'full_reco_with_network' # Run Gong or nested ADMM
     #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
-    task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
+    #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
     #task = 'show_results'
     #task = 'show_results_replicates'
     #task = 'show_metrics_results_already_computed'
@@ -174,8 +174,6 @@ for method in config["method"]['grid_search']:
         classTask = iPostReconstruction(config)
     elif (task == 'show_results'): # Show already computed results over iterations
         classTask = iResults(config)
-    elif (task == 'show_results_replicates'): # Show already computed results averaging over replicates
-        classTask = iResultsReplicates(config)
     elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
         classTask = iResultsAlreadyComputed(config)
 
@@ -190,6 +188,8 @@ for method in config["method"]['grid_search']:
         raise ValueError("Please set all_images_DIP to True to save all images for nested or Gong reconstruction.")
     elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["rho"]["grid_search"][0] == 0):
         raise ValueError("Please set rho > 0 for nested or Gong reconstruction.")
+    elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0]):
+        raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
     elif (config["debug"] and config["ray"]):
         raise ValueError("Debug mode must is used without ray")
 
@@ -259,7 +259,7 @@ for ROI in ['hot','cold']:
                 rows_csv[1] = [float(i) for i in rows_csv[1]]
                 rows_csv[2] = [float(i) for i in rows_csv[2]]
                 rows_csv[3] = [float(i) for i in rows_csv[3]]
-                rows_csv[4] = [float(i) for i in rows_csv[4]]
+                rows_csv[4] = [abs(float(i)) for i in rows_csv[4]] # Take absolute value of MA cold for tradeoff curves
                 rows_csv[5] = [float(i) for i in rows_csv[5]]
                 rows_csv[6] = [float(i) for i in rows_csv[6]]
                 rows_csv[7] = [float(i) for i in rows_csv[7]]
