@@ -40,7 +40,7 @@ MIC runs/
 
 
 data/Algo/suffixes*
-data/Algo/replicate_*
+data/Algo/replicates_*
 data/Algo/debug/
 
 models/__pycache__/

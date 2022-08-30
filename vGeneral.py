@@ -124,7 +124,7 @@ class vGeneral(abc.ABC):
             #except: # do not resume previous run because there is no previous one
             #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(hyperparameters_config) + "_max_iter=" + str(config["max_iter"], resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
 
-            tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
+            tune.run(partial(self.do_everything,root=root,suffix_replicate_file = True), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
         else: # Without raytune
         # Remove grid search if not using ray and choose first element of each config key.
             for key, value in config.items():
@@ -141,7 +141,7 @@ class vGeneral(abc.ABC):
                         elif key == "mlem_sequence":
                             config["mlem_sequence"] = False
             # Launch computation
-            self.do_everything(config,root)
+            self.do_everything(config,root,suffix_replicate_file = True)
 
 
     def parametersIncompatibility(self,config,task):
@@ -229,7 +229,7 @@ class vGeneral(abc.ABC):
             else:
                 raise ValueError("There must be only one method to average over replicates")
 
-    def do_everything(self,config,root):
+    def do_everything(self,config,root,suffix_replicate_file = False):
         # Retrieve fixed parameters and hyperparameters from config dictionnary
         settings_config, fixed_config, hyperparameters_config = self.split_config(config)
         settings_config["task"] = config["task"]
@@ -240,11 +240,15 @@ class vGeneral(abc.ABC):
         self.initializeSpecific(settings_config,fixed_config,hyperparameters_config,root)
         # Run task computation
         self.runComputation(config,settings_config,fixed_config,hyperparameters_config,root)
-        # Store suffix to retrieve all suffixes in main.py for metrics
-        text_file = open(self.subroot_data + 'suffixes_for_last_run_' + settings_config["method"] + '.txt', "a")
-        text_file.write(self.suffix_metrics + "\n")
-        text_file.close()
-
+        if (suffix_replicate_file):
+            # Store suffix to retrieve all suffixes in main.py for metrics
+            text_file = open(self.subroot_data + 'suffixes_for_last_run_' + settings_config["method"] + '.txt', "a")
+            text_file.write(self.suffix_metrics + "\n")
+            text_file.close()
+            # Store replicate to retrieve all replicates in main.py for metrics
+            text_file = open(self.subroot_data + 'replicates_for_last_run_' + settings_config["method"] + '.txt', "a")
+            text_file.write("replicate_" + str(self.replicate) + "\n")
+            text_file.close()
 
 
     """"""""""""""""""""" Useful functions """""""""""""""""""""
