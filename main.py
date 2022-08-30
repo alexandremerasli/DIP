@@ -24,7 +24,7 @@ settings_config = {
     "experiment" : tune.grid_search([24]),
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
     #"f_init" : tune.grid_search(['1_im_value_cropped']),
-    "replicates" : tune.grid_search(list(range(1,2+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
+    "replicates" : tune.grid_search(list(range(1,10+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
     "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
     "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMLim)
 }
@@ -46,7 +46,7 @@ fixed_config = {
 hyperparameters_config = {
     "rho" : tune.grid_search([0,3,3e-1,3e-2,3e-3,3e-4,3e-5,3e-6,3e-7]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     "rho" : tune.grid_search([0,3e-1,3e-2,3e-3,3e-4,3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    "rho" : tune.grid_search([0.0003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     #"rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     ## network hyperparameters
     "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
@@ -60,7 +60,7 @@ hyperparameters_config = {
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMLim - OPTITR hyperparameters
-    "nb_outer_iteration": tune.grid_search([50]), # Number outer iterations in ADMMLim
+    "nb_outer_iteration": tune.grid_search([10000]), # Number outer iterations in ADMMLim
     "alpha" : tune.grid_search([0.005]), # alpha (penalty parameter) in ADMMLim
     "adaptive_parameters" : tune.grid_search(["alpha"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
     "mu_adaptive" : tune.grid_search([10]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
@@ -162,9 +162,9 @@ for method in config["method"]['grid_search']:
     #task = 'full_reco_with_network' # Run Gong or nested ADMM
     #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
     #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
-    #task = 'show_results'
+    task = 'show_results'
     #task = 'show_results_replicates'
-    task = 'show_metrics_results_already_computed'
+    #task = 'show_metrics_results_already_computed'
 
     if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
         classTask = iNestedADMM(hyperparameters_config)
@@ -210,14 +210,13 @@ for ROI in ['hot','cold']:
     plt.figure()
 
     suffixes_legend = []
+    replicates_legend = []
 
     if classTask.debug:
         method_list = [config["method"]]
     else:
         method_list = config["method"]['grid_search']
     for method in method_list:
-
-
         print("method",method)
         suffixes = []
         replicates = []
@@ -232,16 +231,8 @@ for ROI in ['hot','cold']:
         IR_bkg_recon = []
 
         IR_final = []
-        AR_final = []
-        MA_final = []
         metrics_final = []
         
-        if ROI == 'hot':
-            metrics = AR_hot_recon
-        else:
-            metrics = MA_cold_recon 
-
-
         with open(root + '/data/Algo' + '/suffixes_for_last_run_' + method + '.txt') as f:
             suffixes.append(f.readlines())
         with open(root + '/data/Algo' + '/replicates_for_last_run_' + method + '.txt') as f:
@@ -265,7 +256,7 @@ for ROI in ['hot','cold']:
                 rows_csv[1] = [float(i) for i in rows_csv[1]]
                 rows_csv[2] = [float(i) for i in rows_csv[2]]
                 rows_csv[3] = [float(i) for i in rows_csv[3]]
-                rows_csv[4] = [abs(float(i)) for i in rows_csv[4]] # Take absolute value of MA cold for tradeoff curves
+                rows_csv[4] = [float(i) for i in rows_csv[4]]
                 rows_csv[5] = [float(i) for i in rows_csv[5]]
                 rows_csv[6] = [float(i) for i in rows_csv[6]]
                 rows_csv[7] = [float(i) for i in rows_csv[7]]
@@ -290,6 +281,11 @@ for ROI in ['hot','cold']:
                 print(IR_bkg_recon)
                 '''
 
+        if ROI == 'hot':
+            metrics = [abs(cold) for cold in AR_hot_recon] # Take absolute value of AR hot for tradeoff curves
+        else:
+            metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
+
         #for run_id in range(len(PSNR_recon)):
         #    plt.plot(IR_bkg_recon[run_id],metrics[run_id],'-o')
 
@@ -306,21 +302,18 @@ for ROI in ['hot','cold']:
             IR_final.append(np.array(IR_bkg_recon)[:,-1])
             metrics_final.append(np.array(metrics)[:,-1])
 
-        if ROI == 'hot':
-            AR_final.append(metrics[-1])
-        else:
-            MA_final.append(metrics[-1])
-
-        plt.xlabel('Image Roughness in the background (%)', fontsize = 18)
-        plt.ylabel('Absolute bias (AU)', fontsize = 18)
+        fig1, ax1 = plt.subplots()
+        
+        ax1.set_xlabel('Image Roughness in the background (%)', fontsize = 18)
+        ax1.set_ylabel('Absolute bias (AU)', fontsize = 18)
 
         print(IR_final)
         print(metrics_final)
         for case in range(len(IR_final)):
             idx_sort = np.argsort(IR_final[case])
-            plt.plot(100*IR_final[case][idx_sort],metrics_final[case][idx_sort],'-o')
+            ax1.plot(100*IR_final[case][idx_sort],metrics_final[case][idx_sort],'-o') # IR in %
             if (method == "nested" or method == "Gong"):
-                plt.plot(100*IR_final[case][0],metrics_final[case][0],'o', mfc='none',color='black',label='_nolegend_')
+                ax1.plot(100*IR_final[case][0],metrics_final[case][0],'o', mfc='none',color='black',label='_nolegend_') # IR in %
 
         '''
         if (method == "nested" or method == "Gong"):
@@ -347,13 +340,82 @@ for ROI in ['hot','cold']:
         else:
             legend_method = method
         suffixes_legend.append(legend_method)
-        plt.legend(suffixes_legend)
+        ax1.legend(suffixes_legend)
+
+
+
+
+
+
+
+
+
+
+
+
+        if ROI == 'hot':
+            metrics = AR_hot_recon
+        else:
+            metrics = MA_cold_recon # Do not take absolute value of MA cold for bias for different replicates
+
+        PSNR_recon = []
+        PSNR_norm_recon = []
+        MSE_recon = []
+        SSIM_recon = []
+        MA_cold_recon = []
+        AR_hot_recon = []
+        AR_bkg_recon = []
+        IR_bkg_recon = []
+
+        IR_final = []
+        metrics_final = []
+        print('bbbbbbbbbbbbbbbbb')
+        if (method == "nested" or method == "Gong"):
+            for case in range(np.array(IR_bkg_recon).shape[0]):
+                if (method == "Gong"):
+                    IR_final.append(np.array(IR_bkg_recon)[case,:-1])
+                    metrics_final.append(np.array(metrics)[case,:-1])
+                if (method == "nested"):
+                    IR_final.append(np.array(IR_bkg_recon)[case,:config["max_iter"]['grid_search'][0]])
+                    metrics_final.append(np.array(metrics)[case,:config["max_iter"]['grid_search'][0]])
+        elif (method == "BSREM" or method == "MLEM" or method == "ADMMLim" or method == "AML" or method == "APPGML"):
+            IR_final.append(IR_bkg_recon)
+            metrics_final.append(metrics)
+
+        fig2, ax2 = plt.subplots()
+        
+        ax2.set_xlabel('Iterations', fontsize = 18)
+        ax2.set_ylabel('Bias (AU)', fontsize = 18)
+
+        #print(IR_final)
+        metrics_final = metrics_final[0]
+        
+        print(metrics_final)
+        print(len(metrics_final))
+        for replicate in range(len(metrics_final)):
+            #for it in range(len(metrics_final[replicate])):
+            ax2.plot(np.arange(0,len(metrics_final[replicate])),metrics_final[replicate],'-o')
+            if (method == "nested" or method == "Gong"):
+                ax2.plot(np.arange(0,len(metrics_final[replicate])),metrics_final[replicate],'o', mfc='none',color='black',label='_nolegend_')
+
+            replicates_legend.append("replicate_" + str(replicate+1))
+        ax2.legend(replicates_legend)
+
 
     # Saving this figure locally
     if ROI == 'hot':
-        plt.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'AR in ' + ROI + ' region vs IR in background' + '.png')
+        fig1.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'AR in ' + ROI + ' region vs IR in background' + '.png')
     elif ROI == 'cold':
-        plt.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'MA in ' + ROI + ' region vs IR in background' + '.png')
+        fig1.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'MA in ' + ROI + ' region vs IR in background' + '.png')
     from textwrap import wrap
     wrapped_title = "\n".join(wrap(suffix, 50))
-    plt.title(wrapped_title,fontsize=12)
+    ax1.set_title(wrapped_title,fontsize=12)
+
+    # Saving this figure locally
+    if ROI == 'hot':
+        fig2.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'AR in ' + ROI + ' region for different replicates' + '.png')
+    elif ROI == 'cold':
+        fig2.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'MA in ' + ROI + ' region for different replicates' + '.png')
+    from textwrap import wrap
+    wrapped_title = "\n".join(wrap(suffix, 50))
+    ax2.set_title(wrapped_title,fontsize=12)

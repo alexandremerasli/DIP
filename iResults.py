@@ -27,10 +27,12 @@ class iResults(vDenoising):
         vDenoising.initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root)
         
         if ('ADMMLim' in settings_config["method"]):
-            with open(self.path_stopping_criterion) as f:
-                first_line = f.readline()
-                self.total_nb_iter = int(f.readline().rstrip()) - 1
-            #self.total_nb_iter = hyperparameters_config["nb_outer_iteration"]
+            try:
+                with open(self.path_stopping_criterion) as f:
+                    first_line = f.readline()
+                    self.total_nb_iter = int(f.readline().rstrip()) - 1
+            except:
+                self.total_nb_iter = hyperparameters_config["nb_outer_iteration"]
             self.beta = hyperparameters_config["alpha"]
         elif (settings_config["method"] == 'nested' or settings_config["method"] == 'Gong'):
             if (settings_config["task"] == 'post_reco'):
@@ -381,8 +383,7 @@ class iResults(vDenoising):
         # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
         hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
         hot_ROI_act = image_recon[hot_ROI==1]
-        #AR_hot_recon[i] = np.mean(hot_ROI_act) / 400.
-        AR_hot_recon[i] = np.abs(np.mean(hot_ROI_act) - 400.)
+        AR_hot_recon[i] = np.mean(hot_ROI_act) / 400.
         #IR_hot_recon[i] = np.std(hot_ROI_act) / np.mean(hot_ROI_act)
         print('Mean Activity Recovery in hot cylinder', AR_hot_recon[i],' , must be close to 1')
         #print('Image roughness in the hot cylinder', IR_hot_recon[i])
