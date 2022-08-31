@@ -10,6 +10,10 @@
 import os
 from ray import tune
 
+#import sys
+#stdoutOrigin=sys.stdout 
+#sys.stdout = open("test_log.txt", "w")
+
 # Configuration dictionnary for general settings parameters (not hyperparameters)
 settings_config = {
     "image" : tune.grid_search(['image0']), # Image from database
@@ -20,6 +24,7 @@ settings_config = {
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
     "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
+    "tensorboard" : False, # Tensorboard mode = show results in tensorboard
     "all_images_DIP" : tune.grid_search(['True']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
@@ -60,7 +65,7 @@ hyperparameters_config = {
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMLim - OPTITR hyperparameters
-    "nb_outer_iteration": tune.grid_search([10000]), # Number outer iterations in ADMMLim
+    "nb_outer_iteration": tune.grid_search([1000]), # Number outer iterations in ADMMLim
     "alpha" : tune.grid_search([0.005]), # alpha (penalty parameter) in ADMMLim
     "adaptive_parameters" : tune.grid_search(["alpha"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
     "mu_adaptive" : tune.grid_search([10]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
@@ -217,7 +222,6 @@ for ROI in ['hot','cold']:
     else:
         method_list = config["method"]['grid_search']
     for method in method_list:
-        print("method",method)
         suffixes = []
         replicates = []
 
@@ -237,8 +241,6 @@ for ROI in ['hot','cold']:
             suffixes.append(f.readlines())
         with open(root + '/data/Algo' + '/replicates_for_last_run_' + method + '.txt') as f:
             replicates.append(f.readlines())
-
-        print("suffixes = ", suffixes)
 
         # Load metrics from last runs to merge them in one figure
         for idx in range(len(suffixes[0])):
@@ -275,6 +277,7 @@ for ROI in ['hot','cold']:
                 print(PSNR_recon)
                 print(PSNR_norm_recon)
                 print(MSE_recon)
+                print(SSIM_recon)
                 print(MA_cold_recon)
                 print(AR_hot_recon)
                 print(AR_bkg_recon)
@@ -282,14 +285,13 @@ for ROI in ['hot','cold']:
                 '''
 
         if ROI == 'hot':
-            metrics = [abs(cold) for cold in AR_hot_recon] # Take absolute value of AR hot for tradeoff curves
+            metrics = [abs(hot) for hot in AR_hot_recon] # Take absolute value of AR hot for tradeoff curves
         else:
             metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
 
         #for run_id in range(len(PSNR_recon)):
         #    plt.plot(IR_bkg_recon[run_id],metrics[run_id],'-o')
 
-        print('aaaaaaaaaaaaaaaa')
         if (method == "nested" or method == "Gong"):
             for case in range(np.array(IR_bkg_recon).shape[0]):
                 if (method == "Gong"):
@@ -299,16 +301,14 @@ for ROI in ['hot','cold']:
                     IR_final.append(np.array(IR_bkg_recon)[case,:config["max_iter"]['grid_search'][0]])
                     metrics_final.append(np.array(metrics)[case,:config["max_iter"]['grid_search'][0]])
         elif (method == "BSREM" or method == "MLEM" or method == "ADMMLim" or method == "AML" or method == "APPGML"):
-            IR_final.append(np.array(IR_bkg_recon)[:,-1])
-            metrics_final.append(np.array(metrics)[:,-1])
-
+            IR_final.append(np.array([IR_bkg_recon[elem][-1] for elem in range(len(IR_bkg_recon))]))
+            metrics_final.append(np.array([metrics[elem][-1] for elem in range(len(metrics))]))
+            
         fig1, ax1 = plt.subplots()
         
         ax1.set_xlabel('Image Roughness in the background (%)', fontsize = 18)
         ax1.set_ylabel('Absolute bias (AU)', fontsize = 18)
 
-        print(IR_final)
-        print(metrics_final)
         for case in range(len(IR_final)):
             idx_sort = np.argsort(IR_final[case])
             ax1.plot(100*IR_final[case][idx_sort],metrics_final[case][idx_sort],'-o') # IR in %
@@ -369,7 +369,7 @@ for ROI in ['hot','cold']:
 
         IR_final = []
         metrics_final = []
-        print('bbbbbbbbbbbbbbbbb')
+
         if (method == "nested" or method == "Gong"):
             for case in range(np.array(IR_bkg_recon).shape[0]):
                 if (method == "Gong"):
@@ -387,18 +387,28 @@ for ROI in ['hot','cold']:
         ax2.set_xlabel('Iterations', fontsize = 18)
         ax2.set_ylabel('Bias (AU)', fontsize = 18)
 
-        #print(IR_final)
         metrics_final = metrics_final[0]
-        
-        print(metrics_final)
-        print(len(metrics_final))
+
+
+        len_mini_list = []
         for replicate in range(len(metrics_final)):
-            #for it in range(len(metrics_final[replicate])):
+            len_mini_list.append(len(metrics_final[replicate]))
+
+        len_mini = int(min(len_mini_list))
+
+        avg = np.zeros((len_mini,),dtype=np.float64)
+        for replicate in range(len(metrics_final)):
             ax2.plot(np.arange(0,len(metrics_final[replicate])),metrics_final[replicate],'-o')
             if (method == "nested" or method == "Gong"):
                 ax2.plot(np.arange(0,len(metrics_final[replicate])),metrics_final[replicate],'o', mfc='none',color='black',label='_nolegend_')
+            
+            avg += np.array(metrics_final[replicate][:len_mini]) / len(metrics_final)
 
             replicates_legend.append("replicate_" + str(replicate+1))
+ 
+        ax2.plot(np.arange(0,len(metrics_final[replicate])),avg,'*',color='black',markersize=13)
+        replicates_legend.append("average over replicates")
+        
         ax2.legend(replicates_legend)
 
 
@@ -419,3 +429,7 @@ for ROI in ['hot','cold']:
     from textwrap import wrap
     wrapped_title = "\n".join(wrap(suffix, 50))
     ax2.set_title(wrapped_title,fontsize=12)
+
+
+#sys.stdout.close()
+#sys.stdout=stdoutOrigin

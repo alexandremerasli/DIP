@@ -4,16 +4,13 @@
 from pathlib import Path
 import os
 from functools import partial
-from string import printable
 from ray import tune
 import numpy as np
 from itertools import product
 import matplotlib.pyplot as plt
-import sys
 
 import abc
 
-from torch import fix
 class vGeneral(abc.ABC):
     @abc.abstractmethod
     def __init__(self,config):
@@ -97,7 +94,9 @@ class vGeneral(abc.ABC):
         self.ray = config["ray"]
         config.pop("debug",None)
         config.pop("ray",None)
-    
+        # Convert tensorboard to ray
+        config["tensorboard"] = tune.grid_search([config["tensorboard"]])
+
         if (self.ray): # Launch raytune
             config_combination = 1
             for i in range(len(config)): # List of hyperparameters keys is still in config dictionary
@@ -212,6 +211,13 @@ class vGeneral(abc.ABC):
         else:
             if ('results' not in task):
                 raise ValueError("Please do not put several methods at the same time for computation.")
+        
+        '''
+        if (task == "show_results" or task == "show_results_replicates"):
+            if (len(config["replicates"]['grid_search']) > 1):
+            # Compute once results because for loop over replicates
+                config["replicates"]['grid_search'] = [1]
+        '''
         
         if (task == "show_results_replicates"):
             # List of beta values
@@ -340,6 +346,10 @@ class vGeneral(abc.ABC):
         dtype = np.dtype(type)
         fid = open(file_path, 'rb')
         data = np.fromfile(fid,dtype)
+        if data.shape[0] != 112*112:
+            print("whaaaaaaaaaaaat")
+            print(path)
+            print(data.shape)
         image = data.reshape(shape)
         return image
 
