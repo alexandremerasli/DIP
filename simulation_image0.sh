@@ -17,15 +17,15 @@ if [[ $1 = 'biograph' ]]
 then
 mkdir -p simu_biograph
 cd simu_biograph
-export PATH=$PATH:/home/meraslia/sgld/simulation_pack/bin
+export PATH=$PATH:/home/meraslia/workspace_reco/simulation_pack/bin
 else
 mkdir -p simu_mmr
 cd simu_mmr
-export PATH=$PATH:/home/meraslia/sgld/simulator_mmr_2d/bin
+export PATH=$PATH:/home/meraslia/workspace_reco/simulator_mmr_2d/bin
 fi
 
 
-nb_replicates=10
+nb_replicates=100
 for ((replicate_id=1;replicate_id<=nb_replicates;replicate_id++)); do
     echo "replicate_id"$replicate_id
     if [[ $1 = 'biograph' ]]

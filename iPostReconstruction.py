@@ -129,4 +129,4 @@ class iPostReconstruction(vDenoising):
         classResults.patienceNumber = self.patienceNumber
         classResults.SUCCESS = self.SUCCESS
 
-        classResults.WMV_plot()
+        classResults.WMV_plot(fixed_config)

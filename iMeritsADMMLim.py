@@ -1,6 +1,3 @@
-from show_functions import computeThose4, PLOT
-from show_functions import getValueFromLogRow, computeNorm, computeAverage
-
 ## Python libraries
 # Math
 import numpy as np
@@ -24,6 +21,16 @@ class iMeritsADMMLim(vGeneral):
         self.nb_outer_iteration = hyperparameters_config["nb_outer_iteration"]
         self.nb_inner_iteration = fixed_config["nb_inner_iteration"]
         #self.adaptive_parameters == hyperparameters_config["adaptive_parameters"]
+
+        self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[-1] + '.raw', shape=(self.PETImage_shape),type='<f')
+        self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[-1] + '.raw', shape=(self.PETImage_shape),type='<f')
+        self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[-1] + '.raw', shape=(self.PETImage_shape),type='<f')
+        self.phantom_ROI = self.get_phantom_ROI()
+
+        #Loading Ground Truth image to compute metrics
+        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f').astype(np.float64)
+        if settings_config["FLTNB"] == "double":
+            self.image_gt.astype(np.float64)
 
         #inners = list(range(innerIteration))
         self.outers = list(range(1,self.nb_outer_iteration+1))
@@ -50,15 +57,11 @@ class iMeritsADMMLim(vGeneral):
             tuners = self.alpha
 
         elif self.tuners_tag == 'adaptiveRho':
-            # self.nb_outer_iteration = 1000
-            # self.nb_inner_iteration = 50
             alpha0s = self.alpha
             duplicate = ''
             if self.REPLICATES:
                 duplicate += '_rep' + str(self.replicate)
-            inner_iters = range(self.nb_inner_iteration)
             outer_iters = self.outers
-            # dataFolderPath = 'ADMM-old-adaptive+i50+o70+alpha0=...*16+3+2'
             tuners = alpha0s
             fp = open(self.subroot + self.suffix + '/adaptiveProcess' + str(duplicate) + '.log', mode='w+')
             fp = open(self.subroot + self.suffix + '/adaptiveProcess' + str(duplicate) + '.log', mode='w+')
@@ -67,34 +70,23 @@ class iMeritsADMMLim(vGeneral):
 
         if self.tuners_tag == 'alphas':
             likelihoods = []
-            for outer_iter in range(self.nb_outer_iteration):
-                if self.REPLICATES:
-                    replicatesPath = '/replicate_' + str(self.replicate) + '/' + self.whichADMMoptimizer \
-                                    # + '/Comparison/' + self.whichADMMoptimizer
-                else:
-                    replicatesPath = ''
-                if self.nb_inner_iteration == 1:
-                    logfile_name = '0.log'
-                path_log = self.subroot + self.suffix + '/' + logfile_name
-                theLog = pd.read_table(path_log)
-                #with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-                #    print(theLog)
-                #import re
-                #likelihoodRows = [re.findall('Log-likelihood:',line) for line in theLog]
-                
 
-                fileRows = np.column_stack([theLog[col].str.contains("Log-likelihood", na=False) for col in theLog])
-                
-                likelihoodRows = np.array(theLog.loc[fileRows == 1])
-                for rows in likelihoodRows:
-                    theLikelihoodRowString = rows[0][22:44]
+            if self.nb_inner_iteration == 1:
+                logfile_name = '0.log'
+            path_log = self.subroot + self.suffix + '/' + logfile_name
+            theLog = pd.read_table(path_log)
+
+            fileRows = np.column_stack([theLog[col].str.contains("Log-likelihood", na=False) for col in theLog])
+            likelihoodRows = np.array(theLog.loc[fileRows == 1])
+            for rows in likelihoodRows:
+                theLikelihoodRowString = rows[0][22:44]
                 if theLikelihoodRowString[0] == '-':
                     theLikelihoodRowString = '0'
                 likelihood = float(theLikelihoodRowString)
                 likelihoods_alpha.append(likelihood)
                 likelihoods.append(likelihood)
 
-            PLOT(outer_iters, likelihoods, tuners, nbTuners, figNum=6,
+            self.PLOT(outer_iters, likelihoods, tuners, nbTuners, figNum=6,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='Likelihood(same scale)',
@@ -103,7 +95,7 @@ class iMeritsADMMLim(vGeneral):
                 imagePath=self.fomSavingPath)
             plt.ylim([2.904e6, 2.919e6])
 
-            PLOT(outer_iters, likelihoods, tuners, nbTuners, figNum=1,
+            self.PLOT(outer_iters, likelihoods, tuners, nbTuners, figNum=1,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='Likelihood',
@@ -133,26 +125,25 @@ class iMeritsADMMLim(vGeneral):
 
                 logfile_name = '0_adaptive_it' + str(outer_iter) + '.log'
                 path_txt = self.subroot + self.suffix + '/' + logfile_name
-                coeff_alpha = getValueFromLogRow(path_txt, 0)/getValueFromLogRow(path_txt, 4)
-
+                coeff_alpha = self.getValueFromLogRow(path_txt, 0)/self.getValueFromLogRow(path_txt, 4)
 
 
                 imagePath = self.subroot + self.suffix + '/' + imageName
-                IR, MSE, CRC, MA = computeThose4(imagePath)
+                IR, MSE, CRC, MA = self.computeThose4(imagePath)
                 IR_bkgs.append(IR)
                 MSEs.append(MSE)
                 CRC_hots.append(CRC)
                 MA_colds.append(MA)
 
-                Xnorms.append(computeNorm(imagePath))
-                #Vnorms.append(computeNorm(self.subroot + self.suffix + '/'+vName))
-                #u_norm = computeNorm(self.subroot + self.suffix + '/'+uName)
+                Xnorms.append(self.computeNorm(imagePath))
+                #Vnorms.append(self.computeNorm(self.subroot + self.suffix + '/'+vName))
+                #u_norm = self.computeNorm(self.subroot + self.suffix + '/'+uName)
                 #Unorms.append(u_norm)
                 #U_unscaled_norms.append(u_norm * coeff_alpha)
                 coeff_alphas.append(coeff_alpha)
                 #averageUs.append(computeAverage(self.subroot + self.suffix + '/'+uName))
 
-            PLOT(outer_iters, IR_bkgs, tuners, nbTuners, figNum=2,
+            self.PLOT(outer_iters, IR_bkgs, tuners, nbTuners, figNum=2,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='Image Roughness in the background',
@@ -160,7 +151,7 @@ class iMeritsADMMLim(vGeneral):
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            PLOT(outer_iters, MSEs, tuners, nbTuners, figNum=3,
+            self.PLOT(outer_iters, MSEs, tuners, nbTuners, figNum=3,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='Mean Square Error',
@@ -168,7 +159,7 @@ class iMeritsADMMLim(vGeneral):
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            PLOT(outer_iters, CRC_hots, tuners, nbTuners, figNum=4,
+            self.PLOT(outer_iters, CRC_hots, tuners, nbTuners, figNum=4,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='CRC hot',
@@ -176,7 +167,7 @@ class iMeritsADMMLim(vGeneral):
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            PLOT(outer_iters, MA_colds, tuners, nbTuners, figNum=5,
+            self.PLOT(outer_iters, MA_colds, tuners, nbTuners, figNum=5,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='MA cold',
@@ -184,7 +175,7 @@ class iMeritsADMMLim(vGeneral):
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            PLOT(outer_iters, Xnorms, tuners, nbTuners, figNum=7,
+            self.PLOT(outer_iters, Xnorms, tuners, nbTuners, figNum=7,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='norm of x',
@@ -193,7 +184,7 @@ class iMeritsADMMLim(vGeneral):
                 imagePath=self.fomSavingPath)
 
             '''
-            PLOT(outer_iters, Vnorms, tuners, nbTuners, figNum=8,
+            self.PLOT(outer_iters, Vnorms, tuners, nbTuners, figNum=8,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='norm of v',
@@ -201,7 +192,7 @@ class iMeritsADMMLim(vGeneral):
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            PLOT(outer_iters, Unorms, tuners, nbTuners, figNum=9,
+            self.PLOT(outer_iters, Unorms, tuners, nbTuners, figNum=9,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='norm of u',
@@ -209,7 +200,7 @@ class iMeritsADMMLim(vGeneral):
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            PLOT(outer_iters, U_unscaled_norms, tuners, nbTuners, figNum=10,
+            self.PLOT(outer_iters, U_unscaled_norms, tuners, nbTuners, figNum=10,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='norm of UNSCALED u',
@@ -217,7 +208,7 @@ class iMeritsADMMLim(vGeneral):
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
             
-            PLOT(outer_iters, averageUs, tuners, nbTuners, figNum=12,
+            self.PLOT(outer_iters, averageUs, tuners, nbTuners, figNum=12,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='average of u',
@@ -225,7 +216,7 @@ class iMeritsADMMLim(vGeneral):
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
             '''
-            PLOT(outer_iters, coeff_alphas, tuners, nbTuners, figNum=11,
+            self.PLOT(outer_iters, coeff_alphas, tuners, nbTuners, figNum=11,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='coeff_alphas',
@@ -255,46 +246,46 @@ class iMeritsADMMLim(vGeneral):
                 path_txt = self.subroot + self.suffix + '/' + logfile_name
 
                 # get adaptive alpha
-                adaptiveAlphas.append(getValueFromLogRow(path_txt, 0))
+                adaptiveAlphas.append(self.getValueFromLogRow(path_txt, 0))
 
                 # get adaptive tau
-                adaptiveTaus.append(getValueFromLogRow(path_txt, 2))
+                adaptiveTaus.append(self.getValueFromLogRow(path_txt, 2))
 
                 # get relative primal residual
-                relPrimals.append(getValueFromLogRow(path_txt, 6))
+                relPrimals.append(self.getValueFromLogRow(path_txt, 6))
 
                 # get relative dual residual
-                relDuals.append(getValueFromLogRow(path_txt, 8))
+                relDuals.append(self.getValueFromLogRow(path_txt, 8))
 
                 # get xi
-                xis.append(getValueFromLogRow(path_txt, 6) / (getValueFromLogRow(path_txt, 8) * 2))
+                xis.append(self.getValueFromLogRow(path_txt, 6) / (self.getValueFromLogRow(path_txt, 8) * 2))
 
                 if self._3NORMS:
                     # get norm of Ax(n+1) - v(n+1)
-                    normAxvs.append(getValueFromLogRow(path_txt, 10))
+                    normAxvs.append(self.getValueFromLogRow(path_txt, 10))
 
                     # get norm of Ax(n+1) - v(n) + u(n)
-                    normAxvus.append(getValueFromLogRow(path_txt, 12))
+                    normAxvus.append(self.getValueFromLogRow(path_txt, 12))
 
                     # get norm of Ax(n+1) - v(n+1) + u(n)
-                    normAxv1us.append(getValueFromLogRow(path_txt, 14))
+                    normAxv1us.append(self.getValueFromLogRow(path_txt, 14))
 
                 if self._2R:
                     # get norm of primal residual
-                    primals.append(getValueFromLogRow(path_txt, 16))
+                    primals.append(self.getValueFromLogRow(path_txt, 16))
 
                     # get norm of dual residual
-                    duals.append(getValueFromLogRow(path_txt, 18))
+                    duals.append(self.getValueFromLogRow(path_txt, 18))
 
-            PLOT(outer_iters, adaptiveAlphas, tuners, nbTuners, figNum=1,
+            self.PLOT(outer_iters, adaptiveAlphas, tuners, nbTuners, figNum=1,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
-                Title='Adaptive self.alpha',
+                Title='Adaptive alpha',
                 replicate=self.replicate,
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            PLOT(outer_iters, adaptiveTaus, tuners, nbTuners, figNum=2,
+            self.PLOT(outer_iters, adaptiveTaus, tuners, nbTuners, figNum=2,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='Adaptive taus',
@@ -302,7 +293,7 @@ class iMeritsADMMLim(vGeneral):
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            PLOT(outer_iters, relPrimals, tuners, nbTuners, figNum=3,
+            self.PLOT(outer_iters, relPrimals, tuners, nbTuners, figNum=3,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='Relative primal residuals',
@@ -310,7 +301,7 @@ class iMeritsADMMLim(vGeneral):
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            PLOT(outer_iters, relDuals, tuners, nbTuners, figNum=4,
+            self.PLOT(outer_iters, relDuals, tuners, nbTuners, figNum=4,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='Relative dual residuals',
@@ -318,7 +309,7 @@ class iMeritsADMMLim(vGeneral):
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            PLOT(outer_iters, xis, tuners, nbTuners, figNum=5,
+            self.PLOT(outer_iters, xis, tuners, nbTuners, figNum=5,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='Xis',
@@ -331,7 +322,7 @@ class iMeritsADMMLim(vGeneral):
                     normAxvs = np.sqrt(normAxvs)
                     normAxvus = np.sqrt(normAxvus)
                     normAxv1us = np.sqrt(normAxv1us)
-                PLOT(outer_iters, normAxvs, tuners, nbTuners, figNum=6,
+                self.PLOT(outer_iters, normAxvs, tuners, nbTuners, figNum=6,
                     Xlabel='Outer iteration',
                     Ylabel='The legend shows different alpha',
                     Title='norm of Ax(n+1) - v(n+1)',
@@ -339,7 +330,7 @@ class iMeritsADMMLim(vGeneral):
                     whichOptimizer=self.whichADMMoptimizer,
                     imagePath=self.fomSavingPath)
 
-                PLOT(outer_iters, normAxvus, tuners, nbTuners, figNum=7,
+                self.PLOT(outer_iters, normAxvus, tuners, nbTuners, figNum=7,
                     Xlabel='Outer iteration',
                     Ylabel='The legend shows different alpha',
                     Title='norm of Ax(n+1) - v(n) + u(n)',
@@ -347,7 +338,7 @@ class iMeritsADMMLim(vGeneral):
                     whichOptimizer=self.whichADMMoptimizer,
                     imagePath=self.fomSavingPath)
 
-                PLOT(outer_iters, normAxv1us, tuners, nbTuners, figNum=8,
+                self.PLOT(outer_iters, normAxv1us, tuners, nbTuners, figNum=8,
                     Xlabel='Outer iteration',
                     Ylabel='The legend shows different alpha',
                     Title='norm of Ax(n+1) - v(n+1) + u(n)',
@@ -359,7 +350,7 @@ class iMeritsADMMLim(vGeneral):
                 if self._squreNorm:
                     primals = np.sqrt(primals)
                     duals = np.sqrt(duals)
-                PLOT(outer_iters, primals, tuners, nbTuners, figNum=9,
+                self.PLOT(outer_iters, primals, tuners, nbTuners, figNum=9,
                     Xlabel='Outer iteration',
                     Ylabel='The legend shows different alpha',
                     Title='primal residual',
@@ -367,7 +358,7 @@ class iMeritsADMMLim(vGeneral):
                     whichOptimizer=self.whichADMMoptimizer,
                     imagePath=self.fomSavingPath)
 
-                PLOT(outer_iters, duals, tuners, nbTuners, figNum=10,
+                self.PLOT(outer_iters, duals, tuners, nbTuners, figNum=10,
                     Xlabel='Outer iteration',
                     Ylabel='The legend shows different alpha',
                     Title='dual residual',
@@ -406,3 +397,145 @@ class iMeritsADMMLim(vGeneral):
         if self.SHOW:
             plt.show()
         '''
+
+
+    def mkdir(self,path):
+        import os
+        # check path exists or no before saving files
+        folder = os.path.exists(path)
+
+        if not folder:
+            os.makedirs(path)
+
+        return path
+
+
+
+
+
+
+    def PLOT(self,
+            X,
+            Y,
+            tuners,
+            nbTuner,
+            figNum=1,
+            Xlabel='X',
+            Ylabel='Y',
+            Title='',
+            beginning=0,
+            bestValue=-1,
+            showLess=[],
+            replicate=0,
+            imagePath='',
+            whichOptimizer='',
+            Together=True):
+
+        plt.figure(figNum)
+        end = len(X)
+        
+        if nbTuner < 10:
+            plt.plot(X[beginning:end], Y[beginning:end], label=str(tuners))
+        elif 10 <= nbTuner < 20:
+            plt.plot(X[beginning:end], Y[beginning:end], '.-', label=str(tuners))
+        else:
+            plt.plot(X[beginning:end], Y[beginning:end], 'x-', label=str(tuners))
+        plt.legend(loc='best')
+        plt.xlabel(Xlabel)
+        plt.ylabel(Ylabel)
+        plt.title('(' + whichOptimizer + ')(replicate ' + str(replicate) + ') ' + Title)
+        if 'same scale' in Title:
+            plt.ylim([2.904e6, 2.919e6])
+        if Together:
+            if replicate > 0 and tuners == tuners:
+                self.mkdir(imagePath)
+                plt.savefig(imagePath + '/(' + whichOptimizer + ')' + Title + '_rep' + str(replicate) + '.png')
+        elif not Together:
+            self.mkdir(imagePath)
+            plt.savefig(imagePath + '/(' + whichOptimizer + ')' + Title + '_rep' + str(replicate) + ' - ' + str(tuners) + '.png')
+
+
+    def getValueFromLogRow(self,pathLog, row):
+        log = pd.read_table(pathLog)
+        theRow = log.loc[[row]]
+        theRowArray = np.array(theRow)
+        theRowString = theRowArray[0, 0]
+        theValue = float(theRowString)
+
+        return theValue
+
+
+    def computeNorm(self, f_path, type='<d'):
+        dtype = np.dtype(type)
+        fid = open(f_path, 'rb')
+        data = np.fromfile(fid, dtype)
+        data_norm = np.linalg.norm(data)
+
+        return data_norm
+
+    #'''
+    def computeThose4(self,f,image='image0'):
+        # have the image f as input, return IR_bkg_recon, MSE_recon, CRC_hot_recon, MA_cold_recon
+        f = self.fijii_np(f, shape=self.PETImage_shape, type='<d')
+        bkg_ROI_act = f[self.bkg_ROI == 1]
+        # IR
+        if np.mean(bkg_ROI_act) != 0:
+            IR_bkg_recon = np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)
+        else:
+            IR_bkg_recon = 1e10
+
+        # MSE
+        MSE_recon = np.mean((self.image_gt * self.bkg_ROI - f * self.bkg_ROI) ** 2)
+
+        # Mean Concentration Recovery coefficient (CRCmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
+        hot_ROI_act = f[self.hot_ROI == 1]
+
+        # CRC hot
+        # CRC_hot_recon.append(np.mean(hot_ROI_act) / 400.)
+        CRC_hot_recon = np.mean(hot_ROI_act) - 400.
+        
+        cold_ROI_act = f[self.cold_ROI == 1]
+
+        # MA cold
+        MA_cold_recon = np.mean(cold_ROI_act)
+
+        return IR_bkg_recon, MSE_recon, CRC_hot_recon, MA_cold_recon
+    #'''    
+
+    '''
+    def computeThose4(self):
+        from csv import reader as reader_csv
+        import numpy as np
+
+        PSNR_recon = []
+        PSNR_norm_recon = []
+        MSE_recon = []
+        SSIM_recon = []
+        MA_cold_recon = []
+        AR_hot_recon = []
+        AR_bkg_recon = []
+        IR_bkg_recon = []
+
+        # Load metrics from csv file
+        metrics_file = self.subroot_metrics + self.method + '/' + self.suffix + '/' + 'metrics.csv'
+        with open(metrics_file, 'r') as myfile:
+            spamreader = reader_csv(myfile,delimiter=';')
+            rows_csv = list(spamreader)
+            rows_csv[0] = [float(i) for i in rows_csv[0]]
+            rows_csv[1] = [float(i) for i in rows_csv[1]]
+            rows_csv[2] = [float(i) for i in rows_csv[2]]
+            rows_csv[3] = [float(i) for i in rows_csv[3]]
+            rows_csv[4] = [float(i) for i in rows_csv[4]]
+            rows_csv[5] = [float(i) for i in rows_csv[5]]
+            rows_csv[6] = [float(i) for i in rows_csv[6]]
+            rows_csv[7] = [float(i) for i in rows_csv[7]]
+
+            PSNR_recon.append(np.array(rows_csv[0]))
+            PSNR_norm_recon.append(np.array(rows_csv[1]))
+            MSE_recon.append(np.array(rows_csv[2]))
+            SSIM_recon.append(np.array(rows_csv[3]))
+            MA_cold_recon.append(np.array(rows_csv[4]))
+            AR_hot_recon.append(np.array(rows_csv[5]))
+            AR_bkg_recon.append(np.array(rows_csv[6]))
+            IR_bkg_recon.append(np.array(rows_csv[7]))
+    '''

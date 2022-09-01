@@ -1,5 +1,3 @@
-import imp
-from sre_constants import SUCCESS
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl

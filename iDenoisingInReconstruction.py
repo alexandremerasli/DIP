@@ -18,7 +18,7 @@ from vDenoising import vDenoising
 class iDenoisingInReconstruction(vDenoising):
     def __init__(self,config,global_it):
         self.global_it = global_it
-    
+
     def initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root):
         print("Denoising in reconstruction")
         vDenoising.initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root)
