@@ -24,7 +24,7 @@ class iResults(vDenoising):
         # Initialize general variables
         self.initializeGeneralVariables(settings_config,fixed_config,hyperparameters_config,root)
         vDenoising.initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root)
-        print("ssssssssssssssss")
+
         if ('ADMMLim' in settings_config["method"]):
             try:
                 with open(self.path_stopping_criterion) as f:
@@ -43,7 +43,7 @@ class iResults(vDenoising):
 
             if (settings_config["method"] == 'AML'):
                 self.beta = hyperparameters_config["A_AML"]
-            if (settings_config["method"] == 'BSREM' or settings_config["method"] == 'nested' or settings_config["method"] == 'Gong'):
+            if (settings_config["method"] == 'BSREM' or settings_config["method"] == 'nested' or settings_config["method"] == 'Gong' or settings_config["method"] == 'APGMAP'):
                 self.rho = hyperparameters_config["rho"]
                 self.beta = self.rho
         # Create summary writer from tensorboard
@@ -104,45 +104,6 @@ class iResults(vDenoising):
 
                     self.write_image_tensorboard(self.writer,f*self.phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
 
-            # Display AR (hot) /MA (cold) vs STD curve in tensorboard
-            if (i == self.total_nb_iter):
-                # Creating matplotlib figure
-                plt.plot(self.IR_bkg_recon,self.AR_hot_recon,linestyle='None',marker='x')
-                plt.xlabel('IR')
-                plt.ylabel('AR')
-                # Saving this figure locally
-                Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
-                #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
-                plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + 'AR in hot region vs IR in background' + '_' + str(i) + '.png')
-                from textwrap import wrap
-                wrapped_title = "\n".join(wrap(suffix, 50))
-                plt.title(wrapped_title,fontsize=12)
-
-                # Adding this figure to tensorboard
-                self.writer.flush()
-                self.writer.add_figure('AR in hot region vs IR in background', plt.gcf(),global_step=i,close=True)
-                self.writer.close()
-
-
-                # Creating matplotlib figure
-                plt.plot(self.IR_bkg_recon,self.MA_cold_recon,linestyle='None',marker='x')
-                plt.xlabel('IR')
-                plt.ylabel('MA')
-                # Saving this figure locally
-                Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
-                #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
-                plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + 'MA in cold region vs IR in background' + '_' + str(i) + '.png')
-                from textwrap import wrap
-                wrapped_title = "\n".join(wrap(suffix, 50))
-                plt.title(wrapped_title,fontsize=12)
-
-                # Adding this figure to tensorboard
-                self.writer.flush()
-                self.writer.add_figure('MA in cold region vs IR in background', plt.gcf(),global_step=i,close=True)
-                self.writer.close()
-
-
-
     def runComputation(self,config,settings_config,fixed_config,hyperparameters_config,root):
         if (hasattr(self,'beta')):
             beta_string = ', beta = ' + str(self.beta)
@@ -182,7 +143,7 @@ class iResults(vDenoising):
                         #f_p = self.fijii_np(self.subroot_p+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
                         f_p = self.fijii_np(self.subroot_p+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + "FINAL" + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
                         f_p.astype(np.float64)
-                    elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML'):
+                    elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or config["method"] == 'APGMAP'):
                         pet_algo=config["method"]
                         iteration_name = "iterations"
                         if (hasattr(self,'beta')):
@@ -340,6 +301,29 @@ class iResults(vDenoising):
         if SHOW:
             plt.show()
 
+
+        # 2.4 plot PSNR
+        plt.figure(3)
+        plt.plot(self.PSNR_WMV)
+        plt.title('PSNR,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
+        plt.axvline(self.epochStar, c='g')
+        plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
+        plt.axhline(y=np.max(self.PSNR_WMV), c="black", linewidth=0.5)
+        plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+            lrs.index(lr)) + '-lr' + str(lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
+        if not SHOW:
+            plt.clf()
+
+        import pandas as pd
+        
+        # some sample data
+        ts = pd.Series(self.PSNR_WMV).cumsum()
+
+        #plot the time series
+        ts.plot(style='k--')
+
+        # calculate a 60 day rolling mean and plot
+        ts.rolling(window=60).mean().plot(style='k')
 
     def compute_IR_bkg(self, PETImage_shape, image_recon,i,IR_bkg_recon,image):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder

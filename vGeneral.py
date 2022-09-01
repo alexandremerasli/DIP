@@ -171,9 +171,9 @@ class vGeneral(abc.ABC):
 
         # Delete hyperparameters specific to others optimizer 
         if (len(config["method"]['grid_search']) == 1):
-            if (config["method"]['grid_search'][0] != "AML"):
+            if (config["method"]['grid_search'][0] != "AML" and config["method"]['grid_search'][0] != "APGMAP"):
                 config.pop("A_AML", None)
-            if (config["method"]['grid_search'][0] == 'BSREM' or config["method"]['grid_search'][0] == 'nested' or config["method"]['grid_search'][0] == 'Gong'):
+            if (config["method"]['grid_search'][0] == 'BSREM' or config["method"]['grid_search'][0] == 'nested' or config["method"]['grid_search'][0] == 'Gong' or config["method"]['grid_search'][0] == 'APGMAP'):
                 config.pop("post_smoothing", None)
             if ('ADMMLim' not in config["method"]['grid_search'][0] and config["method"]['grid_search'][0] != "nested"):
                 #config.pop("nb_inner_iteration", None)
@@ -543,8 +543,12 @@ class vGeneral(abc.ABC):
             opti = ' -opti ' + method + ',1,1e-10,' + str(self.A_AML)
             pnlt = ''
             penaltyStrength = ''
+        elif (method == 'APGMAP'):
+            opti = ' -opti ' + method + ',1,1e-10,0.01,-1,' + str(self.A_AML)
+            pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
+            penaltyStrength = ' -pnlt-beta ' + str(self.beta)
         elif (method == 'BSREM'):
-            opti = ' -opti ' + method + ':' + self.subroot_data + 'BSREM.conf'
+            opti = ' -opti ' + method + ':' + self.subroot_data + method + '.conf'
             pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
             penaltyStrength = ' -pnlt-beta ' + str(self.beta)
         elif ('nested' in method):

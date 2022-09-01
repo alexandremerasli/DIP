@@ -12,15 +12,16 @@ class iComparison(vReconstruction):
 
     def runComputation(self,config,settings_config,fixed_config,hyperparameters_config,root):
 
+        if (self.method == 'AML' or self.method == 'APGMAP'):
+            self.A_AML = hyperparameters_config["A_AML"]
         if (self.method == 'AML'):
             self.beta = hyperparameters_config["A_AML"]
-            self.A_AML = hyperparameters_config["A_AML"]
         elif ('ADMMLim' in self.method):
             self.beta = hyperparameters_config["alpha"]
-        elif (self.method == 'BSREM'):
+        elif (self.method == 'BSREM' or self.method == 'APGMAP'):
             self.beta = self.rho
 
-        if (self.method != 'BSREM' and self.method != 'nested' and self.method != 'Gong'):
+        if (self.method != 'BSREM' and self.method != 'nested' and self.method != 'Gong' and self.method != 'APGMAP'):
             self.post_smoothing = hyperparameters_config["post_smoothing"]
         else:
             self.post_smoothing = 0
@@ -67,7 +68,8 @@ class iComparison(vReconstruction):
             classResults.nb_replicates = self.nb_replicates
             classResults.debug = self.debug
             classResults.rho = self.rho
-            classResults.path_stopping_criterion = self.path_stopping_criterion
+            if ('ADMMLim' in self.method):
+                classResults.path_stopping_criterion = self.path_stopping_criterion
             classResults.initializeSpecific(settings_config,fixed_config,hyperparameters_config,root)
             classResults.runComputation(config,settings_config,fixed_config,hyperparameters_config,root)
 
