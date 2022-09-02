@@ -238,7 +238,7 @@ class vDenoising(vGeneral):
         self.PSNR_WMV = model.PSNR_WMV
         self.SSIM_WMV = model.SSIM_WMV
         self.SUCCESS = model.SUCCESS
-        if (self.SUCCESS): # ES point is reached
+        if (self.SUCCESS and self.epochStar!= self.sub_iter_DIP - self.patienceNumber): # ES point is reached
             self.sub_iter_DIP = self.epochStar + self.patienceNumber + 1
 
         '''

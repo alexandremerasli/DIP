@@ -34,7 +34,7 @@ class iResults(vDenoising):
                 self.total_nb_iter = hyperparameters_config["nb_outer_iteration"]
             self.beta = hyperparameters_config["alpha"]
         elif (settings_config["method"] == 'nested' or settings_config["method"] == 'Gong'):
-            if (settings_config["task"] == 'post_reco'):
+            if (settings_config["task"] == 'show_results_post_reco'):
                 self.total_nb_iter = hyperparameters_config["sub_iter_DIP"]
             else:
                 self.total_nb_iter = fixed_config["max_iter"]
@@ -134,14 +134,19 @@ class iResults(vDenoising):
                     else:
                         NNEPPS_string = ""
                     if (config["method"] == 'Gong' or config["method"] == 'nested'):
-                        if (settings_config["task"] == "post_reco"):
+                        if (settings_config["task"] == "show_results_post_reco"):
                             pet_algo=config["method"]+"to fit"
                             iteration_name="(post reconstruction)"
                         else:
                             pet_algo=config["method"]
                             iteration_name="iterations"
-                        #f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
-                        f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + self.suffix + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+                        if (settings_config["task"] == "show_results_post_reco"):
+                            try:
+                                f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(0) + '_epoch=' + format(i-1) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+                            except: # ES point is reached
+                                break
+                        else:
+                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + "FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
                         f_p.astype(np.float64)
                     elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or config["method"] == 'APGMAP'):
                         pet_algo=config["method"]
@@ -174,9 +179,9 @@ class iResults(vDenoising):
                     elif (settings_config["average_replicates"] == False and p == self.replicate):
                         f = f_p
                 
-            
-            del f_p
-            
+                    del f_p
+                    
+                
             self.IR_bkg_recon[i-1] = IR
             if (self.tensorboard):
                 #print("IR saved in tensorboard")

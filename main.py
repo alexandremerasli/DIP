@@ -45,19 +45,19 @@ fixed_config = {
     "nb_inner_iteration" : tune.grid_search([1]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for Gong). CASToR output is doubled because of 2 inner iterations for 1 inner iteration
     "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMLim
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "windowSize" : tune.grid_search([1]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "patienceNumber" : tune.grid_search([5]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
+    "windowSize" : tune.grid_search([10]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
+    "patienceNumber" : tune.grid_search([50]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
     "rho" : tune.grid_search([0,3,3e-1,3e-2,3e-3,3e-4,3e-5,3e-6,3e-7]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     "rho" : tune.grid_search([0,3e-1,3e-2,3e-3,3e-4,3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    "rho" : tune.grid_search([0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "rho" : tune.grid_search([0.0003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     #"rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     ## network hyperparameters
     "lr" : tune.grid_search([0.001,0.005,0.01,0.05,0.1]), # Learning rate in network optimization
-    "lr" : tune.grid_search([0.001]), # Learning rate in network optimization
-    "sub_iter_DIP" : tune.grid_search([10]), # Number of epochs in network optimization
+    "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
+    "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
     "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     #"skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
@@ -170,6 +170,7 @@ for method in config["method"]['grid_search']:
     #task = 'full_reco_with_network' # Run Gong or nested ADMM
     #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
     #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
+    #task = 'show_results_post_reco'
     #task = 'show_results'
     #task = 'show_metrics_ADMMLim'
     #task = 'show_metrics_results_already_computed'
@@ -181,6 +182,9 @@ for method in config["method"]['grid_search']:
     elif (task == 'post_reco'): # Run network denoising after a given reconstructed image im_corrupt
         classTask = iPostReconstruction(config)
     elif (task == 'show_results'): # Show already computed results over iterations
+        classTask = iResults(config)
+    elif (task == 'show_results_post_reco'): # Show already computed results over iterations of post reconstruction mode
+        config["task"] = "show_results_post_reco"
         classTask = iResults(config)
     elif (task == 'show_metrics_ADMMLim'): # Show ADMMLim FOMs over iterations
         classTask = iMeritsADMMLim(config)
@@ -365,15 +369,6 @@ for ROI in ['hot','cold']:
         else:
             metrics = MA_cold_recon # Do not take absolute value of MA cold for bias for different replicates
 
-        PSNR_recon = []
-        PSNR_norm_recon = []
-        MSE_recon = []
-        SSIM_recon = []
-        MA_cold_recon = []
-        AR_hot_recon = []
-        AR_bkg_recon = []
-        IR_bkg_recon = []
-
         IR_final = []
         metrics_final = []
 
@@ -394,7 +389,8 @@ for ROI in ['hot','cold']:
         ax2.set_xlabel('Iterations', fontsize = 18)
         ax2.set_ylabel('Bias (AU)', fontsize = 18)
 
-        metrics_final = metrics_final[0]
+        if (method != "nested" and method != "Gong"):
+            metrics_final = metrics_final[0]
 
 
         len_mini_list = []

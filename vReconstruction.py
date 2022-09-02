@@ -51,7 +51,8 @@ class vReconstruction(vGeneral):
                     self.tau = hyperparameters_config["tau"]
                     self.xi = fixed_config["xi"]
         self.image_init_path_without_extension = settings_config["image_init_path_without_extension"]
-        
+        self.tensorboard = settings_config["tensorboard"]
+
         # Initialize and save mu variable from ADMM
         if (self.method == "nested" or self.method == "Gong"):
             self.mu = 0* np.ones((self.PETImage_shape[0], self.PETImage_shape[1], self.PETImage_shape[2]))
@@ -157,12 +158,14 @@ class vReconstruction(vGeneral):
 
         if (i == 0):   # choose initial image for CASToR reconstruction
             initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-        elif (i >= 1):
-            #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(hyperparameters_config["nb_outer_iteration"]) + '_it' + str(fixed_config["nb_inner_iteration"]) + '.hdr'
-            initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_it' + str(hyperparameters_config["nb_outer_iteration"]) + '.hdr'
             # Trying to initialize ADMMLim
             #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
             #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
+        elif (i >= 1):
+            #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(hyperparameters_config["nb_outer_iteration"]) + '_it' + str(fixed_config["nb_inner_iteration"]) + '.hdr'
+            #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_it' + str(hyperparameters_config["nb_outer_iteration"]) + '.hdr'
+            initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
+
     
         base_name_i = format(i)
         full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
@@ -230,7 +233,7 @@ class vReconstruction(vGeneral):
             print("relDual",relativeDualResidual)
         #'''
         
-        if (self.method == "nested"):
+        if (self.method == "nested" and self.tensorboard):
             for k in range(1,finalOuterIter,max(finalOuterIter//10,1)):
                 x = self.fijii_np(full_output_path_i + '_it' + str(k) + '.img', shape=(self.PETImage_shape))
                 self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations",self.suffix,500, 0+k+i*hyperparameters_config["nb_outer_iteration"]) # Showing all corrupted images with same contrast to compare them together
