@@ -20,7 +20,7 @@ class iPostReconstruction(vDenoising):
         self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'initialization/MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f') # MLEM for Gong
         self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning_it100.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
-        self.net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_epoch=' + format(0) + self.suffix + '.img'
+        self.net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_epoch=' + format(0) + '.img'
         self.checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         self.name_run = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.total_nb_iter = hyperparameters_config["sub_iter_DIP"]
@@ -93,14 +93,14 @@ class iPostReconstruction(vDenoising):
         stagnate = 0
 
         for epoch in epoch_values:
-            net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
+            net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
             out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type='<f')
             out_torch = torch.from_numpy(out)
             # Descale like at the beginning
             out_descale = self.descale_imag(out_torch,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
             #'''
             # Saving image output
-            net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_epoch=' + format(epoch) + self.suffix + '.img'
+            net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
             self.save_img(out_descale, net_outputs_path)
             # Squeeze image by loading it
             out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type='<f') # loading DIP output

@@ -69,7 +69,7 @@ class vDenoising(vGeneral):
         model, model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, hyperparameters_config, method, all_images_DIP, global_it, PETImage_shape)
         
         #checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
-        checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(experiment)  + '/' + suffix + '/'
+        checkpoint_simple_path_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment)  + '/' + suffix + '/'
 
         model = self.load_model(image_net_input_torch, hyperparameters_config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training=True)
 
@@ -257,14 +257,14 @@ class vDenoising(vGeneral):
             epoch_values = np.array([self.sub_iter_DIP-1])
 
         for epoch in epoch_values:
-            net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
+            net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
             out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type='<f')
             out = torch.from_numpy(out)
             # Descale like at the beginning
             out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
             #'''
             # Saving image output
-            net_outputs_path = self.subroot+'Block2/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + self.suffix + '.img'
+            net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
             self.save_img(out_descale, net_outputs_path)
             # Squeeze image by loading it
             out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type='<f') # loading DIP output
@@ -302,14 +302,14 @@ class vDenoising(vGeneral):
     def generate_nn_output(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, hyperparameters_config, method, image_net_input_torch, PETImage_shape, finetuning, global_it, experiment, suffix, subroot, all_images_DIP):
         # Loading using previous model
         model, model_class = self.choose_net(net, hyperparameters_config, method, all_images_DIP, global_it, PETImage_shape)
-        checkpoint_simple_path_exp = subroot+'Block2/checkpoint/'+format(experiment) + '/' + suffix + '/'
+        checkpoint_simple_path_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment) + '/' + suffix + '/'
         model = self.load_model(image_net_input_torch, hyperparameters_config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training=False)
 
         # Compute output image
         out, mu, logvar, z = model(image_net_input_torch)
 
         # Loading X_label from block1 to destandardize NN output
-        image_corrupt = self.fijii_np(subroot+'Block2/x_label/' + format(experiment)+'/'+ format(global_it - 1) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
+        image_corrupt = self.fijii_np(subroot+'Block2/' + self.suffix + '/x_label/' + format(experiment)+'/'+ format(global_it - 1) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
         image_corrupt_scale,param1_scale_im_corrupt,param2_scale_im_corrupt = self.rescale_imag(image_corrupt)
 
         # Reverse scaling like at the beginning and add it to list of samples

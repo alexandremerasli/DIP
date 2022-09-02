@@ -74,7 +74,7 @@ class iWMV(vGeneral):
         #'''
         if SUCCESS:
             # Saving ES point image
-            net_outputs_path = self.subroot + 'Block2/out_cnn/' + format(self.experiment) + '/ES_out_' + self.net + '_epoch=' + format(self.epochStar) + self.suffix + '.img'
+            net_outputs_path = self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/ES_out_' + self.net + '_epoch=' + format(self.epochStar) + '.img'
             self.save_img(out, net_outputs_path)
             print("#### WMV ########################################################")
             print("                 ES point found, epoch* =", self.epochStar)

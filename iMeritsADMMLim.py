@@ -398,22 +398,6 @@ class iMeritsADMMLim(vGeneral):
             plt.show()
         '''
 
-
-    def mkdir(self,path):
-        import os
-        # check path exists or no before saving files
-        folder = os.path.exists(path)
-
-        if not folder:
-            os.makedirs(path)
-
-        return path
-
-
-
-
-
-
     def PLOT(self,
             X,
             Y,

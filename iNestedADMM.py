@@ -55,7 +55,7 @@ class iNestedADMM(vReconstruction):
                     x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
                 elif (settings_config["method"] == "Gong"): # Fit MLEM 60it for first global iteration
                     x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
-                self.save_img(x_label,self.subroot+'Block2/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
+                self.save_img(x_label,self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
                 #classDenoising.sub_iter_DIP = classDenoising.self.sub_iter_DIP_initial
 
 
@@ -91,16 +91,16 @@ class iNestedADMM(vReconstruction):
             
             print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
             
-            self.f = self.fijii_np(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + self.suffix + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+            self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
             # Saving Final DIP output with name without epochs
-            self.save_img(self.f,self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "FINAL" + self.suffix + '.img')
+            self.save_img(self.f,self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "FINAL" + '.img')
             
             self.f.astype(np.float64)
             
             if (i != i_init or fixed_config["unnested_1st_global_iter"]): # Gong at first epoch -> only pre train the network
                 # Block 3 - mu update
                 self.mu = self.x_label - self.f
-                self.save_img(self.mu,self.subroot+'Block2/mu/'+ format(self.experiment)+'/mu_' + format(i) + self.suffix + '.img') # saving mu
+                self.save_img(self.mu,self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(i) + self.suffix + '.img') # saving mu
                 # Write corrupted image over ADMM iterations
                 classResults.writeCorruptedImage(i,hyperparameters_config["nb_outer_iteration"],self.mu,self.suffix,pet_algo="mmmmmuuuuuuu")
                 print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))

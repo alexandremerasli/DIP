@@ -55,7 +55,7 @@ class vReconstruction(vGeneral):
         # Initialize and save mu variable from ADMM
         if (self.method == "nested" or self.method == "Gong"):
             self.mu = 0* np.ones((self.PETImage_shape[0], self.PETImage_shape[1], self.PETImage_shape[2]))
-            self.save_img(self.mu,self.subroot+'Block2/mu/'+ format(self.experiment)+'/mu_' + format(-1) + self.suffix + '.img')
+            self.save_img(self.mu,self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(-1) + self.suffix + '.img')
 
         # Launch short MLEM reconstruction
         path_mlem_init = self.subroot_data + 'Data/MLEM_reco_for_init/' + self.phantom
@@ -137,7 +137,7 @@ class vReconstruction(vGeneral):
         # Save x_label for load into block 2 - CNN as corrupted image (x_label)
         x_label = x + mu
         # Save x_label in .img and .hdr format
-        name=(subroot+'Block2/x_label/'+format(experiment) + '/' + format(i) +'_x_label' + suffix + '.img')
+        name=(subroot+'Block2/' + self.suffix + '/x_label/'+format(experiment) + '/' + format(i) +'_x_label' + suffix + '.img')
         self.save_img(x_label, name)
 
         return x_label

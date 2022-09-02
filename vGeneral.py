@@ -58,6 +58,10 @@ class vGeneral(abc.ABC):
         self.subroot_data = root + '/data/Algo/' # Directory root
         self.suffix = self.suffix_func(hyperparameters_config) # self.suffix to make difference between raytune runs (different hyperparameters)
         self.suffix_metrics = self.suffix_func(hyperparameters_config,NNEPPS=True) # self.suffix with NNEPPS information
+        if (settings_config["task"] == "post_reco"):
+            self.suffix = settings_config["task"] + ' ' + self.suffix
+            self.suffix_metrics = settings_config["task"] + ' ' + self.suffix_metrics
+
 
         # Define PET input dimensions according to input data dimensions
         self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
@@ -77,12 +81,23 @@ class vGeneral(abc.ABC):
 
             Path(self.subroot+'Images/out_final/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the framework (Last output of the DIP)
 
+            '''
             Path(self.subroot+'Block2/checkpoint/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
             Path(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
             Path(self.subroot+'Block2/out_cnn/vae').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
             Path(self.subroot+'Block2/out_cnn/cnn_metrics/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # DIP block metrics
             Path(self.subroot+'Block2/x_label/'+format(self.experiment) + '/').mkdir(parents=True, exist_ok=True) # x corrupted - folder
             Path(self.subroot+'Block2/mu/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
+            '''
+
+            # For post reco mode
+            Path(self.subroot+'Block2/' + self.suffix + '/checkpoint/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
+            Path(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
+            Path(self.subroot+'Block2/' + self.suffix + '/out_cnn/vae').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
+            Path(self.subroot+'Block2/' + self.suffix + '/out_cnn/cnn_metrics/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # DIP block metrics
+            Path(self.subroot+'Block2/' + self.suffix + '/x_label/'+format(self.experiment) + '/').mkdir(parents=True, exist_ok=True) # x corrupted - folder
+            Path(self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
+
 
         Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
                 

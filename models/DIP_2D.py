@@ -8,6 +8,7 @@ import os
 
 # Local files to import
 from iWMV import iWMV
+from vGeneral import vGeneral
 
 
 class DIP_2D(pl.LightningModule):
@@ -36,6 +37,7 @@ class DIP_2D(pl.LightningModule):
         self.param1_scale_im_corrupt = param1_scale_im_corrupt
         self.param2_scale_im_corrupt = param2_scale_im_corrupt
         self.subroot = subroot
+        self.config = config
         '''
         ## Variables for WMV ##
         self.queueQ = []
@@ -56,7 +58,9 @@ class DIP_2D(pl.LightningModule):
         self.classWMV.do_everything(config,root)
 
         self.write_current_img_mode = True
-        self.suffix = self.suffix_func(config)
+        self.suffix = self.suffix_func(config,hyperparameters_list)
+        if (config["task"] == "post_reco"):
+            self.suffix = config["task"] + ' ' + self.suffix
     
         '''
         if (config['mlem_sequence'] is None):
@@ -267,12 +271,17 @@ class DIP_2D(pl.LightningModule):
             out_np = out.cpu().detach().numpy()[0,0,:,:]
 
         experiment = 24
-        self.save_img(out_np, self.subroot+'Block2/out_cnn/' + format(experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+        self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
-    def suffix_func(self,config):
+    def suffix_func(self,hyperparameters_config,hyperparameters_list,NNEPPS=False):
+        hyperparameters_config_copy = dict(hyperparameters_config)
+        if (NNEPPS==False):
+            hyperparameters_config_copy.pop('NNEPPS',None)
+        hyperparameters_config_copy.pop('nb_outer_iteration',None)
         suffix = "config"
-        for key, value in config.items():
-            suffix +=  "_" + key + "=" + str(value)
+        for key, value in hyperparameters_config_copy.items():
+            if key in hyperparameters_list:
+                suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
         return suffix
 
     def save_img(self,img,name):
