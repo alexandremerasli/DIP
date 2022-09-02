@@ -187,33 +187,20 @@ class iResults(vDenoising):
 
         #self.WMV_plot(fixed_config)
 
-    def WMV_plot(self,fixed_config):
+    def WMV_plot(self,fixed_config, hyperparameters_config):
 
-        #if (settings_config["task"] == 'post_reco'):
-        # 1. initialise all the parameters used in the hardcoded path.
-        additionalTitle = 'ADMMadpATi1o100*100rep1'  # additional title of the combined figures
-
-        # lrs = Tuners.lrs4
-        lrs = [0.005]
-        lr = 0.005
-        SHOW = (len(lrs) == 1)
-        SHOW = False
-
-        #self.windowSize = fixed_config["windowSize"]
-        #self.patienceNumber = fixed_config["patienceNumber"]
+        self.lr = hyperparameters_config['lr']
 
         # 2.2 plot window moving variance
         plt.figure(1)
         var_x = np.arange(self.windowSize-1, self.windowSize + len(self.VAR_recon)-1)  # define x axis of WMV
         plt.plot(var_x, self.VAR_recon, 'r')
-        plt.title('Window Moving Variance,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
+        plt.title('Window Moving Variance,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
         plt.axvline(self.epochStar, c='g')  # plot a vertical line at self.epochStar(detection point)
         plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
         plt.axhline(y=np.min(self.VAR_recon), c="black", linewidth=0.5)
         plt.savefig(self.mkdir(self.subroot + '/self.VAR_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
-            lrs.index(lr)) + '-lr' + str(lr) + '+self.VAR_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
-        if not SHOW:
-            plt.clf()
+            self.lr) + '-lr' + str(self.lr) + '+self.VAR_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
 
         # Save WMV in tensorboard
         #print("WMV saved in tensorboard")
@@ -224,39 +211,33 @@ class iResults(vDenoising):
         # 2.3 plot MSE
         plt.figure(2)
         plt.plot(self.MSE_WMV, 'y')
-        plt.title('MSE,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
+        plt.title('MSE,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
         plt.axvline(self.epochStar, c='g')
         plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
         plt.axhline(y=np.min(self.MSE_WMV), c="black", linewidth=0.5)
         plt.savefig(self.mkdir(self.subroot + '/self.MSE_WMV' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
-            lrs.index(lr)) + '-lr' + str(lr) + '+self.MSE_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
-        if not SHOW:
-            plt.clf()
+            self.lr) + '-lr' + str(self.lr) + '+self.MSE_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
 
         # 2.4 plot PSNR
         plt.figure(3)
         plt.plot(self.PSNR_WMV)
-        plt.title('PSNR,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
+        plt.title('PSNR,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
         plt.axvline(self.epochStar, c='g')
         plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
         plt.axhline(y=np.max(self.PSNR_WMV), c="black", linewidth=0.5)
         plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
-            lrs.index(lr)) + '-lr' + str(lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
-        if not SHOW:
-            plt.clf()
+            self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
 
         #'''
         # 2.5 plot SSIM
         plt.figure(4)
         plt.plot(self.SSIM_WMV, c='orange')
-        plt.title('SSIM,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
+        plt.title('SSIM,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
         plt.axvline(self.epochStar, c='g')
         plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
         plt.axhline(y=np.max(self.SSIM_WMV), c="black", linewidth=0.5)
         plt.savefig(self.mkdir(self.subroot + '/self.SSIM_WMV' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
-            lrs.index(lr)) + '-lr' + str(lr) + '+self.SSIM_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
-        if not SHOW:
-            plt.clf()
+            self.lr) + '-lr' + str(self.lr) + '+self.SSIM_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
         #'''
         
         # 2.6 plot all the curves together
@@ -271,7 +252,7 @@ class iResults(vDenoising):
         p2, = ax2.plot(var_x, self.VAR_recon, "r", label="WMV")
         p3, = ax3.plot(self.SSIM_WMV, "orange", label="SSIM")
         ax1.set_xlim(0, self.total_nb_iter-1)
-        plt.title(additionalTitle + ' lr=' + str(lr))
+        plt.title('skip : ' + str(hyperparameters_config["skip_connections"]) + ' lr=' + str(self.lr))
         ax1.set_ylabel("Peak Signal-Noise ratio")
         ax2.set_ylabel("Window-Moving variance")
         ax3.set_ylabel("Structural similarity")
@@ -294,36 +275,34 @@ class iResults(vDenoising):
         else:
             plt.xticks([self.epochStar, self.windowSize-1], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize)], color='green')
         plt.savefig(self.mkdir(self.subroot + '/combined/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
-            lrs.index(lr)) + '-lr' + str(lr) + '+combined-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
-        if not SHOW:
-            plt.clf()
-
-        if SHOW:
-            plt.show()
-
+            self.lr) + '-lr' + str(self.lr) + '+combined-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
 
         # 2.4 plot PSNR
         plt.figure(3)
         plt.plot(self.PSNR_WMV)
-        plt.title('PSNR,epoch*=' + str(self.epochStar) + ',lr=' + str(lr))
+
+        '''
+        N = 100
+        moving_average_PSNR = self.moving_average(self.PSNR_WMV,N)
+        plt.plot(np.arange(N-1,len(self.PSNR_WMV)), moving_average_PSNR)
+        '''
+
+
+        plt.title('PSNR,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
         plt.axvline(self.epochStar, c='g')
         plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
         plt.axhline(y=np.max(self.PSNR_WMV), c="black", linewidth=0.5)
         plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
-            lrs.index(lr)) + '-lr' + str(lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
-        if not SHOW:
-            plt.clf()
+            self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
 
+    def moving_average(self, series, n):
+        # MVA
+        ret = np.cumsum(series, dtype=float)
+        ret[n:] = ret[n:] - ret[:-n]
+        # EMA
         import pandas as pd
-        
-        # some sample data
-        ts = pd.Series(self.PSNR_WMV).cumsum()
-
-        #plot the time series
-        ts.plot(style='k--')
-
-        # calculate a 60 day rolling mean and plot
-        ts.rolling(window=60).mean().plot(style='k')
+        pd_series = pd.DataFrame(series)
+        return pd_series.ewm(com=0.4).mean()
 
     def compute_IR_bkg(self, PETImage_shape, image_recon,i,IR_bkg_recon,image):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder

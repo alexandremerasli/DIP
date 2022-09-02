@@ -120,7 +120,7 @@ class iNestedADMM(vReconstruction):
             classResults.patienceNumber = self.patienceNumber
             classResults.SUCCESS = self.SUCCESS
     
-            classResults.WMV_plot(fixed_config)
+            classResults.WMV_plot(fixed_config, hyperparameters_config)
 
         # Saving final image output
         self.save_img(self.f, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')

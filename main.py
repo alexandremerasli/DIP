@@ -18,7 +18,7 @@ from ray import tune
 settings_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['APGMAP']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
@@ -45,7 +45,7 @@ fixed_config = {
     "nb_inner_iteration" : tune.grid_search([1]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for Gong). CASToR output is doubled because of 2 inner iterations for 1 inner iteration
     "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMLim
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "windowSize" : tune.grid_search([3]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
+    "windowSize" : tune.grid_search([1]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "patienceNumber" : tune.grid_search([5]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
 }
 # Configuration dictionnary for hyperparameters to tune
@@ -66,11 +66,11 @@ hyperparameters_config = {
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMLim - OPTITR hyperparameters
-    "nb_outer_iteration": tune.grid_search([10000]), # Number outer iterations in ADMMLim
+    "nb_outer_iteration": tune.grid_search([10]), # Number outer iterations in ADMMLim
     "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMLim
-    "adaptive_parameters" : tune.grid_search(["alpha"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
-    "mu_adaptive" : tune.grid_search([10]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
-    "tau" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim
+    "adaptive_parameters" : tune.grid_search(["tau"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
+    "mu_adaptive" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
+    "tau" : tune.grid_search([100]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim
     ## hyperparameters from CASToR algorithms 
     # Optimization transfer (OPTITR) hyperparameters
     "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False
@@ -195,7 +195,7 @@ for method in config["method"]['grid_search']:
         raise ValueError("Only Gong or nested can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
     elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["all_images_DIP"]["grid_search"][0] != "True"):
         raise ValueError("Please set all_images_DIP to True to save all images for nested or Gong reconstruction.")
-    elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["rho"]["grid_search"][0] == 0):
+    elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["rho"]["grid_search"][0] == 0 and task != "post_reco"):
         raise ValueError("Please set rho > 0 for nested or Gong reconstruction.")
     elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0]):
         raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
@@ -245,6 +245,8 @@ for ROI in ['hot','cold']:
             suffixes.append(f.readlines())
         with open(root + '/data/Algo' + '/replicates_for_last_run_' + method + '.txt') as f:
             replicates.append(f.readlines())
+
+        print(root + '/data/Algo' + '/replicates_for_last_run_' + method + '.txt')
 
         # Load metrics from last runs to merge them in one figure
         for idx in range(len(suffixes[0])):
@@ -402,20 +404,22 @@ for ROI in ['hot','cold']:
 
         avg = np.zeros((len_mini,),dtype=np.float64)
         for replicate in range(len(metrics_final)):
-            ax2.plot(np.arange(0,len(metrics_final[replicate])),metrics_final[replicate],'-o')
+            #ax2.plot(np.arange(0,len(metrics_final[replicate])),metrics_final[replicate])
+            ax2.plot(np.arange(0,len(metrics_final[replicate])),metrics_final[replicate],label='_nolegend_')
             if (method == "nested" or method == "Gong"):
-                ax2.plot(np.arange(0,len(metrics_final[replicate])),metrics_final[replicate],'o', mfc='none',color='black',label='_nolegend_')
+                ax2.plot(np.arange(0,len(metrics_final[replicate])),metrics_final[replicate], mfc='none',color='black',label='_nolegend_')
             
             avg += np.array(metrics_final[replicate][:len_mini]) / len(metrics_final)
 
-            replicates_legend.append("replicate_" + str(replicate+1))
+            #replicates_legend.append("replicate_" + str(replicate+1))
  
         ax2.plot(np.arange(0,len(metrics_final[replicate])),avg,color='black')
+        print("avg",avg)
         replicates_legend.append("average over replicates")
         
         ax2.legend(replicates_legend)
-
-
+        ax2.set_title(method + " reconstruction for " + str(len(metrics_final)) + " replicates")
+ 
     # Saving this figure locally
     if ROI == 'hot':
         fig1.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'AR in ' + ROI + ' region vs IR in background' + '.png')
@@ -427,9 +431,9 @@ for ROI in ['hot','cold']:
 
     # Saving this figure locally
     if ROI == 'hot':
-        fig2.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'AR in ' + ROI + ' region for different replicates' + '.png')
+        fig2.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'AR in ' + ROI + ' region for ' + str(len(metrics_final)) + ' replicates' + '.png')
     elif ROI == 'cold':
-        fig2.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'MA in ' + ROI + ' region for different replicates' + '.png')
+        fig2.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'MA in ' + ROI + ' region for ' + str(len(metrics_final)) + ' replicates' + '.png')
     from textwrap import wrap
     wrapped_title = "\n".join(wrap(suffix, 50))
     ax2.set_title(wrapped_title,fontsize=12)
