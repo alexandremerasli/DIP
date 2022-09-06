@@ -164,7 +164,10 @@ class vReconstruction(vGeneral):
         elif (i >= 1):
             #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(hyperparameters_config["nb_outer_iteration"]) + '_it' + str(fixed_config["nb_inner_iteration"]) + '.hdr'
             #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_it' + str(hyperparameters_config["nb_outer_iteration"]) + '.hdr'
+            # Last image for next global iteration
             initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
+            # Uniform image for next global iteration
+            #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
 
     
         base_name_i = format(i)

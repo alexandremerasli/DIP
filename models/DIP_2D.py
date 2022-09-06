@@ -8,8 +8,6 @@ import os
 
 # Local files to import
 from iWMV import iWMV
-from vGeneral import vGeneral
-
 
 class DIP_2D(pl.LightningModule):
 
@@ -18,8 +16,8 @@ class DIP_2D(pl.LightningModule):
 
         #'''
         # Set random seed if asked (for NN weights here)
-        if (os.path.isfile(os.getcwd() + "/seed.txt")):
-            with open(os.getcwd() + "/seed.txt", 'r') as file:
+        if (os.path.isfile(root + "/seed.txt")): # Put root for path because raytune path !!!
+            with open(root + "/seed.txt", 'r') as file:
                 random_seed = file.read().rstrip()
             if (eval(random_seed)):
                 pl.seed_everything(1)

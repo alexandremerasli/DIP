@@ -27,14 +27,15 @@ class iResults(vDenoising):
 
         if ('ADMMLim' in settings_config["method"]):
             try:
+                self.path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
                 with open(self.path_stopping_criterion) as f:
-                    first_line = f.readline()
+                    first_line = f.readline() # Read first line to get second one
                     self.total_nb_iter = int(f.readline().rstrip()) - 1
             except:
                 self.total_nb_iter = hyperparameters_config["nb_outer_iteration"]
             self.beta = hyperparameters_config["alpha"]
         elif (settings_config["method"] == 'nested' or settings_config["method"] == 'Gong'):
-            if (settings_config["task"] == 'show_results_post_reco'):
+            if ('post_reco' in settings_config["task"]):
                 self.total_nb_iter = hyperparameters_config["sub_iter_DIP"]
             else:
                 self.total_nb_iter = fixed_config["max_iter"]
@@ -134,13 +135,13 @@ class iResults(vDenoising):
                     else:
                         NNEPPS_string = ""
                     if (config["method"] == 'Gong' or config["method"] == 'nested'):
-                        if (settings_config["task"] == "show_results_post_reco"):
+                        if ('post_reco' in settings_config["task"]):
                             pet_algo=config["method"]+"to fit"
                             iteration_name="(post reconstruction)"
                         else:
                             pet_algo=config["method"]
                             iteration_name="iterations"
-                        if (settings_config["task"] == "show_results_post_reco"):
+                        if ('post_reco' in settings_config["task"]):
                             try:
                                 f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(0) + '_epoch=' + format(i-1) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
                             except: # ES point is reached
