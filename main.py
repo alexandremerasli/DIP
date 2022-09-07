@@ -18,7 +18,7 @@ from ray import tune
 settings_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['ADMMLim']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['APGMAP']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
@@ -30,7 +30,7 @@ settings_config = {
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
     #"f_init" : tune.grid_search(['1_im_value_cropped']),
     "replicates" : tune.grid_search(list(range(1,100+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
-    #"replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
+    "replicates" : tune.grid_search(list(range(1,2+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
     "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
     "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMLim)
 }
@@ -51,8 +51,9 @@ fixed_config = {
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
     "rho" : tune.grid_search([0,3,3e-1,3e-2,3e-3,3e-4,3e-5,3e-6,3e-7]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    "rho" : tune.grid_search([3e-1,3e-2,3e-3,3e-4,3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    "rho" : tune.grid_search([0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "rho" : tune.grid_search([3e-3,3e-4,3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "rho" : tune.grid_search([0.01,0.02,0.03,0.04,0.05]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    #"rho" : tune.grid_search([0.05]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     #"rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     ## network hyperparameters
     "lr" : tune.grid_search([0.001,0.005,0.01,0.05,0.1]), # Learning rate in network optimization
@@ -67,7 +68,7 @@ hyperparameters_config = {
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMLim - OPTITR hyperparameters
-    "nb_outer_iteration": tune.grid_search([1000]), # Number outer iterations in ADMMLim
+    "nb_outer_iteration": tune.grid_search([10000]), # Number outer iterations in ADMMLim
     "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMLim
     "adaptive_parameters" : tune.grid_search(["tau"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
     "mu_adaptive" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
@@ -78,7 +79,7 @@ hyperparameters_config = {
     # AML/APGMAP hyperparameters
     "A_AML" : tune.grid_search([-100]), # AML lower bound A
     # Post smoothing by CASToR after reconstruction
-    "post_smoothing" : tune.grid_search([0]), # Post smoothing by CASToR after reconstruction
+    "post_smoothing" : tune.grid_search([5]), # Post smoothing by CASToR after reconstruction
     #"post_smoothing" : tune.grid_search([6,9,12,15]), # Post smoothing by CASToR after reconstruction
     # NNEPPS post processing
     "NNEPPS" : tune.grid_search([False]), # NNEPPS post-processing. True or False
@@ -171,9 +172,9 @@ for method in config["method"]['grid_search']:
     #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
     #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
     #task = 'show_results_post_reco'
-    task = 'show_results'
+    #task = 'show_results'
     #task = 'show_metrics_ADMMLim'
-    #task = 'show_metrics_results_already_computed'
+    task = 'show_metrics_results_already_computed'
 
     if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
         classTask = iNestedADMM(hyperparameters_config)
@@ -258,50 +259,48 @@ for ROI in ['hot','cold']:
             suffix = suffixes[0][idx]
             replicate = replicates[0][idx].rstrip()
             metrics_file = root + '/data/Algo' + '/metrics/' + config["image"]['grid_search'][0] + '/' + str(replicate) + '/' + method + '/' + suffix.rstrip("\n") + '/' + 'metrics.csv'
-            with open(metrics_file, 'r') as myfile:
-                #if (method == "Gong"):
-                #    spamreader = reader_csv(myfile,delimiter=',')
-                #else:
-                #    spamreader = reader_csv(myfile,delimiter=';')
-                spamreader = reader_csv(myfile,delimiter=';')
-                rows_csv = list(spamreader)
-                rows_csv[0] = [float(i) for i in rows_csv[0]]
-                rows_csv[1] = [float(i) for i in rows_csv[1]]
-                rows_csv[2] = [float(i) for i in rows_csv[2]]
-                rows_csv[3] = [float(i) for i in rows_csv[3]]
-                rows_csv[4] = [float(i) for i in rows_csv[4]]
-                rows_csv[5] = [float(i) for i in rows_csv[5]]
-                rows_csv[6] = [float(i) for i in rows_csv[6]]
-                rows_csv[7] = [float(i) for i in rows_csv[7]]
+            try:
+                with open(metrics_file, 'r') as myfile:
+                    spamreader = reader_csv(myfile,delimiter=';')
+                    rows_csv = list(spamreader)
+                    rows_csv[0] = [float(i) for i in rows_csv[0]]
+                    rows_csv[1] = [float(i) for i in rows_csv[1]]
+                    rows_csv[2] = [float(i) for i in rows_csv[2]]
+                    rows_csv[3] = [float(i) for i in rows_csv[3]]
+                    rows_csv[4] = [float(i) for i in rows_csv[4]]
+                    rows_csv[5] = [float(i) for i in rows_csv[5]]
+                    rows_csv[6] = [float(i) for i in rows_csv[6]]
+                    rows_csv[7] = [float(i) for i in rows_csv[7]]
 
-                PSNR_recon.append(np.array(rows_csv[0]))
-                PSNR_norm_recon.append(np.array(rows_csv[1]))
-                MSE_recon.append(np.array(rows_csv[2]))
-                SSIM_recon.append(np.array(rows_csv[3]))
-                MA_cold_recon.append(np.array(rows_csv[4]))
-                AR_hot_recon.append(np.array(rows_csv[5]))
-                AR_bkg_recon.append(np.array(rows_csv[6]))
-                IR_bkg_recon.append(np.array(rows_csv[7]))
+                    PSNR_recon.append(np.array(rows_csv[0]))
+                    PSNR_norm_recon.append(np.array(rows_csv[1]))
+                    MSE_recon.append(np.array(rows_csv[2]))
+                    SSIM_recon.append(np.array(rows_csv[3]))
+                    MA_cold_recon.append(np.array(rows_csv[4]))
+                    AR_hot_recon.append(np.array(rows_csv[5]))
+                    AR_bkg_recon.append(np.array(rows_csv[6]))
+                    IR_bkg_recon.append(np.array(rows_csv[7]))
 
-                '''
-                print("metriiiiiiiiiiiiiiiics")
-                print(PSNR_recon)
-                print(PSNR_norm_recon)
-                print(MSE_recon)
-                print(SSIM_recon)
-                print(MA_cold_recon)
-                print(AR_hot_recon)
-                print(AR_bkg_recon)
-                print(IR_bkg_recon)
-                '''
+                    '''
+                    print("metriiiiiiiiiiiiiiiics")
+                    print(PSNR_recon)
+                    print(PSNR_norm_recon)
+                    print(MSE_recon)
+                    print(SSIM_recon)
+                    print(MA_cold_recon)
+                    print(AR_hot_recon)
+                    print(AR_bkg_recon)
+                    print(IR_bkg_recon)
+                    '''
+            except:
+                print("No such file : " + metrics_file)
 
         if ROI == 'hot':
-            metrics = [abs(hot) for hot in AR_hot_recon] # Take absolute value of AR hot for tradeoff curves
+            #metrics = [abs(hot) for hot in AR_hot_recon] # Take absolute value of AR hot for tradeoff curves
+            metrics = AR_hot_recon # Take absolute value of AR hot for tradeoff curves
         else:
-            metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
-
-        #for run_id in range(len(PSNR_recon)):
-        #    plt.plot(IR_bkg_recon[run_id],metrics[run_id],'-o')
+            #metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
+            metrics = MA_cold_recon # Take absolute value of MA cold for tradeoff curves
 
         if (method == "nested" or method == "Gong"):
             for case in range(np.array(IR_bkg_recon).shape[0]):
@@ -312,19 +311,35 @@ for ROI in ['hot','cold']:
                     IR_final.append(np.array(IR_bkg_recon)[case,:config["max_iter"]['grid_search'][0]])
                     metrics_final.append(np.array(metrics)[case,:config["max_iter"]['grid_search'][0]])
         elif (method == "BSREM" or method == "MLEM" or method == "ADMMLim" or method == "AML" or method == "APGMAP"):
-            IR_final.append(np.array([IR_bkg_recon[elem][-1] for elem in range(len(IR_bkg_recon))]))
-            metrics_final.append(np.array([metrics[elem][-1] for elem in range(len(metrics))]))
+
+            #IR_final.append(np.array([IR_bkg_recon[elem][-1] for elem in range(len(IR_bkg_recon))]))
+            #metrics_final.append(np.array([metrics[elem][-1] for elem in range(len(metrics))]))
+            IR_final.append(np.array([IR_bkg_recon[elem][:] for elem in range(len(IR_bkg_recon))]))
+            metrics_final.append(np.array([metrics[elem][:] for elem in range(len(metrics))]))
+
+
+
             
         fig1, ax1 = plt.subplots()
         
         ax1.set_xlabel('Image Roughness in the background (%)', fontsize = 18)
         ax1.set_ylabel('Absolute bias (AU)', fontsize = 18)
 
+        IR_final = IR_final[0]
+        metrics_final = metrics_final[0]
+
         for case in range(len(IR_final)):
             idx_sort = np.argsort(IR_final[case])
-            ax1.plot(100*IR_final[case][idx_sort],metrics_final[case][idx_sort],'-o') # IR in %
-            if (method == "nested" or method == "Gong"):
+            print(metrics_final[0].shape)
+            print(metrics_final[case][-1])
+            print(metrics_final[case][:])
+            print(idx_sort)
+            if method == 'ADMMLim' or method == 'APGMAP':
+                p = ax1.plot(100*IR_final[case][idx_sort],metrics_final[case][idx_sort],'-o') # IR in %
+            elif (method == "nested" or method == "Gong"):
                 ax1.plot(100*IR_final[case][0],metrics_final[case][0],'o', mfc='none',color='black',label='_nolegend_') # IR in %
+            else:
+                ax1.plot(100*IR_final[case][idx_sort],metrics_final[case][idx_sort],'-o') # IR in %
 
         '''
         if (method == "nested" or method == "Gong"):
@@ -417,24 +432,97 @@ for ROI in ['hot','cold']:
         ax2.legend(replicates_legend)
         ax2.set_title(method + " reconstruction for " + str(len(metrics_final)) + " replicates")
  
-    # Saving this figure locally
-    if ROI == 'hot':
-        fig1.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'AR in ' + ROI + ' region vs IR in background' + '.png')
-    elif ROI == 'cold':
-        fig1.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'MA in ' + ROI + ' region vs IR in background' + '.png')
-    from textwrap import wrap
-    wrapped_title = "\n".join(wrap(suffix, 50))
-    ax1.set_title(wrapped_title,fontsize=12)
+
+
+
+
+
+
+
+        """
+            
+        fig3, ax3 = plt.subplots()
+        
+        ax3.set_xlabel('Image Roughness in the background (%)', fontsize = 18)
+        ax3.set_ylabel('Absolute bias (AU)', fontsize = 18)
+
+        #IR_final = IR_final[0]
+        #metrics_final = metrics_final[0]
+
+        for case in range(len(IR_final)):
+            idx_sort = np.argsort(IR_final[case])
+            print(metrics_final[0].shape)
+            print(metrics_final[case][-1])
+            print(metrics_final[case][:])
+            print(idx_sort)
+            if method == 'ADMMLim' or method == 'APGMAP':
+                p = ax3.plot(100*IR_final[case][idx_sort],avg[idx_sort],'-o') # IR in %
+            elif (method == "nested" or method == "Gong"):
+                ax3.plot(100*IR_final[case][0],avg[0],'o', mfc='none',color='black',label='_nolegend_') # IR in %
+            else:
+                ax3.plot(100*IR_final[case][idx_sort],avg[idx_sort],'-o') # IR in %
+
+        '''
+        if (method == "nested" or method == "Gong"):
+            for i in range(len(suffixes[0])):
+                l = suffixes[0][i].replace('=','_')
+                l = l.replace('\n','_')
+                l = l.split('_')
+                legend = method + ' - '
+                for p in range(len(l)):
+                    if l[p] == "skip":
+                        legend += "skip : " + l[p+2] + ' / ' 
+                    if l[p] == "input":
+                        legend += "input : " + l[p+1]
+                suffixes_legend.append(legend)
+
+        else:
+        '''
+        if (method == 'Gong'):
+            legend_method = 'DIPRecon'
+        elif (method == 'nested'):
+            legend_method = 'nested ADMM'
+        elif (method == 'MLEM'):
+            legend_method = 'MLEM + filter'
+        else:
+            legend_method = method
+        suffixes_legend.append(legend_method)
+        ax3.legend(suffixes_legend)
+
+        """
+
+
+
+
+
 
     # Saving this figure locally
     if ROI == 'hot':
-        fig2.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'AR in ' + ROI + ' region for ' + str(len(metrics_final)) + ' replicates' + '.png')
+        fig1.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + method + " rho = " + str(config_tmp["rho"]['grid_search'][0]) + 'AR in ' + ROI + ' region vs IR in background' + '.png')
     elif ROI == 'cold':
-        fig2.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + 'MA in ' + ROI + ' region for ' + str(len(metrics_final)) + ' replicates' + '.png')
+        fig1.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + method + " rho = " + str(config_tmp["rho"]['grid_search'][0]) + 'MA in ' + ROI + ' region vs IR in background' + '.png')
+    from textwrap import wrap
+    wrapped_title = "\n".join(wrap(suffix, 50))
+    #ax3.set_title(wrapped_title,fontsize=12)
+
+    # Saving this figure locally
+    if ROI == 'hot':
+        fig2.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + method + " rho = " + str(config_tmp["rho"]['grid_search'][0]) + ' : AR in ' + ROI + ' region for ' + str(len(metrics_final)) + ' replicates' + '.png')
+    elif ROI == 'cold':
+        fig2.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + method + " rho = " + str(config_tmp["rho"]['grid_search'][0]) + ' : MA in ' + ROI + ' region for ' + str(len(metrics_final)) + ' replicates' + '.png')
     from textwrap import wrap
     wrapped_title = "\n".join(wrap(suffix, 50))
     ax2.set_title(wrapped_title,fontsize=12)
 
-
+    """
+    # Saving this figure locally
+    if ROI == 'hot':
+        fig3.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + method + " rho = " + str(config_tmp["rho"]['grid_search'][0]) + 'AR in ' + ROI + ' region vs IR in background' + '.png')
+    elif ROI == 'cold':
+        fig3.savefig(root + '/data/Algo/' + 'debug/'*classTask.debug + 'metrics/' + method + " rho = " + str(config_tmp["rho"]['grid_search'][0]) + 'MA in ' + ROI + ' region vs IR in background' + '.png')
+    from textwrap import wrap
+    wrapped_title = "\n".join(wrap(suffix, 50))
+    ax3.set_title(wrapped_title,fontsize=12)
+    """
 #sys.stdout.close()
 #sys.stdout=stdoutOrigin

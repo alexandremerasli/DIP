@@ -36,6 +36,7 @@ class DIP_2D(pl.LightningModule):
         self.param2_scale_im_corrupt = param2_scale_im_corrupt
         self.subroot = subroot
         self.config = config
+        self.experiment = config["experiment"]
         '''
         ## Variables for WMV ##
         self.queueQ = []
@@ -268,8 +269,7 @@ class DIP_2D(pl.LightningModule):
         except:
             out_np = out.cpu().detach().numpy()[0,0,:,:]
 
-        experiment = 24
-        self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+        self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,hyperparameters_config,hyperparameters_list,NNEPPS=False):
         hyperparameters_config_copy = dict(hyperparameters_config)

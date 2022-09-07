@@ -68,7 +68,7 @@ class vGeneral(abc.ABC):
         self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
         # Define ROIs for image0 phantom, otherwise it is already done in the database
-        if (self.phantom == "image0"):
+        if (self.phantom == "image0" and settings_config["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
 
         return hyperparameters_config

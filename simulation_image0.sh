@@ -36,15 +36,15 @@ for ((replicate_id=1;replicate_id<=nb_replicates;replicate_id++)); do
     ################################################################################################
 
     # Create activity phantom
-    create_phantom.exe -o image0 -d $dim1 $dim2 $dim3 -v 4. 4. 4. -c 0. 0. 0. 150. 4.*dim3 100 -c 50. 10. 0. 20. 4.*dim3 400 -c -40. -40. 0. 40. 4.*dim3 0. -x 32 32 1
+    create_phantom.exe -o image2_0 -d $dim1 $dim2 $dim3 -v 4. 4. 4. -c 0. 0. 0. 150. 4.*dim3 100 -c 50. 10. 0. 20. 4.*dim3 400 -c -40. -40. 0. 40. 4.*dim3 10. -x 32 32 1
 
     # Create attenuation map
-    create_phantom.exe -o image0_atn -d $dim1 $dim2 $dim3 -v 4. 4. 4. -c 0. 0. 0. 150. 4.*dim3 0.096 -c -40. 40. 0. 25. 4.*dim3 0.02 -x 32 32 1
+    create_phantom.exe -o image2_0_atn -d $dim1 $dim2 $dim3 -v 4. 4. 4. -c 0. 0. 0. 150. 4.*dim3 0.096 -c -40. 40. 0. 25. 4.*dim3 0.02 -x 32 32 1
 
     CMmaker.exe -m biograph2D -u -o biograph
 
     # Simulation with sinograms
-    simulator.exe -m biograph2D -c biograph/biograph.ecm -i image0.hdr -a image0_atn.hdr -r 0.9 -s 0.3 -p 4 -P $nb_counts -D -v 2 -o simulation1 -T 4
+    simulator.exe -m biograph2D -c biograph/biograph.ecm -i image2_0.hdr -a image2_0_atn.hdr -r 0.9 -s 0.3 -p 4 -P $nb_counts -D -v 2 -o simulation1 -T 4
 
     # Convert in list mode
     make_castor_datafile.exe -m biograph -p simulation1/simulation1_pt.s.hdr -r simulation1/simulation1_rd.s.hdr -s simulation1/simulation1_sc.s.hdr -n simulation1/simulation1_nm.s.hdr -A simulation1/simulation1_at.s -v 2 -o data_eff10 -c biograph/biograph.ecm
@@ -57,10 +57,10 @@ for ((replicate_id=1;replicate_id<=nb_replicates;replicate_id++)); do
 
     ## Etape 0: Creation du fantôme (activite) et de la carte d'attenuation
 
-    #create_phantom.exe -o image0 -d $dim1 $dim2 $dim3 -v 4. 4. 4. -c 0. 0. 0. 150. 4. 100 -c 50. 10. 0. 20. 4. 400 -c -40. -40. 0. 40. 4. 0. -x 32 32 1
-    create_phantom.exe -o image0 -d $dim1 $dim2 $dim3 -v 4. 4. 4. -c 0. 0. 0. 150. 4.*dim3 100 -c 50. 10. 0. 20. 4.*dim3 400 -c -40. -40. 0. 40. 4.*dim3 0. -x 32 32 1
-    #create_phantom.exe -o image0_atn -d $dim1 $dim2 $dim3 -v 4. 4. 4. -c 0. 0. 0. 150. 4. 0.096 -c -40. 40. 0. 25. 4. 0.02 -x 32 32 1
-    create_phantom.exe -o image0_atn -d $dim1 $dim2 $dim3 -v 4. 4. 4. -c 0. 0. 0. 150. 4.*dim3 0.096 -c -40. 40. 0. 25. 4.*dim3 0.02 -x 32 32 1
+    #create_phantom.exe -o image2_0 -d $dim1 $dim2 $dim3 -v 4. 4. 4. -c 0. 0. 0. 150. 4. 100 -c 50. 10. 0. 20. 4. 400 -c -40. -40. 0. 40. 4. 0. -x 32 32 1
+    create_phantom.exe -o image2_0 -d $dim1 $dim2 $dim3 -v 4. 4. 4. -c 0. 0. 0. 150. 4.*dim3 100 -c 50. 10. 0. 20. 4.*dim3 400 -c -40. -40. 0. 40. 4.*dim3 0. -x 32 32 1
+    #create_phantom.exe -o image2_0_atn -d $dim1 $dim2 $dim3 -v 4. 4. 4. -c 0. 0. 0. 150. 4. 0.096 -c -40. 40. 0. 25. 4. 0.02 -x 32 32 1
+    create_phantom.exe -o image2_0_atn -d $dim1 $dim2 $dim3 -v 4. 4. 4. -c 0. 0. 0. 150. 4.*dim3 0.096 -c -40. 40. 0. 25. 4.*dim3 0.02 -x 32 32 1
 
     ## Etape 1: Creation d'une carte des coordonnees des cristaux et de leur efficacite respective.
     ##          Tu peux le refaire pour chaque simu pour eviter que ce soit toujours pareil, comme tu veux.
@@ -83,7 +83,7 @@ for ((replicate_id=1;replicate_id<=nb_replicates;replicate_id++)); do
     # -i l'image d'emission en entree
     # -a la mumap en cm-1, doit etre de la meme taille que l'image d'emission
     # -P le nombre de prompts a simuler
-    SMprojector.exe -m mmr2d -c cmap0/cmap0.ecm -i image0.hdr -a image0_atn.hdr -s 0.35 -r 0.9 -l 0.8 -p 4. -v 5 -P $nb_counts -o simu0_${replicate_id} -D
+    SMprojector.exe -m mmr2d -c cmap0/cmap0.ecm -i image2_0.hdr -a image2_0_atn.hdr -s 0.35 -r 0.9 -l 0.8 -p 4. -v 5 -P $nb_counts -o simu0_${replicate_id} -D
 
     ## Etape 3: Creation du ficher castor a partir des sinogrammes simules
 
@@ -96,21 +96,21 @@ for ((replicate_id=1;replicate_id<=nb_replicates;replicate_id++)); do
     ###############################################################################################
     ##	Copy to DIP used directories
     ################################################################################################
-    mkdir -p ../data/Algo/Data/database_v2/image0
+    mkdir -p ../data/Algo/Data/database_v2/image2_0
 
     # Copying previously computed masks 
-    #cp -nr ../data/Algo/Data/database_v2/image0_1replicate/* ../data/Algo/Data/database_v2/image0
+    #cp -nr ../data/Algo/Data/database_v2/image2_0_1replicate/* ../data/Algo/Data/database_v2/image2_0
 
     # Copying phantoms
-    #cp image0* ../data/Algo/Data/database_v2/image0
-    cp image0.img ../data/Algo/Data/database_v2/image0/image0.raw
-    cp image0.hdr ../data/Algo/Data/database_v2/image0/image0.hdr
-    cp image0_atn.img ../data/Algo/Data/database_v2/image0/image0_atn.raw
-    cp image0_atn.hdr ../data/Algo/Data/database_v2/image0/image0_atn.hdr
+    #cp image2_0* ../data/Algo/Data/database_v2/image2_0
+    cp image2_0.img ../data/Algo/Data/database_v2/image2_0/image2_0.raw
+    cp image2_0.hdr ../data/Algo/Data/database_v2/image2_0/image2_0.hdr
+    cp image2_0_atn.img ../data/Algo/Data/database_v2/image2_0/image2_0_atn.raw
+    cp image2_0_atn.hdr ../data/Algo/Data/database_v2/image2_0/image2_0_atn.hdr
     # Copying datafile, cmap and sinograms
-    cp -r data0_${replicate_id}/ ../data/Algo/Data/database_v2/image0
-    cp -r cmap0/ ../data/Algo/Data/database_v2/image0
-    cp -r simu0_${replicate_id}/ ../data/Algo/Data/database_v2/image0
+    cp -r data0_${replicate_id}/ ../data/Algo/Data/database_v2/image2_0
+    cp -r cmap0/ ../data/Algo/Data/database_v2/image2_0
+    cp -r simu0_${replicate_id}/ ../data/Algo/Data/database_v2/image2_0
 done
 
 # MLEM short reconstruction with CASToR
