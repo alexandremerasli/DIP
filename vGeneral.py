@@ -68,8 +68,10 @@ class vGeneral(abc.ABC):
         self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
         # Define ROIs for image0 phantom, otherwise it is already done in the database
-        if (self.phantom == "image0" and settings_config["task"] != "show_metrics_results_already_computed"):
+        if (self.phantom == "image0" or self.phantom == "image2_0" and settings_config["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
+        if (self.phantom == "image2_3D" and settings_config["task"] != "show_metrics_results_already_computed"):
+            self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
 
         return hyperparameters_config
 
@@ -361,11 +363,11 @@ class vGeneral(abc.ABC):
         dtype = np.dtype(type)
         fid = open(file_path, 'rb')
         data = np.fromfile(fid,dtype)
-        if data.shape[0] != 112*112:
-            print("whaaaaaaaaaaaat")
-            print(path)
-            print(data.shape)
-        image = data.reshape(shape)
+        if (1 in shape): # 2D
+            image = data.reshape(shape)
+        else: # 3D
+            image = data.reshape(shape[::-1])
+
         return image
 
     def norm_imag(self,img):
@@ -502,12 +504,51 @@ class vGeneral(abc.ABC):
         self.save_img(phantom_mask, subroot+'Data/database_v2/' + "image0" + '/' + "phantom_mask0" + '.raw')
         self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image0" + '/' + "background_mask0" + '.raw')
 
+        # Storing into file instead of defining them at each metrics computation
+        self.save_img(cold_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "cold_mask2_0" + '.raw')
+        self.save_img(tumor_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "tumor_mask2_0" + '.raw')
+        self.save_img(phantom_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "phantom_mask2_0" + '.raw')
+        self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "background_mask2_0" + '.raw')
+
+
+    def define_ROI_image2_3D(self,PETImage_shape,subroot):
+        phantom_ROI = self.points_in_circle(0/4,0/4,150/4,PETImage_shape)
+        cold_ROI = self.points_in_circle(-40/4,-40/4,40/4-1,PETImage_shape)
+        hot_ROI = self.points_in_circle(50/4,10/4,20/4-1,PETImage_shape)
+            
+        cold_ROI_bkg = self.points_in_circle(-40/4,-40/4,40/4+1,PETImage_shape)
+        hot_ROI_bkg = self.points_in_circle(50/4,10/4,20/4+1,PETImage_shape)
+        phantom_ROI_bkg = self.points_in_circle(0/4,0/4,150/4-1,PETImage_shape)
+        bkg_ROI = list(set(phantom_ROI_bkg) - set(cold_ROI_bkg) - set(hot_ROI_bkg))
+
+        cold_mask = np.zeros(PETImage_shape, dtype='<f')
+        tumor_mask = np.zeros(PETImage_shape, dtype='<f')
+        phantom_mask = np.zeros(PETImage_shape, dtype='<f')
+        bkg_mask = np.zeros(PETImage_shape, dtype='<f')
+
+        ROI_list = [cold_ROI, hot_ROI, phantom_ROI, bkg_ROI]
+        mask_list = [cold_mask, tumor_mask, phantom_mask, bkg_mask]
+        for i in range(len(ROI_list)):
+            ROI = ROI_list[i]
+            mask = mask_list[i]
+            for couple in ROI:
+                for z in range(mask.shape[0]):
+                    mask[couple,z] = 1
+
+
+        # Storing into file instead of defining them at each metrics computation
+        self.save_img(cold_mask, subroot+'Data/database_v2/' + "image2_3D" + '/' + "cold_mask2_3D" + '.raw')
+        self.save_img(tumor_mask, subroot+'Data/database_v2/' + "image2_3D" + '/' + "tumor_mask2_3D" + '.raw')
+        self.save_img(phantom_mask, subroot+'Data/database_v2/' + "image2_3D" + '/' + "phantom_mask2_3D" + '.raw')
+        self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image2_3D" + '/' + "background_mask2_3D" + '.raw')
+
+
     def write_image_tensorboard(self,writer,image,name,suffix,image_gt,i=0,full_contrast=False):
         # Creating matplotlib figure with colorbar
         plt.figure()
         if (len(np.squeeze(image).shape) != 2):
             print('image is ' + str(len(image.shape)) + 'D, plotting only 2D slice')
-            image = image[:,:,0]
+            image = image[int(image.shape[0] / 2.),:,:]
         if (full_contrast):
             plt.imshow(image, cmap='gray_r',vmin=np.min(image),vmax=np.max(image)) # Showing each image with maximum contrast  
         else:
@@ -528,17 +569,24 @@ class vGeneral(abc.ABC):
     def castor_common_command_line(self, subroot, PETImage_shape_str, phantom, replicates, post_smoothing=0):
         executable = 'castor-recon'
         if (self.nb_replicates == 1):
-            header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[-1] + '/data' + phantom[-1] + '.cdh' # PET data path
+            header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '/data' + phantom[5:] + '.cdh' # PET data path
         else:
-            header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[-1] + '_' + str(replicates) + '/data' + phantom[-1] + '_' + str(replicates) + '.cdh' # PET data path
+            header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data path
         dim = ' -dim ' + PETImage_shape_str
         vox = ' -vox 4,4,4'
         vb = ' -vb 3'
         th = ' -th ' + str(self.nb_threads) # must be set to 1 for ADMMLim, as multithreading does not work for now with ADMMLim optimizer
         proj = ' -proj incrementalSiddon'
-        psf = ' -conv gaussian,4,1,3.5::psf'
+        if ("1" in PETImage_shape_str.split(',')): # 2D
+            psf = ' -conv gaussian,4,1,3.5::psf'
+        else: # 3D
+            psf = ' -conv gaussian,4,4,3.5::psf' # isotropic psf in simulated phantoms
+
         if (post_smoothing != 0):
-            conv = ' -conv gaussian,' + str(post_smoothing) + ',1,3.5::post'
+            if ("1" in PETImage_shape_str.split(',')): # 2D
+                conv = ' -conv gaussian,' + str(post_smoothing) + ',1,3.5::post'
+            else: # 3D
+                conv = ' -conv gaussian,' + str(post_smoothing) + ',' + str(post_smoothing) + ',3.5::post' # isotropic post smoothing
         else:
             conv = ''
         # Computing likelihood
@@ -552,6 +600,10 @@ class vGeneral(abc.ABC):
     def castor_opti_and_penalty(self, method, penalty, rho, i=None, unnested_1st_global_iter=None):
         if (method == 'MLEM'):
             opti = ' -opti ' + method
+            pnlt = ''
+            penaltyStrength = ''
+        elif (method == 'OSEM'):
+            opti = ' -opti ' + 'MLEM'
             pnlt = ''
             penaltyStrength = ''
         elif (method == 'AML'):
@@ -604,12 +656,13 @@ class vGeneral(abc.ABC):
 
     def get_phantom_ROI(self,image='image0'):
         # Select only phantom ROI, not whole reconstructed image
-        path_phantom_ROI = self.subroot_data+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[-1]) + '.raw'
+        path_phantom_ROI = self.subroot_data+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[5:]) + '.raw'
         my_file = Path(path_phantom_ROI)
         if (my_file.is_file()):
             phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(self.PETImage_shape),type='<f')
         else:
-            phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(self.PETImage_shape),type='<f')
+            raise ValueError("No phantom file for this phantom")
+            phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
             
         return phantom_ROI
     

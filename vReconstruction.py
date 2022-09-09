@@ -28,7 +28,7 @@ class vReconstruction(vGeneral):
         self.createDirectoryAndConfigFile(hyperparameters_config)
 
         # Specific hyperparameters for reconstruction module (Do it here to have raytune hyperparameters_config hyperparameters selection)
-        if (settings_config["method"] != "MLEM" and settings_config["method"] != "AML"):
+        if (settings_config["method"] != "MLEM" and settings_config["method"] != "OSEM" and settings_config["method"] != "AML"):
             self.rho = hyperparameters_config["rho"]
         else:
             self.rho = 0
@@ -64,9 +64,9 @@ class vReconstruction(vGeneral):
         if (not my_file.is_file()):
             print("self.nb_replicates",self.nb_replicates)
             if (self.nb_replicates == 1):
-                header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[-1] + '/data' + self.phantom[-1] + '.cdh' # PET data path
+                header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[5:] + '/data' + self.phantom[5:] + '.cdh' # PET data path
             else:
-                header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[-1] + '_' + str(settings_config["replicates"]) + '/data' + self.phantom[-1] + '_' + str(settings_config["replicates"]) + '.cdh' # PET data path
+                header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[5:] + '_' + str(settings_config["replicates"]) + '/data' + self.phantom[5:] + '_' + str(settings_config["replicates"]) + '.cdh' # PET data path
             executable = 'castor-recon'
             optimizer = 'MLEM'
             output_path = ' -dout ' + path_mlem_init # Output path for CASTOR framework
@@ -75,7 +75,9 @@ class vReconstruction(vGeneral):
             vb = ' -vb 3'
             it = ' -it 1:1'
             opti = ' -opti ' + optimizer
-            os.system(executable + dim + vox + output_path + header_file + vb + it + opti) # + ' -fov-out 95')
+            th = ' -th ' + str(self.nb_threads) # must be set to 1 for ADMMLim, as multithreading does not work for now with ADMMLim optimizer
+            print(executable + dim + vox + output_path + header_file + vb + it + opti + th)
+            os.system(executable + dim + vox + output_path + header_file + vb + it + opti + th) # + ' -fov-out 95')
 
     def castor_reconstruction(self,writer, i, subroot, nb_outer_iteration, experiment, hyperparameters_config, method, phantom, replicate, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, alpha, image_init_path_without_extension):
         start_time_block1 = time.time()
@@ -176,8 +178,10 @@ class vReconstruction(vGeneral):
         if ('ADMMLim' in self.method):
             # Compute one ADMM iteration (x, v, u)
             if (self.post_smoothing): # Apply post smoothing for vizualization
-                #conv = ''
-                conv = ' -conv gaussian,' + str(hyperparameters_config["post_smoothing"]) + ',1,3.5::post'
+                if ("1" in self.PETImage_shape_str.split(',')): # 2D
+                    conv = ' -conv gaussian,' + str(self.post_smoothing) + ',1,3.5::post'
+                else: # 3D
+                    conv = ' -conv gaussian,' + str(self.post_smoothing) + ',' + str(self.post_smoothing) + ',3.5::post' # isotropic post smoothing
             else:
                 conv = ''
         else:

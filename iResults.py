@@ -56,11 +56,20 @@ class iResults(vDenoising):
         if settings_config["FLTNB"] == "double":
             self.image_gt.astype(np.float64)
 
+        '''
+        image = self.image_gt
+        image = image[20,:,:]
+        plt.imshow(image, cmap='gray_r',vmin=0,vmax=np.max(image)) # Showing all images with same contrast
+        plt.colorbar()
+        #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
+        plt.savefig(self.subroot_data + 'Data/database_v2/' + 'image_gt.png')
+        '''
+
         # Defining ROIs
-        self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[-1] + '.raw', shape=(self.PETImage_shape),type='<f')
-        self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[-1] + '.raw', shape=(self.PETImage_shape),type='<f')
-        self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[-1] + '.raw', shape=(self.PETImage_shape),type='<f')
-        self.phantom_ROI = self.get_phantom_ROI()
+        self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+        self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+        self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+        self.phantom_ROI = self.get_phantom_ROI(self.phantom)
 
         # Metrics arrays
         self.PSNR_recon = np.zeros(self.total_nb_iter)
@@ -149,7 +158,7 @@ class iResults(vDenoising):
                         else:
                             f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + "FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
                         f_p.astype(np.float64)
-                    elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or config["method"] == 'APGMAP'):
+                    elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'OSEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or config["method"] == 'APGMAP'):
                         pet_algo=config["method"]
                         iteration_name = "iterations"
                         if (hasattr(self,'beta')):
@@ -312,7 +321,7 @@ class iResults(vDenoising):
 
     def compute_IR_bkg(self, PETImage_shape, image_recon,i,IR_bkg_recon,image):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
-        #bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
+        #bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(PETImage_shape),type='<f')
         bkg_ROI_act = image_recon[self.bkg_ROI==1]
         #IR_bkg_recon[i] += (np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)) / self.nb_replicates
         IR_bkg_recon[i] = (np.std(bkg_ROI_act) / np.mean(bkg_ROI_act))
@@ -349,7 +358,7 @@ class iResults(vDenoising):
 
         # Contrast Recovery Coefficient calculation    
         # Mean activity in cold cylinder calculation (-c -40. -40. 0. 40. 4. 0.)
-        #cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "cold_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
+        #cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "cold_mask" + image[5:] + '.raw', shape=(PETImage_shape),type='<f')
         cold_ROI_act = image_recon[self.cold_ROI==1]
         MA_cold_recon[i] = np.mean(cold_ROI_act)
         #IR_cold_recon[i] = np.std(cold_ROI_act) / MA_cold_recon[i]
@@ -357,7 +366,7 @@ class iResults(vDenoising):
         #print('Image roughness in the cold cylinder', IR_cold_recon[i])
 
         # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
-        #hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
+        #hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[5:] + '.raw', shape=(PETImage_shape),type='<f')
         hot_ROI_act = image_recon[self.hot_ROI==1]
         AR_hot_recon[i] = np.mean(hot_ROI_act) / 400.
         #IR_hot_recon[i] = np.std(hot_ROI_act) / np.mean(hot_ROI_act)
@@ -368,7 +377,7 @@ class iResults(vDenoising):
         #m0_bkg = (np.sum(coord_to_value_array(bkg_ROI,image_recon_cropped)) - np.sum([coord_to_value_array(cold_ROI,image_recon_cropped),coord_to_value_array(hot_ROI,image_recon_cropped)])) / (len(bkg_ROI) - (len(cold_ROI) + len(hot_ROI)))
         #AR_bkg_recon[i] = m0_bkg / 100.
         #         
-        #bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[-1] + '.raw', shape=(PETImage_shape),type='<f')
+        #bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(PETImage_shape),type='<f')
         bkg_ROI_act = image_recon[self.bkg_ROI==1]
         AR_bkg_recon[i] = np.mean(bkg_ROI_act) / 100.
         #IR_bkg_recon[i] = np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)

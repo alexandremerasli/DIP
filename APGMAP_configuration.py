@@ -64,7 +64,7 @@ def config_func_MIC():
         "post_smoothing" : tune.grid_search([0]), # Post smoothing by CASToR after reconstruction
         #"post_smoothing" : tune.grid_search([6,9,12,15]), # Post smoothing by CASToR after reconstruction
         # NNEPPS post processing
-        "NNEPPS" : tune.grid_search([False,True]), # NNEPPS post-processing. True or False
+        "NNEPPS" : tune.grid_search([True]), # NNEPPS post-processing. True or False
     }
 
     # Merge 3 dictionaries
