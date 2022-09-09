@@ -22,9 +22,9 @@ class iMeritsADMMLim(vGeneral):
         self.nb_inner_iteration = fixed_config["nb_inner_iteration"]
         #self.adaptive_parameters == hyperparameters_config["adaptive_parameters"]
 
-        self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[-1] + '.raw', shape=(self.PETImage_shape),type='<f')
-        self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[-1] + '.raw', shape=(self.PETImage_shape),type='<f')
-        self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[-1] + '.raw', shape=(self.PETImage_shape),type='<f')
+        self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+        self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+        self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
         self.phantom_ROI = self.get_phantom_ROI()
 
         #Loading Ground Truth image to compute metrics

@@ -25,6 +25,7 @@ data/Algo/Data/castor_output.log
 data/Algo/Data/castor_output_it60_ss1_sensitivity.hdr
 data/Algo/Data/castor_output_it60_ss1_sensitivity.img
 env/
+env_disk/
 
 data/Algo/Data/ADMMLim_*
 
@@ -32,8 +33,7 @@ data/Algo/Data/database_v2/
 data/Algo/Data/im_corrupt_beginning.img
 data/Algo/metrics
 
-data/Algo/image0_MIC
-data/Algo/image0/
+data/Algo/image*
 diff_all.py
 BSREM quad pas bcp it/
 MIC runs/
@@ -48,6 +48,7 @@ models/__pycache__/
 runs (copy)/
 runs/
 simu_mmr/
+simu_biograph/
 .vscode/
 trash/
 __pycache__/

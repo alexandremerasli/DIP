@@ -2,11 +2,11 @@ from ray import tune
 
 def config_func_MIC():
     
-# Configuration dictionnary for general settings parameters (not hyperparameters)
+    # Configuration dictionnary for general settings parameters (not hyperparameters)
     settings_config = {
         "image" : tune.grid_search(['image2_0']), # Image from database
         "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-        "method" : tune.grid_search(['APGMAP']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+        "method" : tune.grid_search(['OSEM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
         "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
         "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
         "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
@@ -17,13 +17,13 @@ def config_func_MIC():
         "experiment" : tune.grid_search([24]),
         "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
         #"f_init" : tune.grid_search(['1_im_value_cropped']),
-        "replicates" : tune.grid_search(list(range(1,100+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
+        "replicates" : tune.grid_search(list(range(1,1+100))), # List of desired replicates. list(range(1,n+1)) means n replicates
         "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
         "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMLim)
     }
     # Configuration dictionnary for previous hyperparameters, but fixed to simplify
     fixed_config = {
-        "max_iter" : tune.grid_search([15]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
+        "max_iter" : tune.grid_search([36]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
         "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
         "finetuning" : tune.grid_search(['False']),
         "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
@@ -37,7 +37,7 @@ def config_func_MIC():
     }
     # Configuration dictionnary for hyperparameters to tune
     hyperparameters_config = {
-        "rho" : tune.grid_search([0.01,0.02,0.03,0.04,0.05]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+        "rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         ## network hyperparameters
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
         "sub_iter_DIP" : tune.grid_search([1000]), # Number of epochs in network optimization
@@ -52,19 +52,18 @@ def config_func_MIC():
         ## ADMMLim - OPTITR hyperparameters
         "nb_outer_iteration": tune.grid_search([10000]), # Number outer iterations in ADMMLim
         "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMLim
-        "adaptive_parameters" : tune.grid_search(["alpha"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
-        "mu_adaptive" : tune.grid_search([10]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
-        "tau" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim
+        "adaptive_parameters" : tune.grid_search(["tau"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
+        "mu_adaptive" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
+        "tau" : tune.grid_search([100]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim
         ## hyperparameters from CASToR algorithms 
         # Optimization transfer (OPTITR) hyperparameters
         "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False
         # AML/APGMAP hyperparameters
-        "A_AML" : tune.grid_search([-100,-500,-10000]), # AML lower bound A
+        "A_AML" : tune.grid_search([-100]), # AML lower bound A
         # Post smoothing by CASToR after reconstruction
-        "post_smoothing" : tune.grid_search([0]), # Post smoothing by CASToR after reconstruction
-        #"post_smoothing" : tune.grid_search([6,9,12,15]), # Post smoothing by CASToR after reconstruction
+        "post_smoothing" : tune.grid_search([0,3,6,9,12,15]), # Post smoothing by CASToR after reconstruction
         # NNEPPS post processing
-        "NNEPPS" : tune.grid_search([False,True]), # NNEPPS post-processing. True or False
+        "NNEPPS" : tune.grid_search([False]), # NNEPPS post-processing. True or False
     }
 
     # Merge 3 dictionaries
