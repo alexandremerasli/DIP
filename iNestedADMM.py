@@ -95,7 +95,8 @@ class iNestedADMM(vReconstruction):
             # Saving Final DIP output with name without epochs
             self.save_img(self.f,self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "FINAL" + '.img')
             
-            self.f.astype(np.float64)
+            if settings_config["FLTNB"] == "double":
+                self.f.astype(np.float64)
             
             if (i != i_init or fixed_config["unnested_1st_global_iter"]): # Gong at first epoch -> only pre train the network
                 # Block 3 - mu update

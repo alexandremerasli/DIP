@@ -20,8 +20,8 @@ let "nb_counts=1500000*$dim3/2" # low statistics
 # Choosing directory to work on
 if [[ $1 = 'biograph' ]]
 then
-mkdir -p simu_biograph
-cd simu_biograph
+mkdir -p simu_biograph_3D
+cd simu_biograph_3D
 else
 mkdir -p simu_mmr_3D
 cd simu_mmr_3D

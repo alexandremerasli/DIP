@@ -1,6 +1,7 @@
 ## Python libraries
 
 # Useful
+from audioop import reverse
 from pathlib import Path
 import os
 from functools import partial
@@ -504,14 +505,16 @@ class vGeneral(abc.ABC):
         self.save_img(phantom_mask, subroot+'Data/database_v2/' + "image0" + '/' + "phantom_mask0" + '.raw')
         self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image0" + '/' + "background_mask0" + '.raw')
 
+        '''
         # Storing into file instead of defining them at each metrics computation
         self.save_img(cold_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "cold_mask2_0" + '.raw')
         self.save_img(tumor_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "tumor_mask2_0" + '.raw')
         self.save_img(phantom_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "phantom_mask2_0" + '.raw')
         self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "background_mask2_0" + '.raw')
-
+        '''
 
     def define_ROI_image2_3D(self,PETImage_shape,subroot):
+
         phantom_ROI = self.points_in_circle(0/4,0/4,150/4,PETImage_shape)
         cold_ROI = self.points_in_circle(-40/4,-40/4,40/4-1,PETImage_shape)
         hot_ROI = self.points_in_circle(50/4,10/4,20/4-1,PETImage_shape)
@@ -520,6 +523,9 @@ class vGeneral(abc.ABC):
         hot_ROI_bkg = self.points_in_circle(50/4,10/4,20/4+1,PETImage_shape)
         phantom_ROI_bkg = self.points_in_circle(0/4,0/4,150/4-1,PETImage_shape)
         bkg_ROI = list(set(phantom_ROI_bkg) - set(cold_ROI_bkg) - set(hot_ROI_bkg))
+
+        # Reverse shape for 3D
+        PETImage_shape = PETImage_shape[::-1]
 
         cold_mask = np.zeros(PETImage_shape, dtype='<f')
         tumor_mask = np.zeros(PETImage_shape, dtype='<f')
@@ -531,9 +537,9 @@ class vGeneral(abc.ABC):
         for i in range(len(ROI_list)):
             ROI = ROI_list[i]
             mask = mask_list[i]
-            for couple in ROI:
-                for z in range(mask.shape[0]):
-                    mask[couple,z] = 1
+            for z in range(mask.shape[0]):
+                for couple in ROI:
+                    mask[z,couple[0],couple[1]] = 1
 
 
         # Storing into file instead of defining them at each metrics computation

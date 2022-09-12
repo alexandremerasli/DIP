@@ -52,7 +52,7 @@ class iResults(vDenoising):
         self.writer = SummaryWriter()
         
         #Loading Ground Truth image to compute metrics
-        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f').astype(np.float64)
+        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
         if settings_config["FLTNB"] == "double":
             self.image_gt.astype(np.float64)
 
@@ -157,7 +157,8 @@ class iResults(vDenoising):
                                 break
                         else:
                             f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + "FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
-                        f_p.astype(np.float64)
+                        if settings_config["FLTNB"] == "double":
+                            f_p.astype(np.float64)
                     elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'OSEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or config["method"] == 'APGMAP'):
                         pet_algo=config["method"]
                         iteration_name = "iterations"
@@ -341,8 +342,6 @@ class iResults(vDenoising):
 
         # PSNR calculation
         PSNR_recon[i] = peak_signal_noise_ratio(image_gt_cropped, image_recon_cropped, data_range=np.amax(image_recon_cropped) - np.amin(image_recon_cropped)) # PSNR with true values
-        #print(image_gt_norm.dtype)
-        #print(image_recon_norm.dtype)
         PSNR_norm_recon[i] = peak_signal_noise_ratio(image_gt_norm,image_recon_norm) # PSNR with scaled values [0-1]
         #print('PSNR calculation', PSNR_norm_recon[i],' , must be as high as possible')
 

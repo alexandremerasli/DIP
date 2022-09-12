@@ -58,6 +58,7 @@ class vReconstruction(vGeneral):
             self.mu = 0* np.ones((self.PETImage_shape[0], self.PETImage_shape[1], self.PETImage_shape[2]))
             self.save_img(self.mu,self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(-1) + self.suffix + '.img')
 
+        '''
         # Launch short MLEM reconstruction
         path_mlem_init = self.subroot_data + 'Data/MLEM_reco_for_init/' + self.phantom
         my_file = Path(path_mlem_init + '/' + self.phantom + '/' + self.phantom + '_it1.img')
@@ -78,7 +79,8 @@ class vReconstruction(vGeneral):
             th = ' -th ' + str(self.nb_threads) # must be set to 1 for ADMMLim, as multithreading does not work for now with ADMMLim optimizer
             print(executable + dim + vox + output_path + header_file + vb + it + opti + th)
             os.system(executable + dim + vox + output_path + header_file + vb + it + opti + th) # + ' -fov-out 95')
-
+        '''
+        
     def castor_reconstruction(self,writer, i, subroot, nb_outer_iteration, experiment, hyperparameters_config, method, phantom, replicate, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, alpha, image_init_path_without_extension):
         start_time_block1 = time.time()
         mlem_sequence = hyperparameters_config['mlem_sequence']

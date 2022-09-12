@@ -1,5 +1,6 @@
 export CASTOR_OMP=1 # Enable multithreading
 export PATH=$PATH:your/link/to/castor/folder/castor_v3.1/bin
+export PATH=$PATH:your/link/to/simulation/folder/bin
 export CASTOR_CONFIG=your/link/to/castor/folder/castor_v3.1/config # Path to the default CASToR config directory
 chmod +x your/link/to/castor/folder/castor_v3.1/bin/*
 
