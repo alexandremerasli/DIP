@@ -9,6 +9,7 @@ from ray import tune
 import numpy as np
 from itertools import product
 import matplotlib.pyplot as plt
+import re
 
 import abc
 
@@ -680,3 +681,18 @@ class vGeneral(abc.ABC):
             os.makedirs(path)
 
         return path
+
+
+    def atoi(self,text):
+        return int(text) if text.isdigit() else text
+
+    def natural_keys(self,text):
+        '''
+        alist.sort(key=natural_keys) sorts in human order
+        http://nedbatchelder.com/blog/200712/human_sorting.html
+        (See Toothy's implementation in the comments)
+        '''
+        return [ self.atoi(c) for c in re.split(r'(\d+)', text) ]
+
+    def has_numbers(self,inputString):
+        return any(char.isdigit() for char in inputString)

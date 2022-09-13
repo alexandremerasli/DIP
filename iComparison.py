@@ -1,7 +1,8 @@
 # Useful
 from pathlib import Path
 import os
-from shutil import copy
+import re
+
 
 # Local files to import
 from vReconstruction import vReconstruction
@@ -36,14 +37,22 @@ class iComparison(vReconstruction):
             Path(self.subroot + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
             self.ADMMLim_general(hyperparameters_config, 0, subdir, subroot_output_path, f_mu_for_penalty)
         else:
-            it = ' -it ' + str(self.max_iter) + ':' + str(fixed_config["nb_subsets"])
-
-            output_path = ' -fout ' + self.subroot + self.suffix + '/' + self.method # Output path for CASTOR framework
-            #if (self.method == 'AML' or self.method == 'BSREM'):
-            #    output_path += '_beta_' + str(self.beta)
-            initialimage = ''
-
             Path(self.subroot + self.suffix).mkdir(parents=True, exist_ok=True) # CASToR path
+            folder_sub_path = self.subroot + self.suffix
+            output_path = ' -fout ' + folder_sub_path + '/' + self.method # Output path for CASTOR framework
+            
+            if (len(os.listdir(folder_sub_path)) > 0):
+                sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if os.path.splitext(filename)[1] == '.hdr']
+                sorted_files.sort(key=self.natural_keys)
+                last_file = sorted_files[-1]
+                last_iter = int(re.findall(r'(\w+?)(\d+)', last_file.split('.')[0])[0][-1])
+                initialimage = ' -img ' + folder_sub_path + '/' + last_file
+                #it = ' -it ' + str(self.max_iter - last_iter) + ':' + str(fixed_config["nb_subsets"])
+                it = ' -it ' + str(self.max_iter) + ':' + str(fixed_config["nb_subsets"])
+                it += ' -skip-it ' + str(last_iter)
+            else:
+                initialimage = ''
+                it = ' -it ' + str(self.max_iter) + ':' + str(fixed_config["nb_subsets"])
         
             print("CASToR command line : ")
             print(self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
