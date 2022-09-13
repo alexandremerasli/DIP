@@ -16,12 +16,12 @@ from ray import tune
 
 # Configuration dictionnary for general settings parameters (not hyperparameters)
 settings_config = {
-    "image" : tune.grid_search(['image2_3D']), # Image from database
+    "image" : tune.grid_search(['image0']), # Image from database
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
     "method" : tune.grid_search(['BSREM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
-    "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
-    "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
+    "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
+    "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
     "ray" : False, # Ray mode = run with raytune if True, to run several settings in parallel
     "tensorboard" : True, # Tensorboard mode = show results in tensorboard
@@ -36,7 +36,7 @@ settings_config = {
 }
 # Configuration dictionnary for previous hyperparameters, but fixed to simplify
 fixed_config = {
-    "max_iter" : tune.grid_search([1]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
+    "max_iter" : tune.grid_search([10]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
     "finetuning" : tune.grid_search(['False']),
     "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
@@ -107,6 +107,7 @@ from iPostReconstruction import iPostReconstruction
 from iResults import iResults
 from iMeritsADMMLim import iMeritsADMMLim
 from iResultsAlreadyComputed import iResultsAlreadyComputed
+from iFinalCurves import iFinalCurves
 
 for method in config["method"]['grid_search']:
 
@@ -172,9 +173,9 @@ for method in config["method"]['grid_search']:
     #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
     #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
     #task = 'show_results_post_reco'
-    task = 'show_results'
+    #task = 'show_results'
     #task = 'show_metrics_ADMMLim'
-    #task = 'show_metrics_results_already_computed'
+    task = 'show_metrics_results_already_computed'
 
     if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
         classTask = iNestedADMM(hyperparameters_config)
@@ -218,17 +219,13 @@ for method in config["method"]['grid_search']:
     #'''
 
 
+classTask = iFinalCurves(config)
+#classTask.initializeGeneralVariables(settings_config,fixed_config,hyperparameters_config,root)
+#classTask.runComputation(config,settings_config,fixed_config,hyperparameters_config,root)
+config["ray"] = False
+classTask.runRayTune(config,root,task)
 
-def atoi(text):
-    return int(text) if text.isdigit() else text
-
-def natural_keys(text):
-    '''
-    alist.sort(key=natural_keys) sorts in human order
-    http://nedbatchelder.com/blog/200712/human_sorting.html
-    (See Toothy's implementation in the comments)
-    '''
-    return [ atoi(c) for c in re.split(r'(\d+)', text) ]
+'''
 
 from csv import reader as reader_csv
 import numpy as np
@@ -395,6 +392,6 @@ for ROI in ['hot','cold']:
             from textwrap import wrap
             wrapped_title = "\n".join(wrap(suffix, 50))
             #ax.set_title(wrapped_title,fontsize=12)
-
+'''
 #sys.stdout.close()
 #sys.stdout=stdoutOrigin

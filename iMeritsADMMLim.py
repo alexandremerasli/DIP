@@ -8,8 +8,6 @@ import pandas as pd
 
 
 # Local files to import
-#from vGeneral import vGeneral
-from iResults import iResults
 from vGeneral import vGeneral
 
 class iMeritsADMMLim(vGeneral):
