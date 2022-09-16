@@ -1,7 +1,7 @@
 from ray import tune
 
 def config_func():
-    settings_config2 = {
+    settings_config = {
         "image" : tune.grid_search(['image0']), # Image from database
         "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
         "method" : tune.grid_search(['Gong']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
@@ -20,7 +20,7 @@ def config_func():
         "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
     }
     # Configuration dictionnary for hyperparameters to tune
-    config22 = {
+    hyperparameters_config = {
         "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         ## network hyperparameters
         "lr" : tune.grid_search([1]), # Learning rate in network optimization
@@ -49,15 +49,15 @@ def config_func():
    
     # Merge 2 dictionaries
     split_config = {
-        "hyperparameters" : list(config2.keys())
+        "hyperparameters" : list(hyperparameters_config.keys())
     }
-    config = {**config3, **config2, **split_config}
+    config = {**settings_config, **hyperparameters_config, **split_config}
 
     return config
 
 def config_func_MIC():
 
-    settings_config2 = {
+    settings_config = {
         "image" : tune.grid_search(['image0']), # Image from database
         "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
         "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
@@ -77,7 +77,7 @@ def config_func_MIC():
         "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
     }
     # Configuration dictionnary for hyperparameters to tune
-    config22 = {
+    hyperparameters_config = {
         #"rho" : tune.grid_search([0.0003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "rho" : tune.grid_search([0.003,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         ## network hyperparameters
@@ -108,8 +108,8 @@ def config_func_MIC():
 
     # Merge 2 dictionaries
     split_config = {
-        "hyperparameters" : list(config2.keys())
+        "hyperparameters" : list(hyperparameters_config.keys())
     }
-    config = {**config3, **config2, **split_config}
+    config = {**settings_config, **hyperparameters_config, **split_config}
 
     return config

@@ -3,7 +3,7 @@ from ray import tune
 def config_func_MIC():
     
 # Configuration dictionnary for general settings parameters (not hyperparameters)
-    settings_config2 = {
+    settings_config = {
         "image" : tune.grid_search(['image2_0']), # Image from database
         "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
         "method" : tune.grid_search(['APGMAP']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
@@ -22,7 +22,7 @@ def config_func_MIC():
         "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMLim)
     }
     # Configuration dictionnary for previous hyperparameters, but fixed to simplify
-    fixed_config2 = {
+    fixed_config = {
         "max_iter" : tune.grid_search([15]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
         "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
         "finetuning" : tune.grid_search(['False']),
@@ -36,7 +36,7 @@ def config_func_MIC():
         "patienceNumber" : tune.grid_search([500]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     }
     # Configuration dictionnary for hyperparameters to tune
-    config22 = {
+    hyperparameters_config = {
         "rho" : tune.grid_search([0.01,0.02,0.03,0.04,0.05]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         ## network hyperparameters
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
@@ -69,9 +69,9 @@ def config_func_MIC():
 
     # Merge 3 dictionaries
     split_config = {
-        "fixed_hyperparameters" : list(config4.keys()),
-        "hyperparameters" : list(config2.keys())
+        "fixed_hyperparameters" : list(fixed_config.keys()),
+        "hyperparameters" : list(hyperparameters_config.keys())
     }
-    config = {**config3, **config4, **config2, **split_config}
+    config = {**settings_config, **fixed_config, **hyperparameters_config, **split_config}
 
     return config
