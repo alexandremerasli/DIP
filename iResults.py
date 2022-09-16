@@ -367,7 +367,7 @@ class iResults(vDenoising):
         # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
         #hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[5:] + '.raw', shape=(PETImage_shape),type='<f')
         hot_ROI_act = image_recon[self.hot_ROI==1]
-        AR_hot_recon[i] = np.mean(hot_ROI_act) / 400.
+        AR_hot_recon[i] = np.mean(hot_ROI_act)
         #IR_hot_recon[i] = np.std(hot_ROI_act) / np.mean(hot_ROI_act)
         #print('Mean Activity Recovery in hot cylinder', AR_hot_recon[i],' , must be close to 1')
         #print('Image roughness in the hot cylinder', IR_hot_recon[i])

@@ -205,6 +205,11 @@ class iFinalCurves(vGeneral):
                         if (fig_nb == 1):
                             # Plot average and std of bias curves with iterations
                             ax.plot(np.arange(0,len(avg_metrics)),avg_metrics,color='black')
+                            # Plot dashed line for target value, according to ROI
+                            if ROI == 'hot':
+                                ax.hlines(400,xmin=0,xmax=len(avg_metrics)-1,color='grey',linestyle='dashed')
+                            else:
+                                ax.hlines(10,xmin=0,xmax=len(avg_metrics)-1,color='grey',linestyle='dashed')
                             ax.fill_between(np.arange(0,len(avg_metrics)), avg_metrics - std_metrics, avg_metrics + std_metrics, alpha = 0.4)
                             ax.set_xlabel('Iterations', fontsize = 18)
                             ax.set_ylabel('Bias (AU)', fontsize = 18)
