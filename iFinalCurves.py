@@ -20,6 +20,13 @@ class iFinalCurves(vGeneral):
         # show the plots in python or not !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     def runComputation(self,config,root):
+
+        plot_all_replicates_curves = True
+        if plot_all_replicates_curves:
+            color_avg = 'black'
+        else:
+            color_avg = None
+
         for ROI in ['hot','cold']:
             plt.figure()
 
@@ -171,50 +178,49 @@ class iFinalCurves(vGeneral):
                             # Plot tradeoff curves
                             if (fig_nb == 0):
                                 idx_sort = np.argsort(IR_final[case])
-                                if (method == "nested" or method == "Gong"):
-                                    ax.plot(100*IR_final[case][0],metrics_final[case][0],'o', mfc='none',color='black',label='_nolegend_') # IR in %
-                                else:
-                                    ax.plot(100*IR_final[case][idx_sort],metrics_final[case][idx_sort],'-o') # IR in %
-                                
+                                if (plot_all_replicates_curves):
+                                    if (method == "nested" or method == "Gong"):
+                                        ax.plot(100*IR_final[case][0],metrics_final[case][0],'o', mfc='none',color='black',label='_nolegend_') # IR in %
+                                    else:
+                                        ax.plot(100*IR_final[case][idx_sort],metrics_final[case][idx_sort]) # IR in %
+                                    
                                 # Compute average of tradeoff curves with iterations
                                 avg_metrics += np.array(metrics_final[case][:len_mini[rho_idx]]) / nb_replicates
                                 avg_IR += np.array(IR_final[case][:len_mini[rho_idx]]) / nb_replicates                           
-
+                        
                             if (fig_nb == 1):
-                                ax.plot(np.arange(0,len(metrics_final[case])),metrics_final[case],label='_nolegend_') # Plot bias curves with iterations for each replicate
+                                if (plot_all_replicates_curves):
+                                    ax.plot(np.arange(0,len(metrics_final[case])),metrics_final[case],label='_nolegend_') # Plot bias curves with iterations for each replicate
                                 # Compute average of bias curves with iterations
                                 print(metrics_final[case][:len_mini[rho_idx]])
                                 avg_metrics += np.array(metrics_final[case][:len_mini[rho_idx]]) / nb_replicates
 
-                        # Compute std bias curves with iterations
-                        for replicate in range(nb_replicates):
-                            std_metrics += np.sqrt((np.array(metrics_final[case][:len_mini[rho_idx]]) - avg_metrics)**2 / nb_replicates)
-                            std_IR += np.sqrt((np.array(IR_final[case][:len_mini[rho_idx]]) - avg_IR)**2 / nb_replicates)
-                        print("avg_metrics")
-                        print(avg_metrics)
-                        print("avg_metrics_end")
+                        replicates_legend.append(method + " : rho = " + str(config["rho"][rho_idx]))
 
-                        replicates_legend.append("average over replicates")
-                        ax.legend(replicates_legend)
+                        # Compute std bias curves with iterations
+                        std_metrics = np.sqrt(np.sum((np.array(metrics_final)[nb_replicates*rho_idx:nb_replicates*(rho_idx+1),:] - avg_metrics[:])**2,axis=0) / nb_replicates)
+                        std_IR = np.sqrt(np.sum((np.array(IR_final)[nb_replicates*rho_idx:nb_replicates*(rho_idx+1),:] - avg_IR[:])**2,axis=0) / nb_replicates)
 
                         if (fig_nb == 0):
-                            ax.plot(100*avg_IR,avg_metrics,'-o',color='black')
-                            ax.fill(np.concatenate((100*(avg_IR-std_IR),100*(avg_IR[::-1]+std_IR[::-1]))),np.concatenate((avg_metrics-std_metrics,avg_metrics[::-1]+std_metrics[::-1])), alpha = 0.4)
+                            ax.plot(100*avg_IR,avg_metrics,color=color_avg)
+                            ax.fill(np.concatenate((100*(avg_IR-std_IR),100*(avg_IR[::-1]+std_IR[::-1]))),np.concatenate((avg_metrics-std_metrics,avg_metrics[::-1]+std_metrics[::-1])), alpha = 0.4, label='_nolegend_')
                             ax.set_xlabel('Image Roughness in the background (%)', fontsize = 18)
                             ax.set_ylabel('Absolute bias (AU)', fontsize = 18)
                         if (fig_nb == 1):
                             # Plot average and std of bias curves with iterations
-                            ax.plot(np.arange(0,len(avg_metrics)),avg_metrics,color='black')
+                            ax.plot(np.arange(0,len(avg_metrics)),avg_metrics,color=color_avg)
                             # Plot dashed line for target value, according to ROI
                             if ROI == 'hot':
-                                ax.hlines(400,xmin=0,xmax=len(avg_metrics)-1,color='grey',linestyle='dashed')
+                                ax.hlines(400,xmin=0,xmax=len(avg_metrics)-1,color='grey',linestyle='dashed',label='_nolegend_')
                             else:
-                                ax.hlines(10,xmin=0,xmax=len(avg_metrics)-1,color='grey',linestyle='dashed')
-                            ax.fill_between(np.arange(0,len(avg_metrics)), avg_metrics - std_metrics, avg_metrics + std_metrics, alpha = 0.4)
+                                ax.hlines(10,xmin=0,xmax=len(avg_metrics)-1,color='grey',linestyle='dashed',label='_nolegend_')
+                            ax.fill_between(np.arange(0,len(avg_metrics)), avg_metrics - std_metrics, avg_metrics + std_metrics, alpha = 0.4, label='_nolegend_')
                             ax.set_xlabel('Iterations', fontsize = 18)
                             ax.set_ylabel('Bias (AU)', fontsize = 18)
-                            ax.set_title(method + " reconstruction for " + str(nb_replicates) + " replicates")
-            
+                            ax.set_title(method + " reconstruction averaged on " + str(nb_replicates) + " replicates")
+
+                    ax.legend(replicates_legend)
+
                     # Saving figures locally in png
                     if (fig_nb == 0):
                         if (self.debug or self.ray == False):
