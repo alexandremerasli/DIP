@@ -57,21 +57,50 @@ class iFinalCurves(vGeneral):
 
                 print(root + '/data/Algo' + '/replicates_for_last_run_' + method + '.txt')
 
+                '''
                 # Sort replicates from file
                 replicate_idx = [replicates[0][idx].rstrip() for idx in range(len(replicates[0]))]
                 idx_replicates_sort = np.argsort(replicate_idx)
+                '''
+                
+                # Retrieve number of rhos and replicates
+                if (self.debug or self.ray == False):
+                    nb_rho = len(config["rho"])
+                else:
+                    nb_rho = len(config["rho"]["grid_search"])
+                nb_replicates = int(len(replicates[0]) / nb_rho)
+
+                # Wanted list of replicates
+                idx_wanted = []
+                for i in range(nb_rho):
+                    idx_wanted += range(0,nb_replicates)
+
+                # Check replicates from results are compatible with this script
+                replicate_idx = [replicates[0][idx].rstrip()[-1] for idx in range(len(replicates[0]))]
+                if list(np.sort(np.sort(replicate_idx).astype(int)-1)) != list(np.sort(idx_wanted)):
+                    raise ValueError("Replicates are not the same for each case !")
+
                 # Sort suffixes from file by rho values 
                 sorted_suffixes = list(suffixes[0])
                 sorted_suffixes.sort(key=self.natural_keys)
 
                 # Load metrics from last runs to merge them in one figure
-                for idx in idx_replicates_sort: # Loop over rhos and replicates, for each sorted rho, take sorted replicate
-                    suffix = sorted_suffixes[idx].rstrip("\n")
-                    replicate = replicates[0][idx].rstrip()
+                for i in range(len(sorted_suffixes)):
+                    i_replicate = idx_wanted[i] # Loop over rhos and replicates, for each sorted rho, take sorted replicate
+                    suffix = sorted_suffixes[i].rstrip("\n")
+                    replicate = "replicate_" + str(i_replicate + 1)
+
+                    print(i)
+                    print(suffix)
+                    print(replicate)
+
+                    '''
                     if (self.debug or self.ray == False):
                         metrics_file = root + '/data/Algo' + '/metrics/' + config["image"] + '/' + str(replicate) + '/' + method + '/' + suffix + '/' + 'metrics.csv'
                     else:
                         metrics_file = root + '/data/Algo' + '/metrics/' + config["image"]['grid_search'][0] + '/' + str(replicate) + '/' + method + '/' + suffix + '/' + 'metrics.csv'
+                    '''
+                    metrics_file = root + '/data/Algo' + '/metrics/' + config["image"] + '/' + str(replicate) + '/' + method + '/' + suffix + '/' + 'metrics.csv'
                     try:
                         with open(metrics_file, 'r') as myfile:
                             spamreader = reader_csv(myfile,delimiter=';')
@@ -121,13 +150,6 @@ class iFinalCurves(vGeneral):
                 IR_final = IR_final[0]
                 metrics_final = metrics_final[0]
 
-                # Retrieve number of rhos and replicates
-                if (self.debug or self.ray == False):
-                    nb_rho = 1
-                else:
-                    nb_rho = len(config["rho"]["grid_search"])
-                nb_replicates = int(len(metrics_final) / nb_rho)
-
                 # Compute number of displayable iterations for each rho
                 len_mini_list = np.zeros((nb_rho,nb_replicates),dtype=int)
                 len_mini = np.zeros((nb_rho),dtype=int)
@@ -157,12 +179,16 @@ class iFinalCurves(vGeneral):
                             if (fig_nb == 1):
                                 ax.plot(np.arange(0,len(metrics_final[case])),metrics_final[case],label='_nolegend_') # Plot bias curves with iterations for each replicate
                                 # Compute average of bias curves with iterations
+                                print(metrics_final[case][:len_mini[rho_idx]])
                                 avg += np.array(metrics_final[case][:len_mini[rho_idx]]) / nb_replicates
 
                         if (fig_nb == 1):
                             # Compute std bias curves with iterations
                             for replicate in range(nb_replicates):
                                 std += np.sqrt((np.array(metrics_final[case][:len_mini[rho_idx]]) - avg)**2 / nb_replicates)
+                            print("avg")
+                            print(avg)
+                            print("avg_end")
 
                             # Plot average and std of bias curves with iterations
                             ax.plot(np.arange(0,len(avg)),avg,color='black')
