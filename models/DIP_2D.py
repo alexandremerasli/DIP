@@ -271,13 +271,13 @@ class DIP_2D(pl.LightningModule):
 
         self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
-    def suffix_func(self,hyperparameters_config,hyperparameters_list,NNEPPS=False):
-        hyperparameters_config_copy = dict(hyperparameters_config)
+    def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
+        config_copy = dict(config)
         if (NNEPPS==False):
-            hyperparameters_config_copy.pop('NNEPPS',None)
-        hyperparameters_config_copy.pop('nb_outer_iteration',None)
+            config_copy.pop('NNEPPS',None)
+        config_copy.pop('nb_outer_iteration',None)
         suffix = "config"
-        for key, value in hyperparameters_config_copy.items():
+        for key, value in config_copy.items():
             if key in hyperparameters_list:
                 suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
         return suffix

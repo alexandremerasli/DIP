@@ -7,7 +7,7 @@ import os
 
 class VAE_DIP_2D(pl.LightningModule):
 
-    def __init__(self, hyperparameters_config):
+    def __init__(self, config):
         super().__init__()
 
         # Set random seed if asked (for NN weights here)
@@ -17,11 +17,11 @@ class VAE_DIP_2D(pl.LightningModule):
             if (eval(random_seed)):
                 pl.seed_everything(1)
 
-        # Defining variables from hyperparameters_config
-        self.lr = hyperparameters_config['lr']
-        self.opti_DIP = hyperparameters_config['opti_DIP']
-        self.sub_iter_DIP = hyperparameters_config['sub_iter_DIP']
-        if (hyperparameters_config['mlem_sequence'] is None):
+        # Defining variables from config
+        self.lr = config['lr']
+        self.opti_DIP = config['opti_DIP']
+        self.sub_iter_DIP = config['sub_iter_DIP']
+        if (config['mlem_sequence'] is None):
             self.post_reco_mode = True
         else:
             self.post_reco_mode = False

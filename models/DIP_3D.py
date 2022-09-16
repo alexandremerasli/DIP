@@ -6,7 +6,7 @@ import os
         
 class DIP_3D(pl.LightningModule):
 
-    def __init__(self, hyperparameters_config, method):
+    def __init__(self, config, method):
         super().__init__()
 
         # Set random seed if asked (for NN weights here)
@@ -16,15 +16,15 @@ class DIP_3D(pl.LightningModule):
             if (eval(random_seed)):
                 pl.seed_everything(1)
 
-        # Defining variables from hyperparameters_config
-        self.lr = hyperparameters_config['lr']
-        self.opti_DIP = hyperparameters_config['opti_DIP']
-        self.sub_iter_DIP = hyperparameters_config['sub_iter_DIP']
-        self.skip = hyperparameters_config['skip_connections']
+        # Defining variables from config
+        self.lr = config['lr']
+        self.opti_DIP = config['opti_DIP']
+        self.sub_iter_DIP = config['sub_iter_DIP']
+        self.skip = config['skip_connections']
         self.method = method
-        if (hyperparameters_config['mlem_sequence'] is None):
+        if (config['mlem_sequence'] is None):
             self.post_reco_mode = True
-            self.suffix = self.suffix_func(hyperparameters_config)
+            self.suffix = self.suffix_func(config)
         else:
             self.post_reco_mode = False
 
@@ -205,8 +205,8 @@ class DIP_3D(pl.LightningModule):
             experiment = 24
             save_img(out_np, subroot+'Block2/out_cnn/' + format(experiment) + '/out_' + 'DIP' + '_post_reco_epoch=' + format(self.current_epoch) + self.suffix + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                     
-    def suffix_func(self,hyperparameters_config):
+    def suffix_func(self,config):
         suffix = "config"
-        for key, value in hyperparameters_config.items():
+        for key, value in config.items():
             suffix +=  "_" + key + "=" + str(value)
         return suffix

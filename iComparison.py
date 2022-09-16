@@ -11,31 +11,31 @@ class iComparison(vReconstruction):
     def __init__(self,config):
         print("__init__")
 
-    def runComputation(self,config,settings_config,fixed_config,hyperparameters_config,root):
+    def runComputation(self,config,config3,config4,config2,root):
 
         if (self.method == 'AML' or self.method == 'APGMAP'):
-            self.A_AML = hyperparameters_config["A_AML"]
+            self.A_AML = config2["A_AML"]
         if (self.method == 'AML'):
-            self.beta = hyperparameters_config["A_AML"]
+            self.beta = config2["A_AML"]
         elif ('ADMMLim' in self.method):
-            self.beta = hyperparameters_config["alpha"]
+            self.beta = config2["alpha"]
         elif (self.method == 'BSREM' or self.method == 'APGMAP'):
             self.beta = self.rho
 
         if (self.method != 'BSREM' and self.method != 'nested' and self.method != 'Gong' and self.method != 'APGMAP'):
-            self.post_smoothing = hyperparameters_config["post_smoothing"]
+            self.post_smoothing = config2["post_smoothing"]
         else:
             self.post_smoothing = 0
         # castor-recon command line
         if ('ADMMLim' in self.method):
             # Path variables
             subroot_output_path = (self.subroot + self.suffix)
-            subdir = 'ADMM' + '_' + str(settings_config["nb_threads"])
+            subdir = 'ADMM' + '_' + str(config3["nb_threads"])
             subdir = ''
             f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/1_im_value_cropped.hdr' # Will be removed if first global iteration and unnested_1st_global_iter (rho == 0)
             #f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/BSREM_it30_REF_cropped.hdr' # Test for DIP_ADMM (will be removed if first global iteration and unnested_1st_global_iter (rho == 0))
             Path(self.subroot + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
-            self.ADMMLim_general(hyperparameters_config, 0, subdir, subroot_output_path, f_mu_for_penalty)
+            self.ADMMLim_general(config2, 0, subdir, subroot_output_path, f_mu_for_penalty)
         else:
             Path(self.subroot + self.suffix).mkdir(parents=True, exist_ok=True) # CASToR path
             folder_sub_path = self.subroot + self.suffix
@@ -47,12 +47,12 @@ class iComparison(vReconstruction):
                 last_file = sorted_files[-1]
                 last_iter = int(re.findall(r'(\w+?)(\d+)', last_file.split('.')[0])[0][-1])
                 initialimage = ' -img ' + folder_sub_path + '/' + last_file
-                #it = ' -it ' + str(self.max_iter - last_iter) + ':' + str(fixed_config["nb_subsets"])
-                it = ' -it ' + str(self.max_iter) + ':' + str(fixed_config["nb_subsets"])
+                #it = ' -it ' + str(self.max_iter - last_iter) + ':' + str(config4["nb_subsets"])
+                it = ' -it ' + str(self.max_iter) + ':' + str(config4["nb_subsets"])
                 it += ' -skip-it ' + str(last_iter)
             else:
                 initialimage = ''
-                it = ' -it ' + str(self.max_iter) + ':' + str(fixed_config["nb_subsets"])
+                it = ' -it ' + str(self.max_iter) + ':' + str(config4["nb_subsets"])
         
             print("CASToR command line : ")
             print(self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
@@ -61,17 +61,17 @@ class iComparison(vReconstruction):
 
         # NNEPPS
         if ('ADMMLim' in self.method):
-            max_it = hyperparameters_config["nb_outer_iteration"]
+            max_it = config2["nb_outer_iteration"]
         else:
-            max_it = fixed_config["max_iter"]
+            max_it = config4["max_iter"]
         
-        if (hyperparameters_config["NNEPPS"]):
+        if (config2["NNEPPS"]):
             print("NNEPPS")        
             for it in range(1,max_it + 1):
-                self.NNEPPS_function(settings_config,fixed_config,hyperparameters_config,it)
+                self.NNEPPS_function(config3,config4,config2,it)
         
         # Initializing results class
-        if ((settings_config["average_replicates"] and self.replicate == 1) or (settings_config["average_replicates"] == False)):
+        if ((config3["average_replicates"] and self.replicate == 1) or (config3["average_replicates"] == False)):
             from iResults import iResults
             classResults = iResults(config)
             classResults.nb_replicates = self.nb_replicates
@@ -79,17 +79,17 @@ class iComparison(vReconstruction):
             classResults.rho = self.rho
             if ('ADMMLim' in self.method):
                 classResults.path_stopping_criterion = self.path_stopping_criterion
-            classResults.initializeSpecific(settings_config,fixed_config,hyperparameters_config,root)
-            classResults.runComputation(config,settings_config,fixed_config,hyperparameters_config,root)
+            classResults.initializeSpecific(config3,config4,config2,root)
+            classResults.runComputation(config,config3,config4,config2,root)
 
-    def NNEPPS_function(self,settings_config,fixed_config,hyperparameters_config,it):
+    def NNEPPS_function(self,config3,config4,config2,it):
         executable='removeNegativeValues.exe'
 
         if ('ADMMLim' in self.method):
             i = 0
-            subdir = 'ADMM' + '_' + str(settings_config["nb_threads"])
+            subdir = 'ADMM' + '_' + str(config3["nb_threads"])
             subdir = ''
-            input_without_extension = self.subroot + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(fixed_config["nb_inner_iteration"])
+            input_without_extension = self.subroot + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(config4["nb_inner_iteration"])
         else:
             input_without_extension = self.subroot + self.suffix + '/' + self.method + '_beta_' + str(self.beta) + '_it' + format(it)
         

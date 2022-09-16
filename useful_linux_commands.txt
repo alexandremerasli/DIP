@@ -25,7 +25,7 @@ kill -9 <PID>
 
 ##################### plus rares ##################### 
 
-export CASTOR_CONFIG=/home/meraslia/sgld/software/castor_v3.1/hyperparameters_config/
+export CASTOR_CONFIG=/home/meraslia/sgld/software/castor_v3.1/config/
 
 # TOKEN
 git push https://TOKEN@github.com/alexandremerasli/DIP.git HEAD:positive_proj

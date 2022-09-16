@@ -15,28 +15,28 @@ from ray import tune
 #sys.stdout = open("test_log.txt", "w")
 
 # Configuration dictionnary for general settings parameters (not hyperparameters)
-settings_config = {
+settings_config2 = {
     "image" : tune.grid_search(['image0']), # Image from database
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['BSREM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['APGMAP']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
-    "ray" : False, # Ray mode = run with raytune if True, to run several settings in parallel
+    "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
     "tensorboard" : True, # Tensorboard mode = show results in tensorboard
     "all_images_DIP" : tune.grid_search(['True']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
     #"f_init" : tune.grid_search(['1_im_value_cropped']),
     "replicates" : tune.grid_search(list(range(1,100+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
-    "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
+    "replicates" : tune.grid_search(list(range(1,2+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
     "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
     "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMLim)
 }
 # Configuration dictionnary for previous hyperparameters, but fixed to simplify
-fixed_config = {
-    "max_iter" : tune.grid_search([10]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
+fixed_config2 = {
+    "max_iter" : tune.grid_search([12]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
     "finetuning" : tune.grid_search(['False']),
     "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
@@ -49,10 +49,10 @@ fixed_config = {
     "patienceNumber" : tune.grid_search([500]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
 }
 # Configuration dictionnary for hyperparameters to tune
-hyperparameters_config = {
+config22 = {
     "rho" : tune.grid_search([0,3,3e-1,3e-2,3e-3,3e-4,3e-5,3e-6,3e-7]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     "rho" : tune.grid_search([3e-3,3e-4,3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    "rho" : tune.grid_search([0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "rho" : tune.grid_search([0.01,0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     #"rho" : tune.grid_search([0.05]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     #"rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     ## network hyperparameters
@@ -77,6 +77,7 @@ hyperparameters_config = {
     # Optimization transfer (OPTITR) hyperparameters
     "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False
     # AML/APGMAP hyperparameters
+    "A_AML" : tune.grid_search([-100,-500,-10000]), # AML lower bound A
     "A_AML" : tune.grid_search([-100]), # AML lower bound A
     # Post smoothing by CASToR after reconstruction
     "post_smoothing" : tune.grid_search([0]), # Post smoothing by CASToR after reconstruction
@@ -87,17 +88,17 @@ hyperparameters_config = {
 
 # Merge 3 dictionaries
 split_config = {
-    "fixed_hyperparameters" : list(fixed_config.keys()),
-    "hyperparameters" : list(hyperparameters_config.keys())
+    "fixed_hyperparameters" : list(fixed_config2.keys()),
+    "hyperparameters" : list(config22.keys())
 }
-config = {**settings_config, **fixed_config, **hyperparameters_config, **split_config}
+config = {**settings_config2, **fixed_config2, **config22, **split_config}
 
 root = os.getcwd()
 
 # write random seed in a file to get it in network architectures
 os.system("rm -rf " + os.getcwd() +"/seed.txt")
 file_seed = open(os.getcwd() + "/seed.txt","w+")
-file_seed.write(str(settings_config["random_seed"]["grid_search"][0]))
+file_seed.write(str(settings_config2["random_seed"]["grid_search"][0]))
 file_seed.close()
 
 # Local files to import, AFTER CONFIG TO SET RANDOM SEED OR NOT
@@ -142,7 +143,7 @@ for method in config["method"]['grid_search']:
         config = config_func_MIC()
     '''
     config_tmp = dict(config)
-    config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
+    config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from config3 and config2
 
     '''
     if (method == 'BSREM'):
@@ -166,7 +167,7 @@ for method in config["method"]['grid_search']:
     if (config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested'):
         task = 'full_reco_with_network'
 
-    elif ('ADMMLim' in config["method"]["grid_search"][0] or config["method"]["grid_search"][0] == 'MLEM' or config["method"]["grid_search"][0] == 'BSREM' or config["method"]["grid_search"][0] == 'AML' or config["method"]["grid_search"][0] == 'APGMAP'):
+    elif ('ADMMLim' in config["method"]["grid_search"][0] or config["method"]["grid_search"][0] == 'MLEM' or config["method"]["grid_search"][0] == 'OSEM' or config["method"]["grid_search"][0] == 'BSREM' or config["method"]["grid_search"][0] == 'AML' or config["method"]["grid_search"][0] == 'APGMAP'):
         task = 'castor_reco'
 
     #task = 'full_reco_with_network' # Run Gong or nested ADMM
@@ -175,10 +176,10 @@ for method in config["method"]['grid_search']:
     #task = 'show_results_post_reco'
     #task = 'show_results'
     #task = 'show_metrics_ADMMLim'
-    task = 'show_metrics_results_already_computed'
+    #task = 'show_metrics_results_already_computed'
 
     if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
-        classTask = iNestedADMM(hyperparameters_config)
+        classTask = iNestedADMM(config22)
     elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
         classTask = iComparison(config)
     elif (task == 'post_reco'): # Run network denoising after a given reconstructed image im_corrupt
@@ -218,12 +219,39 @@ for method in config["method"]['grid_search']:
     classTask.runRayTune(config_tmp,root,task)
     #'''
 
+print(settings_config2)
 
-classTask = iFinalCurves(config)
-#classTask.initializeGeneralVariables(settings_config,fixed_config,hyperparameters_config,root)
-#classTask.runComputation(config,settings_config,fixed_config,hyperparameters_config,root)
-config["ray"] = False
-classTask.runRayTune(config,root,task)
+config_without_grid_search = dict(config)
+task = 'show_metrics_results_already_computed_following_step'
+
+for key,value in config_without_grid_search.items():
+    if (type(value) == type(config_without_grid_search)):
+        if ("grid_search" in value):
+            config_without_grid_search[key] = value['grid_search']
+            
+            if len(config_without_grid_search[key]) > 1:
+                print(key)
+
+            #if len(config_without_grid_search[key]) == 1:
+            if key != 'rho' and key != 'replicates':
+                config_without_grid_search[key] = config_without_grid_search[key][0]
+            
+    #else:
+    #    config_without_grid_search.pop()
+
+#config_without_grid_search["debug"] = config["debug"]
+
+print(config_without_grid_search)
+
+
+
+classTask = iFinalCurves(config_without_grid_search)
+config_without_grid_search["ray"] = False
+
+classTask.runRayTune(config_without_grid_search,root,task)
+#classTask.do_everything(config_without_grid_search,root)
+#classTask.initializeGeneralVariables(config3,config4,split_config,root)
+#classTask.runComputation(config,config3,config4,config2,root)
 
 '''
 

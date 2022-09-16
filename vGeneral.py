@@ -20,49 +20,49 @@ class vGeneral(abc.ABC):
         self.experiment = "not updated"
 
     def split_config(self,config):
-        settings_config = dict(config)
-        fixed_config = dict(config)
-        hyperparameters_config = dict(config)
+        config3 = dict(config)
+        config4 = dict(config)
+        config2 = dict(config)
         for key in config.keys():
             if key in self.hyperparameters_list:
-                settings_config.pop(key, None)
-                fixed_config.pop(key, None)
+                config3.pop(key, None)
+                config4.pop(key, None)
             elif key in self.fixed_hyperparameters_list:
-                settings_config.pop(key, None)
-                hyperparameters_config.pop(key, None)
+                config3.pop(key, None)
+                config2.pop(key, None)
             else:
-                fixed_config.pop(key, None)
-                hyperparameters_config.pop(key, None)
+                config4.pop(key, None)
+                config2.pop(key, None)
 
-        return settings_config, fixed_config, hyperparameters_config
+        return config3, config4, config2
 
-    def initializeGeneralVariables(self,settings_config,fixed_config,hyperparameters_config,root):
+    def initializeGeneralVariables(self,config3,config4,config2,root):
         """General variables"""
 
-        # Initialize some parameters from settings_config
-        self.finetuning = fixed_config["finetuning"]
-        self.all_images_DIP = settings_config["all_images_DIP"]
-        self.phantom = settings_config["image"]
-        self.net = fixed_config["net"]
-        self.method = settings_config["method"]
-        self.processing_unit = settings_config["processing_unit"]
-        self.nb_threads = settings_config["nb_threads"]
-        self.max_iter = fixed_config["max_iter"] # Outer iterations
-        self.experiment = settings_config["experiment"] # Label of the experiment
-        self.replicate = settings_config["replicates"] # Label of the replicate
-        self.penalty = fixed_config["penalty"]
-        self.castor_foms = settings_config["castor_foms"]
-        self.FLTNB = settings_config["FLTNB"]
+        # Initialize some parameters from config3
+        self.finetuning = config4["finetuning"]
+        self.all_images_DIP = config3["all_images_DIP"]
+        self.phantom = config3["image"]
+        self.net = config4["net"]
+        self.method = config3["method"]
+        self.processing_unit = config3["processing_unit"]
+        self.nb_threads = config3["nb_threads"]
+        self.max_iter = config4["max_iter"] # Outer iterations
+        self.experiment = config3["experiment"] # Label of the experiment
+        self.replicate = config3["replicates"] # Label of the replicate
+        self.penalty = config4["penalty"]
+        self.castor_foms = config3["castor_foms"]
+        self.FLTNB = config3["FLTNB"]
 
         # Initialize useful variables
         self.subroot = root + '/data/Algo/' + 'debug/'*self.debug + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' + self.method + '/' # Directory root
         self.subroot_metrics = root + '/data/Algo/' + 'debug/'*self.debug + 'metrics/' + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' # Directory root for metrics
         self.subroot_data = root + '/data/Algo/' # Directory root
-        self.suffix = self.suffix_func(hyperparameters_config) # self.suffix to make difference between raytune runs (different hyperparameters)
-        self.suffix_metrics = self.suffix_func(hyperparameters_config,NNEPPS=True) # self.suffix with NNEPPS information
-        if (settings_config["task"] == "post_reco"):
-            self.suffix = settings_config["task"] + ' ' + self.suffix
-            self.suffix_metrics = settings_config["task"] + ' ' + self.suffix_metrics
+        self.suffix = self.suffix_func(config2) # self.suffix to make difference between raytune runs (different hyperparameters)
+        self.suffix_metrics = self.suffix_func(config2,NNEPPS=True) # self.suffix with NNEPPS information
+        if (config3["task"] == "post_reco"):
+            self.suffix = config3["task"] + ' ' + self.suffix
+            self.suffix_metrics = config3["task"] + ' ' + self.suffix_metrics
 
 
         # Define PET input dimensions according to input data dimensions
@@ -70,14 +70,14 @@ class vGeneral(abc.ABC):
         self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
         # Define ROIs for image0 phantom, otherwise it is already done in the database
-        if (self.phantom == "image0" or self.phantom == "image2_0" and settings_config["task"] != "show_metrics_results_already_computed"):
+        if (self.phantom == "image0" or self.phantom == "image2_0" and config3["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
-        if (self.phantom == "image2_3D" and settings_config["task"] != "show_metrics_results_already_computed"):
+        if (self.phantom == "image2_3D" and config3["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
 
-        return hyperparameters_config
+        return config2
 
-    def createDirectoryAndConfigFile(self,hyperparameters_config):
+    def createDirectoryAndConfigFile(self,config2):
         if (self.method == 'nested' or self.method == 'Gong'):
             Path(self.subroot+'Block1/' + self.suffix + '/before_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
             Path(self.subroot+'Block1/' + self.suffix + '/during_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
@@ -107,7 +107,8 @@ class vGeneral(abc.ABC):
                 
     def runRayTune(self,config,root,task):
         # Check parameters incompatibility
-        self.parametersIncompatibility(config,task)
+        if (task != "show_metrics_results_already_computed_following_step"):
+            self.parametersIncompatibility(config,task)
         # Remove debug and ray keys from config
         self.debug = config["debug"]
         self.ray = config["ray"]
@@ -138,26 +139,27 @@ class vGeneral(abc.ABC):
 
             # Start tuning of hyperparameters = start each admm computation in parallel
             #try: # resume previous run (if it exists)
-            #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(hyperparameters_config) + str(config["max_iter"]), resources_per_trial = resources_per_trial, resume = "ERRORED_ONLY")#, progress_reporter = reporter)
+            #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(config2) + str(config["max_iter"]), resources_per_trial = resources_per_trial, resume = "ERRORED_ONLY")#, progress_reporter = reporter)
             #except: # do not resume previous run because there is no previous one
-            #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(hyperparameters_config) + "_max_iter=" + str(config["max_iter"], resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
+            #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(config2) + "_max_iter=" + str(config["max_iter"], resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
 
             tune.run(partial(self.do_everything,root=root,suffix_replicate_file = True), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
         else: # Without raytune
         # Remove grid search if not using ray and choose first element of each config key.
-            for key, value in config.items():
-                if key != "hyperparameters":
-                    if (len(value["grid_search"]) == 1 or self.debug):
-                        config[key] = value["grid_search"][0]
-                    else:
-                        raise ValueError("Please put one value for " + key + " in config variable in main.py if ray is deactivated.")
-                    
-                    if (self.debug):
-                        # Set every iteration values to 1 to be quicker
-                        if key in ["max_iter","nb_subsets","sub_iter_DIP","nb_inner_iteration","nb_outer_iteration"]:
-                            config[key] = 1
-                        elif key == "mlem_sequence":
-                            config["mlem_sequence"] = False
+            if (task != "show_metrics_results_already_computed_following_step"):
+                for key, value in config.items():
+                    if key != "hyperparameters":
+                        if (len(value["grid_search"]) == 1 or self.debug):
+                            config[key] = value["grid_search"][0]
+                        else:
+                            raise ValueError("Please put one value for " + key + " in config variable in main.py if ray is deactivated.")
+                        
+                        if (self.debug):
+                            # Set every iteration values to 1 to be quicker
+                            if key in ["max_iter","nb_subsets","sub_iter_DIP","nb_inner_iteration","nb_outer_iteration"]:
+                                config[key] = 1
+                            elif key == "mlem_sequence":
+                                config["mlem_sequence"] = False
             # Launch computation
             self.do_everything(config,root,suffix_replicate_file = True)
 
@@ -222,8 +224,7 @@ class vGeneral(abc.ABC):
             elif (config["net"]['grid_search'][0] != "DD_AE"): # not a Deep Decoder based architecture, so remove k and d
                 config.pop("d_DD", None)
                 config.pop("k_DD", None)
-            if (config["method"]['grid_search'][0] == 'MLEM' or config["method"]['grid_search'][0] == 'AML'):
-                config.pop("rho", None)
+            if (config["method"]['grid_search'][0] == 'MLEM' or config["method"]['grid_search'][0] == 'OSEM' or config["method"]['grid_search'][0] == 'AML'):                config.pop("rho", None)
             # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMLim in CASToR
             if ('ADMMLim' in config["method"]['grid_search'][0] == "nested" or config["method"]['grid_search'][0]):
                 config["mlem_sequence"]['grid_search'] = [False]
@@ -256,22 +257,22 @@ class vGeneral(abc.ABC):
 
     def do_everything(self,config,root,suffix_replicate_file = False):
         # Retrieve fixed parameters and hyperparameters from config dictionnary
-        settings_config, fixed_config, hyperparameters_config = self.split_config(config)
-        settings_config["task"] = config["task"]
+        config3, config4, config2 = self.split_config(config)
+        config3["task"] = config["task"]
         # Initialize variables
         self.config = config
         self.root = root
-        self.initializeGeneralVariables(settings_config,fixed_config,hyperparameters_config,root)
-        self.initializeSpecific(settings_config,fixed_config,hyperparameters_config,root)
+        self.initializeGeneralVariables(config3,config4,config2,root)
+        self.initializeSpecific(config3,config4,config2,root)
         # Run task computation
-        self.runComputation(config,settings_config,fixed_config,hyperparameters_config,root)
+        self.runComputation(config,config3,config4,config2,root)
         if (suffix_replicate_file):
             # Store suffix to retrieve all suffixes in main.py for metrics
-            text_file = open(self.subroot_data + 'suffixes_for_last_run_' + settings_config["method"] + '.txt', "a")
+            text_file = open(self.subroot_data + 'suffixes_for_last_run_' + config3["method"] + '.txt', "a")
             text_file.write(self.suffix_metrics + "\n")
             text_file.close()
             # Store replicate to retrieve all replicates in main.py for metrics
-            text_file = open(self.subroot_data + 'replicates_for_last_run_' + settings_config["method"] + '.txt', "a")
+            text_file = open(self.subroot_data + 'replicates_for_last_run_' + config3["method"] + '.txt', "a")
             text_file.write("replicate_" + str(self.replicate) + "\n")
             text_file.close()
 
@@ -323,13 +324,13 @@ class vGeneral(abc.ABC):
                         else:
                             f1.write(line)
 
-    def suffix_func(self,hyperparameters_config,NNEPPS=False):
-        hyperparameters_config_copy = dict(hyperparameters_config)
+    def suffix_func(self,config2,NNEPPS=False):
+        config2_copy = dict(config2)
         if (NNEPPS==False):
-            hyperparameters_config_copy.pop('NNEPPS',None)
-        hyperparameters_config_copy.pop('nb_outer_iteration',None)
+            config2_copy.pop('NNEPPS',None)
+        config2_copy.pop('nb_outer_iteration',None)
         suffix = "config"
-        for key, value in hyperparameters_config_copy.items():
+        for key, value in config2_copy.items():
             suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
         return suffix
 

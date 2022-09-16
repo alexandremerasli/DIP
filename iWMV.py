@@ -14,9 +14,9 @@ class iWMV(vGeneral):
         self.SUCCESS = False
         self.stagnate = 0
 
-    def initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root):
-        self.windowSize = fixed_config["windowSize"]
-        self.patienceNumber = fixed_config["patienceNumber"]
+    def initializeSpecific(self,config3,config4,config2,root):
+        self.windowSize = config4["windowSize"]
+        self.patienceNumber = config4["patienceNumber"]
         self.epochStar = -1
         self.VAR_recon = []
         self.MSE_WMV = []
@@ -26,10 +26,10 @@ class iWMV(vGeneral):
 
         #Loading Ground Truth image to compute metrics
         self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
-        if settings_config["FLTNB"] == "double":
+        if config3["FLTNB"] == "double":
             self.image_gt.astype(np.float64)
 
-    def runComputation(self,config,settings_config,fixed_config,hyperparameters_config,root):
+    def runComputation(self,config,config3,config4,config2,root):
         pass
 
     def WMV(self,out,epoch,queueQ,SUCCESS,VAR_min,stagnate):

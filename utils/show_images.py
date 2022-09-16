@@ -46,24 +46,24 @@ def parametersIncompatibility(config,task=None):
     return config
 
 
-def suffix_func(hyperparameters_config,NNEPPS=False):
-    hyperparameters_config_copy = dict(hyperparameters_config)
-    print(hyperparameters_config_copy)
-    hyperparameters_config_copy = parametersIncompatibility(hyperparameters_config_copy)
-    print(hyperparameters_config_copy)
+def suffix_func(config,NNEPPS=False):
+    config_copy = dict(config)
+    print(config_copy)
+    config_copy = parametersIncompatibility(config_copy)
+    print(config_copy)
     if (NNEPPS==False):
-        hyperparameters_config_copy.pop('NNEPPS',None)
-    hyperparameters_config_copy.pop('nb_outer_iteration',None)
+        config_copy.pop('NNEPPS',None)
+    config_copy.pop('nb_outer_iteration',None)
     suffix = "config"
-    for key, value in hyperparameters_config_copy.items():
+    for key, value in config_copy.items():
         suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
     return suffix
     
-def path_from_config(hyperparameters_config,config,root):
+def path_from_config(config,config,root):
     path = root + 'image0/replicate_1/' + method + '/'
     if (method == "Gong" or method == "nested"):
-        path += 'Block2/out_cnn/24/out_DIP9' + suffix_func(hyperparameters_config) + '.img'
-        #path += 'Block2/out_cnn/24/out_DIP0' + suffix_func(hyperparameters_config) + '.img'
+        path += 'Block2/out_cnn/24/out_DIP9' + suffix_func(config) + '.img'
+        #path += 'Block2/out_cnn/24/out_DIP0' + suffix_func(config) + '.img'
     elif (method == "BSREM"):
         path += "config_rho=" + str(config["rho"]) + "_mlem_=False/BSREM_it30.img"
     elif (method == "MLEM"):
@@ -80,14 +80,14 @@ def fijii_np(path,shape,type='<f'):
     image = data.reshape(shape)
     return image
 
-def show_image(hyperparameters_config,config):
+def show_image(config,config):
     root = os.getcwd() + '/data/Algo/'
     PETImage_shape = (112,112)
 
     if (method == "Gong" or method == "nested"):
-        img1_np = fijii_np(path_from_config(hyperparameters_config,config,root), shape=(PETImage_shape),type='<f')
+        img1_np = fijii_np(path_from_config(config,config,root), shape=(PETImage_shape),type='<f')
     else:
-        img1_np = fijii_np(path_from_config(hyperparameters_config,config,root), shape=(PETImage_shape),type='<d')
+        img1_np = fijii_np(path_from_config(config,config,root), shape=(PETImage_shape),type='<d')
 
     plt.figure()
     #plt.imshow(np.abs(img1_np), cmap='gray_r')
@@ -113,7 +113,7 @@ def show_image_path(path):
 
 
 # Configuration dictionnary for general parameters (not hyperparameters)
-settings_config = {
+settings_config2 = {
     "image" : tune.grid_search(['image0']), # Image from database
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
@@ -133,7 +133,7 @@ settings_config = {
     "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
 }
 # Configuration dictionnary for hyperparameters to tune
-hyperparameters_config = {
+config2 = {
     "rho" : tune.grid_search([0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     #"rho" : tune.grid_search([0.003,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     ## network hyperparameters
@@ -165,23 +165,23 @@ hyperparameters_config = {
 
 # Merge 2 dictionaries
 split_config = {
-    "hyperparameters" : list(hyperparameters_config.keys())
+    "hyperparameters" : list(config.keys())
 }
-config = {**settings_config, **hyperparameters_config, **split_config}
+config = {**config3, **config, **split_config}
 
 
 config_copy = dict(config)
-hyperparameters_config_copy = dict(hyperparameters_config)
+config_copy = dict(config)
 for key, value in config_copy.items():
     if key !="debug" and key != "hyperparameters":
         config_copy[key] = value["grid_search"][0]
 
-for key, value in hyperparameters_config_copy.items():
-    hyperparameters_config_copy[key] = value["grid_search"][0]
+for key, value in config_copy.items():
+    config_copy[key] = value["grid_search"][0]
 
 method = config_copy["method"]
 
-show_image(hyperparameters_config_copy,config_copy)
+show_image(config_copy,config_copy)
 
 #show_image_path("/home/meraslia/workspace_reco/nested_admm/data/Algo/image0/replicate_1/Gong/Block2/out_cnn/24/out_DIP_post_reco_epoch=99config_rho=0.0003_lr=0.5_sub_i=100_opti_=Adam_skip_=3_scali=nothing_input=CT_sub_i=50_mlem_=False.img")
 #show_image_path("/home/meraslia/workspace_reco/nested_admm/data/Algo/Data/im_corrupt_beginning_10.img")

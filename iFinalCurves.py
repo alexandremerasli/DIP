@@ -15,11 +15,11 @@ class iFinalCurves(vGeneral):
     def __init__(self,config):
         print("__init__")
 
-    def initializeSpecific(self,settings_config,fixed_config,hyperparameters_config,root):
+    def initializeSpecific(self,config3,config4,config2,root):
         print("init")
         # show the plots in python or not !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    def runComputation(self,config,settings_config,fixed_config,hyperparameters_config,root):
+    def runComputation(self,config,config3,config4,config2,root):
         for ROI in ['hot','cold']:
             plt.figure()
 
@@ -180,7 +180,7 @@ class iFinalCurves(vGeneral):
                         else:
                             rho = config["rho"]['grid_search'][0]
                         if ROI == 'hot':
-                            title = method + " rho = " + str() + 'AR in ' + ROI + ' region vs IR in background' + '.png'    
+                            title = method + " rho = " + str(rho) + 'AR in ' + ROI + ' region vs IR in background' + '.png'    
                         elif ROI == 'cold':
                             title = method + " rho = " + str(rho) + 'AR in ' + ROI + ' region vs IR in background' + '.png'    
                     elif (fig_nb == 1):
