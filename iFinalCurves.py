@@ -76,7 +76,7 @@ class iFinalCurves(vGeneral):
                     idx_wanted += range(0,nb_replicates)
 
                 # Check replicates from results are compatible with this script
-                replicate_idx = [replicates[0][idx].rstrip()[-1] for idx in range(len(replicates[0]))]
+                replicate_idx = [int(re.findall(r'(\w+?)(\d+)', replicates[0][idx].rstrip())[0][-1]) for idx in range(len(replicates[0]))]
                 if list(np.sort(np.sort(replicate_idx).astype(int)-1)) != list(np.sort(idx_wanted)):
                     raise ValueError("Replicates are not the same for each case !")
 
@@ -162,8 +162,10 @@ class iFinalCurves(vGeneral):
                 for fig_nb in range(2):
                     fig, ax = plt.subplots()
                     for rho_idx in range(nb_rho):
-                        avg = np.zeros((len_mini[rho_idx],),dtype=np.float32)
-                        std = np.zeros((len_mini[rho_idx],),dtype=np.float32)
+                        avg_metrics = np.zeros((len_mini[rho_idx],),dtype=np.float32)
+                        std_metrics = np.zeros((len_mini[rho_idx],),dtype=np.float32)
+                        avg_IR = np.zeros((len_mini[rho_idx],),dtype=np.float32)
+                        std_IR = np.zeros((len_mini[rho_idx],),dtype=np.float32)
                         for replicate in range(nb_replicates):
                             case = replicate + nb_replicates*rho_idx
                             # Plot tradeoff curves
@@ -173,28 +175,37 @@ class iFinalCurves(vGeneral):
                                     ax.plot(100*IR_final[case][0],metrics_final[case][0],'o', mfc='none',color='black',label='_nolegend_') # IR in %
                                 else:
                                     ax.plot(100*IR_final[case][idx_sort],metrics_final[case][idx_sort],'-o') # IR in %
-                                ax.set_xlabel('Image Roughness in the background (%)', fontsize = 18)
-                                ax.set_ylabel('Absolute bias (AU)', fontsize = 18)
+                                
+                                # Compute average of tradeoff curves with iterations
+                                avg_metrics += np.array(metrics_final[case][:len_mini[rho_idx]]) / nb_replicates
+                                avg_IR += np.array(IR_final[case][:len_mini[rho_idx]]) / nb_replicates                           
 
                             if (fig_nb == 1):
                                 ax.plot(np.arange(0,len(metrics_final[case])),metrics_final[case],label='_nolegend_') # Plot bias curves with iterations for each replicate
                                 # Compute average of bias curves with iterations
                                 print(metrics_final[case][:len_mini[rho_idx]])
-                                avg += np.array(metrics_final[case][:len_mini[rho_idx]]) / nb_replicates
+                                avg_metrics += np.array(metrics_final[case][:len_mini[rho_idx]]) / nb_replicates
 
+                        # Compute std bias curves with iterations
+                        for replicate in range(nb_replicates):
+                            std_metrics += np.sqrt((np.array(metrics_final[case][:len_mini[rho_idx]]) - avg_metrics)**2 / nb_replicates)
+                            std_IR += np.sqrt((np.array(IR_final[case][:len_mini[rho_idx]]) - avg_IR)**2 / nb_replicates)
+                        print("avg_metrics")
+                        print(avg_metrics)
+                        print("avg_metrics_end")
+
+                        replicates_legend.append("average over replicates")
+                        ax.legend(replicates_legend)
+
+                        if (fig_nb == 0):
+                            ax.plot(100*avg_IR,avg_metrics,'-o',color='black')
+                            ax.fill(np.concatenate((100*(avg_IR-std_IR),100*(avg_IR[::-1]+std_IR[::-1]))),np.concatenate((avg_metrics-std_metrics,avg_metrics[::-1]+std_metrics[::-1])), alpha = 0.4)
+                            ax.set_xlabel('Image Roughness in the background (%)', fontsize = 18)
+                            ax.set_ylabel('Absolute bias (AU)', fontsize = 18)
                         if (fig_nb == 1):
-                            # Compute std bias curves with iterations
-                            for replicate in range(nb_replicates):
-                                std += np.sqrt((np.array(metrics_final[case][:len_mini[rho_idx]]) - avg)**2 / nb_replicates)
-                            print("avg")
-                            print(avg)
-                            print("avg_end")
-
                             # Plot average and std of bias curves with iterations
-                            ax.plot(np.arange(0,len(avg)),avg,color='black')
-                            ax.fill_between(np.arange(0,len(avg)), avg - std, avg + std, alpha = 0.4)
-                            replicates_legend.append("average over replicates")
-                            ax.legend(replicates_legend)
+                            ax.plot(np.arange(0,len(avg_metrics)),avg_metrics,color='black')
+                            ax.fill_between(np.arange(0,len(avg_metrics)), avg_metrics - std_metrics, avg_metrics + std_metrics, alpha = 0.4)
                             ax.set_xlabel('Iterations', fontsize = 18)
                             ax.set_ylabel('Bias (AU)', fontsize = 18)
                             ax.set_title(method + " reconstruction for " + str(nb_replicates) + " replicates")
