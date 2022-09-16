@@ -15,54 +15,54 @@ import abc
 
 class vGeneral(abc.ABC):
     @abc.abstractmethod
-    def __init__(self,config):
+    def __init__(self,config, *args, **kwargs):
         print("__init__")
         self.experiment = "not updated"
 
     def split_config(self,config):
-        config3 = dict(config)
-        config4 = dict(config)
-        config2 = dict(config)
+        config = dict(config)
+        config = dict(config)
+        config = dict(config)
         for key in config.keys():
             if key in self.hyperparameters_list:
-                config3.pop(key, None)
-                config4.pop(key, None)
+                config.pop(key, None)
+                config.pop(key, None)
             elif key in self.fixed_hyperparameters_list:
-                config3.pop(key, None)
-                config2.pop(key, None)
+                config.pop(key, None)
+                config.pop(key, None)
             else:
-                config4.pop(key, None)
-                config2.pop(key, None)
+                config.pop(key, None)
+                config.pop(key, None)
 
-        return config3, config4, config2
+        return config
 
-    def initializeGeneralVariables(self,config3,config4,config2,root):
+    def initializeGeneralVariables(self,config,root):
         """General variables"""
 
-        # Initialize some parameters from config3
-        self.finetuning = config4["finetuning"]
-        self.all_images_DIP = config3["all_images_DIP"]
-        self.phantom = config3["image"]
-        self.net = config4["net"]
-        self.method = config3["method"]
-        self.processing_unit = config3["processing_unit"]
-        self.nb_threads = config3["nb_threads"]
-        self.max_iter = config4["max_iter"] # Outer iterations
-        self.experiment = config3["experiment"] # Label of the experiment
-        self.replicate = config3["replicates"] # Label of the replicate
-        self.penalty = config4["penalty"]
-        self.castor_foms = config3["castor_foms"]
-        self.FLTNB = config3["FLTNB"]
+        # Initialize some parameters from config
+        self.finetuning = config["finetuning"]
+        self.all_images_DIP = config["all_images_DIP"]
+        self.phantom = config["image"]
+        self.net = config["net"]
+        self.method = config["method"]
+        self.processing_unit = config["processing_unit"]
+        self.nb_threads = config["nb_threads"]
+        self.max_iter = config["max_iter"] # Outer iterations
+        self.experiment = config["experiment"] # Label of the experiment
+        self.replicate = config["replicates"] # Label of the replicate
+        self.penalty = config["penalty"]
+        self.castor_foms = config["castor_foms"]
+        self.FLTNB = config["FLTNB"]
 
         # Initialize useful variables
         self.subroot = root + '/data/Algo/' + 'debug/'*self.debug + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' + self.method + '/' # Directory root
         self.subroot_metrics = root + '/data/Algo/' + 'debug/'*self.debug + 'metrics/' + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' # Directory root for metrics
         self.subroot_data = root + '/data/Algo/' # Directory root
-        self.suffix = self.suffix_func(config2) # self.suffix to make difference between raytune runs (different hyperparameters)
-        self.suffix_metrics = self.suffix_func(config2,NNEPPS=True) # self.suffix with NNEPPS information
-        if (config3["task"] == "post_reco"):
-            self.suffix = config3["task"] + ' ' + self.suffix
-            self.suffix_metrics = config3["task"] + ' ' + self.suffix_metrics
+        self.suffix = self.suffix_func(config) # self.suffix to make difference between raytune runs (different hyperparameters)
+        self.suffix_metrics = self.suffix_func(config,NNEPPS=True) # self.suffix with NNEPPS information
+        if (config["task"] == "post_reco"):
+            self.suffix = config["task"] + ' ' + self.suffix
+            self.suffix_metrics = config["task"] + ' ' + self.suffix_metrics
 
 
         # Define PET input dimensions according to input data dimensions
@@ -70,14 +70,14 @@ class vGeneral(abc.ABC):
         self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
         # Define ROIs for image0 phantom, otherwise it is already done in the database
-        if (self.phantom == "image0" or self.phantom == "image2_0" and config3["task"] != "show_metrics_results_already_computed"):
+        if (self.phantom == "image0" or self.phantom == "image2_0" and config["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
-        if (self.phantom == "image2_3D" and config3["task"] != "show_metrics_results_already_computed"):
+        if (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
 
-        return config2
+        return config
 
-    def createDirectoryAndConfigFile(self,config2):
+    def createDirectoryAndConfigFile(self,config):
         if (self.method == 'nested' or self.method == 'Gong'):
             Path(self.subroot+'Block1/' + self.suffix + '/before_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
             Path(self.subroot+'Block1/' + self.suffix + '/during_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
@@ -107,11 +107,17 @@ class vGeneral(abc.ABC):
                 
     def runRayTune(self,config,root,task):
         # Check parameters incompatibility
-        if (task != "show_metrics_results_already_computed_following_step"):
+        if (task != "show_metrics_results_already_computed_following_step"): # there is no grid_search in config for this task
             self.parametersIncompatibility(config,task)
-        # Remove debug and ray keys from config
+        # Remove debug and ray keys from config, and ask task
         self.debug = config["debug"]
         self.ray = config["ray"]
+        config["task"] = {'grid_search': [task]}
+        # Remove hyperparameters lists
+        self.fixed_hyperparameters_list = config["fixed_hyperparameters"]
+        config.pop("fixed_hyperparameters", None)
+        self.hyperparameters_list = config["hyperparameters"]
+        config.pop("hyperparameters", None)
         config.pop("debug",None)
         config.pop("ray",None)
         # Convert tensorboard to ray
@@ -139,16 +145,16 @@ class vGeneral(abc.ABC):
 
             # Start tuning of hyperparameters = start each admm computation in parallel
             #try: # resume previous run (if it exists)
-            #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(config2) + str(config["max_iter"]), resources_per_trial = resources_per_trial, resume = "ERRORED_ONLY")#, progress_reporter = reporter)
+            #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(config) + str(config["max_iter"]), resources_per_trial = resources_per_trial, resume = "ERRORED_ONLY")#, progress_reporter = reporter)
             #except: # do not resume previous run because there is no previous one
-            #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(config2) + "_max_iter=" + str(config["max_iter"], resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
+            #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(config) + "_max_iter=" + str(config["max_iter"], resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
 
             tune.run(partial(self.do_everything,root=root,suffix_replicate_file = True), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
         else: # Without raytune
         # Remove grid search if not using ray and choose first element of each config key.
             if (task != "show_metrics_results_already_computed_following_step"):
                 for key, value in config.items():
-                    if key != "hyperparameters":
+                    if key != "hyperparameters" and key != "fixed_hyperparameters":
                         if (len(value["grid_search"]) == 1 or self.debug):
                             config[key] = value["grid_search"][0]
                         else:
@@ -165,7 +171,6 @@ class vGeneral(abc.ABC):
 
 
     def parametersIncompatibility(self,config,task):
-        config["task"] = {'grid_search': [task]}
         # Additional variables needing every values in config
         # Number of replicates 
         self.nb_replicates = config["replicates"]['grid_search'][-1]
@@ -178,12 +183,6 @@ class vGeneral(abc.ABC):
         if (len(config["method"]['grid_search']) == 1):
             if config["method"]['grid_search'][0] == 'Gong':
                 config["scaling"]['grid_search'] = ["normalization"]
-
-        # Remove hyperparameters lists
-        self.fixed_hyperparameters_list = config["fixed_hyperparameters"]
-        config.pop("fixed_hyperparameters", None)
-        self.hyperparameters_list = config["hyperparameters"]
-        config.pop("hyperparameters", None)
         
         # Remove NNEPPS=False if True is selected for computation
         if (len(config["NNEPPS"]['grid_search']) > 1 and False in config["NNEPPS"]['grid_search'] and 'results' not in task):
@@ -257,22 +256,22 @@ class vGeneral(abc.ABC):
 
     def do_everything(self,config,root,suffix_replicate_file = False):
         # Retrieve fixed parameters and hyperparameters from config dictionnary
-        config3, config4, config2 = self.split_config(config)
-        config3["task"] = config["task"]
+        #config = self.split_config(config)
+        config["task"] = config["task"]
         # Initialize variables
         self.config = config
         self.root = root
-        self.initializeGeneralVariables(config3,config4,config2,root)
-        self.initializeSpecific(config3,config4,config2,root)
+        self.initializeGeneralVariables(config,root)
+        self.initializeSpecific(config,root)
         # Run task computation
-        self.runComputation(config,config3,config4,config2,root)
+        self.runComputation(config,root)
         if (suffix_replicate_file):
             # Store suffix to retrieve all suffixes in main.py for metrics
-            text_file = open(self.subroot_data + 'suffixes_for_last_run_' + config3["method"] + '.txt', "a")
+            text_file = open(self.subroot_data + 'suffixes_for_last_run_' + config["method"] + '.txt', "a")
             text_file.write(self.suffix_metrics + "\n")
             text_file.close()
             # Store replicate to retrieve all replicates in main.py for metrics
-            text_file = open(self.subroot_data + 'replicates_for_last_run_' + config3["method"] + '.txt', "a")
+            text_file = open(self.subroot_data + 'replicates_for_last_run_' + config["method"] + '.txt', "a")
             text_file.write("replicate_" + str(self.replicate) + "\n")
             text_file.close()
 
@@ -324,14 +323,15 @@ class vGeneral(abc.ABC):
                         else:
                             f1.write(line)
 
-    def suffix_func(self,config2,NNEPPS=False):
-        config2_copy = dict(config2)
+    def suffix_func(self,config,NNEPPS=False):
+        config_copy = dict(config)
         if (NNEPPS==False):
-            config2_copy.pop('NNEPPS',None)
-        config2_copy.pop('nb_outer_iteration',None)
+            config_copy.pop('NNEPPS',None)
+        config_copy.pop('nb_outer_iteration',None)
         suffix = "config"
-        for key, value in config2_copy.items():
-            suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
+        for key, value in config_copy.items():
+            if key in self.hyperparameters_list:
+                suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
         return suffix
 
     def read_input_dim(self,file_path):

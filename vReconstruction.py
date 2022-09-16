@@ -17,41 +17,41 @@ from vGeneral import vGeneral
 import abc
 class vReconstruction(vGeneral):
     @abc.abstractmethod
-    def __init__(self,config):
+    def __init__(self,config, *args, **kwargs):
         print('__init__')
 
-    def runComputation(self,config,config3,config4,config2,root):
+    def runComputation(self,config,root):
         """ Implement me! """
         pass
 
-    def initializeSpecific(self,config3,config4,config2,root):
-        self.createDirectoryAndConfigFile(config2)
+    def initializeSpecific(self,config,root, *args, **kwargs):
+        self.createDirectoryAndConfigFile(config)
 
-        # Specific hyperparameters for reconstruction module (Do it here to have raytune config2 hyperparameters selection)
-        if (config3["method"] != "MLEM" and config3["method"] != "OSEM" and config3["method"] != "AML"):
-            self.rho = config2["rho"]
+        # Specific hyperparameters for reconstruction module (Do it here to have raytune config hyperparameters selection)
+        if (config["method"] != "MLEM" and config["method"] != "OSEM" and config["method"] != "AML"):
+            self.rho = config["rho"]
         else:
             self.rho = 0
-        if ('ADMMLim' in config3["method"] or config3["method"] == "nested" or config3["method"] == "Gong"):
-            if (config3["method"] != "ADMMLim"):
-                self.unnested_1st_global_iter = config4["unnested_1st_global_iter"]
+        if ('ADMMLim' in config["method"] or config["method"] == "nested" or config["method"] == "Gong"):
+            if (config["method"] != "ADMMLim"):
+                self.unnested_1st_global_iter = config["unnested_1st_global_iter"]
             else:
                 self.unnested_1st_global_iter = None
-            if (config3["method"] == "Gong"):
+            if (config["method"] == "Gong"):
                 self.alpha = None
             else:
-                self.alpha = config2["alpha"]
-                self.adaptive_parameters = config2["adaptive_parameters"]
+                self.alpha = config["alpha"]
+                self.adaptive_parameters = config["adaptive_parameters"]
                 if (self.adaptive_parameters == "nothing"): # set mu, tau, xi to any values, there will not be used in CASToR
                     self.mu_adaptive = np.NaN
                     self.tau = np.NaN
                     self.xi = np.NaN
                 else:
-                    self.mu_adaptive = config2["mu_adaptive"]
-                    self.tau = config2["tau"]
-                    self.xi = config4["xi"]
-        self.image_init_path_without_extension = config3["image_init_path_without_extension"]
-        self.tensorboard = config3["tensorboard"]
+                    self.mu_adaptive = config["mu_adaptive"]
+                    self.tau = config["tau"]
+                    self.xi = config["xi"]
+        self.image_init_path_without_extension = config["image_init_path_without_extension"]
+        self.tensorboard = config["tensorboard"]
 
         # Initialize and save mu variable from ADMM
         if (self.method == "nested" or self.method == "Gong"):
@@ -67,7 +67,7 @@ class vReconstruction(vGeneral):
             if (self.nb_replicates == 1):
                 header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[5:] + '/data' + self.phantom[5:] + '.cdh' # PET data path
             else:
-                header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[5:] + '_' + str(config3["replicates"]) + '/data' + self.phantom[5:] + '_' + str(config3["replicates"]) + '.cdh' # PET data path
+                header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[5:] + '_' + str(config["replicates"]) + '/data' + self.phantom[5:] + '_' + str(config["replicates"]) + '.cdh' # PET data path
             executable = 'castor-recon'
             optimizer = 'MLEM'
             output_path = ' -dout ' + path_mlem_init # Output path for CASTOR framework
@@ -81,9 +81,9 @@ class vReconstruction(vGeneral):
             os.system(executable + dim + vox + output_path + header_file + vb + it + opti + th) # + ' -fov-out 95')
         '''
         
-    def castor_reconstruction(self,writer, i, subroot, nb_outer_iteration, experiment, config2, method, phantom, replicate, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, alpha, image_init_path_without_extension):
+    def castor_reconstruction(self,writer, i, subroot, nb_outer_iteration, experiment, config, method, phantom, replicate, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, alpha, image_init_path_without_extension):
         start_time_block1 = time.time()
-        mlem_sequence = config2['mlem_sequence']
+        mlem_sequence = config['mlem_sequence']
 
         # Save image f-mu in .img and .hdr format - block 1
         subroot_output_path = (subroot + 'Block1/' + suffix)
@@ -95,7 +95,7 @@ class vReconstruction(vGeneral):
 
         # Initialization
         if (method == 'nested'):            
-            x = self.ADMMLim_general(config2, i, subdir, subroot_output_path, f_mu_for_penalty,writer,image_gt)
+            x = self.ADMMLim_general(config, i, subdir, subroot_output_path, f_mu_for_penalty,writer,image_gt)
         elif (method == 'Gong'):
 
             # Choose number of argmax iteration for (second) x computation
@@ -111,11 +111,11 @@ class vReconstruction(vGeneral):
             if (i == -1):   # choose initial image for CASToR reconstruction
                 initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
             elif (i >= 0):
-                #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_' + format(config2["nb_outer_iteration"]) + '_it' + str(config4["nb_inner_iteration"]) + '.hdr'
+                #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_' + format(config["nb_outer_iteration"]) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'
                 # Trying to initialize OPTITR
                 #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
                 initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
-                #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config4["nb_inner_iteration"]) + '.hdr'
+                #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'
 
             base_name_i = format(i)
             full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
@@ -126,8 +126,8 @@ class vReconstruction(vGeneral):
             if (mlem_sequence):
                 x = self.fijii_np(full_output_path_i + '_it30.img', shape=(PETImage_shape))
             else:
-                x = self.fijii_np(full_output_path_i + '_it' + str(config2["nb_outer_iteration"]) + '.img', shape=(PETImage_shape))
-            print(full_output_path_i + '_it' + str(config2["nb_outer_iteration"]) + '.img')
+                x = self.fijii_np(full_output_path_i + '_it' + str(config["nb_outer_iteration"]) + '.img', shape=(PETImage_shape))
+            print(full_output_path_i + '_it' + str(config["nb_outer_iteration"]) + '.img')
 
             self.write_image_tensorboard(writer,x,"x after optimization transfer over iterations",suffix,image_gt, i) # Showing all corrupted images with same contrast to compare them together
             self.write_image_tensorboard(writer,x,"x after optimization transfer over iterations (FULL CONTRAST)",suffix,image_gt, i,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
@@ -155,7 +155,7 @@ class vReconstruction(vGeneral):
         self.write_hdr(subroot,[i],subdir,phantom,'u',subroot_output_path=subroot_output_path,matrix_type='sino')
 
 
-    def ADMMLim_general(self, config2, i, subdir, subroot_output_path,f_mu_for_penalty,writer=None,image_gt=None):
+    def ADMMLim_general(self, config, i, subdir, subroot_output_path,f_mu_for_penalty,writer=None,image_gt=None):
         if (self.method == "nested"):
             self.post_smoothing = 0
         castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing)
@@ -166,8 +166,8 @@ class vReconstruction(vGeneral):
             #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
             #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
         elif (i >= 1):
-            #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(config2["nb_outer_iteration"]) + '_it' + str(config4["nb_inner_iteration"]) + '.hdr'
-            #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_it' + str(config2["nb_outer_iteration"]) + '.hdr'
+            #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(config["nb_outer_iteration"]) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'
+            #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_it' + str(config["nb_outer_iteration"]) + '.hdr'
             # Last image for next global iteration
             initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
             # Uniform image for next global iteration
@@ -196,7 +196,7 @@ class vReconstruction(vGeneral):
             f_mu_for_penalty = ''
 
         # Number of iterations from config dictionnary
-        it = ' -it ' + str(config2["nb_outer_iteration"]) + ':1'  # 1 subset
+        it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
 
         x_reconstruction_command_line = castor_command_line_x \
                                         + opti_and_penalty \
@@ -221,7 +221,7 @@ class vReconstruction(vGeneral):
             finalOuterIter = int(finalOuterIterRowString)
             print("finalOuterIter",finalOuterIter)
         else:
-            finalOuterIter = config2["nb_outer_iteration"]
+            finalOuterIter = config["nb_outer_iteration"]
 
         for outer_it in range(1,finalOuterIter+1):
             path_adaptive = subroot_output_path + '/' + subdir + '/' + format(i) + '_adaptive_it' + format(outer_it) + '.log'
@@ -245,6 +245,6 @@ class vReconstruction(vGeneral):
         if (self.method == "nested" and self.tensorboard):
             for k in range(1,finalOuterIter,max(finalOuterIter//10,1)):
                 x = self.fijii_np(full_output_path_i + '_it' + str(k) + '.img', shape=(self.PETImage_shape))
-                self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations",self.suffix,500, 0+k+i*config2["nb_outer_iteration"]) # Showing all corrupted images with same contrast to compare them together
-                self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations(FULL CONTRAST)",self.suffix,500, 0+k+i*config2["nb_outer_iteration"],full_contrast=True) # Showing all corrupted images with same contrast to compare them together
+                self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations",self.suffix,500, 0+k+i*config["nb_outer_iteration"]) # Showing all corrupted images with same contrast to compare them together
+                self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations(FULL CONTRAST)",self.suffix,500, 0+k+i*config["nb_outer_iteration"],full_contrast=True) # Showing all corrupted images with same contrast to compare them together
             return x

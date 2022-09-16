@@ -11,14 +11,14 @@ import pandas as pd
 from vGeneral import vGeneral
 
 class iMeritsADMMLim(vGeneral):
-    def __init__(self,config):
+    def __init__(self,config, *args, **kwargs):
         print("__init__")
 
-    def initializeSpecific(self,config3,config4,config2,root):
-        self.alpha = config2["alpha"]
-        self.nb_outer_iteration = config2["nb_outer_iteration"]
-        self.nb_inner_iteration = config4["nb_inner_iteration"]
-        #self.adaptive_parameters == config2["adaptive_parameters"]
+    def initializeSpecific(self,config,root, *args, **kwargs):
+        self.alpha = config["alpha"]
+        self.nb_outer_iteration = config["nb_outer_iteration"]
+        self.nb_inner_iteration = config["nb_inner_iteration"]
+        #self.adaptive_parameters == config["adaptive_parameters"]
 
         self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
         self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
@@ -27,7 +27,7 @@ class iMeritsADMMLim(vGeneral):
 
         #Loading Ground Truth image to compute metrics
         self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
-        if config3["FLTNB"] == "double":
+        if config["FLTNB"] == "double":
             self.image_gt.astype(np.float64)
 
         #inners = list(range(innerIteration))
@@ -46,7 +46,7 @@ class iMeritsADMMLim(vGeneral):
         self.whichADMMoptimizer = 'ADMMLim'
         self.SHOW = False  # show the plots in python or not !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    def runComputation(self,config,config3,config4,config2,root):
+    def runComputation(self,config,root):
 
         nbTuners = 1
 

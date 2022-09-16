@@ -12,14 +12,14 @@ import re
 from vGeneral import vGeneral
 
 class iFinalCurves(vGeneral):
-    def __init__(self,config):
+    def __init__(self,config, *args, **kwargs):
         print("__init__")
 
-    def initializeSpecific(self,config3,config4,config2,root):
+    def initializeSpecific(self,config,root, *args, **kwargs):
         print("init")
         # show the plots in python or not !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    def runComputation(self,config,config3,config4,config2,root):
+    def runComputation(self,config,root):
         for ROI in ['hot','cold']:
             plt.figure()
 

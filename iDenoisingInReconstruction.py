@@ -16,12 +16,12 @@ import matplotlib.pyplot as plt
 from vDenoising import vDenoising
 
 class iDenoisingInReconstruction(vDenoising):
-    def __init__(self,config,global_it):
+    def __init__(self,config,global_it, *args, **kwargs):
         self.global_it = global_it
 
-    def initializeSpecific(self,config3,config4,config,root):
+    def initializeSpecific(self,config,root, *args, **kwargs):
         print("Denoising in reconstruction")
-        vDenoising.initializeSpecific(self,config3,config4,config,root)
+        vDenoising.initializeSpecific(self,config,root)
         # Loading DIP x_label (corrupted image) from block1
         try:
             self.image_corrupt = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(self.global_it) +'_x_label' + self.suffix + '.img',shape=(self.PETImage_shape))
@@ -31,4 +31,4 @@ class iDenoisingInReconstruction(vDenoising):
         self.checkpoint_simple_path = self.subroot+'Block2/' + self.suffix + '/checkpoint/'
         self.name_run = ""
         self.sub_iter_DIP = config["sub_iter_DIP"]
-        self.sub_iter_DIP_initial = config4["sub_iter_DIP_initial"]
+        self.sub_iter_DIP_initial = config["sub_iter_DIP_initial"]
