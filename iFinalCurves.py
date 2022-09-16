@@ -30,16 +30,8 @@ class iFinalCurves(vGeneral):
         for ROI in ['hot','cold']:
             plt.figure()
 
-            suffixes_legend = []
             replicates_legend = []
-
-            #'''
-            if (self.debug or self.ray == False):
-                method_list = [config["method"]]
-            else:
-                method_list = config["method"]['grid_search']
-            #'''
-
+            method_list = config["method"]
 
             for method in method_list: # Loop over methods
                 suffixes = []
@@ -63,18 +55,9 @@ class iFinalCurves(vGeneral):
                     replicates.append(f.readlines())
 
                 print(root + '/data/Algo' + '/replicates_for_last_run_' + method + '.txt')
-
-                '''
-                # Sort replicates from file
-                replicate_idx = [replicates[0][idx].rstrip() for idx in range(len(replicates[0]))]
-                idx_replicates_sort = np.argsort(replicate_idx)
-                '''
                 
                 # Retrieve number of rhos and replicates
-                if (self.debug or self.ray == False):
-                    nb_rho = len(config["rho"])
-                else:
-                    nb_rho = len(config["rho"]["grid_search"])
+                nb_rho = len(config["rho"])
                 nb_replicates = int(len(replicates[0]) / nb_rho)
 
                 # Wanted list of replicates
@@ -96,17 +79,6 @@ class iFinalCurves(vGeneral):
                     i_replicate = idx_wanted[i] # Loop over rhos and replicates, for each sorted rho, take sorted replicate
                     suffix = sorted_suffixes[i].rstrip("\n")
                     replicate = "replicate_" + str(i_replicate + 1)
-
-                    print(i)
-                    print(suffix)
-                    print(replicate)
-
-                    '''
-                    if (self.debug or self.ray == False):
-                        metrics_file = root + '/data/Algo' + '/metrics/' + config["image"] + '/' + str(replicate) + '/' + method + '/' + suffix + '/' + 'metrics.csv'
-                    else:
-                        metrics_file = root + '/data/Algo' + '/metrics/' + config["image"]['grid_search'][0] + '/' + str(replicate) + '/' + method + '/' + suffix + '/' + 'metrics.csv'
-                    '''
                     metrics_file = root + '/data/Algo' + '/metrics/' + config["image"] + '/' + str(replicate) + '/' + method + '/' + suffix + '/' + 'metrics.csv'
                     try:
                         with open(metrics_file, 'r') as myfile:
@@ -169,40 +141,29 @@ class iFinalCurves(vGeneral):
                 for fig_nb in range(2):
                     fig, ax = plt.subplots()
                     for rho_idx in range(nb_rho):
-                        avg_metrics = np.zeros((len_mini[rho_idx],),dtype=np.float32)
-                        std_metrics = np.zeros((len_mini[rho_idx],),dtype=np.float32)
-                        avg_IR = np.zeros((len_mini[rho_idx],),dtype=np.float32)
-                        std_IR = np.zeros((len_mini[rho_idx],),dtype=np.float32)
                         for replicate in range(nb_replicates):
                             case = replicate + nb_replicates*rho_idx
-                            # Plot tradeoff curves
-                            if (fig_nb == 0):
+                            if (fig_nb == 0): # Plot tradeoff curves
                                 idx_sort = np.argsort(IR_final[case])
                                 if (plot_all_replicates_curves):
                                     if (method == "nested" or method == "Gong"):
                                         ax.plot(100*IR_final[case][0],metrics_final[case][0],'o', mfc='none',color='black',label='_nolegend_') # IR in %
                                     else:
-                                        ax.plot(100*IR_final[case][idx_sort],metrics_final[case][idx_sort]) # IR in %
-                                    
-                                # Compute average of tradeoff curves with iterations
-                                avg_metrics += np.array(metrics_final[case][:len_mini[rho_idx]]) / nb_replicates
-                                avg_IR += np.array(IR_final[case][:len_mini[rho_idx]]) / nb_replicates                           
+                                        ax.plot(100*IR_final[case][idx_sort],metrics_final[case][idx_sort],'-o',label='_nolegend_') # IR in %                     
                         
-                            if (fig_nb == 1):
+                            if (fig_nb == 1): # Plot bias curves
                                 if (plot_all_replicates_curves):
                                     ax.plot(np.arange(0,len(metrics_final[case])),metrics_final[case],label='_nolegend_') # Plot bias curves with iterations for each replicate
-                                # Compute average of bias curves with iterations
-                                print(metrics_final[case][:len_mini[rho_idx]])
-                                avg_metrics += np.array(metrics_final[case][:len_mini[rho_idx]]) / nb_replicates
 
-                        replicates_legend.append(method + " : rho = " + str(config["rho"][rho_idx]))
-
+                        # Compute average of tradeoff and bias curves with iterations
+                        avg_metrics = np.sum(np.array(metrics_final)[nb_replicates*rho_idx:nb_replicates*(rho_idx+1)][:len_mini[rho_idx]],axis=0) / nb_replicates
+                        avg_IR = np.sum(np.array(IR_final)[nb_replicates*rho_idx:nb_replicates*(rho_idx+1)][:len_mini[rho_idx]],axis=0) / nb_replicates
                         # Compute std bias curves with iterations
                         std_metrics = np.sqrt(np.sum((np.array(metrics_final)[nb_replicates*rho_idx:nb_replicates*(rho_idx+1),:] - avg_metrics[:])**2,axis=0) / nb_replicates)
                         std_IR = np.sqrt(np.sum((np.array(IR_final)[nb_replicates*rho_idx:nb_replicates*(rho_idx+1),:] - avg_IR[:])**2,axis=0) / nb_replicates)
 
                         if (fig_nb == 0):
-                            ax.plot(100*avg_IR,avg_metrics,color=color_avg)
+                            ax.plot(100*avg_IR,avg_metrics,'-o',color=color_avg)
                             ax.fill(np.concatenate((100*(avg_IR-std_IR),100*(avg_IR[::-1]+std_IR[::-1]))),np.concatenate((avg_metrics-std_metrics,avg_metrics[::-1]+std_metrics[::-1])), alpha = 0.4, label='_nolegend_')
                             ax.set_xlabel('Image Roughness in the background (%)', fontsize = 18)
                             ax.set_ylabel('Absolute bias (AU)', fontsize = 18)
@@ -219,14 +180,13 @@ class iFinalCurves(vGeneral):
                             ax.set_ylabel('Bias (AU)', fontsize = 18)
                             ax.set_title(method + " reconstruction averaged on " + str(nb_replicates) + " replicates")
 
+                        replicates_legend.append(method + " : rho = " + str(config["rho"][rho_idx]))
+                    
                     ax.legend(replicates_legend)
 
                     # Saving figures locally in png
                     if (fig_nb == 0):
-                        if (self.debug or self.ray == False):
-                            rho = config["rho"]
-                        else:
-                            rho = config["rho"]['grid_search'][0]
+                        rho = config["rho"]
                         if ROI == 'hot':
                             title = method + " rho = " + str(rho) + 'AR in ' + ROI + ' region vs IR in background' + '.png'    
                         elif ROI == 'cold':
@@ -237,6 +197,3 @@ class iFinalCurves(vGeneral):
                         elif ROI == 'cold':
                             title = method + " rho = " + str(rho) + 'AR in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
                     fig.savefig(self.subroot_data + 'metrics' + '/' + title)
-                    from textwrap import wrap
-                    wrapped_title = "\n".join(wrap(suffix, 50))
-                    #ax.set_title(wrapped_title,fontsize=12)

@@ -57,7 +57,6 @@ class vGeneral(abc.ABC):
         # Initialize useful variables
         self.subroot = root + '/data/Algo/' + 'debug/'*self.debug + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' + self.method + '/' # Directory root
         self.subroot_metrics = root + '/data/Algo/' + 'debug/'*self.debug + 'metrics/' + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' # Directory root for metrics
-        self.subroot_data = root + '/data/Algo/' # Directory root
         self.suffix = self.suffix_func(config) # self.suffix to make difference between raytune runs (different hyperparameters)
         self.suffix_metrics = self.suffix_func(config,NNEPPS=True) # self.suffix with NNEPPS information
         if (config["task"] == "post_reco"):
@@ -112,7 +111,6 @@ class vGeneral(abc.ABC):
         # Remove debug and ray keys from config, and ask task
         self.debug = config["debug"]
         self.ray = config["ray"]
-        config["task"] = {'grid_search': [task]}
         # Remove hyperparameters lists
         self.fixed_hyperparameters_list = config["fixed_hyperparameters"]
         config.pop("fixed_hyperparameters", None)
@@ -124,6 +122,7 @@ class vGeneral(abc.ABC):
         config["tensorboard"] = tune.grid_search([config["tensorboard"]])
 
         if (self.ray): # Launch raytune
+            config["task"] = {'grid_search': [task]}
             config_combination = 1
             for i in range(len(config)): # List of hyperparameters keys is still in config dictionary
                 config_combination *= len(list(list(config.values())[i].values())[0])
@@ -151,7 +150,8 @@ class vGeneral(abc.ABC):
 
             tune.run(partial(self.do_everything,root=root,suffix_replicate_file = True), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
         else: # Without raytune
-        # Remove grid search if not using ray and choose first element of each config key.
+            # Remove grid search if not using ray and choose first element of each config key.
+            config["task"] = task
             if (task != "show_metrics_results_already_computed_following_step"):
                 for key, value in config.items():
                     if key != "hyperparameters" and key != "fixed_hyperparameters":
@@ -223,7 +223,8 @@ class vGeneral(abc.ABC):
             elif (config["net"]['grid_search'][0] != "DD_AE"): # not a Deep Decoder based architecture, so remove k and d
                 config.pop("d_DD", None)
                 config.pop("k_DD", None)
-            if (config["method"]['grid_search'][0] == 'MLEM' or config["method"]['grid_search'][0] == 'OSEM' or config["method"]['grid_search'][0] == 'AML'):                config.pop("rho", None)
+            if (config["method"]['grid_search'][0] == 'MLEM' or config["method"]['grid_search'][0] == 'OSEM' or config["method"]['grid_search'][0] == 'AML'):
+                config.pop("rho", None)
             # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMLim in CASToR
             if ('ADMMLim' in config["method"]['grid_search'][0] == "nested" or config["method"]['grid_search'][0]):
                 config["mlem_sequence"]['grid_search'] = [False]
@@ -255,17 +256,16 @@ class vGeneral(abc.ABC):
                 raise ValueError("There must be only one method to average over replicates")
 
     def do_everything(self,config,root,suffix_replicate_file = False):
-        # Retrieve fixed parameters and hyperparameters from config dictionnary
-        #config = self.split_config(config)
-        config["task"] = config["task"]
         # Initialize variables
         self.config = config
         self.root = root
-        self.initializeGeneralVariables(config,root)
+        self.subroot_data = root + '/data/Algo/' # Directory root
+        if (config["task"] != "show_metrics_results_already_computed_following_step"):
+            self.initializeGeneralVariables(config,root)
         self.initializeSpecific(config,root)
         # Run task computation
         self.runComputation(config,root)
-        if (suffix_replicate_file):
+        if (suffix_replicate_file and config["task"] != "show_metrics_results_already_computed_following_step"):
             # Store suffix to retrieve all suffixes in main.py for metrics
             text_file = open(self.subroot_data + 'suffixes_for_last_run_' + config["method"] + '.txt', "a")
             text_file.write(self.suffix_metrics + "\n")
