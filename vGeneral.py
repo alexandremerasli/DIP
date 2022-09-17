@@ -702,3 +702,13 @@ class vGeneral(abc.ABC):
 
     def has_numbers(self,inputString):
         return any(char.isdigit() for char in inputString)
+
+    def linear_regression(self, x, y):
+        x_mean = x.mean()
+        y_mean = y.mean()
+        
+        B1_num = ((x - x_mean) * (y - y_mean)).sum()
+        B1_den = ((x - x_mean)**2).sum()
+        B1 = B1_num / B1_den
+                        
+        return B1
