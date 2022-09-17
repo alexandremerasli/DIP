@@ -54,25 +54,28 @@ class vGeneral(abc.ABC):
         self.castor_foms = config["castor_foms"]
         self.FLTNB = config["FLTNB"]
 
-        # Initialize useful variables
-        self.subroot = root + '/data/Algo/' + 'debug/'*self.debug + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' + self.method + '/' # Directory root
-        self.subroot_metrics = root + '/data/Algo/' + 'debug/'*self.debug + 'metrics/' + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' # Directory root for metrics
-        self.suffix = self.suffix_func(config) # self.suffix to make difference between raytune runs (different hyperparameters)
-        self.suffix_metrics = self.suffix_func(config,NNEPPS=True) # self.suffix with NNEPPS information
-        if (config["task"] == "post_reco"):
-            self.suffix = config["task"] + ' ' + self.suffix
-            self.suffix_metrics = config["task"] + ' ' + self.suffix_metrics
+        self.subroot_data = root + '/data/Algo/' # Directory root
+        
+        if (config["task"] != "show_metrics_results_already_computed_following_step"):
+            # Initialize useful variables
+            self.subroot = self.subroot_data + 'debug/'*self.debug + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' + self.method + '/' # Directory root
+            self.subroot_metrics = self.subroot_data + 'debug/'*self.debug + 'metrics/' + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' # Directory root for metrics
+            self.suffix = self.suffix_func(config) # self.suffix to make difference between raytune runs (different hyperparameters)
+            self.suffix_metrics = self.suffix_func(config,NNEPPS=True) # self.suffix with NNEPPS information
+            if (config["task"] == "post_reco"):
+                self.suffix = config["task"] + ' ' + self.suffix
+                self.suffix_metrics = config["task"] + ' ' + self.suffix_metrics
 
 
-        # Define PET input dimensions according to input data dimensions
-        self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
-        self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
+            # Define PET input dimensions according to input data dimensions
+            self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+            self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
-        # Define ROIs for image0 phantom, otherwise it is already done in the database
-        if (self.phantom == "image0" or self.phantom == "image2_0" and config["task"] != "show_metrics_results_already_computed"):
-            self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
-        if (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
-            self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
+            # Define ROIs for image0 phantom, otherwise it is already done in the database
+            if (self.phantom == "image0" or self.phantom == "image2_0" and config["task"] != "show_metrics_results_already_computed"):
+                self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
+            if (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
+                self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
 
         return config
 
@@ -121,8 +124,9 @@ class vGeneral(abc.ABC):
         # Convert tensorboard to ray
         config["tensorboard"] = tune.grid_search([config["tensorboard"]])
 
+        config["task"] = {'grid_search': [task]}
+
         if (self.ray): # Launch raytune
-            config["task"] = {'grid_search': [task]}
             config_combination = 1
             for i in range(len(config)): # List of hyperparameters keys is still in config dictionary
                 config_combination *= len(list(list(config.values())[i].values())[0])
@@ -151,7 +155,6 @@ class vGeneral(abc.ABC):
             tune.run(partial(self.do_everything,root=root,suffix_replicate_file = True), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
         else: # Without raytune
             # Remove grid search if not using ray and choose first element of each config key.
-            config["task"] = task
             if (task != "show_metrics_results_already_computed_following_step"):
                 for key, value in config.items():
                     if key != "hyperparameters" and key != "fixed_hyperparameters":
@@ -166,6 +169,8 @@ class vGeneral(abc.ABC):
                                 config[key] = 1
                             elif key == "mlem_sequence":
                                 config["mlem_sequence"] = False
+            else:
+                config["task"] = task
             # Launch computation
             self.do_everything(config,root,suffix_replicate_file = True)
 
@@ -260,8 +265,8 @@ class vGeneral(abc.ABC):
         self.config = config
         self.root = root
         self.subroot_data = root + '/data/Algo/' # Directory root
-        if (config["task"] != "show_metrics_results_already_computed_following_step"):
-            self.initializeGeneralVariables(config,root)
+        #if (config["task"] != "show_metrics_results_already_computed_following_step"):
+        self.initializeGeneralVariables(config,root)
         self.initializeSpecific(config,root)
         # Run task computation
         self.runComputation(config,root)

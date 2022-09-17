@@ -41,8 +41,8 @@ class iComparison(vReconstruction):
             folder_sub_path = self.subroot + self.suffix
             output_path = ' -fout ' + folder_sub_path + '/' + self.method # Output path for CASTOR framework
             
-            if (len(os.listdir(folder_sub_path)) > 0):
-                sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if os.path.splitext(filename)[1] == '.hdr']
+            sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if os.path.splitext(filename)[1] == '.hdr']
+            if (len(sorted_files) > 0):
                 sorted_files.sort(key=self.natural_keys)
                 last_file = sorted_files[-1]
                 last_iter = int(re.findall(r'(\w+?)(\d+)', last_file.split('.')[0])[0][-1])
