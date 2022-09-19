@@ -30,9 +30,9 @@ class iResults(vDenoising):
                 self.path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
                 with open(self.path_stopping_criterion) as f:
                     first_line = f.readline() # Read first line to get second one
-                    self.total_nb_iter = int(f.readline().rstrip()) - 1
+                    self.total_nb_iter = min(int(f.readline().rstrip()) - 2, config["nb_outer_iteration"] - 1)
             except:
-                self.total_nb_iter = config["nb_outer_iteration"]
+                self.total_nb_iter = config["nb_outer_iteration"] - 1
             self.beta = config["alpha"]
         elif (config["method"] == 'nested' or config["method"] == 'Gong'):
             if ('post_reco' in config["task"]):
@@ -132,7 +132,12 @@ class iResults(vDenoising):
         f = np.zeros(self.PETImage_shape,dtype=type)
         f_p = np.zeros(self.PETImage_shape,dtype=type)
 
-        for i in range(1,self.total_nb_iter+1):
+        if ('ADMMLim' in config["method"]):
+            i_init = 2
+        else:
+            i_init = 1
+
+        for i in range(i_init,self.total_nb_iter+i_init):
             IR = 0
             for p in range(1,self.nb_replicates+1):
                 if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
@@ -152,11 +157,11 @@ class iResults(vDenoising):
                             iteration_name="iterations"
                         if ('post_reco' in config["task"]):
                             try:
-                                f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(0) + '_epoch=' + format(i-1) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+                                f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(0) + '_epoch=' + format(i-i_init) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
                             except: # ES point is reached
                                 break
                         else:
-                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + "FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-i_init) + "FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
                         if config["FLTNB"] == "double":
                             f_p.astype(np.float64)
                     elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'OSEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or config["method"] == 'APGMAP'):
@@ -177,13 +182,13 @@ class iResults(vDenoising):
                             f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
 
                     # Compute IR metric (different from others with several replicates)
-                    self.compute_IR_bkg(self.PETImage_shape,f_p,i-1,self.IR_bkg_recon,self.phantom)
+                    self.compute_IR_bkg(self.PETImage_shape,f_p,i-i_init,self.IR_bkg_recon,self.phantom)
 
                     # Specific average for IR
                     if (config["average_replicates"] == False and p == self.replicate):
-                        IR = self.IR_bkg_recon[i-1]
+                        IR = self.IR_bkg_recon[i-i_init]
                     elif (config["average_replicates"]):
-                        IR += self.IR_bkg_recon[i-1] / self.nb_replicates
+                        IR += self.IR_bkg_recon[i-i_init] / self.nb_replicates
                         
                     if (config["average_replicates"]): # Average images across replicates (for metrics except IR)
                         f += f_p / self.nb_replicates
@@ -193,13 +198,13 @@ class iResults(vDenoising):
                     del f_p
                     
                 
-            self.IR_bkg_recon[i-1] = IR
+            self.IR_bkg_recon[i-i_init] = IR
             if (self.tensorboard):
                 #print("IR saved in tensorboard")
-                self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[i-1], i)
+                self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[i-i_init], i)
 
             # Show images and metrics in tensorboard (averaged images if asked in config)           
-            self.writeEndImagesAndMetrics(i-1,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
+            self.writeEndImagesAndMetrics(i-i_init,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
 
         #self.WMV_plot(config)
 

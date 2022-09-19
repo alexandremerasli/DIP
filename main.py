@@ -16,21 +16,21 @@ from ray import tune
 
 # Configuration dictionnary for general settings parameters (not hyperparameters)
 settings_config = {
-    "image" : tune.grid_search(['image0']), # Image from database
+    "image" : tune.grid_search(['image2_0']), # Image from database
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['APGMAP']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['ADMMLim']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
-    "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
+    "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
     "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
-    "tensorboard" : False, # Tensorboard mode = show results in tensorboard
+    "tensorboard" : True, # Tensorboard mode = show results in tensorboard
     "all_images_DIP" : tune.grid_search(['True']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
     #"f_init" : tune.grid_search(['1_im_value_cropped']),
     "replicates" : tune.grid_search(list(range(1,100+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
-    "replicates" : tune.grid_search(list(range(1,2+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
+    #"replicates" : tune.grid_search(list(range(1,100+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
     "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
     "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMLim)
 }
@@ -52,7 +52,7 @@ fixed_config = {
 hyperparameters_config = {
     "rho" : tune.grid_search([0,3,3e-1,3e-2,3e-3,3e-4,3e-5,3e-6,3e-7]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     "rho" : tune.grid_search([3e-3,3e-4,3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    "rho" : tune.grid_search([0.01,0.02]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "rho" : tune.grid_search([0.02]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     #"rho" : tune.grid_search([0.05]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     #"rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     ## network hyperparameters
@@ -112,7 +112,7 @@ from iFinalCurves import iFinalCurves
 
 for method in config["method"]['grid_search']:
 
-    '''
+    #'''
     # Gong reconstruction
     if (config["method"]["grid_search"][0] == 'Gong' and len(config["method"]["grid_search"]) == 1):
         print("configuration fiiiiiiiiiiiiiiiiiiile")
@@ -135,13 +135,34 @@ for method in config["method"]['grid_search']:
         #config = config_func()
         config = config_func_MIC()
 
+    # OSEM reconstruction
+    if (config["method"]["grid_search"][0] == 'OSEM' and len(config["method"]["grid_search"]) == 1):
+        print("configuration fiiiiiiiiiiiiiiiiiiile")
+        from OSEM_configuration import config_func_MIC
+        #config = config_func()
+        config = config_func_MIC()
+
     # BSREM reconstruction
     if (config["method"]["grid_search"][0] == 'BSREM' and len(config["method"]["grid_search"]) == 1):
         print("configuration fiiiiiiiiiiiiiiiiiiile")
         from BSREM_configuration import config_func_MIC
         #config = config_func()
         config = config_func_MIC()
-    '''
+
+    # APGMAP reconstruction
+    if (config["method"]["grid_search"][0] == 'APGMAP' and len(config["method"]["grid_search"]) == 1):
+        print("configuration fiiiiiiiiiiiiiiiiiiile")
+        from APGMAP_configuration import config_func_MIC
+        #config = config_func()
+        config = config_func_MIC()
+
+    # ADMMLim reconstruction
+    if (config["method"]["grid_search"][0] == 'ADMMLim' and len(config["method"]["grid_search"]) == 1):
+        print("configuration fiiiiiiiiiiiiiiiiiiile")
+        from ADMMLim_configuration import config_func_MIC
+        #config = config_func()
+        config = config_func_MIC()
+    #'''
     config_tmp = dict(config)
     config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
 
@@ -174,9 +195,9 @@ for method in config["method"]['grid_search']:
     #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
     #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
     #task = 'show_results_post_reco'
-    task = 'show_results'
+    #task = 'show_results'
     #task = 'show_metrics_ADMMLim'
-    task = 'show_metrics_results_already_computed'
+    #task = 'show_metrics_results_already_computed'
 
     if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
         classTask = iNestedADMM(hyperparameters_config)
