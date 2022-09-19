@@ -22,7 +22,7 @@ class iFinalCurves(vGeneral):
 
     def runComputation(self,config,root):
 
-        plot_all_replicates_curves = True
+        plot_all_replicates_curves = False
         if plot_all_replicates_curves:
             color_avg = 'black'
         else:
@@ -197,16 +197,19 @@ class iFinalCurves(vGeneral):
                     std_IR = []
                     for rho_idx in range(nb_rho):
                         # Compute average of tradeoff and bias curves with iterations
-                        avg_metrics.append(np.sum(np.array(metrics_final)[nb_replicates*rho_idx:nb_replicates*(rho_idx+1)][:len_mini[rho_idx]],axis=0) / nb_replicates)
-                        avg_IR.append(np.sum(np.array(IR_final)[nb_replicates*rho_idx:nb_replicates*(rho_idx+1)][:len_mini[rho_idx]],axis=0) / nb_replicates)
+                        avg_metrics.append(np.sum(np.array(metrics_final)[nb_replicates*rho_idx:nb_replicates*(rho_idx+1),:len_mini[rho_idx]],axis=0) / nb_replicates)
+                        print(np.array(IR_final)[nb_replicates*rho_idx:nb_replicates*(rho_idx+1),:len_mini[rho_idx]])
+                        print(np.arange(nb_replicates*rho_idx,nb_replicates*(rho_idx+1)))
+                        print(np.array(IR_final).shape)
+                        print(np.sum(np.array(IR_final)[nb_replicates*rho_idx:nb_replicates*(rho_idx+1),:len_mini[rho_idx]],axis=0))
+                        avg_IR.append(np.sum(np.array(IR_final)[nb_replicates*rho_idx:nb_replicates*(rho_idx+1),:len_mini[rho_idx]],axis=0) / nb_replicates)
                         # Compute std bias curves with iterations
-                        std_metrics.append(np.sqrt(np.sum((np.array(metrics_final)[nb_replicates*rho_idx:nb_replicates*(rho_idx+1),:] - avg_metrics[rho_idx][:])**2,axis=0) / nb_replicates))
-                        std_IR.append(np.sqrt(np.sum((np.array(IR_final)[nb_replicates*rho_idx:nb_replicates*(rho_idx+1),:] - avg_IR[rho_idx][:])**2,axis=0) / nb_replicates))
+                        std_metrics.append(np.sqrt(np.sum((np.array(metrics_final)[nb_replicates*rho_idx:nb_replicates*(rho_idx+1),:] - np.array(avg_metrics)[rho_idx,:])**2,axis=0) / nb_replicates))
+                        std_IR.append(np.sqrt(np.sum((np.array(IR_final)[nb_replicates*rho_idx:nb_replicates*(rho_idx+1),:] - np.array(avg_IR)[rho_idx,:])**2,axis=0) / nb_replicates))
 
                         if (fig_nb == 0):
                             ax[fig_nb].plot(100*avg_IR[rho_idx],avg_metrics[rho_idx],'-o',color=color_avg)
                             ax[fig_nb].fill(np.concatenate((100*(avg_IR[rho_idx] - np.sign(np.array(reg[fig_nb][rho_idx]))*std_IR[rho_idx]),100*(avg_IR[rho_idx][::-1] + np.sign(np.array(reg[fig_nb][rho_idx][::-1]))*std_IR[rho_idx][::-1]))),np.concatenate((avg_metrics[rho_idx]-std_metrics[rho_idx],avg_metrics[rho_idx][::-1]+std_metrics[rho_idx][::-1])), alpha = 0.4, label='_nolegend_')
-                            #ax[fig_nb].fill(np.concatenate((100*(avg_IR[rho_idx] + std_IR[rho_idx]),100*(avg_IR[rho_idx][::-1] - std_IR[rho_idx][::-1]))),np.concatenate((avg_metrics[rho_idx]-std_metrics[rho_idx],avg_metrics[rho_idx][::-1]+std_metrics[rho_idx][::-1])), alpha = 0.4, label='_nolegend_')
                             ax[fig_nb].set_xlabel('Image Roughness in the background (%)', fontsize = 18)
                             ax[fig_nb].set_ylabel('Absolute bias (AU)', fontsize = 18)
                         if (fig_nb == 1):
