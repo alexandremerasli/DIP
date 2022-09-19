@@ -29,9 +29,9 @@ class iResultsAlreadyComputed(vDenoising):
                 self.path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
                 with open(self.path_stopping_criterion) as f:
                     first_line = f.readline() # Read first line to get second one
-                    self.total_nb_iter = min(int(f.readline().rstrip()) - 2, config["nb_outer_iteration"] - 1)
+                    self.total_nb_iter = min(int(f.readline().rstrip()) - 1, config["nb_outer_iteration"])
             except:
-                self.total_nb_iter = config["nb_outer_iteration"] - 1
+                self.total_nb_iter = config["nb_outer_iteration"]
             self.beta = config["alpha"]
         elif (config["method"] == 'nested' or config["method"] == 'Gong'):
             if (config["task"] == 'post_reco'):
