@@ -572,10 +572,10 @@ class vGeneral(abc.ABC):
         # Saving this figure locally
         Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
         #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
-        plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
         from textwrap import wrap
         wrapped_title = "\n".join(wrap(suffix, 50))
-        plt.title(wrapped_title,fontsize=12)
+        plt.title(wrapped_title + "\n" + name,fontsize=12)
+        plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
         # Adding this figure to tensorboard
         writer.add_figure(name,plt.gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
 
@@ -693,13 +693,11 @@ class vGeneral(abc.ABC):
         return int(text) if text.isdigit() else text
 
     def natural_keys(self,text):
-        '''
-        alist.sort(key=natural_keys) sorts in human order
-        http://nedbatchelder.com/blog/200712/human_sorting.html
-        (See Toothy's implementation in the comments)
-        '''
-        return [ self.atoi(c) for c in re.split(r'(\d+)', text) ]
-
+        try:
+            return [ self.atoi(c) for c in re.split(r'(\+|-)\d+(\.\d+)?', text) ] # ADMMLim
+        except:
+            return [ self.atoi(c) for c in re.split(r'(\d+)', text) ] # APGMAP
+        
     def has_numbers(self,inputString):
         return any(char.isdigit() for char in inputString)
 

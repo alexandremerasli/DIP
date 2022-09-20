@@ -22,7 +22,7 @@ class iFinalCurves(vGeneral):
 
     def runComputation(self,config,root):
 
-        plot_all_replicates_curves = True
+        plot_all_replicates_curves = False
         if plot_all_replicates_curves:
             color_avg = 'black'
         else:
@@ -77,7 +77,7 @@ class iFinalCurves(vGeneral):
                 # Sort suffixes from file by rho values 
                 sorted_suffixes = list(suffixes[0])
                 sorted_suffixes.sort(key=self.natural_keys)
-
+                print(sorted_suffixes)
                 # Load metrics from last runs to merge them in one figure
                 for i in range(len(sorted_suffixes)):
                     i_replicate = idx_wanted[i] # Loop over rhos and replicates, for each sorted rho, take sorted replicate
