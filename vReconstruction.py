@@ -147,35 +147,69 @@ class vReconstruction(vGeneral):
 
         return x_label
 
-    def compute_x_v_u_ADMM(self,x_reconstruction_command_line,subdir,i,phantom,subroot_output_path,subroot):
+    def compute_x_v_u_ADMM(self,x_reconstruction_command_line,subdir,i,phantom,subroot_output_path,subroot, it_name=''):
         # Compute x,u,v
         os.system(x_reconstruction_command_line)
-        # Write v and u hdr files
-        self.write_hdr(subroot,[i],subdir,phantom,'v',subroot_output_path=subroot_output_path,matrix_type='sino')
-        self.write_hdr(subroot,[i],subdir,phantom,'u',subroot_output_path=subroot_output_path,matrix_type='sino')
-
+        # Change iteration name for header if stopping criterion reached
+        try:
+            path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
+            with open(path_stopping_criterion) as f:
+                first_line = f.readline() # Read first line to get second one
+                it_name = int(f.readline().rstrip())
+        except:
+            pass
+        # Write u and v hdr files
+        self.write_hdr(subroot,[i],subdir,phantom,'u_it' + str(it_name),subroot_output_path=subroot_output_path,matrix_type='sino')
+        self.write_hdr(subroot,[i],subdir,phantom,'v_it' + str(it_name),subroot_output_path=subroot_output_path,matrix_type='sino')
 
     def ADMMLim_general(self, config, i, subdir, subroot_output_path,f_mu_for_penalty,writer=None,image_gt=None):
         if (self.method == "nested"):
             self.post_smoothing = 0
         castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing)
 
-        if (i == 0):   # choose initial image for CASToR reconstruction
-            initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-            # Trying to initialize ADMMLim
-            #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
-            #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
-        elif (i >= 1):
-            #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(config["nb_outer_iteration"]) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'
-            #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_it' + str(config["nb_outer_iteration"]) + '.hdr'
-            # Last image for next global iteration
-            initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
-            # Uniform image for next global iteration
-            #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-
-    
         base_name_i = format(i)
         full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
+
+        import re
+        folder_sub_path = self.subroot + self.suffix          
+        sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if (os.path.splitext(filename)[1] == '.hdr' and "u" not in filename and "v" not in filename)]
+        if (len(sorted_files) > 0):
+            sorted_files.sort(key=self.natural_keys)
+            last_file = sorted_files[-1]
+            last_iter = int(re.findall(r'(\w+?)(\d+)', last_file.split('.')[0])[0][-1])
+            initialimage = ' -img ' + folder_sub_path + '/' + last_file
+            it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
+            it += ' -skip-it ' + str(last_iter)
+
+            u_for_additional_data = ' -additional-data ' + full_output_path_i + '_u_it' + str(last_iter) + '.hdr'
+            v_for_additional_data = ' -additional-data ' + full_output_path_i + '_v_it' + str(last_iter) + '.hdr'
+
+            if (self.adaptive_parameters != "nothing"):
+                last_log_file = os.path.join(folder_sub_path,"0_adaptive_it" + str(last_iter) + ".log")
+                with open(last_log_file) as f:
+                    f.readline() # Read first line to get second one (adaptive alpha value)
+                    second_line = f.readline()
+                    if (self.FLTNB == 'float'):       
+                        self.alpha = np.float32(second_line)
+                    elif (self.FLTNB == 'double'):
+                        self.alpha = np.float64(second_line)
+        else:
+            if (i == 0):   # choose initial image for CASToR reconstruction
+                initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
+                # Trying to initialize ADMMLim
+                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
+                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
+            elif (i >= 1):
+                #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(config["nb_outer_iteration"]) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'
+                #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_it' + str(config["nb_outer_iteration"]) + '.hdr'
+                # Last image for next global iteration
+                initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
+                # Uniform image for next global iteration
+                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
+            it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
+            
+            u_for_additional_data = ''
+            v_for_additional_data = ''
 
         if ('ADMMLim' in self.method):
             # Compute one ADMM iteration (x, v, u)
@@ -195,52 +229,49 @@ class vReconstruction(vGeneral):
         if ((self.rho == 0) or (i==0 and self.unnested_1st_global_iter) or (i==-1 and not self.unnested_1st_global_iter)): # For first iteration, put rho to zero
             f_mu_for_penalty = ''
 
-        # Number of iterations from config dictionnary
-        it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
-
         x_reconstruction_command_line = castor_command_line_x \
                                         + opti_and_penalty \
                                         + ' -fout ' + full_output_path_i + it \
+                                        + u_for_additional_data + v_for_additional_data \
                                         + initialimage + f_mu_for_penalty \
                                         + conv # we need f-mu so that ADMM optimizer works, even if we will not use it...
 
         print(x_reconstruction_command_line)
-        self.compute_x_v_u_ADMM(x_reconstruction_command_line, subdir, i, self.phantom, subroot_output_path, self.subroot_data)
+        self.compute_x_v_u_ADMM(x_reconstruction_command_line, subdir, i, self.phantom, subroot_output_path, self.subroot_data, it_name = config["nb_outer_iteration"])
 
-        #'''
-        # -- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho --
+        if (self.adaptive_parameters != "nothing"):
+            #'''
+            # -- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho --
+            self.path_stopping_criterion = subroot_output_path + '/' + subdir + '/' + format(i) + '_adaptive_stopping_criteria.log'
+            if(isfile(self.path_stopping_criterion)):
+                theLog = pd.read_table(self.path_stopping_criterion)
+                finalOuterIterRow = theLog.loc[[0]]
 
+                finalOuterIterRowArray = np.array(finalOuterIterRow)
+                finalOuterIterRowString = finalOuterIterRowArray[0, 0]
+                finalOuterIter = int(finalOuterIterRowString)
+                print("finalOuterIter",finalOuterIter)
+            else:
+                finalOuterIter = config["nb_outer_iteration"]
 
-        self.path_stopping_criterion = subroot_output_path + '/' + subdir + '/' + format(i) + '_adaptive_stopping_criteria.log'
-        if(isfile(self.path_stopping_criterion)):
-            theLog = pd.read_table(self.path_stopping_criterion)
-            finalOuterIterRow = theLog.loc[[0]]
+            for outer_it in range(1,finalOuterIter+1):
+                path_adaptive = subroot_output_path + '/' + subdir + '/' + format(i) + '_adaptive_it' + format(outer_it) + '.log'
+                theLog = pd.read_table(path_adaptive)
+                relativePrimalResidualRow = theLog.loc[[6]]
+                relativePrimalResidualRowArray = np.array(relativePrimalResidualRow)
+                relativePrimalResidualRowString = relativePrimalResidualRowArray[0, 0]
+                relativePrimalResidual = float(relativePrimalResidualRowString)
+                print("relPrimal",relativePrimalResidual)
 
-            finalOuterIterRowArray = np.array(finalOuterIterRow)
-            finalOuterIterRowString = finalOuterIterRowArray[0, 0]
-            finalOuterIter = int(finalOuterIterRowString)
-            print("finalOuterIter",finalOuterIter)
-        else:
-            finalOuterIter = config["nb_outer_iteration"]
-
-        for outer_it in range(1,finalOuterIter+1):
-            path_adaptive = subroot_output_path + '/' + subdir + '/' + format(i) + '_adaptive_it' + format(outer_it) + '.log'
-            theLog = pd.read_table(path_adaptive)
-            relativePrimalResidualRow = theLog.loc[[6]]
-            relativePrimalResidualRowArray = np.array(relativePrimalResidualRow)
-            relativePrimalResidualRowString = relativePrimalResidualRowArray[0, 0]
-            relativePrimalResidual = float(relativePrimalResidualRowString)
-            print("relPrimal",relativePrimalResidual)
-
-        for outer_it in range(1,finalOuterIter+1):
-            path_adaptive = subroot_output_path + '/' + subdir + '/' + format(i) + '_adaptive_it' + format(outer_it) + '.log'
-            theLog = pd.read_table(path_adaptive)
-            relativeDualResidualRow = theLog.loc[[8]]
-            relativeDualResidualRowArray = np.array(relativeDualResidualRow)
-            relativeDualResidualRowString = relativeDualResidualRowArray[0, 0]
-            relativeDualResidual = float(relativeDualResidualRowString)
-            print("relDual",relativeDualResidual)
-        #'''
+            for outer_it in range(1,finalOuterIter+1):
+                path_adaptive = subroot_output_path + '/' + subdir + '/' + format(i) + '_adaptive_it' + format(outer_it) + '.log'
+                theLog = pd.read_table(path_adaptive)
+                relativeDualResidualRow = theLog.loc[[8]]
+                relativeDualResidualRowArray = np.array(relativeDualResidualRow)
+                relativeDualResidualRowString = relativeDualResidualRowArray[0, 0]
+                relativeDualResidual = float(relativeDualResidualRowString)
+                print("relDual",relativeDualResidual)
+            #'''
         
         if (self.method == "nested" and self.tensorboard):
             for k in range(1,finalOuterIter,max(finalOuterIter//10,1)):

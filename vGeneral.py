@@ -180,6 +180,7 @@ class vGeneral(abc.ABC):
         # Number of replicates 
         self.nb_replicates = config["replicates"]['grid_search'][-1]
         #if (task == "show_results_replicates" or task == "show_results"):
+        #if (task == "compare_2_methods"):
         #    config["replicates"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
 
         # Do not scale images if network input is uniform of if Gong's method
@@ -694,7 +695,8 @@ class vGeneral(abc.ABC):
 
     def natural_keys(self,text):
         try:
-            return [ self.atoi(c) for c in re.split(r'(\+|-)\d+(\.\d+)?', text) ] # ADMMLim
+            return [ self.atoi(c) for c in re.split(r'(\d+)', text) ] # APGMAP final curves + resume computation
+            return [ self.atoi(c) for c in re.split(r'(\+|-)\d+(\.\d+)?', text) ] # ADMMLim final curves
         except:
             return [ self.atoi(c) for c in re.split(r'(\d+)', text) ] # APGMAP
         

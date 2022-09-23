@@ -27,6 +27,7 @@ class iResults(vDenoising):
 
         if ('ADMMLim' in config["method"]):
             self.i_init = 20 # Remove first iterations
+            self.i_init = 1 # Remove first iterations
         else:
             self.i_init = 1
 

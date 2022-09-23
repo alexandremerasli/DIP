@@ -47,7 +47,6 @@ class iComparison(vReconstruction):
                 last_file = sorted_files[-1]
                 last_iter = int(re.findall(r'(\w+?)(\d+)', last_file.split('.')[0])[0][-1])
                 initialimage = ' -img ' + folder_sub_path + '/' + last_file
-                #it = ' -it ' + str(self.max_iter - last_iter) + ':' + str(config["nb_subsets"])
                 it = ' -it ' + str(self.max_iter) + ':' + str(config["nb_subsets"])
                 it += ' -skip-it ' + str(last_iter)
             else:
@@ -78,8 +77,6 @@ class iComparison(vReconstruction):
             classResults.debug = self.debug
             classResults.rho = self.rho
             classResults.hyperparameters_list = self.hyperparameters_list
-            if ('ADMMLim' in self.method):
-                classResults.path_stopping_criterion = self.path_stopping_criterion
             classResults.initializeSpecific(config,root)
             classResults.runComputation(config,root)
 
