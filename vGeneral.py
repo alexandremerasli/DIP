@@ -307,7 +307,7 @@ class vGeneral(abc.ABC):
             else:
                 ref_numbers = format(i)
         filename = subroot_output_path + '/'+ subpath + '/' + ref_numbers +'.hdr'
-        with open(self.subroot_data + 'Data/MLEM_reco_for_init/' + phantom + '/' + phantom + '_it1.hdr') as f:
+        with open(self.subroot_data + 'Data/MLEM_reco_for_init_hdr/' + phantom + '/' + phantom + '_it1.hdr') as f:
             with open(filename, "w") as f1:
                 for line in f:
                     if line.strip() == ('!name of data file := ' + phantom + '_it1.img'):
@@ -315,7 +315,13 @@ class vGeneral(abc.ABC):
                         f1.write('\n') 
                     elif line.strip() == ('patient name := ' + phantom + '_it1'):
                         f1.write('patient name := ' + ref_numbers)
-                        f1.write('\n') 
+                        f1.write('\n')
+                    elif line.startswith("!number format"):
+                        f1.write('!number format := ' + (self.FLTNB == "float")*"short" + (self.FLTNB == "double")*"long" +  ' float')
+                        f1.write('\n')
+                    elif line.startswith("!number of bytes per pixel := 4"):
+                        f1.write('!number of bytes per pixel := ' + (self.FLTNB == "float")*"4" + (self.FLTNB == "double")*"8")
+                        f1.write('\n')
                     else:
                         if (matrix_type == 'sino'): # There are 68516=2447*28 events, but not really useful for computation
                             if line.strip().startswith('!matrix size [1]'):
@@ -702,6 +708,15 @@ class vGeneral(abc.ABC):
         
     def has_numbers(self,inputString):
         return any(char.isdigit() for char in inputString)
+
+    def ImageAndItToResumeComputation(self,sorted_files, it, folder_sub_path):
+        sorted_files.sort(key=self.natural_keys)
+        last_file = sorted_files[-1]
+        last_iter = int(re.findall(r'(\w+?)(\d+)', last_file.split('.')[0])[0][-1])
+        initialimage = ' -img ' + folder_sub_path + '/' + last_file
+        it += ' -skip-it ' + str(last_iter)
+        
+        return initialimage, it, last_iter
 
     def linear_regression(self, x, y):
         x_mean = x.mean()

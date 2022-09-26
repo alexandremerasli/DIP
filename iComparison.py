@@ -26,6 +26,7 @@ class iComparison(vReconstruction):
             self.post_smoothing = config["post_smoothing"]
         else:
             self.post_smoothing = 0
+
         # castor-recon command line
         if ('ADMMLim' in self.method):
             # Path variables
@@ -37,18 +38,14 @@ class iComparison(vReconstruction):
             Path(self.subroot + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
             self.ADMMLim_general(config, 0, subdir, subroot_output_path, f_mu_for_penalty)
         else:
-            Path(self.subroot + self.suffix).mkdir(parents=True, exist_ok=True) # CASToR path
             folder_sub_path = self.subroot + self.suffix
+            Path(folder_sub_path).mkdir(parents=True, exist_ok=True) # CASToR path
             output_path = ' -fout ' + folder_sub_path + '/' + self.method # Output path for CASTOR framework
             
             sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if os.path.splitext(filename)[1] == '.hdr']
             if (len(sorted_files) > 0):
-                sorted_files.sort(key=self.natural_keys)
-                last_file = sorted_files[-1]
-                last_iter = int(re.findall(r'(\w+?)(\d+)', last_file.split('.')[0])[0][-1])
-                initialimage = ' -img ' + folder_sub_path + '/' + last_file
                 it = ' -it ' + str(self.max_iter) + ':' + str(config["nb_subsets"])
-                it += ' -skip-it ' + str(last_iter)
+                initialimage, it, last_iter = self.ImageAndItToResumeComputation(sorted_files,it,folder_sub_path)
             else:
                 initialimage = ''
                 it = ' -it ' + str(self.max_iter) + ':' + str(config["nb_subsets"])

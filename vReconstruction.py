@@ -58,9 +58,9 @@ class vReconstruction(vGeneral):
             self.mu = 0* np.ones((self.PETImage_shape[0], self.PETImage_shape[1], self.PETImage_shape[2]))
             self.save_img(self.mu,self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(-1) + self.suffix + '.img')
 
-        '''
+        #'''
         # Launch short MLEM reconstruction
-        path_mlem_init = self.subroot_data + 'Data/MLEM_reco_for_init/' + self.phantom
+        path_mlem_init = self.subroot_data + 'Data/MLEM_reco_for_init_hdr/' + self.phantom
         my_file = Path(path_mlem_init + '/' + self.phantom + '/' + self.phantom + '_it1.img')
         if (not my_file.is_file()):
             print("self.nb_replicates",self.nb_replicates)
@@ -79,7 +79,7 @@ class vReconstruction(vGeneral):
             th = ' -th ' + str(self.nb_threads) # must be set to 1 for ADMMLim, as multithreading does not work for now with ADMMLim optimizer
             print(executable + dim + vox + output_path + header_file + vb + it + opti + th)
             os.system(executable + dim + vox + output_path + header_file + vb + it + opti + th) # + ' -fov-out 95')
-        '''
+        #'''
         
     def castor_reconstruction(self,writer, i, subroot, nb_outer_iteration, experiment, config, method, phantom, replicate, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, alpha, image_init_path_without_extension):
         start_time_block1 = time.time()
@@ -170,16 +170,12 @@ class vReconstruction(vGeneral):
         base_name_i = format(i)
         full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
 
-        import re
-        folder_sub_path = self.subroot + self.suffix          
+        folder_sub_path = self.subroot + self.suffix    
+
         sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if (os.path.splitext(filename)[1] == '.hdr' and "u" not in filename and "v" not in filename)]
         if (len(sorted_files) > 0):
-            sorted_files.sort(key=self.natural_keys)
-            last_file = sorted_files[-1]
-            last_iter = int(re.findall(r'(\w+?)(\d+)', last_file.split('.')[0])[0][-1])
-            initialimage = ' -img ' + folder_sub_path + '/' + last_file
             it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
-            it += ' -skip-it ' + str(last_iter)
+            initialimage, it, last_iter = self.ImageAndItToResumeComputation(sorted_files,it,folder_sub_path)
 
             u_for_additional_data = ' -additional-data ' + full_output_path_i + '_u_it' + str(last_iter) + '.hdr'
             v_for_additional_data = ' -additional-data ' + full_output_path_i + '_v_it' + str(last_iter) + '.hdr'
@@ -194,18 +190,10 @@ class vReconstruction(vGeneral):
                     elif (self.FLTNB == 'double'):
                         self.alpha = np.float64(second_line)
         else:
-            if (i == 0):   # choose initial image for CASToR reconstruction
-                initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-                # Trying to initialize ADMMLim
-                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
-                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
-            elif (i >= 1):
-                #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_' + format(config["nb_outer_iteration"]) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'
-                #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' +format(i-1) + '_it' + str(config["nb_outer_iteration"]) + '.hdr'
-                # Last image for next global iteration
+            if (i == 0): # Initializing CASToR reconstruction with image_init or with CASToR default values
+                initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else ''
+            elif (i >= 1): # Last image for next global iteration
                 initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
-                # Uniform image for next global iteration
-                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
             it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
             
             u_for_additional_data = ''
