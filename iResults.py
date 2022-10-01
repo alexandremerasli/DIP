@@ -85,6 +85,8 @@ class iResults(vDenoising):
         self.SSIM_recon = np.zeros(self.total_nb_iter)
         self.MA_cold_recon = np.zeros(self.total_nb_iter)
         self.AR_hot_recon = np.zeros(self.total_nb_iter)
+        self.CRC_cold_recon = np.zeros(self.total_nb_iter)
+        self.CRC_hot_recon = np.zeros(self.total_nb_iter)
         self.AR_bkg_recon = np.zeros(self.total_nb_iter)
         self.IR_bkg_recon = np.zeros(self.total_nb_iter)
         
@@ -106,7 +108,7 @@ class iResults(vDenoising):
 
     def writeEndImagesAndMetrics(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):
         # Metrics for NN output
-        self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer)
+        self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.CRC_cold_recon,self.CRC_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer)
 
         if (self.tensorboard):
             # Write image over ADMM iterations
@@ -336,7 +338,7 @@ class iResults(vDenoising):
         #print("IR_bkg_recon",IR_bkg_recon)
         #print('Image roughness in the background', IR_bkg_recon[i],' , must be as small as possible')
 
-    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,SSIM_recon,MA_cold_recon,AR_hot_recon,AR_bkg_recon,IR_bkg_recon,image,writer=None):
+    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,SSIM_recon,MA_cold_recon,AR_hot_recon,CRC_cold_recon,CRC_hot_recon,AR_bkg_recon,IR_bkg_recon,image,writer=None):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
         image_recon_cropped = image_recon*self.phantom_ROI
         image_recon_norm = self.norm_imag(image_recon_cropped)[0] # normalizing DIP output
@@ -367,6 +369,7 @@ class iResults(vDenoising):
         #cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "cold_mask" + image[5:] + '.raw', shape=(PETImage_shape),type='<f')
         cold_ROI_act = image_recon[self.cold_ROI==1]
         MA_cold_recon[i] = np.mean(cold_ROI_act)
+        CRC_cold_recon[i] = np.mean(cold_ROI_act)
         #IR_cold_recon[i] = np.std(cold_ROI_act) / MA_cold_recon[i]
         #print('Mean activity in cold cylinder', MA_cold_recon[i],' , must be close to 0')
         #print('Image roughness in the cold cylinder', IR_cold_recon[i])
@@ -375,6 +378,7 @@ class iResults(vDenoising):
         #hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[5:] + '.raw', shape=(PETImage_shape),type='<f')
         hot_ROI_act = image_recon[self.hot_ROI==1]
         AR_hot_recon[i] = np.mean(hot_ROI_act)
+        CRC_hot_recon[i] = np.mean(hot_ROI_act)
         #IR_hot_recon[i] = np.std(hot_ROI_act) / np.mean(hot_ROI_act)
         #print('Mean Activity Recovery in hot cylinder', AR_hot_recon[i],' , must be close to 1')
         #print('Image roughness in the hot cylinder', IR_hot_recon[i])
@@ -406,6 +410,8 @@ class iResults(vDenoising):
             wr.writerow(AR_hot_recon)
             wr.writerow(AR_bkg_recon)
             wr.writerow(IR_bkg_recon)
+            wr.writerow(CRC_cold_recon)
+            wr.writerow(CRC_hot_recon)
 
         '''
         print(PSNR_recon)
