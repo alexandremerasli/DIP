@@ -1,6 +1,5 @@
 ## Python libraries
 # Math
-from turtle import goto
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -32,6 +31,7 @@ class iFinalCurves(vGeneral):
         image_gt_cropped = self.image_gt * self.phantom_ROI
         C_bkg = np.mean(image_gt_cropped)
 
+        CRC_plot = True
         plot_all_replicates_curves = False
         if plot_all_replicates_curves:
             color_avg = 'black'
@@ -128,11 +128,17 @@ class iFinalCurves(vGeneral):
 
                 # Select metrics to plot according to ROI
                 if ROI == 'hot':
-                    #metrics = [abs(hot) for hot in AR_hot_recon] # Take absolute value of AR hot for tradeoff curves
-                    metrics = AR_hot_recon # Take absolute value of AR hot for tradeoff curves
+                    if CRC_plot:
+                        metrics = CRC_hot_recon
+                    else:
+                        #metrics = [abs(hot) for hot in AR_hot_recon] # Take absolute value of AR hot for tradeoff curves
+                        metrics = AR_hot_recon # Take absolute value of AR hot for tradeoff curves
                 else:
-                    #metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
-                    metrics = MA_cold_recon # Take absolute value of MA cold for tradeoff curves
+                    if CRC_plot:
+                        metrics = CRC_cold_recon
+                    else:
+                        #metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
+                        metrics = MA_cold_recon # Take absolute value of MA cold for tradeoff curves
 
                 # Keep useful information to plot from metrics
                 if (method == "nested" or method == "Gong"):
@@ -254,16 +260,17 @@ class iFinalCurves(vGeneral):
                             ax[fig_nb].plot(100*avg_IR[rho_idx],avg_metrics[rho_idx],'-o',color=color_avg)
                             ax[fig_nb].fill(np.concatenate((100*(avg_IR[rho_idx] - np.sign(np.array(reg[fig_nb][rho_idx]))*std_IR[rho_idx]),100*(avg_IR[rho_idx][::-1] + np.sign(np.array(reg[fig_nb][rho_idx][::-1]))*std_IR[rho_idx][::-1]))),np.concatenate((avg_metrics[rho_idx]-std_metrics[rho_idx],avg_metrics[rho_idx][::-1]+std_metrics[rho_idx][::-1])), alpha = 0.4, label='_nolegend_')
                             ax[fig_nb].set_xlabel('Image Roughness in the background (%)', fontsize = 18)
-                            ax[fig_nb].set_ylabel('Absolute bias (AU)', fontsize = 18)
+                            ax[fig_nb].set_ylabel('Bias (AU)', fontsize = 18)
+                            ax[fig_nb].set_title(('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)')
                         #'''
                         if (fig_nb == 1):
                             # Plot average and std of bias curves with iterations
                             ax[fig_nb].plot(np.arange(0,len(avg_metrics[rho_idx])),avg_metrics[rho_idx],color=color_avg)
                             # Plot dashed line for target value, according to ROI
                             if ROI == 'hot':
-                                ax[fig_nb].hlines(400,xmin=0,xmax=len(avg_metrics[rho_idx])-1,color='grey',linestyle='dashed',label='_nolegend_')
+                                ax[fig_nb].hlines(400*(CRC_plot==False)+100*CRC_plot,xmin=0,xmax=len(avg_metrics[rho_idx])-1,color='grey',linestyle='dashed',label='_nolegend_')
                             else:
-                                ax[fig_nb].hlines(10,xmin=0,xmax=len(avg_metrics[rho_idx])-1,color='grey',linestyle='dashed',label='_nolegend_')
+                                ax[fig_nb].hlines(10*(CRC_plot==False)+100*CRC_plot,xmin=0,xmax=len(avg_metrics[rho_idx])-1,color='grey',linestyle='dashed',label='_nolegend_')
                             ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[rho_idx])), avg_metrics[rho_idx] - std_metrics[rho_idx], avg_metrics[rho_idx] + std_metrics[rho_idx], alpha = 0.4, label='_nolegend_')
                             ax[fig_nb].set_xlabel('Iterations', fontsize = 18)
                             ax[fig_nb].set_ylabel('Bias (AU)', fontsize = 18)
@@ -277,7 +284,8 @@ class iFinalCurves(vGeneral):
                         ax[fig_nb].plot(100*np.array(avg_IR)[:,-1],np.array(avg_metrics)[:,-1],'-o',color=color_avg)
                         ax[fig_nb].fill(np.concatenate((100*(np.array(avg_IR)[:,-1] - np.sign(np.array(reg[fig_nb]))*np.array(std_IR)[:,-1]),100*(np.array(avg_IR[::-1])[:,-1] + np.sign(np.array(reg[fig_nb][::-1]))*np.array(std_IR[::-1])[:,-1]))),np.concatenate((np.array(avg_metrics)[:,-1]-np.array(std_metrics)[:,-1],np.array(avg_metrics[::-1])[:,-1]+np.array(std_metrics[::-1])[:,-1])), alpha = 0.4, label='_nolegend_')
                         ax[fig_nb].set_xlabel('Image Roughness in the background (%)', fontsize = 18)
-                        ax[fig_nb].set_ylabel('Absolute bias (AU)', fontsize = 18)
+                        ax[fig_nb].set_ylabel('Bias (AU)', fontsize = 18)
+                        ax[fig_nb].set_title(('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (at convergence)')
                         replicates_legend.append(method)
                     #'''
 
@@ -288,17 +296,17 @@ class iFinalCurves(vGeneral):
                 rho = config["rho"]
                 if (fig_nb == 0):
                     if ROI == 'hot':
-                        title = method + " rho = " + str(rho) + 'AR in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
+                        title = method + " rho = " + str(rho) + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
                     elif ROI == 'cold':
-                        title = method + " rho = " + str(rho) + 'AR in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
+                        title = method + " rho = " + str(rho) + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
                 elif (fig_nb == 1):
                     if ROI == 'hot':
-                        title = method + " rho = " + str(rho) + 'AR in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
+                        title = method + " rho = " + str(rho) + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
                     elif ROI == 'cold':
-                        title = method + " rho = " + str(rho) + 'AR in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
+                        title = method + " rho = " + str(rho) + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
                 elif (fig_nb == 2):
                     if ROI == 'hot':
-                        title = method + " rho = " + str(rho) + 'AR in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
+                        title = method + " rho = " + str(rho) + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
                     elif ROI == 'cold':
-                        title = method + " rho = " + str(rho) + 'AR in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
+                        title = method + " rho = " + str(rho) + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
                 fig[fig_nb].savefig(self.subroot_data + 'metrics' + '/' + title)
