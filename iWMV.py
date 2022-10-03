@@ -37,9 +37,12 @@ class iWMV(vGeneral):
         # Descale, squeeze image and add 3D dimension to 1 (ok for 2D images)
         out = self.descale_imag(from_numpy(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
         out = np.squeeze(out)
-        out = out[:,:,np.newaxis]
+        if (1 in out.shape): # 2D
+            out = out[:,:,np.newaxis]
+        else: # 3D
+            out = out.reshape(out.shape[::-1])
 
-        phantom_ROI = self.get_phantom_ROI()
+        phantom_ROI = self.get_phantom_ROI(self.phantom)
         out_cropped = out * phantom_ROI
         image_gt_cropped = self.image_gt * phantom_ROI
 

@@ -17,10 +17,12 @@ class iPostReconstruction(vDenoising):
         print("Denoising in post reconstruction")
         vDenoising.initializeSpecific(self,config,root)
         # Loading DIP x_label (corrupted image) from block1
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'initialization/MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f') # MLEM for Gong
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning_it100.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it10000.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning_it100.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it10000.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
+        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + 'image2_3D/image2_3D.img',shape=(self.PETImage_shape),type='<f') # ADMMLim for nested
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + 'image0/image0.img',shape=(self.PETImage_shape),type='<f') # ADMMLim for nested
         self.net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_epoch=' + format(0) + '.img'
         self.checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         self.name_run = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -53,7 +55,7 @@ class iPostReconstruction(vDenoising):
         self.image_corrupt_torch = torch.Tensor(image_corrupt_input_scale)
         # Adding dimensions to fit network architecture
         self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
-        if (len(self.image_corrupt_torch.shape) == 5): # if 3D but with dim3 = 1 -> 2D
+        if (self.PETImage_shape[2] == 1): # if 3D but with dim3 = 1 -> 2D
             self.image_corrupt_torch = self.image_corrupt_torch[:,:,:,:,0]
 
         classResults.writeBeginningImages(self.suffix,self.image_net_input)
@@ -63,16 +65,17 @@ class iPostReconstruction(vDenoising):
         model = self.train_process(self.param1_scale_im_corrupt, self.param2_scale_im_corrupt, self.scaling_input, self.suffix,config, self.finetuning, self.processing_unit, self.total_nb_iter, self.method, self.global_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, all_images_DIP = self.all_images_DIP)
 
         ## Variables for WMV ##
-        self.epochStar = model.epochStar
-        self.windowSize = model.windowSize
-        self.patienceNumber = model.patienceNumber
-        self.VAR_recon = model.VAR_recon
-        self.MSE_WMV = model.MSE_WMV
-        self.PSNR_WMV = model.PSNR_WMV
-        self.SSIM_WMV = model.SSIM_WMV
-        self.SUCCESS = model.SUCCESS
-        if (self.SUCCESS): # ES point is reached
-            self.total_nb_iter = self.epochStar + self.patienceNumber + 1
+        if (model.DIP_early_stopping):
+            self.epochStar = model.epochStar
+            self.windowSize = model.windowSize
+            self.patienceNumber = model.patienceNumber
+            self.VAR_recon = model.VAR_recon
+            self.MSE_WMV = model.MSE_WMV
+            self.PSNR_WMV = model.PSNR_WMV
+            self.SSIM_WMV = model.SSIM_WMV
+            self.SUCCESS = model.SUCCESS
+            if (self.SUCCESS): # ES point is reached
+                self.total_nb_iter = self.epochStar + self.patienceNumber + 1
 
         # Saving variables
         if (self.net == 'DIP_VAE'):
@@ -116,19 +119,14 @@ class iPostReconstruction(vDenoising):
             classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
             #classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
 
-            '''
-            self.SUCCESS,VAR_min,stagnate = self.WMV(out_descale,epoch,queueQ,model.SUCCESS,VAR_min,stagnate)
-            if(model.SUCCESS):
-                break
-            '''
+        if (model.DIP_early_stopping):
+            classResults.epochStar = self.epochStar
+            classResults.VAR_recon = self.VAR_recon
+            classResults.MSE_WMV = self.MSE_WMV
+            classResults.PSNR_WMV = self.PSNR_WMV
+            classResults.SSIM_WMV = self.SSIM_WMV
+            classResults.windowSize = self.windowSize
+            classResults.patienceNumber = self.patienceNumber
+            classResults.SUCCESS = self.SUCCESS
 
-        classResults.epochStar = self.epochStar
-        classResults.VAR_recon = self.VAR_recon
-        classResults.MSE_WMV = self.MSE_WMV
-        classResults.PSNR_WMV = self.PSNR_WMV
-        classResults.SSIM_WMV = self.SSIM_WMV
-        classResults.windowSize = self.windowSize
-        classResults.patienceNumber = self.patienceNumber
-        classResults.SUCCESS = self.SUCCESS
-
-        classResults.WMV_plot(config)
+            classResults.WMV_plot(config)
