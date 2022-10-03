@@ -26,7 +26,7 @@ class iFinalCurves(vGeneral):
         self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
         self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
         if config["FLTNB"] == "double":
-            self.image_gt.astype(np.float64)
+            self.image_gt = self.image_gt.astype(np.float64)
         self.phantom_ROI = self.get_phantom_ROI(self.phantom)
         image_gt_cropped = self.image_gt * self.phantom_ROI
         C_bkg = np.mean(image_gt_cropped)
@@ -147,8 +147,8 @@ class iFinalCurves(vGeneral):
                             IR_final.append(np.array(IR_bkg_recon)[case,:-1])
                             metrics_final.append(np.array(metrics)[case,:-1])
                         if (method == "nested"):
-                            IR_final.append(np.array(IR_bkg_recon)[case,:config["max_iter"]['grid_search'][0]])
-                            metrics_final.append(np.array(metrics)[case,:config["max_iter"]['grid_search'][0]])
+                            IR_final.append(np.array(IR_bkg_recon)[case,:config["max_iter"]])
+                            metrics_final.append(np.array(metrics)[case,:config["max_iter"]])
                 elif (method == "BSREM" or method == "MLEM" or method == "OSEM" or method == "ADMMLim" or method == "AML" or method == "APGMAP"):
                     IR_final.append(IR_bkg_recon)
                     metrics_final.append(metrics)

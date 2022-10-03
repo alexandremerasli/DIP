@@ -55,7 +55,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         #Loading Ground Truth image to compute metrics
         self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
         if config["FLTNB"] == "double":
-            self.image_gt.astype(np.float64)
+            self.image_gt = self.image_gt.astype(np.float64)
 
         # Defining ROIs
         self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')

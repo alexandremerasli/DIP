@@ -55,7 +55,10 @@ class vReconstruction(vGeneral):
 
         # Initialize and save mu variable from ADMM
         if (self.method == "nested" or self.method == "Gong"):
-            self.mu = 0* np.ones((self.PETImage_shape[0], self.PETImage_shape[1], self.PETImage_shape[2]))
+            self.mu = 0* np.ones((self.PETImage_shape))
+            if config["FLTNB"] == "float":
+                self.mu = self.mu.astype(np.float32)
+            self.mu = self.mu.reshape(self.PETImage_shape[::-1])
             self.save_img(self.mu,self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(-1) + self.suffix + '.img')
 
         #'''
@@ -123,6 +126,15 @@ class vReconstruction(vGeneral):
             print(x_reconstruction_command_line)
             os.system(x_reconstruction_command_line)
 
+            """
+            self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')            
+            img = (0.9+self.rho)*self.image_gt
+
+            for p in range(config["nb_outer_iteration"]):   
+                img[:p,:,:] = 0 
+                self.save_img(img,subroot_output_path + "/during_eq22" + "/" + str(i) + "_it" + str(p+1) + ".img")
+            """
+
             if (mlem_sequence):
                 x = self.fijii_np(full_output_path_i + '_it30.img', shape=(PETImage_shape))
             else:
@@ -170,8 +182,10 @@ class vReconstruction(vGeneral):
         base_name_i = format(i)
         full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
 
-        folder_sub_path = self.subroot + self.suffix    
-
+        if (self.method == "nested"):
+            folder_sub_path = os.path.join(self.subroot,"Block1",self.suffix)
+        else:
+            folder_sub_path = os.path.join(self.subroot,self.suffix)
         sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if (os.path.splitext(filename)[1] == '.hdr' and "u" not in filename and "v" not in filename)]
         if (len(sorted_files) > 0):
             it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
@@ -227,6 +241,16 @@ class vReconstruction(vGeneral):
         print(x_reconstruction_command_line)
         self.compute_x_v_u_ADMM(x_reconstruction_command_line, subdir, i, self.phantom, subroot_output_path, self.subroot_data, it_name = config["nb_outer_iteration"])
 
+
+        """
+        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')            
+        img = (0.9+self.rho)*self.image_gt
+
+        for p in range(config["nb_outer_iteration"]):   
+            img[:p,:,:] = 0 
+            self.save_img(img,folder_sub_path + "/during_eq22" + "/" + str(i) + "_it" + str(p+1) + ".img")
+        """
+
         if (self.adaptive_parameters != "nothing"):
             #'''
             # -- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho --
@@ -260,8 +284,10 @@ class vReconstruction(vGeneral):
                 relativeDualResidual = float(relativeDualResidualRowString)
                 print("relDual",relativeDualResidual)
             #'''
+        else:
+            finalOuterIter = config["nb_outer_iteration"]
         
-        if (self.method == "nested" and self.tensorboard):
+        if (self.method == "nested" and self.tensorboard and finalOuterIter > 1):
             for k in range(1,finalOuterIter,max(finalOuterIter//10,1)):
                 x = self.fijii_np(full_output_path_i + '_it' + str(k) + '.img', shape=(self.PETImage_shape))
                 self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations",self.suffix,500, 0+k+i*config["nb_outer_iteration"]) # Showing all corrupted images with same contrast to compare them together

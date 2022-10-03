@@ -27,7 +27,7 @@ class iWMV(vGeneral):
         #Loading Ground Truth image to compute metrics
         self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
         if config["FLTNB"] == "double":
-            self.image_gt.astype(np.float64)
+            self.image_gt = self.image_gt.astype(np.float64)
 
     def runComputation(self,config,root):
         pass

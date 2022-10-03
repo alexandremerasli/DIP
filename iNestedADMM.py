@@ -16,11 +16,9 @@ class iNestedADMM(vReconstruction):
     def runComputation(self,config,root):
         print("Nested ADMM reconstruction")
 
-        '''
-        # Initializing DIP output with f_init
-        self.f = self.f_init
-        '''
-        self.f = np.ones((self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2]))
+        # Initializing f but is not used in first global iteration because rho=0, only to define f_mu_for_penalty
+        self.f = np.ones((self.PETImage_shape))
+        self.f = self.f.reshape(self.PETImage_shape[::-1])
         
         # Initializing results class
         if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):
@@ -50,25 +48,15 @@ class iNestedADMM(vReconstruction):
             # Block 2 - CNN
             start_time_block2= time.time()
             if (i == i_init and not config["unnested_1st_global_iter"]): # Gong at first epoch -> only pre train the network
-                # Create label corresponding to initial value of image_init
+                # Create label corresponding to initial reconstructed image to start with
                 #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.img',shape=(self.PETImage_shape),type='<f')
                 if (config["method"] == "nested"): # Nested needs 1 to not add any prior information at the beginning, and to initialize x computation to uniform with 1
                     x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
+                    #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it10000.img',shape=(self.PETImage_shape),type='<d')
                 elif (config["method"] == "Gong"): # Fit MLEM 60it for first global iteration
                     x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
                 self.save_img(x_label,self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
                 #classDenoising.sub_iter_DIP = classDenoising.self.sub_iter_DIP_initial
-
-
-            '''
-            if (not config["unnested_1st_global_iter"]): # Rho is not zero, so initialize the network with f_init
-                # Ininitializing DIP output and first image x with f_init and image_init
-                if (self.method == "nested"): # Nested needs 1 to not add any prior information at the beginning, and to initialize x computation to uniform with 1
-                    self.f_init = np.ones((self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2]))
-                elif (self.method == "Gong"): # Gong initialization with 60th iteration of MLEM (normally, DIP trained with this image as label...)
-                    #self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
-                    self.f_init = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
-            '''
 
             classDenoising = iDenoisingInReconstruction(config,i)
             classDenoising.fixed_hyperparameters_list = self.fixed_hyperparameters_list
@@ -79,14 +67,16 @@ class iNestedADMM(vReconstruction):
             classDenoising.do_everything(config,root)
 
             ## Variables for WMV ##
-            self.epochStar = classDenoising.epochStar
-            self.windowSize = classDenoising.windowSize
-            self.patienceNumber = classDenoising.patienceNumber
-            self.VAR_recon = classDenoising.VAR_recon
-            self.MSE_WMV = classDenoising.MSE_WMV
-            self.PSNR_WMV = classDenoising.PSNR_WMV
-            self.SSIM_WMV = classDenoising.SSIM_WMV
-            self.SUCCESS = classDenoising.SUCCESS
+            self.DIP_early_stopping = classDenoising.DIP_early_stopping
+            if classDenoising.DIP_early_stopping:
+                self.epochStar = classDenoising.epochStar
+                self.windowSize = classDenoising.windowSize
+                self.patienceNumber = classDenoising.patienceNumber
+                self.VAR_recon = classDenoising.VAR_recon
+                self.MSE_WMV = classDenoising.MSE_WMV
+                self.PSNR_WMV = classDenoising.PSNR_WMV
+                self.SSIM_WMV = classDenoising.SSIM_WMV
+                self.SUCCESS = classDenoising.SUCCESS
             #if (self.epochStar != self.total_nb_iter - 1): # ES point is reached
             #    self.total_nb_iter = self.epochStar + self.patienceNumber + 1
             
@@ -97,7 +87,7 @@ class iNestedADMM(vReconstruction):
             self.save_img(self.f,self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "FINAL" + '.img')
             
             if config["FLTNB"] == "double":
-                self.f.astype(np.float64)
+                self.f = self.f.astype(np.float64)
             
             if (i != i_init or config["unnested_1st_global_iter"]): # Gong at first epoch -> only pre train the network
                 # Block 3 - mu update
@@ -113,16 +103,17 @@ class iNestedADMM(vReconstruction):
                 classResults.writeEndImagesAndMetrics(i,config["nb_outer_iteration"],self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo=config["method"])
 
             # WMV
-            classResults.epochStar = self.epochStar
-            classResults.VAR_recon = self.VAR_recon
-            classResults.MSE_WMV = self.MSE_WMV
-            classResults.PSNR_WMV = self.PSNR_WMV
-            classResults.SSIM_WMV = self.SSIM_WMV
-            classResults.windowSize = self.windowSize
-            classResults.patienceNumber = self.patienceNumber
-            classResults.SUCCESS = self.SUCCESS
-    
-            classResults.WMV_plot(config)
+            if self.DIP_early_stopping:
+                classResults.epochStar = self.epochStar
+                classResults.VAR_recon = self.VAR_recon
+                classResults.MSE_WMV = self.MSE_WMV
+                classResults.PSNR_WMV = self.PSNR_WMV
+                classResults.SSIM_WMV = self.SSIM_WMV
+                classResults.windowSize = self.windowSize
+                classResults.patienceNumber = self.patienceNumber
+                classResults.SUCCESS = self.SUCCESS
+        
+                classResults.WMV_plot(config)
 
         # Saving final image output
         self.save_img(self.f, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')

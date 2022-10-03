@@ -71,7 +71,7 @@ class vDenoising(vGeneral):
         #checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         checkpoint_simple_path_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment)  + '/' + suffix + '/'
 
-        model = self.load_model(image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training=True)
+        model = self.load_model(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training=True)
         
         #from torchsummary import summary
         #summary(model, input_size=(1,112,112,59))
@@ -189,10 +189,10 @@ class vDenoising(vGeneral):
         return im_input
 
 
-    def load_model(self,image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training):
+    def load_model(self,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training):
         if (finetuning == 'last'): # last model saved in checkpoint
             if (global_it > 0): # if model has already been trained
-                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it) # Load previous model in checkpoint        
+                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # Load previous model in checkpoint        
         # if (global_it == 0):
             # DD finetuning, k=32, d=6
             #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
@@ -233,16 +233,18 @@ class vDenoising(vGeneral):
         else:
             out = model(self.image_net_input_torch)
 
-        self.epochStar = model.epochStar
-        self.windowSize = model.windowSize
-        self.patienceNumber = model.patienceNumber
-        self.VAR_recon = model.VAR_recon
-        self.MSE_WMV = model.MSE_WMV
-        self.PSNR_WMV = model.PSNR_WMV
-        self.SSIM_WMV = model.SSIM_WMV
-        self.SUCCESS = model.SUCCESS
-        if (self.SUCCESS and self.epochStar!= self.sub_iter_DIP - self.patienceNumber): # ES point is reached
-            self.sub_iter_DIP = self.epochStar + self.patienceNumber + 1
+        self.DIP_early_stopping = model.DIP_early_stopping
+        if self.DIP_early_stopping:
+            self.epochStar = model.epochStar
+            self.windowSize = model.windowSize
+            self.patienceNumber = model.patienceNumber
+            self.VAR_recon = model.VAR_recon
+            self.MSE_WMV = model.MSE_WMV
+            self.PSNR_WMV = model.PSNR_WMV
+            self.SSIM_WMV = model.SSIM_WMV
+            self.SUCCESS = model.SUCCESS
+            if (self.SUCCESS and self.epochStar!= self.sub_iter_DIP - self.patienceNumber): # ES point is reached
+                self.sub_iter_DIP = self.epochStar + self.patienceNumber + 1
 
         '''
         # Descaling like at the beginning
@@ -306,7 +308,7 @@ class vDenoising(vGeneral):
         # Loading using previous model
         model, model_class = self.choose_net(net, config, method, all_images_DIP, global_it, PETImage_shape)
         checkpoint_simple_path_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment) + '/' + suffix + '/'
-        model = self.load_model(image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training=False)
+        model = self.load_model(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training=False)
 
         # Compute output image
         out, mu, logvar, z = model(image_net_input_torch)
