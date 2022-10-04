@@ -157,7 +157,7 @@ class vReconstruction(vGeneral):
         name=(subroot+'Block2/' + self.suffix + '/x_label/'+format(experiment) + '/' + format(i) +'_x_label' + suffix + '.img')
         self.save_img(x_label, name)
 
-        return x_label
+        return x_label, x
 
     def compute_x_v_u_ADMM(self,x_reconstruction_command_line,subdir,i,phantom,subroot_output_path,subroot, it_name=''):
         # Compute x,u,v

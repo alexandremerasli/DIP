@@ -16,10 +16,12 @@ class iNestedADMM(vReconstruction):
     def runComputation(self,config,root):
         print("Nested ADMM reconstruction")
 
-        # Initializing f but is not used in first global iteration because rho=0, only to define f_mu_for_penalty
+        # Initialize f but is not used in first global iteration because rho=0, only to define f_mu_for_penalty
         self.f = np.ones((self.PETImage_shape))
         self.f = self.f.reshape(self.PETImage_shape[::-1])
-        
+        # Initialize f at step before
+        self.f_before = self.f
+
         # Initializing results class
         if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):
             from iResults import iResults
@@ -41,7 +43,7 @@ class iNestedADMM(vReconstruction):
             
             if (i != i_init or config["unnested_1st_global_iter"]): # Gong at first epoch -> only pre train the network
                 # Block 1 - Reconstruction with CASToR (tomographic reconstruction part of ADMM)
-                self.x_label = self.castor_reconstruction(classResults.writer, i, self.subroot, config["nb_outer_iteration"], self.experiment, config, self.method, self.phantom, self.replicate, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
+                self.x_label, self.x = self.castor_reconstruction(classResults.writer, i, self.subroot, config["nb_outer_iteration"], self.experiment, config, self.method, self.phantom, self.replicate, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
                 # Write corrupted image over ADMM iterations
                 classResults.writeCorruptedImage(i,config["nb_outer_iteration"],self.x_label,self.suffix,pet_algo="nested ADMM")
 
@@ -82,6 +84,7 @@ class iNestedADMM(vReconstruction):
             
             print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
             
+            self.f_before = self.f
             self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
             # Saving Final DIP output with name without epochs
             self.save_img(self.f,self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "FINAL" + '.img')
@@ -102,6 +105,28 @@ class iNestedADMM(vReconstruction):
                 # Write output image and metrics to tensorboard
                 classResults.writeEndImagesAndMetrics(i,config["nb_outer_iteration"],self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo=config["method"])
 
+            if (i != i_init or config["unnested_1st_global_iter"]): # Gong at first epoch -> only pre train the network
+                # Adaptive rho update
+                primal_residual_norm = np.linalg.norm((self.x - self.f) / max(np.linalg.norm(self.x),np.linalg.norm(self.f)))
+                dual_residual_norm = np.linalg.norm((self.f - self.f_before) / np.linalg.norm(self.mu))
+                if (config["adaptive_parameters_Gong"] == "tau"):
+                    new_tau = 1 / config["xi_Gong"] * np.sqrt(primal_residual_norm / dual_residual_norm)
+                    if (new_tau >= 1 and new_tau < config["tau_Gong"]):
+                        self.tau = new_tau
+                    elif (new_tau < 1 and new_tau > 1 / config["tau_Gong"]):
+                        self.tau = 1 / new_tau
+                    else:
+                        self.tau = config["tau_Gong"]
+                elif (config["adaptive_parameters_Gong"] == "rho"):
+                    if (primal_residual_norm > config["mu_Gong"] * dual_residual_norm):
+                        self.rho *= self.tau
+                    elif (dual_residual_norm > config["mu_Gong"] * primal_residual_norm):
+                        self.rho /= self.tau
+                    else:
+                        print("Keeping rho for next global iteration.")
+                else:
+                    print("Keeping rho for next global iteration.")
+                    
             # WMV
             if self.DIP_early_stopping:
                 classResults.epochStar = self.epochStar
