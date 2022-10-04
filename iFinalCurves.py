@@ -1,5 +1,6 @@
 ## Python libraries
 # Math
+import nbformat
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -73,13 +74,15 @@ class iFinalCurves(vGeneral):
                     replicates.append(f.readlines())
                 
                 # Retrieve number of rhos and replicates and other dimension
+                rho_name = "rho"
                 nb_rho = len(config["rho"])
                 if (method == "APGMAP" or method == "AML"):
                     config_other_dim = config["A_AML"]
                     other_dim_name = "A"
                 elif (method == "MLEM" or method == "OSEM"):
                     config_other_dim = config["post_smoothing"]
-                    other_dim_name = "smoothing"
+                    rho_name = "smoothing"
+                    other_dim_name = ""
                 elif (method == "nested" or method == "Gong"):
                     config_other_dim = config["lr"]
                     other_dim_name = "lr"
@@ -154,6 +157,12 @@ class iFinalCurves(vGeneral):
 
                     except:
                         print("No such file : " + metrics_file)
+
+                
+                if (method == "MLEM" or method == "OSEM"):
+                    nb_rho, nb_other_dim = nb_other_dim, nb_rho
+                    config["rho"], config_other_dim = config_other_dim, config["rho"]
+
 
                 # Select metrics to plot according to ROI
                 if ROI == 'hot':
@@ -305,7 +314,7 @@ class iFinalCurves(vGeneral):
                                 ax[fig_nb].set_title(method + " reconstruction averaged on " + str(nb_replicates) + " replicates")
                             #'''
                             if (fig_nb != 2):
-                                replicates_legend[fig_nb].append(method + " : rho = " + str(config["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!=""))
+                                replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!=""))
                         
                     #'''
                     if (fig_nb == 2):
@@ -328,17 +337,24 @@ class iFinalCurves(vGeneral):
                 rho = config["rho"]
                 if (fig_nb == 0):
                     if ROI == 'hot':
-                        title = method + " rho = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
+                        title = method + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
                     elif ROI == 'cold':
-                        title = method + " rho = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
+                        title = method + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
                 elif (fig_nb == 1):
                     if ROI == 'hot':
-                        title = method + " rho = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
+                        title = method + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
                     elif ROI == 'cold':
-                        title = method + " rho = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
+                        title = method + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
                 elif (fig_nb == 2):
                     if ROI == 'hot':
-                        title = method + " rho = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
+                        title = method + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
                     elif ROI == 'cold':
-                        title = method + " rho = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
+                        title = method + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
                 fig[fig_nb].savefig(self.subroot_data + 'metrics' + '/' + title)
+
+            for method in method_list: # Loop over methods
+                # Swap rho and post smoothing because MLEM and OSEM do not have rho parameter
+                if (method == "MLEM" or method == "OSEM"):
+                    nb_rho, nb_other_dim = nb_other_dim, nb_rho
+                    config["rho"], config_other_dim = config_other_dim, config["rho"]
+
