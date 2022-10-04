@@ -83,6 +83,9 @@ class iFinalCurves(vGeneral):
                 elif (method == "nested" or method == "Gong"):
                     config_other_dim = config["lr"]
                     other_dim_name = "lr"
+                else:
+                    config_other_dim = [""]
+                    other_dim_name = ""
                 nb_other_dim = len(config_other_dim)
                 nb_replicates = int(len(replicates[0]) / (nb_rho * nb_other_dim))
 
@@ -129,13 +132,22 @@ class iFinalCurves(vGeneral):
                             PSNR_norm_recon.append(np.array(rows_csv[1]))
                             MSE_recon.append(np.array(rows_csv[2]))
                             SSIM_recon.append(np.array(rows_csv[3]))
-                            MA_cold_recon.append(np.array(rows_csv[4]))
-                            AR_hot_recon.append(np.array(rows_csv[5]))
+                            #MA_cold_recon.append(np.array(rows_csv[4]))
+                            MA_cold_recon.append(np.array(rows_csv[4]) / 10 * 100)
+                            #AR_hot_recon.append(np.array(rows_csv[5]))
+                            AR_hot_recon.append(np.array(rows_csv[5]) / 400 * 100)
                             AR_bkg_recon.append(np.array(rows_csv[6]))
                             IR_bkg_recon.append(np.array(rows_csv[7]))
-                            MA_cold = np.array(rows_csv[8])
+                            
+                            try:
+                                MA_cold = np.array(rows_csv[8])
+                            except:
+                                MA_cold = np.array(rows_csv[6])
                             CRC_cold = 100*((MA_cold.astype(float)/C_bkg - 1) / (10/C_bkg - 1))
-                            AR_hot = np.array(rows_csv[9])
+                            try:
+                                AR_hot = np.array(rows_csv[9])
+                            except:
+                                AR_hot = np.array(rows_csv[7])
                             CRC_hot = 100*((AR_hot.astype(float)/C_bkg - 1) / (400/C_bkg - 1))
                             CRC_cold_recon.append(CRC_cold)
                             CRC_hot_recon.append(CRC_hot)
@@ -275,8 +287,8 @@ class iFinalCurves(vGeneral):
                             if (fig_nb == 0):
                                 ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim*rho_idx],avg_metrics[other_dim_idx+nb_other_dim*rho_idx],'-o',color=color_avg)
                                 ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx] - np.sign(np.array(reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx]))*std_IR[other_dim_idx+nb_other_dim*rho_idx]),100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx][::-1] + np.sign(np.array(reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx][::-1]))*std_IR[other_dim_idx+nb_other_dim*rho_idx][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim*rho_idx]-std_metrics[other_dim_idx+nb_other_dim*rho_idx],avg_metrics[other_dim_idx+nb_other_dim*rho_idx][::-1]+std_metrics[other_dim_idx+nb_other_dim*rho_idx][::-1])), alpha = 0.4, label='_nolegend_')
-                                ax[fig_nb].set_xlabel('Image Roughness in the background (%)', fontsize = 18)
-                                ax[fig_nb].set_ylabel('Bias (AU)', fontsize = 18)
+                                ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)', fontsize = 18)
+                                ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
                                 ax[fig_nb].set_title(('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)')
                             #'''
                             if (fig_nb == 1):
@@ -284,16 +296,16 @@ class iFinalCurves(vGeneral):
                                 ax[fig_nb].plot(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])),avg_metrics[other_dim_idx+nb_other_dim*rho_idx],color=color_avg)
                                 # Plot dashed line for target value, according to ROI
                                 if ROI == 'hot':
-                                    ax[fig_nb].hlines(400*(CRC_plot==False)+100*CRC_plot,xmin=0,xmax=len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])-1,color='grey',linestyle='dashed',label='_nolegend_')
+                                    ax[fig_nb].hlines(100*(CRC_plot==False)+100*CRC_plot,xmin=0,xmax=len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])-1,color='grey',linestyle='dashed',label='_nolegend_')
                                 else:
-                                    ax[fig_nb].hlines(10*(CRC_plot==False)+100*CRC_plot,xmin=0,xmax=len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])-1,color='grey',linestyle='dashed',label='_nolegend_')
+                                    ax[fig_nb].hlines(100*(CRC_plot==False)+100*CRC_plot,xmin=0,xmax=len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])-1,color='grey',linestyle='dashed',label='_nolegend_')
                                 ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])), avg_metrics[other_dim_idx+nb_other_dim*rho_idx] - std_metrics[other_dim_idx+nb_other_dim*rho_idx], avg_metrics[other_dim_idx+nb_other_dim*rho_idx] + std_metrics[other_dim_idx+nb_other_dim*rho_idx], alpha = 0.4, label='_nolegend_')
                                 ax[fig_nb].set_xlabel('Iterations', fontsize = 18)
-                                ax[fig_nb].set_ylabel('Bias (AU)', fontsize = 18)
+                                ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
                                 ax[fig_nb].set_title(method + " reconstruction averaged on " + str(nb_replicates) + " replicates")
                             #'''
                             if (fig_nb != 2):
-                                replicates_legend[fig_nb].append(method + " : rho = " + str(config["rho"][rho_idx]) + ", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))
+                                replicates_legend[fig_nb].append(method + " : rho = " + str(config["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!=""))
                         
                     #'''
                     if (fig_nb == 2):
@@ -301,9 +313,9 @@ class iFinalCurves(vGeneral):
                             cases = np.arange(0,nb_other_dim*nb_rho,nb_other_dim) + other_dim_idx
                             ax[fig_nb].plot(100*np.array(avg_IR)[cases,-1],np.array(avg_metrics)[cases,-1],'-o',color=color_avg)
                             ax[fig_nb].fill(np.concatenate((100*(np.array(avg_IR)[cases,-1] - np.sign(np.array(reg[fig_nb])[cases])*np.array(std_IR)[cases,-1]),100*(np.array(avg_IR)[cases,-1][::-1] + np.sign(np.array(reg[fig_nb])[cases][::-1])*np.array(std_IR)[cases,-1][::-1]))),np.concatenate((np.array(avg_metrics)[cases,-1]-np.array(std_metrics)[cases,-1],np.array(avg_metrics)[cases,-1][::-1]+np.array(std_metrics)[cases,-1][::-1])), alpha = 0.4, label='_nolegend_')
-                            replicates_legend[fig_nb].append(method + ": " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))
-                        ax[fig_nb].set_xlabel('Image Roughness in the background (%)', fontsize = 18)
-                        ax[fig_nb].set_ylabel('Bias (AU)', fontsize = 18)
+                            replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!=""))
+                        ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)', fontsize = 18)
+                        ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
                         ax[fig_nb].set_title(('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (at convergence)')
                     #'''
 
@@ -316,17 +328,17 @@ class iFinalCurves(vGeneral):
                 rho = config["rho"]
                 if (fig_nb == 0):
                     if ROI == 'hot':
-                        title = method + " rho = " + str(rho) + ", " + other_dim_name + " = " + str(config_other_dim) + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
+                        title = method + " rho = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
                     elif ROI == 'cold':
-                        title = method + " rho = " + str(rho) + ", " + other_dim_name + " = " + str(config_other_dim) + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
+                        title = method + " rho = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
                 elif (fig_nb == 1):
                     if ROI == 'hot':
-                        title = method + " rho = " + str(rho) + ", " + other_dim_name + " = " + str(config_other_dim) + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
+                        title = method + " rho = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
                     elif ROI == 'cold':
-                        title = method + " rho = " + str(rho) + ", " + other_dim_name + " = " + str(config_other_dim) + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
+                        title = method + " rho = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
                 elif (fig_nb == 2):
                     if ROI == 'hot':
-                        title = method + " rho = " + str(rho) + ", " + other_dim_name + " = " + str(config_other_dim) + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
+                        title = method + " rho = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
                     elif ROI == 'cold':
-                        title = method + " rho = " + str(rho) + ", " + other_dim_name + " = " + str(config_other_dim) + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
+                        title = method + " rho = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
                 fig[fig_nb].savefig(self.subroot_data + 'metrics' + '/' + title)
