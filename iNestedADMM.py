@@ -117,15 +117,13 @@ class iNestedADMM(vReconstruction):
                         self.tau = 1 / new_tau
                     else:
                         self.tau = config["tau_Gong"]
-                elif (config["adaptive_parameters_Gong"] == "rho"):
+                if (config["adaptive_parameters_Gong"] == "rho" or config["adaptive_parameters_Gong"] == "tau"):
                     if (primal_residual_norm > config["mu_Gong"] * dual_residual_norm):
                         self.rho *= self.tau
                     elif (dual_residual_norm > config["mu_Gong"] * primal_residual_norm):
                         self.rho /= self.tau
                     else:
                         print("Keeping rho for next global iteration.")
-                else:
-                    print("Keeping rho for next global iteration.")
                     
             # WMV
             if self.DIP_early_stopping:

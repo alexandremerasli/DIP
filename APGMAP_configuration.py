@@ -2,7 +2,7 @@ from ray import tune
 
 def config_func_MIC():
     
-# Configuration dictionnary for general settings parameters (not hyperparameters)
+    # Configuration dictionnary for general settings parameters (not hyperparameters)
     settings_config = {
         "image" : tune.grid_search(['image2_0']), # Image from database
         "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
@@ -60,7 +60,7 @@ def config_func_MIC():
         "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False
         # AML/APGMAP hyperparameters
         "A_AML" : tune.grid_search([-10,-100,-500,-1000,-10000]), # AML lower bound A
-        "A_AML" : tune.grid_search([-10]), # AML lower bound A
+        "A_AML" : tune.grid_search([-10,-100,-1000]), # AML lower bound A
         # Post smoothing by CASToR after reconstruction
         "post_smoothing" : tune.grid_search([0]), # Post smoothing by CASToR after reconstruction
         #"post_smoothing" : tune.grid_search([6,9,12,15]), # Post smoothing by CASToR after reconstruction
