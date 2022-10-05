@@ -5,25 +5,9 @@ data/Algo/Block2/x_label/
 data/Algo/Block2/mu/
 data/Algo/Images/
 data/Algo/Comparison/
-data/Algo/Data/initialization/image_DIP_input_torch.pt
-data/Algo/Data/initialization/image_DD_input_torch.pt
-data/Algo/Data/initialization/image_DD_AE_input_torch.pt
-data/Algo/Data/initialization/image_VAE_DIP_input_torch.pt
-data/Algo/Data/initialization/uniform_input_DIP.img
-data/Algo/Data/initialization/uniform_input_DD.img
-data/Algo/Data/initialization/uniform_input_DD_AE.img
-data/Algo/Data/initialization/random_input_VAE_DIP.img
-data/Algo/Data/initialization/random_input_DIP.img
-data/Algo/Data/initialization/random_input_DD.img
-data/Algo/Data/initialization/random_input_DD_AE.img
-data/Algo/Data/initialization/random_input_VAE_DIP.img
-data/Algo/Data/initialization/MLEM_it60_REF_cropped.hdr
-data/Algo/Data/initialization/MLEM_it60_REF_cropped.img
+data/Algo/Data/initialization/*
 data/Algo/Data/MLEM_reco_for_init_hdr/
 
-data/Algo/Data/castor_output.log
-data/Algo/Data/castor_output_it60_ss1_sensitivity.hdr
-data/Algo/Data/castor_output_it60_ss1_sensitivity.img
 env/
 env_disk/
 

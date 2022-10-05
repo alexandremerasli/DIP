@@ -124,8 +124,3 @@ done
 # Copying datafile and sinograms if 1 replicate in Python
 cp -r data2_3D/ ../data/Algo/Data/database_v2/image2_3D
 cp -r simu2_3D/ ../data/Algo/Data/database_v2/image2_3D
-
-# MLEM short reconstruction with CASToR
-#it=60
-#castor-recon -df data2_3D_1/data2_3D_1.cdh -dout castor_output -dim $dim1,$dim2,$dim3 -vox 4,4,4 -vb 3 -it $it:1 -proj incrementalSiddon -opti MLEM -th 0 -osens -oit -1
-#cp castor_output/* /home/meraslia/sgld/hernan_folder/data/Algo/Data/

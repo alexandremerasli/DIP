@@ -115,8 +115,3 @@ for ((replicate_id=1;replicate_id<=nb_replicates;replicate_id++)); do
     cp -r cmap0/ ../data/Algo/Data/database_v2/image2_0
     cp -r simu0_${replicate_id}/ ../data/Algo/Data/database_v2/image2_0
 done
-
-# MLEM short reconstruction with CASToR
-#it=60
-#castor-recon -df data0_1/data0_1.cdh -dout castor_output -dim $dim1,$dim2,$dim3 -vox 4,4,4 -vb 3 -it $it:1 -proj incrementalSiddon -opti MLEM -th 0 -osens -oit -1
-#cp castor_output/* /home/meraslia/sgld/hernan_folder/data/Algo/Data/

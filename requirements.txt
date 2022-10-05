@@ -10,4 +10,5 @@ scikit-image==0.18.1
 scipy==1.6.2
 tensorboard==2.6.0
 torch==1.8.1
+torchmetrics==0.6.0
 torchsummary==1.5.1
