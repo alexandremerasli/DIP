@@ -222,7 +222,10 @@ class vGeneral(abc.ABC):
                 config.pop("scaling", None)
                 config.pop("input", None)
                 config.pop("d_DD", None)
-                config.pop("k_DD", None)
+                config.pop("adaptive_parameters_DIP", None)
+                config.pop("mu_DIP", None)
+                config.pop("tau_DIP", None)
+                config.pop("xi_DIP", None)
                 #config.pop("unnested_1st_global_iter",None)
             if (config["net"]['grid_search'][0] == "DD"):
                 config.pop("skip_connections", None)

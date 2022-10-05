@@ -32,7 +32,7 @@ class iFinalCurves(vGeneral):
         C_bkg = np.mean(image_gt_cropped)
 
         CRC_plot = False
-        plot_all_replicates_curves = False
+        plot_all_replicates_curves = True
         if plot_all_replicates_curves:
             color_avg = 'black'
         else:
@@ -177,21 +177,9 @@ class iFinalCurves(vGeneral):
                         #metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
                         metrics = MA_cold_recon # Take absolute value of MA cold for tradeoff curves
 
-                # Keep useful information to plot from metrics
-                if (method == "nested" or method == "Gong"):
-                    for case in range(np.array(IR_bkg_recon).shape[0]):
-                        if (method == "Gong"):
-                            IR_final.append(np.array(IR_bkg_recon)[case,:-1])
-                            metrics_final.append(np.array(metrics)[case,:-1])
-                        if (method == "nested"):
-                            IR_final.append(np.array(IR_bkg_recon)[case,:config["max_iter"]])
-                            metrics_final.append(np.array(metrics)[case,:config["max_iter"]])
-                elif (method == "BSREM" or method == "MLEM" or method == "OSEM" or method == "ADMMLim" or method == "AML" or method == "APGMAP"):
-                    IR_final.append(IR_bkg_recon)
-                    metrics_final.append(metrics)
-                
-                IR_final = IR_final[0]
-                metrics_final = metrics_final[0]
+                # Keep useful information to plot from metrics                
+                IR_final = IR_bkg_recon
+                metrics_final = metrics
 
                 # Compute number of displayable iterations for each rho and find case with smallest iterations
                 len_mini_list = np.zeros((nb_rho,nb_other_dim,nb_replicates),dtype=int)
@@ -231,10 +219,7 @@ class iFinalCurves(vGeneral):
                                     idx_sort = np.argsort(IR_final[case])
                                     idx_sort = np.arange(len(IR_final[case]))
                                     if (plot_all_replicates_curves):
-                                        if (method == "nested" or method == "Gong"):
-                                            ax[fig_nb].plot(100*IR_final[case][0],metrics_final[case][0],'o', mfc='none',color='black',label='_nolegend_') # IR in %
-                                        else:
-                                            ax[fig_nb].plot(100*IR_final[case][idx_sort],metrics_final[case][idx_sort],label='_nolegend_') # IR in %                     
+                                        ax[fig_nb].plot(100*IR_final[case][idx_sort],metrics_final[case][idx_sort],label='_nolegend_') # IR in %                     
                             
                             #'''
                             if (fig_nb == 0):
@@ -250,16 +235,13 @@ class iFinalCurves(vGeneral):
                                     if (plot_all_replicates_curves):
                                         ax[fig_nb].plot(np.arange(0,len(metrics_final[case])),metrics_final[case],label='_nolegend_') # Plot bias curves with iterations for each replicate
 
-                    '''
+                    #'''
                     for replicate_idx in range(nb_replicates):
                         cases = replicate_idx + nb_replicates*np.arange(nb_rho)
                         if (fig_nb == 2): # Plot tradeoff curves at convergence
                             if (plot_all_replicates_curves):
-                                if (method == "nested" or method == "Gong"):
-                                    ax[fig_nb].plot(100*IR_final[cases][0],metrics_final[cases][0],'o', mfc='none',color='black',label='_nolegend_') # IR in %
-                                else:
-                                    ax[fig_nb].plot(100*np.array(IR_final)[cases,-1],np.array(metrics_final)[cases,-1],label='_nolegend_') # IR in %
-                    '''
+                                ax[fig_nb].plot(100*np.array(IR_final)[cases,-1],np.array(metrics_final)[cases,-1],label='_nolegend_') # IR in %
+                    #'''
 
                     #'''
                     if (fig_nb == 2): # Plot tradeoff curves at convergence
@@ -336,19 +318,19 @@ class iFinalCurves(vGeneral):
                 rho = config["rho"]
                 if (fig_nb == 0):
                     if ROI == 'hot':
-                        title = method + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
+                        title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
                     elif ROI == 'cold':
-                        title = method + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
+                        title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
                 elif (fig_nb == 1):
                     if ROI == 'hot':
-                        title = method + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
+                        title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
                     elif ROI == 'cold':
-                        title = method + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
+                        title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
                 elif (fig_nb == 2):
                     if ROI == 'hot':
-                        title = method + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
+                        title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
                     elif ROI == 'cold':
-                        title = method + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!="") + ('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
+                        title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
                 fig[fig_nb].savefig(self.subroot_data + 'metrics' + '/' + title)
 
             for method in method_list: # Loop over methods

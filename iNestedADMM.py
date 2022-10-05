@@ -109,18 +109,18 @@ class iNestedADMM(vReconstruction):
                 # Adaptive rho update
                 primal_residual_norm = np.linalg.norm((self.x - self.f) / max(np.linalg.norm(self.x),np.linalg.norm(self.f)))
                 dual_residual_norm = np.linalg.norm((self.f - self.f_before) / np.linalg.norm(self.mu))
-                if (config["adaptive_parameters_Gong"] == "tau"):
-                    new_tau = 1 / config["xi_Gong"] * np.sqrt(primal_residual_norm / dual_residual_norm)
-                    if (new_tau >= 1 and new_tau < config["tau_Gong"]):
+                if (config["adaptive_parameters_DIP"] == "tau"):
+                    new_tau = 1 / config["xi_DIP"] * np.sqrt(primal_residual_norm / dual_residual_norm)
+                    if (new_tau >= 1 and new_tau < config["tau_DIP"]):
                         self.tau = new_tau
-                    elif (new_tau < 1 and new_tau > 1 / config["tau_Gong"]):
+                    elif (new_tau < 1 and new_tau > 1 / config["tau_DIP"]):
                         self.tau = 1 / new_tau
                     else:
-                        self.tau = config["tau_Gong"]
-                if (config["adaptive_parameters_Gong"] == "rho" or config["adaptive_parameters_Gong"] == "tau"):
-                    if (primal_residual_norm > config["mu_Gong"] * dual_residual_norm):
+                        self.tau = config["tau_DIP"]
+                if (config["adaptive_parameters_DIP"] == "rho" or config["adaptive_parameters_DIP"] == "tau"):
+                    if (primal_residual_norm > config["mu_DIP"] * dual_residual_norm):
                         self.rho *= self.tau
-                    elif (dual_residual_norm > config["mu_Gong"] * primal_residual_norm):
+                    elif (dual_residual_norm > config["mu_DIP"] * primal_residual_norm):
                         self.rho /= self.tau
                     else:
                         print("Keeping rho for next global iteration.")
