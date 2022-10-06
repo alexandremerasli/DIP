@@ -71,7 +71,7 @@ class iFinalCurves(vGeneral):
         C_bkg = np.mean(image_gt_cropped)
 
         CRC_plot = False
-        plot_all_replicates_curves = False
+        plot_all_replicates_curves = True
         if plot_all_replicates_curves:
             color_avg = 'black'
         else:
@@ -249,11 +249,22 @@ class iFinalCurves(vGeneral):
                                 IR_final_array[other_dim_idx+nb_other_dim*rho_idx][replicate_idx,common_it] = IR_final[replicate_idx + nb_replicates*other_dim_idx + (nb_replicates*nb_other_dim)*rho_idx][common_it]
                                 metrics_final_array[other_dim_idx+nb_other_dim*rho_idx][replicate_idx,common_it] = metrics_final[replicate_idx + nb_replicates*other_dim_idx + (nb_replicates*nb_other_dim)*rho_idx][common_it]             
 
+                
+                IR_final_final_array = np.zeros((nb_rho,nb_other_dim,nb_replicates,np.max(len_mini)))
+                metrics_final_final_array = np.zeros((nb_rho,nb_other_dim,nb_replicates,np.max(len_mini)))
+                for rho_idx in range(nb_rho):
+                    for other_dim_idx in range(nb_other_dim):
+                        for common_it in range(len_mini[rho_idx]):
+                            for replicate_idx in range(nb_replicates):
+                                IR_final_final_array[rho_idx,other_dim_idx,replicate_idx,common_it] = IR_final_array[other_dim_idx+nb_other_dim*rho_idx][replicate_idx,common_it]
+                                metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,common_it] = metrics_final_array[other_dim_idx+nb_other_dim*rho_idx][replicate_idx,common_it]
+
+
                 # Plot 3 figures for each ROI : tradeoff curve with iteration (metric VS IR), bias with iterations, and tradeoff curve at convergence
                 reg = [None] * 3
                 for fig_nb in range(3):
                     if (fig_nb == 0):
-                        reg[fig_nb] = [None] * (nb_rho * nb_other_dim)
+                        reg[fig_nb] = np.zeros((nb_rho*nb_other_dim,np.max(len_mini)))
                     elif (fig_nb == 2):
                         reg[fig_nb] = []
                     for rho_idx in range(nb_rho):
@@ -262,29 +273,35 @@ class iFinalCurves(vGeneral):
                                 case = replicate_idx + nb_replicates*other_dim_idx + (nb_replicates*nb_other_dim)*rho_idx
                                 if (fig_nb == 0): # Plot tradeoff curves with iterations
                                     idx_sort = np.argsort(IR_final[case])
-                                    idx_sort = np.arange(len(IR_final[case]))
+                                    idx_sort = np.arange(len(IR_final[case_mini[rho_idx]]))
                                     if (plot_all_replicates_curves):
-                                        ax[fig_nb].plot(100*IR_final[case][idx_sort],metrics_final[case][idx_sort],label='_nolegend_') # IR in %                     
+                                        ax[fig_nb].plot(100*IR_final_final_array[rho_idx,other_dim_idx,replicate_idx,idx_sort],metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,idx_sort],label='_nolegend_') # IR in %
                             
                             #'''
                             if (fig_nb == 0):
-                                reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx] = []
+                                #reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx] = []
                                 idx_sort = np.argsort(IR_final[case_mini[rho_idx]])
                                 for it in range(len(IR_final[case_mini[rho_idx]])):
-                                    reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx].append(self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim*rho_idx][:,it],metrics_final_array[other_dim_idx+nb_other_dim*rho_idx][:,it]))
+                                    reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] = self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim*rho_idx][:,it],metrics_final_array[other_dim_idx+nb_other_dim*rho_idx][:,it])
                             #'''
                             for replicate_idx in range(nb_replicates):
                                 case = replicate_idx + nb_replicates*other_dim_idx + (nb_replicates*nb_other_dim)*rho_idx
                                 if (fig_nb == 1): # Plot bias curves
                                     if (plot_all_replicates_curves):
-                                        ax[fig_nb].plot(np.arange(0,len(metrics_final[case])),metrics_final[case],label='_nolegend_') # Plot bias curves with iterations for each replicate
+                                        ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,:len_mini[rho_idx]],label='_nolegend_') # IR in %
+
+                    avg_metrics = np.zeros((nb_rho*nb_other_dim,np.max(len_mini)))
+                    avg_IR = np.zeros((nb_rho*nb_other_dim,np.max(len_mini)))
+                    std_metrics = np.zeros((nb_rho*nb_other_dim,np.max(len_mini)))
+                    std_IR = np.zeros((nb_rho*nb_other_dim,np.max(len_mini)))
+
 
                     #'''
                     for replicate_idx in range(nb_replicates):
-                        cases = replicate_idx + nb_replicates*np.arange(nb_rho)
-                        if (fig_nb == 2): # Plot tradeoff curves at convergence
-                            if (plot_all_replicates_curves):
-                                ax[fig_nb].plot(100*np.array(IR_final)[cases,-1],np.array(metrics_final)[cases,-1],label='_nolegend_') # IR in %
+                        for other_dim_idx in range(nb_other_dim):
+                            if (fig_nb == 2): # Plot tradeoff curves at convergence
+                                if (plot_all_replicates_curves):
+                                    ax[fig_nb].plot(100*IR_final_final_array[:,other_dim_idx,replicate_idx,:][(np.arange(nb_rho),len_mini-1)],metrics_final_final_array[:,other_dim_idx,replicate_idx,:][(np.arange(nb_rho),len_mini-1)],label='_nolegend_') # IR in %
                     #'''
 
                     #'''
@@ -294,40 +311,29 @@ class iFinalCurves(vGeneral):
                                 reg[fig_nb].append(self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim*rho_idx][:,-1],metrics_final_array[other_dim_idx+nb_other_dim*rho_idx][:,-1]))
                     #'''
                     #'''
-                    avg_metrics = []
-                    avg_IR = []
-                    std_metrics = []
-                    std_IR = []
-                    
-                    IR_final_final_array = np.zeros((nb_rho,nb_other_dim,nb_replicates,np.min(len_mini)))
-                    metrics_final_final_array = np.zeros((nb_rho,nb_other_dim,nb_replicates,np.min(len_mini)))
-                    for rho_idx in range(nb_rho):
-                        for other_dim_idx in range(nb_other_dim):
-                            for common_it in range(np.min(len_mini)):
-                                for replicate_idx in range(nb_replicates):
-                                    IR_final_final_array[rho_idx,other_dim_idx,replicate_idx,common_it] = IR_final_array[other_dim_idx+nb_other_dim*rho_idx][replicate_idx,common_it]
-                                    metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,common_it] = metrics_final_array[other_dim_idx+nb_other_dim*rho_idx][replicate_idx,common_it]
 
                     
                     for rho_idx in range(nb_rho):
                         for other_dim_idx in range(nb_other_dim):
                             # Compute average of tradeoff and bias curves with iterations
-                            avg_metrics.append(np.sum(metrics_final_final_array[rho_idx,other_dim_idx,:,:],axis=0) / nb_replicates)
-                            avg_IR.append(np.sum(IR_final_final_array[rho_idx,other_dim_idx,:,:],axis=0) / nb_replicates)
+                            #avg_metrics.append(np.sum(metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_replicates)
+                            #avg_IR.append(np.sum(IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_replicates)
+                            avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] = np.sum(metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_replicates
+                            avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] = np.sum(IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_replicates
                             # Compute std bias curves with iterations
-                            std_metrics.append(np.sqrt(np.sum((metrics_final_final_array[rho_idx,other_dim_idx,:,:] - np.array(avg_metrics)[other_dim_idx+nb_other_dim*rho_idx,:])**2,axis=0) / nb_replicates))
-                            std_IR.append(np.sqrt(np.sum((IR_final_final_array[rho_idx,other_dim_idx,:,:]- np.array(avg_IR)[other_dim_idx+nb_other_dim*rho_idx,:])**2,axis=0) / nb_replicates))
+                            std_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] = np.sqrt(np.sum((metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]] - np.array(avg_metrics)[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]])**2,axis=0) / nb_replicates)
+                            std_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] = np.sqrt(np.sum((IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]]- np.array(avg_IR)[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]])**2,axis=0) / nb_replicates)
 
                             if (fig_nb == 0):
-                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim*rho_idx],avg_metrics[other_dim_idx+nb_other_dim*rho_idx],'-o',color=color_avg)
-                                ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx] - np.sign(np.array(reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx]))*std_IR[other_dim_idx+nb_other_dim*rho_idx]),100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx][::-1] + np.sign(np.array(reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx][::-1]))*std_IR[other_dim_idx+nb_other_dim*rho_idx][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim*rho_idx]-std_metrics[other_dim_idx+nb_other_dim*rho_idx],avg_metrics[other_dim_idx+nb_other_dim*rho_idx][::-1]+std_metrics[other_dim_idx+nb_other_dim*rho_idx][::-1])), alpha = 0.4, label='_nolegend_')
+                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],'-o',color=color_avg)
+                                ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
                                 ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)', fontsize = 18)
                                 ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
                                 ax[fig_nb].set_title(('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)')
                             #'''
                             if (fig_nb == 1):
                                 # Plot average and std of bias curves with iterations
-                                ax[fig_nb].plot(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])),avg_metrics[other_dim_idx+nb_other_dim*rho_idx],color=color_avg)
+                                ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],color=color_avg)
                                 # Plot dashed line for target value, according to ROI
                                 if ROI == 'hot':
                                     ax[fig_nb].hlines(100*(CRC_plot==False)+100*CRC_plot,xmin=0,xmax=len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])-1,color='grey',linestyle='dashed',label='_nolegend_')
@@ -345,8 +351,8 @@ class iFinalCurves(vGeneral):
                     if (fig_nb == 2):
                         for other_dim_idx in range(nb_other_dim):
                             cases = np.arange(0,nb_other_dim*nb_rho,nb_other_dim) + other_dim_idx
-                            ax[fig_nb].plot(100*np.array(avg_IR)[cases,-1],np.array(avg_metrics)[cases,-1],'-o',color=color_avg)
-                            ax[fig_nb].fill(np.concatenate((100*(np.array(avg_IR)[cases,-1] - np.sign(np.array(reg[fig_nb])[cases])*np.array(std_IR)[cases,-1]),100*(np.array(avg_IR)[cases,-1][::-1] + np.sign(np.array(reg[fig_nb])[cases][::-1])*np.array(std_IR)[cases,-1][::-1]))),np.concatenate((np.array(avg_metrics)[cases,-1]-np.array(std_metrics)[cases,-1],np.array(avg_metrics)[cases,-1][::-1]+np.array(std_metrics)[cases,-1][::-1])), alpha = 0.4, label='_nolegend_')
+                            ax[fig_nb].plot(100*avg_IR[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)],'-o',color=color_avg)
+                            #ax[fig_nb].fill(np.concatenate((100*(np.array(avg_IR)[cases,-1] - np.sign(np.array(reg[fig_nb])[cases,:len_mini[rho_idx]])*np.array(std_IR)[cases,-1]),100*(np.array(avg_IR)[cases,-1][::-1] + np.sign(np.array(reg[fig_nb])[cases,:len_mini[rho_idx]][::-1])*np.array(std_IR)[cases,-1][::-1]))),np.concatenate((np.array(avg_metrics)[cases,-1]-np.array(std_metrics)[cases,-1],np.array(avg_metrics)[cases,-1][::-1]+np.array(std_metrics)[cases,-1][::-1])), alpha = 0.4, label='_nolegend_')
                             replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!=""))
                         ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)', fontsize = 18)
                         ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
