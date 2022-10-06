@@ -10,6 +10,7 @@ import re
 
 # Local files to import
 from vGeneral import vGeneral
+from iResults import iResults
 
 class iFinalCurves(vGeneral):
     def __init__(self,config, *args, **kwargs):
@@ -20,6 +21,44 @@ class iFinalCurves(vGeneral):
         # show the plots in python or not !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     def runComputation(self,config,root):
+
+
+
+        # Initialize general variables
+        self.initializeGeneralVariables(config,root)
+        #vDenoising.initializeSpecific(self,config,root)
+
+        if ('ADMMLim' in config["method"]):
+            self.i_init = 20 # Remove first iterations
+            #self.i_init = 1 # Remove first iterations
+        else:
+            self.i_init = 1
+
+        if ('ADMMLim' in config["method"]):
+            try:
+                self.path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
+                with open(self.path_stopping_criterion) as f:
+                    first_line = f.readline() # Read first line to get second one
+                    self.total_nb_iter = min(int(f.readline().rstrip()) - self.i_init, config["nb_outer_iteration"] - self.i_init + 1)
+                    #self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1 # Override value
+            except:
+                self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1
+            self.beta = config["alpha"]
+        elif (config["method"] == 'nested' or config["method"] == 'Gong'):
+            if ('post_reco' in config["task"]):
+                self.total_nb_iter = config["sub_iter_DIP"]
+            else:
+                self.total_nb_iter = config["max_iter"]
+        else:
+            self.total_nb_iter = self.max_iter
+
+            if (config["method"] == 'AML'):
+                self.beta = config["A_AML"]
+            if (config["method"] == 'BSREM' or config["method"] == 'nested' or config["method"] == 'Gong' or config["method"] == 'APGMAP'):
+                self.rho = config["rho"]
+                self.beta = self.rho
+
+
 
         # Remove when CRC are computed in iResults.py
         self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
@@ -104,9 +143,15 @@ class iFinalCurves(vGeneral):
                     print(np.sort(replicate_idx).astype(int)-1)
                     raise ValueError("Replicates are not the same for each case !")
 
-                # Sort suffixes from file by rho values 
+                # Sort suffixes from file by rho and other dim values 
                 sorted_suffixes = list(suffixes[0])
-                sorted_suffixes.sort(key=self.natural_keys)
+                if (method != "ADMMLim"):
+                    sorted_suffixes.sort(key=self.natural_keys)
+                else:
+                    sorted_suffixes.sort(key=self.natural_keys_ADMMLim)
+                
+                #for i in range(len(sorted_suffixes)):
+                #    print(sorted_suffixes[i])
 
                 # Load metrics from last runs to merge them in one figure
                 for i in range(len(sorted_suffixes)):
@@ -118,14 +163,15 @@ class iFinalCurves(vGeneral):
                         with open(metrics_file, 'r') as myfile:
                             spamreader = reader_csv(myfile,delimiter=';')
                             rows_csv = list(spamreader)
-                            rows_csv[0] = [float(rows_csv[0][i]) for i in range(min(len(rows_csv[0]),config["max_iter"]))]
-                            rows_csv[1] = [float(rows_csv[1][i]) for i in range(min(len(rows_csv[1]),config["max_iter"]))]
-                            rows_csv[2] = [float(rows_csv[2][i]) for i in range(min(len(rows_csv[2]),config["max_iter"]))]
-                            rows_csv[3] = [float(rows_csv[3][i]) for i in range(min(len(rows_csv[3]),config["max_iter"]))]
-                            rows_csv[4] = [float(rows_csv[4][i]) for i in range(min(len(rows_csv[4]),config["max_iter"]))]
-                            rows_csv[5] = [float(rows_csv[5][i]) for i in range(min(len(rows_csv[5]),config["max_iter"]))]
-                            rows_csv[6] = [float(rows_csv[6][i]) for i in range(min(len(rows_csv[6]),config["max_iter"]))]
-                            rows_csv[7] = [float(rows_csv[7][i]) for i in range(min(len(rows_csv[7]),config["max_iter"]))]
+                            
+                            rows_csv[0] = [float(rows_csv[0][i]) for i in range(self.i_init - 1,min(len(rows_csv[0]),self.total_nb_iter))]
+                            rows_csv[1] = [float(rows_csv[1][i]) for i in range(self.i_init - 1, min(len(rows_csv[1]),self.total_nb_iter))]
+                            rows_csv[2] = [float(rows_csv[2][i]) for i in range(self.i_init - 1, min(len(rows_csv[2]),self.total_nb_iter))]
+                            rows_csv[3] = [float(rows_csv[3][i]) for i in range(self.i_init - 1, min(len(rows_csv[3]),self.total_nb_iter))]
+                            rows_csv[4] = [float(rows_csv[4][i]) for i in range(self.i_init - 1, min(len(rows_csv[4]),self.total_nb_iter))]
+                            rows_csv[5] = [float(rows_csv[5][i]) for i in range(self.i_init - 1, min(len(rows_csv[5]),self.total_nb_iter))]
+                            rows_csv[6] = [float(rows_csv[6][i]) for i in range(self.i_init - 1, min(len(rows_csv[6]),self.total_nb_iter))]
+                            rows_csv[7] = [float(rows_csv[7][i]) for i in range(self.i_init - 1, min(len(rows_csv[7]),self.total_nb_iter))]
 
                             PSNR_recon.append(np.array(rows_csv[0]))
                             PSNR_norm_recon.append(np.array(rows_csv[1]))
@@ -178,7 +224,7 @@ class iFinalCurves(vGeneral):
                 IR_final = IR_bkg_recon
                 metrics_final = metrics
 
-                # Compute number of displayable iterations for each rho and find case with smallest iterations
+                # Compute number of displayable iterations for each rho and find case with smallest iterations (useful for ADMMLim)
                 len_mini_list = np.zeros((nb_rho,nb_other_dim,nb_replicates),dtype=int)
                 len_mini = np.zeros((nb_rho),dtype=int)
                 case_mini = np.zeros((nb_rho),dtype=int)
@@ -187,7 +233,9 @@ class iFinalCurves(vGeneral):
                         for replicate_idx in range(nb_replicates):
                             len_mini_list[rho_idx,other_dim_idx,replicate_idx] = len(metrics_final[replicate_idx + nb_replicates*other_dim_idx + (nb_replicates*nb_other_dim)*rho_idx])
                         len_mini[rho_idx] = int(np.min(len_mini_list[rho_idx]))
-                        case_mini[rho_idx] = int(np.argmin(len_mini_list[rho_idx]))
+                        print(len_mini_list[rho_idx,:,:])
+                        print(np.min(len_mini_list[rho_idx]))
+                        case_mini[rho_idx] = int(np.argmin(len_mini_list[rho_idx,:,:])) + nb_replicates*rho_idx
 
                 # Create numpy array with same number of iterations for each case
                 IR_final_array = []
@@ -272,7 +320,7 @@ class iFinalCurves(vGeneral):
 
                             if (fig_nb == 0):
                                 ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim*rho_idx],avg_metrics[other_dim_idx+nb_other_dim*rho_idx],'-o',color=color_avg)
-                                #ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx] - np.sign(np.array(reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx]))*std_IR[other_dim_idx+nb_other_dim*rho_idx]),100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx][::-1] + np.sign(np.array(reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx][::-1]))*std_IR[other_dim_idx+nb_other_dim*rho_idx][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim*rho_idx]-std_metrics[other_dim_idx+nb_other_dim*rho_idx],avg_metrics[other_dim_idx+nb_other_dim*rho_idx][::-1]+std_metrics[other_dim_idx+nb_other_dim*rho_idx][::-1])), alpha = 0.4, label='_nolegend_')
+                                ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx] - np.sign(np.array(reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx]))*std_IR[other_dim_idx+nb_other_dim*rho_idx]),100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx][::-1] + np.sign(np.array(reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx][::-1]))*std_IR[other_dim_idx+nb_other_dim*rho_idx][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim*rho_idx]-std_metrics[other_dim_idx+nb_other_dim*rho_idx],avg_metrics[other_dim_idx+nb_other_dim*rho_idx][::-1]+std_metrics[other_dim_idx+nb_other_dim*rho_idx][::-1])), alpha = 0.4, label='_nolegend_')
                                 ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)', fontsize = 18)
                                 ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
                                 ax[fig_nb].set_title(('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)')
@@ -285,10 +333,10 @@ class iFinalCurves(vGeneral):
                                     ax[fig_nb].hlines(100*(CRC_plot==False)+100*CRC_plot,xmin=0,xmax=len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])-1,color='grey',linestyle='dashed',label='_nolegend_')
                                 else:
                                     ax[fig_nb].hlines(100*(CRC_plot==False)+100*CRC_plot,xmin=0,xmax=len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])-1,color='grey',linestyle='dashed',label='_nolegend_')
-                                #ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])), avg_metrics[other_dim_idx+nb_other_dim*rho_idx] - std_metrics[other_dim_idx+nb_other_dim*rho_idx], avg_metrics[other_dim_idx+nb_other_dim*rho_idx] + std_metrics[other_dim_idx+nb_other_dim*rho_idx], alpha = 0.4, label='_nolegend_')
+                                ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])), avg_metrics[other_dim_idx+nb_other_dim*rho_idx] - std_metrics[other_dim_idx+nb_other_dim*rho_idx], avg_metrics[other_dim_idx+nb_other_dim*rho_idx] + std_metrics[other_dim_idx+nb_other_dim*rho_idx], alpha = 0.4, label='_nolegend_')
                                 ax[fig_nb].set_xlabel('Iterations', fontsize = 18)
                                 ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
-                                ax[fig_nb].set_title(method + " reconstruction averaged on " + str(nb_replicates) + " replicates")
+                                ax[fig_nb].set_title(method + " reconstruction averaged on " + str(nb_replicates) + " replicates (" + ROI + " ROI)")
                             #'''
                             if (fig_nb != 2):
                                 replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!=""))
@@ -298,7 +346,7 @@ class iFinalCurves(vGeneral):
                         for other_dim_idx in range(nb_other_dim):
                             cases = np.arange(0,nb_other_dim*nb_rho,nb_other_dim) + other_dim_idx
                             ax[fig_nb].plot(100*np.array(avg_IR)[cases,-1],np.array(avg_metrics)[cases,-1],'-o',color=color_avg)
-                            #ax[fig_nb].fill(np.concatenate((100*(np.array(avg_IR)[cases,-1] - np.sign(np.array(reg[fig_nb])[cases])*np.array(std_IR)[cases,-1]),100*(np.array(avg_IR)[cases,-1][::-1] + np.sign(np.array(reg[fig_nb])[cases][::-1])*np.array(std_IR)[cases,-1][::-1]))),np.concatenate((np.array(avg_metrics)[cases,-1]-np.array(std_metrics)[cases,-1],np.array(avg_metrics)[cases,-1][::-1]+np.array(std_metrics)[cases,-1][::-1])), alpha = 0.4, label='_nolegend_')
+                            ax[fig_nb].fill(np.concatenate((100*(np.array(avg_IR)[cases,-1] - np.sign(np.array(reg[fig_nb])[cases])*np.array(std_IR)[cases,-1]),100*(np.array(avg_IR)[cases,-1][::-1] + np.sign(np.array(reg[fig_nb])[cases][::-1])*np.array(std_IR)[cases,-1][::-1]))),np.concatenate((np.array(avg_metrics)[cases,-1]-np.array(std_metrics)[cases,-1],np.array(avg_metrics)[cases,-1][::-1]+np.array(std_metrics)[cases,-1][::-1])), alpha = 0.4, label='_nolegend_')
                             replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!=""))
                         ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)', fontsize = 18)
                         ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)

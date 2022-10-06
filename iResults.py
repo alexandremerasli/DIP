@@ -37,7 +37,7 @@ class iResults(vDenoising):
                 with open(self.path_stopping_criterion) as f:
                     first_line = f.readline() # Read first line to get second one
                     self.total_nb_iter = min(int(f.readline().rstrip()) - self.i_init, config["nb_outer_iteration"] - self.i_init + 1)
-                    self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1 # Override value
+                    #self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1 # Override value
             except:
                 self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1
             self.beta = config["alpha"]

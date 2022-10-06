@@ -704,11 +704,15 @@ class vGeneral(abc.ABC):
         return int(text) if text.isdigit() else text
 
     def natural_keys(self,text):
-        try:
-            return [ self.atoi(c) for c in re.split(r'(\d+)', text) ] # APGMAP final curves + resume computation
-            return [ self.atoi(c) for c in re.split(r'(\+|-)\d+(\.\d+)?', text) ] # ADMMLim final curves
-        except:
-            return [ self.atoi(c) for c in re.split(r'(\d+)', text) ] # APGMAP
+        print(re.split(r'(\d+)', text))
+        return [ self.atoi(c) for c in re.split(r'(\d+)', text) ] # APGMAP final curves + resume computation
+        #return [ self.atoi(c) for c in re.split(r'(\+|-)\d+(\.\d+)?', text) ] # ADMMLim final curves
+    
+    def natural_keys_ADMMLim(self,text): # Sort by scientific or float numbers
+        #return [ self.atoi(c) for c in re.split(r'(\d+)', text) ] # APGMAP final curves + resume computation
+        match_number = re.compile('-?\ *[0-9]+\.?[0-9]*(?:[Ee]\ *-?\ *[0-9]+)?')
+        final_list = [float(x) for x in re.findall(match_number, text)] # Extract scientific of float numbers in string
+        return final_list # ADMMLim final curves
         
     def has_numbers(self,inputString):
         return any(char.isdigit() for char in inputString)
