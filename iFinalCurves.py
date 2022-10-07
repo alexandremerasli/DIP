@@ -131,6 +131,10 @@ class iFinalCurves(vGeneral):
                 nb_other_dim = len(config_other_dim)
                 nb_replicates = int(len(replicates[0]) / (nb_rho * nb_other_dim))
 
+                # Sort rho and other dim like suffix
+                config["rho"] = sorted(config["rho"])
+                config_other_dim = sorted(config_other_dim)
+
                 # Wanted list of replicates
                 idx_wanted = []
                 for i in range(nb_rho):
@@ -146,13 +150,13 @@ class iFinalCurves(vGeneral):
 
                 # Sort suffixes from file by rho and other dim values 
                 sorted_suffixes = list(suffixes[0])
-                if (method != "ADMMLim"):
+                if (method != "ADMMLim" and method != "nested"):
                     sorted_suffixes.sort(key=self.natural_keys)
                 else:
                     sorted_suffixes.sort(key=self.natural_keys_ADMMLim)
                 
-                #for i in range(len(sorted_suffixes)):
-                #    print(sorted_suffixes[i])
+                for i in range(len(sorted_suffixes)):
+                    print(sorted_suffixes[i])
 
                 # Load metrics from last runs to merge them in one figure
                 for i in range(len(sorted_suffixes)):
@@ -272,20 +276,16 @@ class iFinalCurves(vGeneral):
                             for replicate_idx in range(nb_replicates):
                                 case = replicate_idx + nb_replicates*other_dim_idx + (nb_replicates*nb_other_dim)*rho_idx
                                 if (fig_nb == 0): # Plot tradeoff curves with iterations
-                                    idx_sort = np.argsort(IR_final[case])
-                                    idx_sort = np.arange(len(IR_final[case_mini[rho_idx]]))
+                                    it = np.arange(len(IR_final[case_mini[rho_idx]]))
                                     if (plot_all_replicates_curves):
-                                        ax[fig_nb].plot(100*IR_final_final_array[rho_idx,other_dim_idx,replicate_idx,idx_sort],metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,idx_sort],label='_nolegend_') # IR in %
+                                        ax[fig_nb].plot(100*IR_final_final_array[rho_idx,other_dim_idx,replicate_idx,it],metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,it],label='_nolegend_') # IR in %
                             
                             #'''
                             if (fig_nb == 0):
-                                #reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx] = []
-                                idx_sort = np.argsort(IR_final[case_mini[rho_idx]])
                                 for it in range(len(IR_final[case_mini[rho_idx]])):
                                     reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] = self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim*rho_idx][:,it],metrics_final_array[other_dim_idx+nb_other_dim*rho_idx][:,it])
                             #'''
                             for replicate_idx in range(nb_replicates):
-                                case = replicate_idx + nb_replicates*other_dim_idx + (nb_replicates*nb_other_dim)*rho_idx
                                 if (fig_nb == 1): # Plot bias curves
                                     if (plot_all_replicates_curves):
                                         ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,:len_mini[rho_idx]],label='_nolegend_') # IR in %
