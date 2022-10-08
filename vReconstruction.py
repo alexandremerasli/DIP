@@ -161,7 +161,7 @@ class vReconstruction(vGeneral):
 
     def compute_x_v_u_ADMM(self,x_reconstruction_command_line,subdir,i,phantom,subroot_output_path,subroot, it_name=''):
         # Compute x,u,v
-        os.system(x_reconstruction_command_line)
+        os.system(x_reconstruction_command_line + ' -oit 30:' + str(self.config["nb_outer_iteration"]))
         # Change iteration name for header if stopping criterion reached
         try:
             path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'

@@ -50,6 +50,10 @@ class iComparison(vReconstruction):
                 initialimage = ''
                 it = ' -it ' + str(self.max_iter) + ':' + str(config["nb_subsets"])
         
+            #if (self.method == "APGMAP"):
+                #initialimage += " -multimodal " + self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.hdr'
+                #initialimage += " -multimodal " + self.subroot_data + 'Data/initialization/' + "1_im_value_cropped" + '.hdr'
+
             print("CASToR command line : ")
             print(self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
             os.system(self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
