@@ -30,7 +30,7 @@ class iFinalCurves(vGeneral):
         #vDenoising.initializeSpecific(self,config,root)
 
         if ('ADMMLim' in config["method"]):
-            self.i_init = 20 # Remove first iterations
+            self.i_init = 30 # Remove first iterations
             #self.i_init = 1 # Remove first iterations
         else:
             self.i_init = 1
@@ -169,14 +169,14 @@ class iFinalCurves(vGeneral):
                             spamreader = reader_csv(myfile,delimiter=';')
                             rows_csv = list(spamreader)
                             
-                            rows_csv[0] = [float(rows_csv[0][i]) for i in range(self.i_init - 1,min(len(rows_csv[0]),self.total_nb_iter))]
-                            rows_csv[1] = [float(rows_csv[1][i]) for i in range(self.i_init - 1, min(len(rows_csv[1]),self.total_nb_iter))]
-                            rows_csv[2] = [float(rows_csv[2][i]) for i in range(self.i_init - 1, min(len(rows_csv[2]),self.total_nb_iter))]
-                            rows_csv[3] = [float(rows_csv[3][i]) for i in range(self.i_init - 1, min(len(rows_csv[3]),self.total_nb_iter))]
-                            rows_csv[4] = [float(rows_csv[4][i]) for i in range(self.i_init - 1, min(len(rows_csv[4]),self.total_nb_iter))]
-                            rows_csv[5] = [float(rows_csv[5][i]) for i in range(self.i_init - 1, min(len(rows_csv[5]),self.total_nb_iter))]
-                            rows_csv[6] = [float(rows_csv[6][i]) for i in range(self.i_init - 1, min(len(rows_csv[6]),self.total_nb_iter))]
-                            rows_csv[7] = [float(rows_csv[7][i]) for i in range(self.i_init - 1, min(len(rows_csv[7]),self.total_nb_iter))]
+                            rows_csv[0] = [float(rows_csv[0][i]) for i in range(int(self.i_init/self.i_init) - 1,min(len(rows_csv[0]),self.total_nb_iter))]
+                            rows_csv[1] = [float(rows_csv[1][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[1]),self.total_nb_iter))]
+                            rows_csv[2] = [float(rows_csv[2][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[2]),self.total_nb_iter))]
+                            rows_csv[3] = [float(rows_csv[3][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[3]),self.total_nb_iter))]
+                            rows_csv[4] = [float(rows_csv[4][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[4]),self.total_nb_iter))]
+                            rows_csv[5] = [float(rows_csv[5][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[5]),self.total_nb_iter))]
+                            rows_csv[6] = [float(rows_csv[6][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[6]),self.total_nb_iter))]
+                            rows_csv[7] = [float(rows_csv[7][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[7]),self.total_nb_iter))]
 
                             PSNR_recon.append(np.array(rows_csv[0]))
                             PSNR_norm_recon.append(np.array(rows_csv[1]))
