@@ -5,7 +5,7 @@ from audioop import reverse
 from pathlib import Path
 import os
 from functools import partial
-from ray import tune
+from ray import tune, init
 import numpy as np
 from itertools import product
 import matplotlib.pyplot as plt
@@ -152,6 +152,7 @@ class vGeneral(abc.ABC):
             #except: # do not resume previous run because there is no previous one
             #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(config) + "_max_iter=" + str(config["max_iter"], resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
 
+            #init(log_to_driver=False) # Remove logs stored by raytune, but also from terminal...
             tune.run(partial(self.do_everything,root=root,suffix_replicate_file = True), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
         else: # Without raytune
             # Remove grid search if not using ray and choose first element of each config key.
@@ -197,9 +198,9 @@ class vGeneral(abc.ABC):
 
         # Delete hyperparameters specific to others optimizer 
         if (len(config["method"]['grid_search']) == 1):
-            if (config["method"]['grid_search'][0] != "AML" and config["method"]['grid_search'][0] != "APGMAP"):
+            if (config["method"]['grid_search'][0] != "AML" and "APGMAP" not in config["method"]['grid_search'][0]):
                 config.pop("A_AML", None)
-            if (config["method"]['grid_search'][0] == 'BSREM' or config["method"]['grid_search'][0] == 'nested' or config["method"]['grid_search'][0] == 'Gong' or config["method"]['grid_search'][0] == 'APGMAP'):
+            if (config["method"]['grid_search'][0] == 'BSREM' or config["method"]['grid_search'][0] == 'nested' or config["method"]['grid_search'][0] == 'Gong' or 'APGMAP' in config["method"]['grid_search'][0]):
                 config.pop("post_smoothing", None)
             if ('ADMMLim' not in config["method"]['grid_search'][0] and config["method"]['grid_search'][0] != "nested"):
                 #config.pop("nb_inner_iteration", None)
@@ -712,6 +713,7 @@ class vGeneral(abc.ABC):
         #return [ self.atoi(c) for c in re.split(r'(\d+)', text) ] # APGMAP final curves + resume computation
         match_number = re.compile('-?\ *[0-9]+\.?[0-9]*(?:[Ee]\ *-?\ *[0-9]+)?')
         final_list = [float(x) for x in re.findall(match_number, text)] # Extract scientific of float numbers in string
+        print(final_list)
         return final_list # ADMMLim final curves
         
     def has_numbers(self,inputString):
