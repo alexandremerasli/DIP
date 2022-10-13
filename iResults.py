@@ -1,7 +1,6 @@
 ## Python libraries
 
 # Pytorch
-from fcntl import I_ATMARK
 from torch.utils.tensorboard import SummaryWriter
 
 # Math
