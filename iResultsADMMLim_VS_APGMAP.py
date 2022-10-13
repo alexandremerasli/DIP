@@ -126,10 +126,10 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                             except: # ES point is reached
                                 break
                         else:
-                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-i_init) + "FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-i_init) + "_FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
                         if config["FLTNB"] == "double":
                             f_p.astype(np.float64)
-                    elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'OSEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or config["method"] == 'APGMAP'):
+                    elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'OPTITR' or config["method"] == 'OSEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or config["method"] == 'APGMAP'):
                         pet_algo=config["method"]
                         iteration_name = "iterations"
                         if (hasattr(self,'beta')):

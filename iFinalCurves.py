@@ -30,8 +30,8 @@ class iFinalCurves(vGeneral):
         #vDenoising.initializeSpecific(self,config,root)
 
         if ('ADMMLim' in config["method"]):
-            self.i_init = 20 # Remove first iterations
-            #self.i_init = 1 # Remove first iterations
+            self.i_init = 30 # Remove first iterations
+            self.i_init = 1 # Remove first iterations
         else:
             self.i_init = 1
 
@@ -41,9 +41,11 @@ class iFinalCurves(vGeneral):
                 with open(self.path_stopping_criterion) as f:
                     first_line = f.readline() # Read first line to get second one
                     self.total_nb_iter = min(int(f.readline().rstrip()) - self.i_init, config["nb_outer_iteration"] - self.i_init + 1)
+                    self.total_nb_iter = int(self.total_nb_iter / self.i_init)
                     #self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1 # Override value
             except:
                 self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1
+                self.total_nb_iter = int(self.total_nb_iter / self.i_init)
             self.beta = config["alpha"]
         elif (config["method"] == 'nested' or config["method"] == 'Gong'):
             if ('post_reco' in config["task"]):
@@ -55,7 +57,7 @@ class iFinalCurves(vGeneral):
 
             if (config["method"] == 'AML'):
                 self.beta = config["A_AML"]
-            if (config["method"] == 'BSREM' or config["method"] == 'nested' or config["method"] == 'Gong' or config["method"] == 'APGMAP'):
+            if (config["method"] == 'BSREM' or config["method"] == 'nested' or config["method"] == 'Gong' or 'APGMAP' in config["method"]):
                 self.rho = config["rho"]
                 self.beta = self.rho
 
@@ -113,9 +115,9 @@ class iFinalCurves(vGeneral):
                     replicates.append(f.readlines())
                 
                 # Retrieve number of rhos and replicates and other dimension
-                rho_name = "rho"
+                rho_name = "beta"
                 nb_rho = len(config["rho"])
-                if (method == "APGMAP" or method == "AML"):
+                if ("APGMAP" in method or method == "AML"):
                     config_other_dim = config["A_AML"]
                     other_dim_name = "A"
                 elif (method == "MLEM" or method == "OSEM"):
@@ -150,7 +152,7 @@ class iFinalCurves(vGeneral):
 
                 # Sort suffixes from file by rho and other dim values 
                 sorted_suffixes = list(suffixes[0])
-                if (method != "ADMMLim" and method != "nested"):
+                if (method != "ADMMLim" and method != "nested" and "APGMAP" not in method):
                     sorted_suffixes.sort(key=self.natural_keys)
                 else:
                     sorted_suffixes.sort(key=self.natural_keys_ADMMLim)
@@ -169,14 +171,14 @@ class iFinalCurves(vGeneral):
                             spamreader = reader_csv(myfile,delimiter=';')
                             rows_csv = list(spamreader)
                             
-                            rows_csv[0] = [float(rows_csv[0][i]) for i in range(self.i_init - 1,min(len(rows_csv[0]),self.total_nb_iter))]
-                            rows_csv[1] = [float(rows_csv[1][i]) for i in range(self.i_init - 1, min(len(rows_csv[1]),self.total_nb_iter))]
-                            rows_csv[2] = [float(rows_csv[2][i]) for i in range(self.i_init - 1, min(len(rows_csv[2]),self.total_nb_iter))]
-                            rows_csv[3] = [float(rows_csv[3][i]) for i in range(self.i_init - 1, min(len(rows_csv[3]),self.total_nb_iter))]
-                            rows_csv[4] = [float(rows_csv[4][i]) for i in range(self.i_init - 1, min(len(rows_csv[4]),self.total_nb_iter))]
-                            rows_csv[5] = [float(rows_csv[5][i]) for i in range(self.i_init - 1, min(len(rows_csv[5]),self.total_nb_iter))]
-                            rows_csv[6] = [float(rows_csv[6][i]) for i in range(self.i_init - 1, min(len(rows_csv[6]),self.total_nb_iter))]
-                            rows_csv[7] = [float(rows_csv[7][i]) for i in range(self.i_init - 1, min(len(rows_csv[7]),self.total_nb_iter))]
+                            rows_csv[0] = [float(rows_csv[0][i]) for i in range(int(self.i_init/self.i_init) - 1,min(len(rows_csv[0]),self.total_nb_iter))]
+                            rows_csv[1] = [float(rows_csv[1][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[1]),self.total_nb_iter))]
+                            rows_csv[2] = [float(rows_csv[2][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[2]),self.total_nb_iter))]
+                            rows_csv[3] = [float(rows_csv[3][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[3]),self.total_nb_iter))]
+                            rows_csv[4] = [float(rows_csv[4][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[4]),self.total_nb_iter))]
+                            rows_csv[5] = [float(rows_csv[5][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[5]),self.total_nb_iter))]
+                            rows_csv[6] = [float(rows_csv[6][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[6]),self.total_nb_iter))]
+                            rows_csv[7] = [float(rows_csv[7][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[7]),self.total_nb_iter))]
 
                             PSNR_recon.append(np.array(rows_csv[0]))
                             PSNR_norm_recon.append(np.array(rows_csv[1]))
@@ -288,7 +290,7 @@ class iFinalCurves(vGeneral):
                             for replicate_idx in range(nb_replicates):
                                 if (fig_nb == 1): # Plot bias curves
                                     if (plot_all_replicates_curves):
-                                        ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,:len_mini[rho_idx]],label='_nolegend_') # IR in %
+                                        ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,:len_mini[rho_idx]],label='_nolegend_') # IR in %
 
                     avg_metrics = np.zeros((nb_rho*nb_other_dim,np.max(len_mini)))
                     avg_IR = np.zeros((nb_rho*nb_other_dim,np.max(len_mini)))
@@ -327,22 +329,22 @@ class iFinalCurves(vGeneral):
                                 ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],'-o',color=color_avg)
                                 ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
                                 ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)', fontsize = 18)
-                                #ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
-                                ax[fig_nb].set_ylabel(('Bias '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
+                                ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
+                                #ax[fig_nb].set_ylabel(('Bias '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
                                 ax[fig_nb].set_title(('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)')
                             #'''
                             if (fig_nb == 1):
                                 # Plot average and std of bias curves with iterations
-                                ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],color=color_avg)
+                                ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],color=color_avg)
                                 # Plot dashed line for target value, according to ROI
                                 if ROI == 'hot':
-                                    ax[fig_nb].hlines(100*(CRC_plot==False)+100*CRC_plot,xmin=0,xmax=len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])-1,color='grey',linestyle='dashed',label='_nolegend_')
+                                    ax[fig_nb].hlines(100*(CRC_plot==False)+100*CRC_plot,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])-1)*self.i_init,color='grey',linestyle='dashed',label='_nolegend_')
                                 else:
-                                    ax[fig_nb].hlines(100*(CRC_plot==False)+100*CRC_plot,xmin=0,xmax=len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])-1,color='grey',linestyle='dashed',label='_nolegend_')
-                                ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])), avg_metrics[other_dim_idx+nb_other_dim*rho_idx] - std_metrics[other_dim_idx+nb_other_dim*rho_idx], avg_metrics[other_dim_idx+nb_other_dim*rho_idx] + std_metrics[other_dim_idx+nb_other_dim*rho_idx], alpha = 0.4, label='_nolegend_')
+                                    ax[fig_nb].hlines(100*(CRC_plot==False)+100*CRC_plot,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])-1)*self.i_init,color='grey',linestyle='dashed',label='_nolegend_')
+                                ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx]))*self.i_init, avg_metrics[other_dim_idx+nb_other_dim*rho_idx] - std_metrics[other_dim_idx+nb_other_dim*rho_idx], avg_metrics[other_dim_idx+nb_other_dim*rho_idx] + std_metrics[other_dim_idx+nb_other_dim*rho_idx], alpha = 0.4, label='_nolegend_')
                                 ax[fig_nb].set_xlabel('Iterations', fontsize = 18)
-                                #ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
-                                ax[fig_nb].set_ylabel(('Bias '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
+                                ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
+                                #ax[fig_nb].set_ylabel(('Bias '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
                                 ax[fig_nb].set_title(method + " reconstruction averaged on " + str(nb_replicates) + " replicates (" + ROI + " ROI)")
                             #'''
                             if (fig_nb != 2):
@@ -356,8 +358,8 @@ class iFinalCurves(vGeneral):
                             ax[fig_nb].fill(np.concatenate((100*(avg_IR[(cases,len_mini-1)] - np.sign(reg[fig_nb][cases])*std_IR[cases,-1]),100*(avg_IR[(cases,len_mini-1)][::-1] + np.sign(reg[fig_nb][cases][::-1])*std_IR[(cases,len_mini-1)][::-1]))),np.concatenate((avg_metrics[(cases,len_mini-1)]-std_metrics[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)][::-1]+std_metrics[(cases,len_mini-1)][::-1])), alpha = 0.4, label='_nolegend_')
                             replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!=""))
                         ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)', fontsize = 18)
-                        #ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
-                        ax[fig_nb].set_ylabel(('Bias '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
+                        ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
+                        #ax[fig_nb].set_ylabel(('Bias '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
                         ax[fig_nb].set_title(('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (at convergence)')
                     #'''
 

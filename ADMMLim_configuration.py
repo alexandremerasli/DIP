@@ -18,6 +18,7 @@ def config_func_MIC():
         "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
         #"f_init" : tune.grid_search(['1_im_value_cropped']),
         "replicates" : tune.grid_search(list(range(1,100+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
+        #"replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
         "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
         "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMLim)
     }
@@ -37,9 +38,9 @@ def config_func_MIC():
     }
     # Configuration dictionnary for hyperparameters to tune
     hyperparameters_config = {
-        "rho" : tune.grid_search([3e-5,5e-5,7e-5,9e-5,2e-4,4e-4,6e-4,8e-4,1e-3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        #"rho" : tune.grid_search([3e-4,5e-4]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        #"rho" : tune.grid_search([3e-3,4e-3,5e-3,6e-3,7e-3,8e-3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+        "rho" : tune.grid_search([0,3e-5,5e-5,7e-5,9e-5,2e-4,4e-4,6e-4,8e-4,1e-3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+        #"rho" : tune.grid_search([1e-3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+        #"rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         ## network hyperparameters
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
         "sub_iter_DIP" : tune.grid_search([1000]), # Number of epochs in network optimization
@@ -52,7 +53,7 @@ def config_func_MIC():
         "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
         "k_DD" : tune.grid_search([32]), # k for Deep Decoder
         ## ADMMLim - OPTITR hyperparameters
-        "nb_outer_iteration": tune.grid_search([10000]), # Number outer iterations in ADMMLim
+        "nb_outer_iteration": tune.grid_search([20000]), # Number outer iterations in ADMMLim
         "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMLim
         "adaptive_parameters" : tune.grid_search(["tau"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
         "mu_adaptive" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
@@ -61,7 +62,7 @@ def config_func_MIC():
         # Optimization transfer (OPTITR) hyperparameters
         "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False
         # AML/APGMAP hyperparameters
-        "A_AML" : tune.grid_search([-100,-500,-10000]), # AML lower bound A
+        "A_AML" : tune.grid_search([-10,-100,-1000]), # AML lower bound A
         # Post smoothing by CASToR after reconstruction
         "post_smoothing" : tune.grid_search([0]), # Post smoothing by CASToR after reconstruction
         #"post_smoothing" : tune.grid_search([6,9,12,15]), # Post smoothing by CASToR after reconstruction

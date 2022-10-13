@@ -1,6 +1,7 @@
 ## Python libraries
 
 # Pytorch
+from fcntl import I_ATMARK
 from torch.utils.tensorboard import SummaryWriter
 
 # Math
@@ -26,7 +27,7 @@ class iResults(vDenoising):
         vDenoising.initializeSpecific(self,config,root)
 
         if ('ADMMLim' in config["method"]):
-            self.i_init = 20 # Remove first iterations
+            self.i_init = 30 # Remove first iterations
             self.i_init = 1 # Remove first iterations
         else:
             self.i_init = 1
@@ -51,7 +52,7 @@ class iResults(vDenoising):
 
             if (config["method"] == 'AML'):
                 self.beta = config["A_AML"]
-            if (config["method"] == 'BSREM' or config["method"] == 'nested' or config["method"] == 'Gong' or config["method"] == 'APGMAP'):
+            if (config["method"] == 'BSREM' or config["method"] == 'nested' or config["method"] == 'Gong' or 'APGMAP' in config["method"]):
                 self.rho = config["rho"]
                 self.beta = self.rho
         # Create summary writer from tensorboard
@@ -79,16 +80,16 @@ class iResults(vDenoising):
         self.phantom_ROI = self.get_phantom_ROI(self.phantom)
 
         # Metrics arrays
-        self.PSNR_recon = np.zeros(self.total_nb_iter)
-        self.PSNR_norm_recon = np.zeros(self.total_nb_iter)
-        self.MSE_recon = np.zeros(self.total_nb_iter)
-        self.SSIM_recon = np.zeros(self.total_nb_iter)
-        self.MA_cold_recon = np.zeros(self.total_nb_iter)
-        self.AR_hot_recon = np.zeros(self.total_nb_iter)
-        self.CRC_cold_recon = np.zeros(self.total_nb_iter)
-        self.CRC_hot_recon = np.zeros(self.total_nb_iter)
-        self.AR_bkg_recon = np.zeros(self.total_nb_iter)
-        self.IR_bkg_recon = np.zeros(self.total_nb_iter)
+        self.PSNR_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+        self.PSNR_norm_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+        self.MSE_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+        self.SSIM_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+        self.MA_cold_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+        self.AR_hot_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+        self.CRC_cold_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+        self.CRC_hot_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+        self.AR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+        self.IR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
         
     def writeBeginningImages(self,suffix,image_net_input=None):
         if (self.tensorboard):
@@ -141,7 +142,7 @@ class iResults(vDenoising):
         f = np.zeros(self.PETImage_shape,dtype=type)
         f_p = np.zeros(self.PETImage_shape,dtype=type)
 
-        for i in range(self.i_init,self.total_nb_iter+self.i_init):
+        for i in range(self.i_init,self.total_nb_iter+self.i_init,self.i_init):
             IR = 0
             for p in range(1,self.nb_replicates+1):
                 if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
@@ -165,10 +166,10 @@ class iResults(vDenoising):
                             except: # ES point is reached
                                 break
                         else:
-                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-self.i_init) + "FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-self.i_init) + "_FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
                         if config["FLTNB"] == "double":
                             f_p.astype(np.float64)
-                    elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'OSEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or config["method"] == 'APGMAP'):
+                    elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'OPTITR' or config["method"] == 'OSEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or 'APGMAP' in config["method"]):
                         pet_algo=config["method"]
                         iteration_name = "iterations"
                         if (hasattr(self,'beta')):
@@ -183,16 +184,19 @@ class iResults(vDenoising):
                         #elif (config["method"] == 'BSREM'):
                         #    f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         else:
-                            f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                            if ('APGMAP' in config["method"]):
+                                f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  "APGMAP" + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                            else:
+                                f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
 
                     # Compute IR metric (different from others with several replicates)
-                    self.compute_IR_bkg(self.PETImage_shape,f_p,i-self.i_init,self.IR_bkg_recon,self.phantom)
+                    self.compute_IR_bkg(self.PETImage_shape,f_p,int((i-self.i_init)/self.i_init),self.IR_bkg_recon,self.phantom)
 
                     # Specific average for IR
                     if (config["average_replicates"] == False and p == self.replicate):
-                        IR = self.IR_bkg_recon[i-self.i_init]
+                        IR = self.IR_bkg_recon[int((i-self.i_init)/self.i_init)]
                     elif (config["average_replicates"]):
-                        IR += self.IR_bkg_recon[i-self.i_init] / self.nb_replicates
+                        IR += self.IR_bkg_recon[int((i-self.i_init)/self.i_init)] / self.nb_replicates
                         
                     if (config["average_replicates"]): # Average images across replicates (for metrics except IR)
                         f += f_p / self.nb_replicates
@@ -202,13 +206,14 @@ class iResults(vDenoising):
                     del f_p
                     
                 
-            self.IR_bkg_recon[i-self.i_init] = IR
+            self.IR_bkg_recon[int((i-self.i_init)/self.i_init)] = IR
             if (self.tensorboard):
                 #print("IR saved in tensorboard")
-                self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[i-self.i_init], i)
+                self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[int((i-self.i_init)/self.i_init)], i)
 
-            # Show images and metrics in tensorboard (averaged images if asked in config)           
-            self.writeEndImagesAndMetrics(i-self.i_init,self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
+            # Show images and metrics in tensorboard (averaged images if asked in config)
+            print('Metrics for iteration',int((i-self.i_init)/self.i_init))
+            self.writeEndImagesAndMetrics(int((i-self.i_init)/self.i_init),self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
 
         #self.WMV_plot(config)
 
@@ -345,8 +350,6 @@ class iResults(vDenoising):
         image_gt_cropped = image_gt * self.phantom_ROI
         image_gt_norm = self.norm_imag(image_gt_cropped)[0]
 
-        # Print metrics
-        print('Metrics for iteration',i)
         #print('Dif for PSNR calculation',np.amax(image_recon_cropped) - np.amin(image_recon_cropped),' , must be as small as possible')
 
         # PSNR calculation

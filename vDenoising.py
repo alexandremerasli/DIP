@@ -7,6 +7,7 @@ import pytorch_lightning as pl
 # Useful
 import numpy as np
 import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 
 # Set random seed if asked (for random input here)
 if (os.path.isfile(os.getcwd() + "/seed.txt")):

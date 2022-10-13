@@ -41,11 +41,13 @@ class iNestedADMM(vReconstruction):
             print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Global iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', i)
             start_time_outer_iter = time.time()
             
-            if (i != i_init or config["unnested_1st_global_iter"]): # Gong at first epoch -> only pre train the network
+            if (i != i_init or config["unnested_1st_global_iter"]): # Gong after pre iteration
                 # Block 1 - Reconstruction with CASToR (tomographic reconstruction part of ADMM)
+                if (i == i_init + 1 and config["unnested_1st_global_iter"] == False): # enable to avoid pre iteration
+                    self.f = self.fijii_np(self.subroot_data + 'Data/initialization/' + config["f_init"] + '.img',shape=(self.PETImage_shape),type='<f') # enable to avoid pre iteration
                 self.x_label, self.x = self.castor_reconstruction(classResults.writer, i, self.subroot, config["nb_outer_iteration"], self.experiment, config, self.method, self.phantom, self.replicate, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
                 # Write corrupted image over ADMM iterations
-                classResults.writeCorruptedImage(i,config["nb_outer_iteration"],self.x_label,self.suffix,pet_algo="nested ADMM")
+                classResults.writeCorruptedImage(i,config["nb_outer_iteration"],self.x_label,self.suffix,pet_algo=config["method"])
 
             # Block 2 - CNN
             start_time_block2= time.time()
@@ -53,10 +55,12 @@ class iNestedADMM(vReconstruction):
                 # Create label corresponding to initial reconstructed image to start with
                 #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.img',shape=(self.PETImage_shape),type='<f')
                 if (config["method"] == "nested"): # Nested needs 1 to not add any prior information at the beginning, and to initialize x computation to uniform with 1
-                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
+                    #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
+                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
                     #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it10000.img',shape=(self.PETImage_shape),type='<d')
                 elif (config["method"] == "Gong"): # Fit MLEM 60it for first global iteration
-                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
+                    #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
+                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
                 self.save_img(x_label,self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
                 #classDenoising.sub_iter_DIP = classDenoising.self.sub_iter_DIP_initial
 
@@ -87,14 +91,21 @@ class iNestedADMM(vReconstruction):
             self.f_before = self.f
             self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
             # Saving Final DIP output with name without epochs
-            self.save_img(self.f,self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "FINAL" + '.img')
-            
+            self.save_img(self.f,self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(i) + "_FINAL" + '.img')
+            subroot_output_path = (self.subroot + 'Block2/' + self.suffix)
+            # Write hdr with float precision because output of network
+            original_FLTNB = self.FLTNB
+            self.FLTNB = 'float'
+            self.write_hdr(self.subroot,[i],'out_cnn/' + str(self.experiment),self.phantom,'FINAL',subroot_output_path,additional_name='out_' + self.net)
+            self.FLTNB = original_FLTNB
+
             if config["FLTNB"] == "double":
                 self.f = self.f.astype(np.float64)
             
-            if (i != i_init or config["unnested_1st_global_iter"]): # Gong at first epoch -> only pre train the network
+            if (i != i_init or config["unnested_1st_global_iter"]): # Gong after pre iteration
                 # Block 3 - mu update
-                self.mu = self.x_label - self.f
+                if (i > i_init): # at first iteration if rho == 0, let mu to 0 to be equivalent to Gong settings
+                    self.mu = self.x_label - self.f
                 self.save_img(self.mu,self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(i) + self.suffix + '.img') # saving mu
                 # Write corrupted image over ADMM iterations
                 classResults.writeCorruptedImage(i,config["nb_outer_iteration"],self.mu,self.suffix,pet_algo="mmmmmuuuuuuu")
@@ -105,10 +116,10 @@ class iNestedADMM(vReconstruction):
                 # Write output image and metrics to tensorboard
                 classResults.writeEndImagesAndMetrics(i,config["nb_outer_iteration"],self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo=config["method"])
 
-            if (i != i_init or config["unnested_1st_global_iter"]): # Gong at first epoch -> only pre train the network
+            if (i != i_init or config["unnested_1st_global_iter"]): # Gong after pre iteration
                 # Adaptive rho update
                 primal_residual_norm = np.linalg.norm((self.x - self.f) / max(np.linalg.norm(self.x),np.linalg.norm(self.f)))
-                dual_residual_norm = np.linalg.norm((self.f - self.f_before) / np.linalg.norm(self.mu))
+                dual_residual_norm = np.linalg.norm((self.f - self.f_before)) / np.linalg.norm(self.mu)
                 if (config["adaptive_parameters_DIP"] == "tau"):
                     new_tau = 1 / config["xi_DIP"] * np.sqrt(primal_residual_norm / dual_residual_norm)
                     if (new_tau >= 1 and new_tau < config["tau_DIP"]):
@@ -117,6 +128,8 @@ class iNestedADMM(vReconstruction):
                         self.tau = 1 / new_tau
                     else:
                         self.tau = config["tau_DIP"]
+                else:
+                    self.tau = config["tau_DIP"]
                 if (config["adaptive_parameters_DIP"] == "rho" or config["adaptive_parameters_DIP"] == "tau"):
                     if (primal_residual_norm > config["mu_DIP"] * dual_residual_norm):
                         self.rho *= self.tau
@@ -124,6 +137,18 @@ class iNestedADMM(vReconstruction):
                         self.rho /= self.tau
                     else:
                         print("Keeping rho for next global iteration.")
+                text_file = open(self.subroot + 'Block2/' + self.suffix + '/adaptive_it' + str(i) + '.log', "a")
+                text_file.write("adaptive rho :" + "\n")
+                text_file.write(str(self.rho) + "\n")
+                text_file.write("adaptive tau :" + "\n")
+                text_file.write(str(self.tau) + "\n")
+                text_file.write("relPrimal :" + "\n")
+                text_file.write(str(primal_residual_norm) + "\n")
+                text_file.write("relDual :" + "\n")
+                text_file.write(str(dual_residual_norm) + "\n")
+                text_file.write("norm of mu(n+1) :" + "\n")
+                text_file.write(str(np.linalg.norm(self.mu)) + "\n")
+                text_file.close()
                     
             # WMV
             if self.DIP_early_stopping:

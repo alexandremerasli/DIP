@@ -28,7 +28,7 @@ class vReconstruction(vGeneral):
         self.createDirectoryAndConfigFile(config)
 
         # Specific hyperparameters for reconstruction module (Do it here to have raytune config hyperparameters selection)
-        if (config["method"] != "MLEM" and config["method"] != "OSEM" and config["method"] != "AML"):
+        if (config["method"] != "MLEM" and config["method"] != "OSEM" and config["method"] != "AML" and config["method"] != "OPTITR"):
             self.rho = config["rho"]
         else:
             self.rho = 0
@@ -83,7 +83,7 @@ class vReconstruction(vGeneral):
             print(executable + dim + vox + output_path + header_file + vb + it + opti + th)
             os.system(executable + dim + vox + output_path + header_file + vb + it + opti + th) # + ' -fov-out 95')
         #'''
-        
+    
     def castor_reconstruction(self,writer, i, subroot, nb_outer_iteration, experiment, config, method, phantom, replicate, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, alpha, image_init_path_without_extension):
         start_time_block1 = time.time()
         mlem_sequence = config['mlem_sequence']
@@ -107,18 +107,21 @@ class vReconstruction(vGeneral):
                 it = ' -it 16:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, 2D
             else:
                 it = ' -it ' + str(nb_outer_iteration) + ':1' # Only 2 iterations (Gong) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
+                #it = ' -it ' + str(nb_outer_iteration) + ':' + str(config["nb_subsets"]) # Only 2 iterations (Gong) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
 
             # Define command line to run OPTITR with CASToR
             castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i, self.unnested_1st_global_iter)
             # Initialize image
-            if (i == -1):   # choose initial image for CASToR reconstruction
-                initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-            elif (i >= 0):
+            if (i == 0):   # choose initial image for CASToR reconstruction
+                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
+                initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_DIP' + str(i-1) + '_FINAL.hdr' # Gong initializes to DIP output at pre iteration
+                initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + config["f_init"] + '.hdr' # enable to avoid pre iteration
+            elif (i >= 1):
                 #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_' + format(config["nb_outer_iteration"]) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'
                 # Trying to initialize OPTITR
                 #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
-                initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
-                #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'
+                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
+                initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config["nb_outer_iteration"]) + '.hdr'
 
             base_name_i = format(i)
             full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
@@ -161,7 +164,8 @@ class vReconstruction(vGeneral):
 
     def compute_x_v_u_ADMM(self,x_reconstruction_command_line,subdir,i,phantom,subroot_output_path,subroot, it_name=''):
         # Compute x,u,v
-        os.system(x_reconstruction_command_line + ' -oit 30:' + str(self.config["nb_outer_iteration"]))
+        #os.system(x_reconstruction_command_line + ' -oit 90:' + str(int(self.config["nb_outer_iteration"]*3)))
+        os.system(x_reconstruction_command_line)
         # Change iteration name for header if stopping criterion reached
         try:
             path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
@@ -187,6 +191,7 @@ class vReconstruction(vGeneral):
         else:
             folder_sub_path = os.path.join(self.subroot,self.suffix)
         sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if (os.path.splitext(filename)[1] == '.hdr' and "u" not in filename and "v" not in filename)]
+        '''
         if (len(sorted_files) > 0):
             it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
             initialimage, it, last_iter = self.ImageAndItToResumeComputation(sorted_files,it,folder_sub_path)
@@ -203,15 +208,17 @@ class vReconstruction(vGeneral):
                         self.alpha = np.float32(second_line)
                     elif (self.FLTNB == 'double'):
                         self.alpha = np.float64(second_line)
-        else:
-            if (i == 0): # Initializing CASToR reconstruction with image_init or with CASToR default values
-                initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else ''
-            elif (i >= 1): # Last image for next global iteration
-                initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
-            it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
-            
-            u_for_additional_data = ''
-            v_for_additional_data = ''
+        '''
+        #else:
+        if (i == 0): # Initializing CASToR reconstruction with image_init or with CASToR default values
+            #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else ''
+            initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_DIP' + str(i-1) + '_FINAL.hdr' # Gong initializes to DIP output at pre iteration
+        elif (i >= 1): # Last image for next global iteration
+            initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
+        it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
+        
+        u_for_additional_data = ''
+        v_for_additional_data = ''
 
         if ('ADMMLim' in self.method):
             # Compute one ADMM iteration (x, v, u)

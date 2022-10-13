@@ -5,7 +5,7 @@ from audioop import reverse
 from pathlib import Path
 import os
 from functools import partial
-from ray import tune
+from ray import tune, init
 import numpy as np
 from itertools import product
 import matplotlib.pyplot as plt
@@ -137,7 +137,8 @@ class vGeneral(abc.ABC):
             if self.processing_unit == 'CPU':
                 resources_per_trial = {"cpu": 1, "gpu": 0}
             elif self.processing_unit == 'GPU':
-                resources_per_trial = {"cpu": 0, "gpu": 0.1} # "gpu": 1 / config_combination
+                resources_per_trial = {"cpu": 1, "gpu": 0}
+                #resources_per_trial = {"cpu": 0, "gpu": 0.1} # "gpu": 1 / config_combination
                 #resources_per_trial = {"cpu": 0, "gpu": 1} # "gpu": 1 / config_combination
             elif self.processing_unit == 'both':
                 resources_per_trial = {"cpu": 10, "gpu": 1} # not efficient
@@ -152,6 +153,7 @@ class vGeneral(abc.ABC):
             #except: # do not resume previous run because there is no previous one
             #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(config) + "_max_iter=" + str(config["max_iter"], resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
 
+            #init(log_to_driver=False) # Remove logs stored by raytune, but also from terminal...
             tune.run(partial(self.do_everything,root=root,suffix_replicate_file = True), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
         else: # Without raytune
             # Remove grid search if not using ray and choose first element of each config key.
@@ -188,7 +190,9 @@ class vGeneral(abc.ABC):
             config["scaling"] = "nothing"
         if (len(config["method"]['grid_search']) == 1):
             if config["method"]['grid_search'][0] == 'Gong':
+                print("Goooooooooooooooooooong_normalization_enforced")
                 config["scaling"]['grid_search'] = ["normalization"]
+                config["scaling"]['grid_search'] = ["positive_normalization"]
         
         # Remove NNEPPS=False if True is selected for computation
         if (len(config["NNEPPS"]['grid_search']) > 1 and False in config["NNEPPS"]['grid_search'] and 'results' not in task):
@@ -197,9 +201,9 @@ class vGeneral(abc.ABC):
 
         # Delete hyperparameters specific to others optimizer 
         if (len(config["method"]['grid_search']) == 1):
-            if (config["method"]['grid_search'][0] != "AML" and config["method"]['grid_search'][0] != "APGMAP"):
+            if (config["method"]['grid_search'][0] != "AML" and "APGMAP" not in config["method"]['grid_search'][0]):
                 config.pop("A_AML", None)
-            if (config["method"]['grid_search'][0] == 'BSREM' or config["method"]['grid_search'][0] == 'nested' or config["method"]['grid_search'][0] == 'Gong' or config["method"]['grid_search'][0] == 'APGMAP'):
+            if (config["method"]['grid_search'][0] == 'BSREM' or config["method"]['grid_search'][0] == 'nested' or config["method"]['grid_search'][0] == 'Gong' or 'APGMAP' in config["method"]['grid_search'][0]):
                 config.pop("post_smoothing", None)
             if ('ADMMLim' not in config["method"]['grid_search'][0] and config["method"]['grid_search'][0] != "nested"):
                 #config.pop("nb_inner_iteration", None)
@@ -232,7 +236,7 @@ class vGeneral(abc.ABC):
             elif (config["net"]['grid_search'][0] != "DD_AE"): # not a Deep Decoder based architecture, so remove k and d
                 config.pop("d_DD", None)
                 config.pop("k_DD", None)
-            if (config["method"]['grid_search'][0] == 'MLEM' or config["method"]['grid_search'][0] == 'OSEM' or config["method"]['grid_search'][0] == 'AML'):
+            if (config["method"]['grid_search'][0] == 'MLEM' or config["method"] == 'OPTITR' or config["method"]['grid_search'][0] == 'OSEM' or config["method"]['grid_search'][0] == 'AML'):
                 config.pop("rho", None)
             # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMLim in CASToR
             if ('ADMMLim' in config["method"]['grid_search'][0] == "nested" or config["method"]['grid_search'][0]):
@@ -286,7 +290,7 @@ class vGeneral(abc.ABC):
 
 
     """"""""""""""""""""" Useful functions """""""""""""""""""""
-    def write_hdr(self,subroot,L,subpath,phantom,variable_name='',subroot_output_path='',matrix_type='img'):
+    def write_hdr(self,subroot,L,subpath,phantom,variable_name='',subroot_output_path='',matrix_type='img',additional_name=''):
         """ write a header for the optimization transfer solution (it's use as CASTOR input)"""
         if (len(L) == 1):
             i = L[0]
@@ -309,6 +313,7 @@ class vGeneral(abc.ABC):
                 ref_numbers = format(i) + '_' + format(k) + '_' + format(inner_it) + '_' + variable_name
             else:
                 ref_numbers = format(i)
+        ref_numbers = additional_name + ref_numbers
         filename = subroot_output_path + '/'+ subpath + '/' + ref_numbers +'.hdr'
         with open(self.subroot_data + 'Data/MLEM_reco_for_init_hdr/' + phantom + '/' + phantom + '_it1.hdr') as f:
             with open(filename, "w") as f1:
@@ -389,6 +394,7 @@ class vGeneral(abc.ABC):
         return image
 
     def norm_imag(self,img):
+        print("nooooooooorm")
         """ Normalization of input - output [0..1] and the normalization value for each slide"""
         if (np.max(img) - np.min(img)) != 0:
             return (img - np.min(img)) / (np.max(img) - np.min(img)), np.min(img), np.max(img)
@@ -426,6 +432,7 @@ class vGeneral(abc.ABC):
             return img
 
     def stand_imag(self,image_corrupt):
+        print("staaaaaaaaaaand")
         """ Standardization of input - output with mean 0 and std 1 for each slide"""
         mean=np.mean(image_corrupt)
         std=np.std(image_corrupt)
@@ -448,9 +455,9 @@ class vGeneral(abc.ABC):
         if (scaling == 'standardization'):
             return self.stand_imag(image_corrupt)
         elif (scaling == 'normalization'):
-            return self.norm_positive_imag(image_corrupt)
-        elif (scaling == 'positive_normalization'):
             return self.norm_imag(image_corrupt)
+        elif (scaling == 'positive_normalization'):
+            return self.norm_positive_imag(image_corrupt)
         else: # No scaling required
             return image_corrupt, 0, 0
 
@@ -625,6 +632,10 @@ class vGeneral(abc.ABC):
             opti = ' -opti ' + method
             pnlt = ''
             penaltyStrength = ''
+        if (method == 'OPTITR'):
+            opti = ' -opti ' + method
+            pnlt = ''
+            penaltyStrength = ''
         elif (method == 'OSEM'):
             opti = ' -opti ' + 'MLEM'
             pnlt = ''
@@ -712,6 +723,7 @@ class vGeneral(abc.ABC):
         #return [ self.atoi(c) for c in re.split(r'(\d+)', text) ] # APGMAP final curves + resume computation
         match_number = re.compile('-?\ *[0-9]+\.?[0-9]*(?:[Ee]\ *-?\ *[0-9]+)?')
         final_list = [float(x) for x in re.findall(match_number, text)] # Extract scientific of float numbers in string
+        print(final_list)
         return final_list # ADMMLim final curves
         
     def has_numbers(self,inputString):

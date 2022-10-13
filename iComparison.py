@@ -43,6 +43,7 @@ class iComparison(vReconstruction):
             output_path = ' -fout ' + folder_sub_path + '/' + self.method # Output path for CASTOR framework
             
             sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if os.path.splitext(filename)[1] == '.hdr']
+            #'''
             if (len(sorted_files) > 0):
                 it = ' -it ' + str(self.max_iter) + ':' + str(config["nb_subsets"])
                 initialimage, it, last_iter = self.ImageAndItToResumeComputation(sorted_files,it,folder_sub_path)
@@ -50,10 +51,15 @@ class iComparison(vReconstruction):
                 initialimage = ''
                 it = ' -it ' + str(self.max_iter) + ':' + str(config["nb_subsets"])
         
-            #if (self.method == "APGMAP"):
-                #initialimage += " -multimodal " + self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.hdr'
-                #initialimage += " -multimodal " + self.subroot_data + 'Data/initialization/' + "1_im_value_cropped" + '.hdr'
-
+            '''
+            if (self.method == "APGMAP"):
+                initialimage += " -multimodal " + self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.hdr' # Try to shift only cold region, but heavy artifacts
+                #initialimage += " -multimodal " + self.subroot_data + 'Data/initialization/' + "1_im_value_cropped" + '.hdr' # This is the same as not giving a multimodal region
+            '''
+            '''
+            initialimage = ''
+            it = ' -it ' + str(self.max_iter) + ':' + str(config["nb_subsets"])
+            '''
             print("CASToR command line : ")
             print(self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
             os.system(self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
