@@ -9,13 +9,6 @@ import numpy as np
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 
-# Set random seed if asked (for random input here)
-if (os.path.isfile(os.getcwd() + "/seed.txt")):
-    with open(os.getcwd() + "/seed.txt", 'r') as file:
-        random_seed = file.read().rstrip()
-    if (eval(random_seed)):
-        np.random.seed(1)
-
 # Local files to import
 from vGeneral import vGeneral
 
@@ -27,11 +20,18 @@ from models.DD_AE_2D import DD_AE_2D # DD adding encoder part
 
 import abc
 class vDenoising(vGeneral):
-    @abc.abstractmethod
+    #@abc.abstractmethod
     def __init__(self,config, *args, **kwargs):
         print('__init__')
 
     def initializeSpecific(self,config,root, *args, **kwargs):
+        # Set random seed if asked (for random input here)
+        if (os.path.isfile(os.getcwd() + "/seed.txt")):
+            with open(os.getcwd() + "/seed.txt", 'r') as file:
+                random_seed = file.read().rstrip()
+            if (eval(random_seed)):
+                np.random.seed(1)
+
         self.createDirectoryAndConfigFile(config)
         # Specific hyperparameters for reconstruction module (Do it here to have raytune config hyperparameters selection)
         if (config["net"] == "DD" or config["net"] == "DD_AE"):
@@ -135,7 +135,7 @@ class vDenoising(vGeneral):
             type = 'float64'
         if (net == 'DIP' or net == 'DIP_VAE'):
             if config["input"] == "random":
-                im_input = np.random.normal(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type) # initializing input image with random image (for DIP)
+                im_input = np.random.uniform(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type) # initializing input image with random image (for DIP)
             elif config["input"] == "uniform":
                 im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type) # initializing input image with random image (for DIP)
             else:
@@ -145,7 +145,7 @@ class vDenoising(vGeneral):
             if (net == 'DD'):
                 input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
                 if config["input"] == "random":
-                    im_input = np.random.normal(0,1,config["k_DD"]*input_size_DD*input_size_DD).astype(type) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+                    im_input = np.random.uniform(0,1,config["k_DD"]*input_size_DD*input_size_DD).astype(type) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
                 elif config["input"] == "uniform":
                     im_input = constant_uniform*np.ones((config["k_DD"],input_size_DD,input_size_DD)).astype(type) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
                 else:
@@ -154,7 +154,7 @@ class vDenoising(vGeneral):
                 
             elif (net == 'DD_AE'):
                 if config["input"] == "random":
-                    im_input = np.random.normal(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+                    im_input = np.random.uniform(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
                 elif config["input"] == "uniform":
                     im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
                 else:
@@ -194,6 +194,9 @@ class vDenoising(vGeneral):
         if (finetuning == 'last'): # last model saved in checkpoint
             if (global_it > 0): # if model has already been trained
                 model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # Load previous model in checkpoint        
+            elif (global_it == 0 and not config["unnested_1st_global_iter"]):
+                #model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # Load previous model in checkpoint
+                model = model_class.load_from_checkpoint(self.subroot_data + 'Data/initialization/' + 'last.ckpt', config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # enable to avoid pre iteratio
         # if (global_it == 0):
             # DD finetuning, k=32, d=6
             #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
@@ -220,7 +223,6 @@ class vDenoising(vGeneral):
     def runComputation(self,config,root):
         # Scaling of x_label image
         image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image
-
         # Corrupted image x_label, numpy --> torch float32
         self.image_corrupt_torch = torch.Tensor(image_corrupt_input_scale)
         # Adding dimensions to fit network architecture

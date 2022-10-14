@@ -51,17 +51,11 @@ class iComparison(vReconstruction):
                 initialimage = ''
                 it = ' -it ' + str(self.max_iter) + ':' + str(config["nb_subsets"])
         
-<<<<<<< HEAD
             '''
             if (self.method == "APGMAP"):
                 initialimage += " -multimodal " + self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.hdr' # Try to shift only cold region, but heavy artifacts
                 #initialimage += " -multimodal " + self.subroot_data + 'Data/initialization/' + "1_im_value_cropped" + '.hdr' # This is the same as not giving a multimodal region
             '''
-=======
-            if (self.method == "APGMAP"):
-                initialimage += " -multimodal " + self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.hdr'
-                #initialimage += " -multimodal " + self.subroot_data + 'Data/initialization/' + "1_im_value_cropped" + '.hdr'
->>>>>>> 83cba9959bea07e89b9a6f6739c5f223c8b0458e
             '''
             initialimage = ''
             it = ' -it ' + str(self.max_iter) + ':' + str(config["nb_subsets"])

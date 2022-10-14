@@ -192,7 +192,12 @@ class vGeneral(abc.ABC):
             if config["method"]['grid_search'][0] == 'Gong':
                 print("Goooooooooooooooooooong_normalization_enforced")
                 config["scaling"]['grid_search'] = ["normalization"]
-                config["scaling"]['grid_search'] = ["positive_normalization"]
+                #config["scaling"]['grid_search'] = ["positive_normalization"]
+
+        # If ADMMLim (not nested), begin with CASToR default value, which is uniform image of 1
+        if (len(config["method"]['grid_search']) == 1):
+            if config["method"]['grid_search'][0] == 'ADMMLim':
+                config["unnested_1st_global_iter"]['grid_search'] = [True]
         
         # Remove NNEPPS=False if True is selected for computation
         if (len(config["NNEPPS"]['grid_search']) > 1 and False in config["NNEPPS"]['grid_search'] and 'results' not in task):
@@ -416,7 +421,9 @@ class vGeneral(abc.ABC):
     def norm_positive_imag(self,img):
         """ Positive normalization of input - output [0..1] and the normalization value for each slide"""
         if (np.max(img) - np.min(img)) != 0:
-            return img / np.max(img), np.min(img), np.max(img)
+            print(np.max(img))
+            print(np.min(img))
+            return img / np.max(img), 0, np.max(img)
         else:
             return img, 0, np.max(img)
 
@@ -669,7 +676,7 @@ class vGeneral(abc.ABC):
         elif (method == 'Gong'):
             if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
                 rho = 0
-                self.rho = 0
+                #self.rho = 0
             opti = ' -opti OPTITR'
             pnlt = ' -pnlt OPTITR'
             penaltyStrength = ' -pnlt-beta ' + str(rho)

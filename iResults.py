@@ -23,7 +23,7 @@ class iResults(vDenoising):
     def initializeSpecific(self,config,root, *args, **kwargs):
         # Initialize general variables
         self.initializeGeneralVariables(config,root)
-        vDenoising.initializeSpecific(self,config,root)
+        #vDenoising.initializeSpecific(self,config,root)
 
         if ('ADMMLim' in config["method"]):
             self.i_init = 30 # Remove first iterations
