@@ -259,7 +259,7 @@ class DIP_2D(pl.LightningModule):
 
     def write_current_img(self,out):
         if (self.all_images_DIP == "False"):
-            if ((self.current_epoch%(self.sub_iter_DIP // 10) == 0)):
+            if ((self.current_epoch%(self.sub_iter_DIP // 10) == (self.sub_iter_DIP // 10) -1)):
                 self.write_current_img_task(out)
         elif (self.all_images_DIP == "True"):
             self.write_current_img_task(out)

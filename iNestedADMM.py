@@ -76,19 +76,23 @@ class iNestedADMM(vReconstruction):
                 classDenoising.debug = self.debug
                 classDenoising.config = self.config
                 classDenoising.root = self.root
-                classDenoising.global_it = self.global_it
                 classDenoising.method = self.method
                 classDenoising.initializeGeneralVariables(config,root)
                 classDenoising.initializeSpecific(config,root)
-                # Loading DIP x_label (corrupted image) from block1
-                classDenoising.image_corrupt = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(self.global_it) +'_x_label' + self.suffix + '.img',shape=(self.PETImage_shape))
-                classDenoising.net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + '' + format(self.global_it) + self.suffix + '.img'
-                classDenoising.checkpoint_simple_path = self.subroot+'Block2/' + self.suffix + '/checkpoint/'
-                classDenoising.name_run = ""
-                classDenoising.sub_iter_DIP = config["sub_iter_DIP"]
-                classDenoising.sub_iter_DIP_initial = config["sub_iter_DIP_initial"]
 
-            # Train network
+            # Loading DIP x_label (corrupted image) from block1
+            classDenoising.image_corrupt = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(self.global_it) +'_x_label' + self.suffix + '.img',shape=(self.PETImage_shape))
+            print("corrupt")
+            print(np.mean(classDenoising.image_corrupt))
+            print(np.min(classDenoising.image_corrupt))
+            print(np.max(classDenoising.image_corrupt))
+            classDenoising.net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + '' + format(self.global_it) + self.suffix + '.img'
+            classDenoising.checkpoint_simple_path = self.subroot+'Block2/' + self.suffix + '/checkpoint/'
+            classDenoising.name_run = ""
+            # Train network at current global iteration
+            classDenoising.sub_iter_DIP = config["sub_iter_DIP"]
+            classDenoising.sub_iter_DIP_initial = config["sub_iter_DIP_initial"]
+            classDenoising.global_it = self.global_it
             classDenoising.runComputation(config,root)
             
             ## Variables for WMV ##

@@ -25,7 +25,7 @@ settings_config = {
     "debug" : False, # Debug mode = run without raytune and with one iteration
     "ray" : False, # Ray mode = run with raytune if True, to run several settings in parallel
     "tensorboard" : True, # Tensorboard mode = show results in tensorboard
-    "all_images_DIP" : tune.grid_search(['True']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
+    "all_images_DIP" : tune.grid_search(['False']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
     #"f_init" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
     "f_init" : tune.grid_search(['out_DIP-1_FINAL']),
@@ -37,12 +37,12 @@ settings_config = {
 }
 # Configuration dictionnary for previous hyperparameters, but fixed to simplify
 fixed_config = {
-    "max_iter" : tune.grid_search([1]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
+    "max_iter" : tune.grid_search([2]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
-    "finetuning" : tune.grid_search(['False']),
+    "finetuning" : tune.grid_search(['last']),
     "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
     "unnested_1st_global_iter" : tune.grid_search([False]), # If True, unnested are computed after 1st global iteration (because rho is set to 0). If False, needs to set f_init to initialize the network, as in Gong paper, and rho is not changed.
-    "sub_iter_DIP_initial" : tune.grid_search([10]), # Number of epochs in first global iteration (pre iteraiton) in network optimization (only for Gong for now)
+    "sub_iter_DIP_initial" : tune.grid_search([300]), # Number of epochs in first global iteration (pre iteraiton) in network optimization (only for Gong for now)
     "nb_inner_iteration" : tune.grid_search([1]), # Number of inner iterations in ADMMLim (if mlem_sequence is False). (3 sub iterations are done within 1 inner iteration in CASToR)
     "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMLim
     "xi_DIP" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in Gong and nested
@@ -62,15 +62,15 @@ hyperparameters_config = {
     ## network hyperparameters
     "lr" : tune.grid_search([0.001,0.005,0.01,0.05,0.1]), # Learning rate in network optimization
     "lr" : tune.grid_search([0.005,0.01,0.05]), # Learning rate in network optimization
-    "lr" : tune.grid_search([0.1]), # Learning rate in network optimization
+    "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
     "sub_iter_DIP" : tune.grid_search([30,100]), # Number of epochs in network optimization
-    "sub_iter_DIP" : tune.grid_search([10]), # Number of epochs in network optimization
+    "sub_iter_DIP" : tune.grid_search([300]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
     "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     #"skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
     "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
-    "input" : tune.grid_search(['random']), # Neural network input (random or CT)
+    #"input" : tune.grid_search(['random']), # Neural network input (random or CT)
     #"input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
@@ -232,8 +232,8 @@ for method in config["method"]['grid_search']:
         raise ValueError("nested must be launched with rho > 0")
     elif ((config["method"]["grid_search"][0] != 'Gong' and config["method"]["grid_search"][0] != 'nested') and task == "post_reco"):
         raise ValueError("Only Gong or nested can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
-    elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["all_images_DIP"]["grid_search"][0] != "True"):
-        raise ValueError("Please set all_images_DIP to True to save all images for nested or Gong reconstruction.")
+    elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["all_images_DIP"]["grid_search"][0] != "True" and config["DIP_early_stopping"]["grid_search"][0] == "True"):
+        raise ValueError("Please set all_images_DIP to True to save all images for nested or Gong reconstruction if using WMV.")
     elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["rho"]["grid_search"][0] == 0 and task != "post_reco"):
         raise ValueError("Please set rho > 0 for nested or Gong reconstruction (or set task to post reconstruction).")
     elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0]):

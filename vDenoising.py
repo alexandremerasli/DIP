@@ -223,6 +223,10 @@ class vDenoising(vGeneral):
     def runComputation(self,config,root):
         # Scaling of x_label image
         image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image
+        
+        print("self.param1_scale_im_corrupt,self.param2_scale_im_corrupt")
+        print(self.param1_scale_im_corrupt,self.param2_scale_im_corrupt)
+        
         # Corrupted image x_label, numpy --> torch float32
         self.image_corrupt_torch = torch.Tensor(image_corrupt_input_scale)
         # Adding dimensions to fit network architecture
@@ -260,7 +264,8 @@ class vDenoising(vGeneral):
         if (self.all_images_DIP == "True"):
             epoch_values = np.arange(0,self.sub_iter_DIP)
         elif (self.all_images_DIP == "False"):
-            epoch_values = np.arange(0,self.sub_iter_DIP,max(self.sub_iter_DIP//10,1))
+            epoch_values = np.arange(self.sub_iter_DIP//10,self.sub_iter_DIP,max(self.sub_iter_DIP//10,1)) - 1
+            #epoch_values = np.arange(0,self.sub_iter_DIP,max(self.sub_iter_DIP//10,1))
         elif (self.all_images_DIP == "Last"):
             epoch_values = np.array([self.sub_iter_DIP-1])
 
@@ -270,6 +275,12 @@ class vDenoising(vGeneral):
             out = torch.from_numpy(out)
             # Descale like at the beginning
             out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
+            """
+            print("descale")
+            print(np.mean(out_descale))
+            print(np.min(out_descale))
+            print(np.max(out_descale))
+            """
             #'''
             # Saving image output
             net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
