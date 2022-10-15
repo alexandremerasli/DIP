@@ -41,13 +41,13 @@ class iNestedADMM(vReconstruction):
             print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Global iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', self.global_it)
             start_time_outer_iter = time.time()
             
-            if (self.global_it == i_init and not config["unnested_1st_global_iter"]): # enable to avoid pre iteration
-                continue # enable to avoid pre iteration
+            #if (self.global_it == i_init and not config["unnested_1st_global_iter"]): # enable to avoid pre iteration
+            #    continue # enable to avoid pre iteration
 
             if (self.global_it != i_init or config["unnested_1st_global_iter"]): # Gong after pre iteration
                 # Block 1 - Reconstruction with CASToR (tomographic reconstruction part of ADMM)
-                if (self.global_it == i_init + 1 and config["unnested_1st_global_iter"] == False): # enable to avoid pre iteration
-                    self.f = self.fijii_np(self.subroot_data + 'Data/initialization/' + config["f_init"] + '.img',shape=(self.PETImage_shape),type='<f') # enable to avoid pre iteration
+                #if (self.global_it == i_init + 1 and config["unnested_1st_global_iter"] == False): # enable to avoid pre iteration
+                #    self.f = self.fijii_np(self.subroot_data + 'Data/initialization/' + config["f_init"] + '.img',shape=(self.PETImage_shape),type='<f') # enable to avoid pre iteration
                 self.x_label, self.x = self.castor_reconstruction(classResults.writer, self.global_it, i_init, self.subroot, config["nb_outer_iteration"], self.experiment, config, self.method, self.phantom, self.replicate, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
                 # Write corrupted image over ADMM iterations
                 classResults.writeCorruptedImage(self.global_it,config["nb_outer_iteration"],self.x_label,self.suffix,pet_algo=config["method"])
@@ -67,8 +67,8 @@ class iNestedADMM(vReconstruction):
                 self.save_img(x_label,self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
                 #classDenoising.sub_iter_DIP = classDenoising.self.sub_iter_DIP_initial
 
-            #if (self.global_it == i_init): # Initialize some variables at first global iteration only
-            if (self.global_it == i_init + 1): # enable to avoid pre iteration
+            if (self.global_it == i_init): # Initialize some variables at first global iteration only
+            #if (self.global_it == i_init + 1): # enable to avoid pre iteration
                 print("Denoising in reconstruction")
                 classDenoising = vDenoising(config,self.global_it)
                 classDenoising.fixed_hyperparameters_list = self.fixed_hyperparameters_list

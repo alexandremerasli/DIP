@@ -195,8 +195,8 @@ class vDenoising(vGeneral):
             if (global_it > 0): # if model has already been trained
                 model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # Load previous model in checkpoint        
             elif (global_it == 0 and not config["unnested_1st_global_iter"]):
-                #model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # Load previous model in checkpoint
-                model = model_class.load_from_checkpoint(self.subroot_data + 'Data/initialization/' + 'last.ckpt', config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # enable to avoid pre iteratio
+                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # Load previous model in checkpoint
+                #model = model_class.load_from_checkpoint(self.subroot_data + 'Data/initialization/' + 'last.ckpt', config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # enable to avoid pre iteratio
         # if (global_it == 0):
             # DD finetuning, k=32, d=6
             #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
@@ -264,8 +264,8 @@ class vDenoising(vGeneral):
         if (self.all_images_DIP == "True"):
             epoch_values = np.arange(0,self.sub_iter_DIP)
         elif (self.all_images_DIP == "False"):
-            epoch_values = np.arange(self.sub_iter_DIP//10,self.sub_iter_DIP,max(self.sub_iter_DIP//10,1)) - 1
             #epoch_values = np.arange(0,self.sub_iter_DIP,max(self.sub_iter_DIP//10,1))
+            epoch_values = np.arange(self.sub_iter_DIP//10,self.sub_iter_DIP+self.sub_iter_DIP//10,max(self.sub_iter_DIP//10,1)) - 1
         elif (self.all_images_DIP == "Last"):
             epoch_values = np.array([self.sub_iter_DIP-1])
 
