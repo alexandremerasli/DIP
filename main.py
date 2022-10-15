@@ -18,12 +18,12 @@ from ray import tune
 settings_config = {
     "image" : tune.grid_search(['image2_0']), # Image from database
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['Gong']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
-    "ray" : False, # Ray mode = run with raytune if True, to run several settings in parallel
+    "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
     "tensorboard" : True, # Tensorboard mode = show results in tensorboard
     "all_images_DIP" : tune.grid_search(['False']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
@@ -37,7 +37,7 @@ settings_config = {
 }
 # Configuration dictionnary for previous hyperparameters, but fixed to simplify
 fixed_config = {
-    "max_iter" : tune.grid_search([2]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
+    "max_iter" : tune.grid_search([90]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
     "finetuning" : tune.grid_search(['last']),
     "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
@@ -54,9 +54,10 @@ fixed_config = {
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
     "rho" : tune.grid_search([0,3,3e-1,3e-2,3e-3,3e-4,3e-5,3e-6,3e-7]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    "rho" : tune.grid_search([3e-3,3e-4,3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "rho" : tune.grid_search([3e-4,3e-5,3e-6]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    "adaptive_parameters_DIP" : tune.grid_search(["rho"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
+    #"rho" : tune.grid_search([3e-6,3e-5,3e-4]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "adaptive_parameters_DIP" : tune.grid_search(["nothing"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
     "mu_DIP" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
     "tau_DIP" : tune.grid_search([100]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
     ## network hyperparameters
@@ -64,18 +65,18 @@ hyperparameters_config = {
     "lr" : tune.grid_search([0.005,0.01,0.05]), # Learning rate in network optimization
     "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
     "sub_iter_DIP" : tune.grid_search([30,100]), # Number of epochs in network optimization
-    "sub_iter_DIP" : tune.grid_search([300]), # Number of epochs in network optimization
+    "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
     "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     #"skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
     "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
-    #"input" : tune.grid_search(['random']), # Neural network input (random or CT)
+    "input" : tune.grid_search(['random']), # Neural network input (random or CT)
     #"input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMLim - OPTITR hyperparameters
-    "nb_outer_iteration": tune.grid_search([3]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
+    "nb_outer_iteration": tune.grid_search([20]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
     "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMLim
     "adaptive_parameters" : tune.grid_search(["tau"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
     "mu_adaptive" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
@@ -114,6 +115,7 @@ from iComparison import iComparison
 from iPostReconstruction import iPostReconstruction
 from iResults import iResults
 from iMeritsADMMLim import iMeritsADMMLim
+from iMeritsNested import iMeritsNested
 from iResultsAlreadyComputed import iResultsAlreadyComputed
 from iResultsADMMLim_VS_APGMAP import iResultsADMMLim_VS_APGMAP
 from iFinalCurves import iFinalCurves
@@ -206,6 +208,7 @@ for method in config["method"]['grid_search']:
     #task = 'show_results'
     #task = 'show_metrics_results_already_computed'
     #task = 'show_metrics_ADMMLim'
+    task = 'show_metrics_nested'
     #task = 'compare_2_methods'
 
     if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
@@ -221,6 +224,8 @@ for method in config["method"]['grid_search']:
         classTask = iResults(config)
     elif (task == 'show_metrics_ADMMLim'): # Show ADMMLim FOMs over iterations
         classTask = iMeritsADMMLim(config)
+    elif (task == 'show_metrics_nested'): # Show nested or Gong FOMs over iterations
+        classTask = iMeritsNested(config)
     elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
         classTask = iResultsAlreadyComputed(config)
     elif (task == 'compare_2_methods'): # Show already computed results averaging over replicates
