@@ -63,7 +63,8 @@ class iNestedADMM(vReconstruction):
                     #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it10000.img',shape=(self.PETImage_shape),type='<d')
                     #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_blurred_it10000.img',shape=(self.PETImage_shape),type='<d')
                     #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it100.img',shape=(self.PETImage_shape),type='<d')
-                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_it30.img',shape=(self.PETImage_shape),type='<d')
+                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_100it/replicate_' + str(self.replicate) + '/ADMMLim_it100.img',shape=(self.PETImage_shape),type='<d')
+                    #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_it30.img',shape=(self.PETImage_shape),type='<d')
                 elif (config["method"] == "Gong"): # Fit MLEM 60it for first global iteration
                     #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
                     x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
