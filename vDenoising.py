@@ -1,6 +1,7 @@
 ## Python libraries
 
 # Pytorch
+from genericpath import isfile
 import torch
 import pytorch_lightning as pl
 
@@ -67,7 +68,7 @@ class vDenoising(vGeneral):
         train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
 
         # Choose network architecture as model
-        model, model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape)
+        model, model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix)
         
         #checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         checkpoint_simple_path_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment)  + '/' + suffix + '/'
@@ -128,45 +129,55 @@ class vDenoising(vGeneral):
         return trainer
 
     def create_input(self,net,PETImage_shape,config,subroot): #CT map for high-count data, but not CT yet...
-        constant_uniform = 1
-        if (self.FLTNB == 'float'):
-            type = 'float32'
-        elif (self.FLTNB == 'double'):
-            type = 'float64'
-        if (net == 'DIP' or net == 'DIP_VAE'):
-            if config["input"] == "random":
-                im_input = np.random.uniform(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type) # initializing input image with random image (for DIP)
-            elif config["input"] == "uniform":
-                im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type) # initializing input image with random image (for DIP)
-            else:
-                return "CT input, do not need to create input"
-            im_input = im_input.reshape(PETImage_shape) # reshaping (for DIP)
-        else:
-            if (net == 'DD'):
-                input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
-                if config["input"] == "random":
-                    im_input = np.random.uniform(0,1,config["k_DD"]*input_size_DD*input_size_DD).astype(type) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
-                elif config["input"] == "uniform":
-                    im_input = constant_uniform*np.ones((config["k_DD"],input_size_DD,input_size_DD)).astype(type) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
-                else:
-                    return "CT input, do not need to create input"
-                im_input = im_input.reshape(config["k_DD"],input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
-                
-            elif (net == 'DD_AE'):
-                if config["input"] == "random":
-                    im_input = np.random.uniform(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
-                elif config["input"] == "uniform":
-                    im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
-                else:
-                    return "CT input, do not need to create input"
-                im_input = im_input.reshape(PETImage_shape[0],PETImage_shape[1],PETImage_shape[2]) # reshaping (for Deep Decoder) # if auto encoder based on Deep Decoder
+        
+        # Write image if it does not exist
         if config["input"] == "random":
             file_path = (subroot+'Data/initialization/random_input_' + net + '.img')
         elif config["input"] == "uniform":
             file_path = (subroot+'Data/initialization/uniform_input_' + net + '.img')
-        self.save_img(im_input,file_path)
+        else: # CT input, do not need to create one
+            return 1
+        
+        if (not os.path.isfile(file_path) and not config["random_seed"]):
+            constant_uniform = 1
+            if (self.FLTNB == 'float'):
+                type = 'float32'
+            elif (self.FLTNB == 'double'):
+                type = 'float64'
+            if (net == 'DIP' or net == 'DIP_VAE'):
+                if config["input"] == "random":
+                    im_input = np.random.uniform(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type) # initializing input image with random image (for DIP)
+                elif config["input"] == "uniform":
+                    im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type) # initializing input image with random image (for DIP)
+                else:
+                    return "CT input, do not need to create input"
+                im_input = im_input.reshape(PETImage_shape) # reshaping (for DIP)
+            else:
+                if (net == 'DD'):
+                    input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
+                    if config["input"] == "random":
+                        im_input = np.random.uniform(0,1,config["k_DD"]*input_size_DD*input_size_DD).astype(type) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+                    elif config["input"] == "uniform":
+                        im_input = constant_uniform*np.ones((config["k_DD"],input_size_DD,input_size_DD)).astype(type) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+                    else:
+                        return "CT input, do not need to create input"
+                    im_input = im_input.reshape(config["k_DD"],input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+                    
+                elif (net == 'DD_AE'):
+                    if config["input"] == "random":
+                        im_input = np.random.uniform(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+                    elif config["input"] == "uniform":
+                        im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+                    else:
+                        return "CT input, do not need to create input"
+                    im_input = im_input.reshape(PETImage_shape[0],PETImage_shape[1],PETImage_shape[2]) # reshaping (for Deep Decoder) # if auto encoder based on Deep Decoder
+
+            self.save_img(im_input,file_path)
 
     def load_input(self,net,PETImage_shape,subroot):
+        if (self.global_it == -1): # TESTCT_random
+            self.input = "CT"
+
         if self.input == "random":
             file_path = (subroot+'Data/initialization/random_input_' + net + '.img')
         elif self.input == "CT":
@@ -193,10 +204,10 @@ class vDenoising(vGeneral):
     def load_model(self,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training):
         if (finetuning == 'last'): # last model saved in checkpoint
             if (global_it > 0): # if model has already been trained
-                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # Load previous model in checkpoint        
+                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug, suffix=self.suffix) # Load previous model in checkpoint        
             elif (global_it == 0 and not config["unnested_1st_global_iter"]):
-                #model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # Load previous model in checkpoint
-                model = model_class.load_from_checkpoint(self.subroot_data + 'Data/initialization/' + 'last.ckpt', config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # enable to avoid pre iteratio
+                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug, suffix=self.suffix) # Load previous model in checkpoint
+                #model = model_class.load_from_checkpoint(self.subroot_data + 'Data/initialization/' + 'last.ckpt', config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # enable to avoid pre iteratio
         # if (global_it == 0):
             # DD finetuning, k=32, d=6
             #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
@@ -223,10 +234,6 @@ class vDenoising(vGeneral):
     def runComputation(self,config,root):
         # Scaling of x_label image
         image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image
-        
-        print("self.param1_scale_im_corrupt,self.param2_scale_im_corrupt")
-        print(self.param1_scale_im_corrupt,self.param2_scale_im_corrupt)
-        
         # Corrupted image x_label, numpy --> torch float32
         self.image_corrupt_torch = torch.Tensor(image_corrupt_input_scale)
         # Adding dimensions to fit network architecture
@@ -299,13 +306,13 @@ class vDenoising(vGeneral):
             '''
 
 
-    def choose_net(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape):
+    def choose_net(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix):
         if (net == 'DIP'): # Loading DIP architecture
             if(PETImage_shape[2] == 1): # 2D
-                model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug)
+                model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix)
                 model_class = DIP_2D
             else: # 3D
-                model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug)
+                model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix)
                 model_class = DIP_3D
         elif (net == 'DIP_VAE'): # Loading DIP VAE architecture
             model = VAE_DIP_2D(config)
@@ -320,7 +327,7 @@ class vDenoising(vGeneral):
     
     def generate_nn_output(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, image_net_input_torch, PETImage_shape, finetuning, global_it, experiment, suffix, subroot, all_images_DIP):
         # Loading using previous model
-        model, model_class = self.choose_net(net, config, method, all_images_DIP, global_it, PETImage_shape)
+        model, model_class = self.choose_net(net, config, method, all_images_DIP, global_it, PETImage_shape, suffix)
         checkpoint_simple_path_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment) + '/' + suffix + '/'
         model = self.load_model(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training=False)
 

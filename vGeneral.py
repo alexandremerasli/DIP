@@ -352,7 +352,7 @@ class vGeneral(abc.ABC):
         config_copy = dict(config)
         if (NNEPPS==False):
             config_copy.pop('NNEPPS',None)
-        config_copy.pop('nb_outer_iteration',None)
+        #config_copy.pop('nb_outer_iteration',None)
         suffix = "config"
         for key, value in config_copy.items():
             if key in self.hyperparameters_list:

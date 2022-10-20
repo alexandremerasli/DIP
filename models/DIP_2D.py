@@ -12,7 +12,7 @@ from iWMV import iWMV
 
 class DIP_2D(pl.LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix):
         super().__init__()
 
         #'''
@@ -55,15 +55,17 @@ class DIP_2D(pl.LightningModule):
             self.classWMV.param1_scale_im_corrupt = param1_scale_im_corrupt
             self.classWMV.param2_scale_im_corrupt = param2_scale_im_corrupt
             self.classWMV.scaling_input = scaling_input
-
+            self.classWMV.suffix = suffix
+            self.classWMV.global_it = global_it
             # Initialize variables
             self.classWMV.do_everything(config,root)
 
         self.write_current_img_mode = True
-        self.suffix = self.suffix_func(config,hyperparameters_list)
-        if (config["task"] == "post_reco"):
-            self.suffix = config["task"] + ' ' + self.suffix
-    
+        #self.suffix = self.suffix_func(config,hyperparameters_list)
+        #if (config["task"] == "post_reco"):
+        #    self.suffix = config["task"] + ' ' + self.suffix
+        self.suffix = suffix
+        
         '''
         if (config['mlem_sequence'] is None):
             self.write_current_img_mode = True
@@ -255,6 +257,8 @@ class DIP_2D(pl.LightningModule):
             #optimizer = torch.optim.SGD(self.parameters(), lr=self.lr) # Optimizing using SGD
         elif (self.opti_DIP == 'LBFGS' or self.opti_DIP is None): # None means no argument was given in command line
             optimizer = torch.optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4) # Optimizing using L-BFGS
+        elif (self.opti_DIP == 'SGD'):
+            optimizer = torch.optim.SGD(self.parameters(), lr=self.lr) # Optimizing using SGD
         return optimizer
 
     def write_current_img(self,out):
@@ -279,7 +283,7 @@ class DIP_2D(pl.LightningModule):
         config_copy = dict(config)
         if (NNEPPS==False):
             config_copy.pop('NNEPPS',None)
-        config_copy.pop('nb_outer_iteration',None)
+        #config_copy.pop('nb_outer_iteration',None)
         suffix = "config"
         for key, value in config_copy.items():
             if key in hyperparameters_list:

@@ -127,11 +127,11 @@ class iResults(vDenoising):
         if (hasattr(self,'beta')):
             beta_string = ', beta = ' + str(self.beta)
 
-        if (config["method"] == "nested" or config["method"] == "Gong"):
-            self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
+        #if (config["method"] == "nested" or config["method"] == "Gong"):
+            #self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
             #self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
-        else:
-            self.writeBeginningImages(self.suffix) # Write GT
+        #else:
+        #    self.writeBeginningImages(self.suffix) # Write GT
 
         if (self.FLTNB == 'float'):
             type = '<f'
@@ -161,8 +161,8 @@ class iResults(vDenoising):
                             iteration_name="iterations"
                         if ('post_reco' in config["task"]):
                             try:
-                                f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(0) + '_epoch=' + format(i-self.i_init) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
-                            except: # ES point is reached
+                                f_p = self.fijii_np(self.subroot_p+'Block2/' + 'post_reco ' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(-100) + '_epoch=' + format(i-self.i_init) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+                            except:
                                 break
                         else:
                             f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-self.i_init) + "_FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
@@ -228,7 +228,7 @@ class iResults(vDenoising):
         plt.axvline(self.epochStar, c='g')  # plot a vertical line at self.epochStar(detection point)
         plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
         plt.axhline(y=np.min(self.VAR_recon), c="black", linewidth=0.5)
-        plt.savefig(self.mkdir(self.subroot + '/self.VAR_recon' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+        plt.savefig(self.mkdir(self.subroot + '/self.VAR_recon/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
             self.lr) + '-lr' + str(self.lr) + '+self.VAR_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
 
         # Save WMV in tensorboard
@@ -244,7 +244,7 @@ class iResults(vDenoising):
         plt.axvline(self.epochStar, c='g')
         plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
         plt.axhline(y=np.min(self.MSE_WMV), c="black", linewidth=0.5)
-        plt.savefig(self.mkdir(self.subroot + '/self.MSE_WMV' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+        plt.savefig(self.mkdir(self.subroot + '/self.MSE_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
             self.lr) + '-lr' + str(self.lr) + '+self.MSE_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
 
         # 2.4 plot PSNR
@@ -254,7 +254,7 @@ class iResults(vDenoising):
         plt.axvline(self.epochStar, c='g')
         plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
         plt.axhline(y=np.max(self.PSNR_WMV), c="black", linewidth=0.5)
-        plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+        plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
             self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
 
         #'''
@@ -265,7 +265,7 @@ class iResults(vDenoising):
         plt.axvline(self.epochStar, c='g')
         plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
         plt.axhline(y=np.max(self.SSIM_WMV), c="black", linewidth=0.5)
-        plt.savefig(self.mkdir(self.subroot + '/self.SSIM_WMV' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+        plt.savefig(self.mkdir(self.subroot + '/self.SSIM_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
             self.lr) + '-lr' + str(self.lr) + '+self.SSIM_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
         #'''
         
@@ -303,7 +303,7 @@ class iResults(vDenoising):
             plt.xticks([self.epochStar, self.windowSize-1, self.epochStar+self.patienceNumber], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize), '+' + str(self.patienceNumber)], color='green')
         else:
             plt.xticks([self.epochStar, self.windowSize-1], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize)], color='green')
-        plt.savefig(self.mkdir(self.subroot + '/combined/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+        plt.savefig(self.mkdir(self.subroot + '/combined/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
             self.lr) + '-lr' + str(self.lr) + '+combined-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
 
         # 2.4 plot PSNR
@@ -321,7 +321,7 @@ class iResults(vDenoising):
         plt.axvline(self.epochStar, c='g')
         plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
         plt.axhline(y=np.max(self.PSNR_WMV), c="black", linewidth=0.5)
-        plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV' + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+        plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
             self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
 
     def moving_average(self, series, n):

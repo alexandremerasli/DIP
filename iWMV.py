@@ -37,7 +37,7 @@ class iWMV(vGeneral):
         # Descale, squeeze image and add 3D dimension to 1 (ok for 2D images)
         out = self.descale_imag(from_numpy(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
         out = np.squeeze(out)
-        if (1 in out.shape): # 2D
+        if (len(out.shape) == 2): # 2D
             out = out[:,:,np.newaxis]
         else: # 3D
             out = out.reshape(out.shape[::-1])
@@ -77,7 +77,7 @@ class iWMV(vGeneral):
         #'''
         if SUCCESS:
             # Saving ES point image
-            net_outputs_path = self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/ES_out_' + self.net + '_epoch=' + format(self.epochStar) + '.img'
+            net_outputs_path = self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/ES_out_' + self.net +  str(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
             self.save_img(out, net_outputs_path)
             print("#### WMV ########################################################")
             print("                 ES point found, epoch* =", self.epochStar)

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Useful
-
+import os
 
 # Local files to import
 from vGeneral import vGeneral
@@ -192,6 +192,81 @@ class iMeritsNested(vGeneral):
                 imagePath=self.fomSavingPath)
         elif self.tuners_tag == 'adaptiveRho':
         '''
+
+
+        IR_bkgs = []
+        MSEs = []
+        CRC_hots = []
+        MA_colds = []
+        Xnorms = []
+        Vnorms = []
+        Unorms = []
+        U_unscaled_norms = []
+        coeff_alphas = []
+        averageUs = []
+        for outer_iter in range(1,self.nb_global_iteration+1):
+            if self.REPLICATES:
+                replicatesPath = '/replicate_' + str(self.replicate) + '/' + self.whichADMMoptimizer \
+                                #+ '/Comparison/' + self.whichADMMoptimizer
+            else:
+                replicatesPath = ''
+            
+            for fname in os.listdir(self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + str(self.experiment)):    # change directory as needed
+                if fname.startswith("ES_out_DIP" + str(outer_iter - 1) + "_epoch="):
+                    imageName = fname
+                    break
+
+
+            #vName = '0_' + str(outer_iter) + '_v.img'
+            #uName = '0_' + str(outer_iter) + '_u.img'
+
+            logfile_name = 'adaptive_it' + str(outer_iter) + '.log'
+            path_txt = self.subroot + 'Block2/' + self.suffix + '/' + logfile_name
+            coeff_alpha = self.getValueFromLogRow(path_txt, 0)/self.getValueFromLogRow(path_txt, 4)
+
+
+            imagePath = self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/' + imageName
+            IR, MSE, CRC, MA = self.computeThose4(imagePath)
+            IR_bkgs.append(IR)
+            MSEs.append(MSE)
+            CRC_hots.append(CRC)
+            MA_colds.append(MA)
+
+
+        self.PLOT(outer_iters, IR_bkgs, tuners, nbTuners, figNum=2,
+            Xlabel='Outer iteration',
+            Ylabel='The legend shows different alpha',
+            Title='Image Roughness in the background',
+            replicate=self.replicate,
+            whichOptimizer=self.whichADMMoptimizer,
+            imagePath=self.fomSavingPath)
+
+        self.PLOT(outer_iters, MSEs, tuners, nbTuners, figNum=3,
+            Xlabel='Outer iteration',
+            Ylabel='The legend shows different alpha',
+            Title='Mean Square Error',
+            replicate=self.replicate,
+            whichOptimizer=self.whichADMMoptimizer,
+            imagePath=self.fomSavingPath)
+
+        self.PLOT(outer_iters, CRC_hots, tuners, nbTuners, figNum=4,
+            Xlabel='Outer iteration',
+            Ylabel='The legend shows different alpha',
+            Title='CRC hot',
+            replicate=self.replicate,
+            whichOptimizer=self.whichADMMoptimizer,
+            imagePath=self.fomSavingPath)
+
+        self.PLOT(outer_iters, MA_colds, tuners, nbTuners, figNum=5,
+            Xlabel='Outer iteration',
+            Ylabel='The legend shows different alpha',
+            Title='MA cold',
+            replicate=self.replicate,
+            whichOptimizer=self.whichADMMoptimizer,
+            imagePath=self.fomSavingPath)
+
+
+
         # adaptive self.alpha
         if self.tuners_tag == 'adaptiveRho':
             adaptiveAlphas = []
@@ -256,7 +331,8 @@ class iMeritsNested(vGeneral):
                 Title='Adaptive alpha',
                 replicate=self.replicate,
                 whichOptimizer=self.whichADMMoptimizer,
-                imagePath=self.fomSavingPath)
+                imagePath=self.fomSavingPath,
+                logScale=True)
 
             self.PLOT(outer_iters, adaptiveTaus, tuners, nbTuners, figNum=2,
                 Xlabel='Outer iteration',
@@ -388,10 +464,15 @@ class iMeritsNested(vGeneral):
             replicate=0,
             imagePath='',
             whichOptimizer='',
-            Together=True):
+            Together=True,
+            logScale=False):
 
         plt.figure(figNum)
         end = len(X)
+
+        if logScale:
+            Y = np.log10(Y)
+            Title += " (logScale)"
         
         if nbTuner < 10:
             plt.plot(X[beginning:end], Y[beginning:end], label=str(tuners))
@@ -435,7 +516,7 @@ class iMeritsNested(vGeneral):
     #'''
     def computeThose4(self,f,image='image0'):
         # have the image f as input, return IR_bkg_recon, MSE_recon, CRC_hot_recon, MA_cold_recon
-        f = self.fijii_np(f, shape=self.PETImage_shape, type='<d')
+        f = self.fijii_np(f, shape=self.PETImage_shape, type='<f')
         bkg_ROI_act = f[self.bkg_ROI == 1]
         # IR
         if np.mean(bkg_ROI_act) != 0:

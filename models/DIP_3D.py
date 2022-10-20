@@ -11,7 +11,7 @@ from iWMV import iWMV
 
 class DIP_3D(pl.LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix):
         super().__init__()
 
         #'''
@@ -60,7 +60,8 @@ class DIP_3D(pl.LightningModule):
             self.classWMV.do_everything(config,root)
 
         self.write_current_img_mode = True
-        self.suffix = self.suffix_func(config,hyperparameters_list)
+        #self.suffix = self.suffix_func(config,hyperparameters_list)
+        self.suffix = suffix
         if (config["task"] == "post_reco"):
             self.suffix = config["task"] + ' ' + self.suffix
     

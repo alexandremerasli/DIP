@@ -11,17 +11,20 @@ from vDenoising import vDenoising
 class iPostReconstruction(vDenoising):
     def __init__(self,config, *args, **kwargs):
         self.finetuning = 'False' # to ignore last.ckpt file
-        self.global_it = 0 # Set it to 0, to ignore last.ckpt file
+        self.global_it = -100 # Set it to -100, to ignore last.ckpt file
 
     def initializeSpecific(self,config,root, *args, **kwargs):
         print("Denoising in post reconstruction")
         vDenoising.initializeSpecific(self,config,root)
         # Loading DIP x_label (corrupted image) from block1
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
+        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
+        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it10000.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
+        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_blurred_it10000.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
+        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it100.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'initialization/MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f') # MLEM for Gong
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'initialization/MLEM_it60.img',shape=(self.PETImage_shape),type='<d') # MLEM for Gong
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning_it100.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it10000.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'OPTITR_2it.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'OPTITR_2it.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + 'image2_3D/image2_3D.img',shape=(self.PETImage_shape),type='<f') # ADMMLim for nested
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + 'image0/image0.img',shape=(self.PETImage_shape),type='<f') # ADMMLim for nested
         self.net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_epoch=' + format(0) + '.img'
@@ -77,6 +80,7 @@ class iPostReconstruction(vDenoising):
             self.SUCCESS = model.SUCCESS
             if (self.SUCCESS): # ES point is reached
                 self.total_nb_iter = self.epochStar + self.patienceNumber + 1
+                self.total_nb_iter = self.epochStar + 1
 
         # Saving variables
         if (self.net == 'DIP_VAE'):
@@ -89,7 +93,7 @@ class iPostReconstruction(vDenoising):
             epoch_values = np.arange(0,self.total_nb_iter)
         elif (self.all_images_DIP == "False"):
             #epoch_values = np.arange(0,self.total_nb_iter,max(self.total_nb_iter//10,1))
-            epoch_values = np.arange(self.sub_iter_DIP//10,self.sub_iter_DIP+self.sub_iter_DIP//10,max(self.sub_iter_DIP//10,1)) - 1
+            epoch_values = np.arange(self.total_nb_iter//10,self.total_nb_iter+self.total_nb_iter//10,max(self.total_nb_iter//10,1)) - 1
         elif (self.all_images_DIP == "Last"):
             epoch_values = np.array([self.total_nb_iter-1])
 
