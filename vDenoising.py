@@ -34,6 +34,9 @@ class vDenoising(vGeneral):
             if (eval(random_seed)):
                 np.random.seed(1)
 
+        self.all_images_DIP = config["all_images_DIP"]
+
+
         self.createDirectoryAndConfigFile(config)
         # Specific hyperparameters for reconstruction module (Do it here to have raytune config hyperparameters selection)
         if (config["net"] == "DD" or config["net"] == "DD_AE"):
@@ -287,7 +290,7 @@ class vDenoising(vGeneral):
             epoch_values = np.array([self.sub_iter_DIP-1])
 
         for epoch in epoch_values:
-            if (self.all_images_DIP == "Last"):
+            if (self.finetuning == "ES"):
                 net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + "/ES_out_" + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
             else:
                 net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'

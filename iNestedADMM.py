@@ -103,6 +103,7 @@ class iNestedADMM(vReconstruction):
             if (self.global_it == i_init): # TESTCT_random    
                 classDenoising.global_it = self.global_it
                 config["DIP_early_stopping"] = True # WMV for pre iteration, instead of 300 iterations of Gong
+                config["all_images_DIP"] = "True"
                 classDenoising.sub_iter_DIP = 1000
                 classDenoising.sub_iter_DIP_initial = 1000
                 print("Denoising in reconstruction")
@@ -110,12 +111,14 @@ class iNestedADMM(vReconstruction):
 
             if (self.global_it == i_init + 1): # TESTCT_random , put back random input   
                 classDenoising.global_it = self.global_it
+                config["all_images_DIP"] = "Last" # TESTCT_random , put back all images to last to save space
                 print("Denoising in reconstruction")
                 classDenoising.initializeSpecific(config,root)
 
             if (self.global_it == self.max_iter - 1): # TESTCT_random    
                 classDenoising.global_it = self.global_it
                 config["DIP_early_stopping"] = True # WMV for last iteration, instead of 300 iterations of Gong
+                config["all_images_DIP"] = "True"
                 classDenoising.sub_iter_DIP = 1000
                 classDenoising.initializeSpecific(config,root)
                 print("Denoising in reconstruction")

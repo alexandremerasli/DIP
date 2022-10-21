@@ -183,7 +183,8 @@ class vReconstruction(vGeneral):
     def compute_x_v_u_ADMM(self,x_reconstruction_command_line,subdir,i,phantom,subroot_output_path,subroot, it_name=''):
         # Compute x,u,v
         #os.system(x_reconstruction_command_line + ' -oit 90:' + str(int(self.config["nb_outer_iteration"]*3)))
-        os.system(x_reconstruction_command_line)
+        os.system(x_reconstruction_command_line + ' -oit -1')
+        #os.system(x_reconstruction_command_line)
         # Change iteration name for header if stopping criterion reached
         try:
             path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
@@ -316,9 +317,13 @@ class vReconstruction(vGeneral):
         else:
             finalOuterIter = config["nb_outer_iteration"]
         
+        '''
         if (self.method == "nested" and self.tensorboard and finalOuterIter > 1):
             for k in range(1,finalOuterIter,max(finalOuterIter//10,1)):
                 x = self.fijii_np(full_output_path_i + '_it' + str(k) + '.img', shape=(self.PETImage_shape))
                 self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations",self.suffix,500, 0+k+i*config["nb_outer_iteration"]) # Showing all corrupted images with same contrast to compare them together
                 self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations(FULL CONTRAST)",self.suffix,500, 0+k+i*config["nb_outer_iteration"],full_contrast=True) # Showing all corrupted images with same contrast to compare them together
             return x
+        '''
+        x = self.fijii_np(full_output_path_i + '_it' + str(config["nb_outer_iteration"]) + '.img', shape=(self.PETImage_shape))
+        return x
