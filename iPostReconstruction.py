@@ -27,6 +27,7 @@ class iPostReconstruction(vDenoising):
         self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it100.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'initialization/MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f') # MLEM for Gong
         self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'initialization/MLEM_it60.img',shape=(self.PETImage_shape),type='<d') # MLEM for Gong
+        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning_it100.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'OPTITR_2it.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + 'image2_3D/image2_3D.img',shape=(self.PETImage_shape),type='<f') # ADMMLim for nested

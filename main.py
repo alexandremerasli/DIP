@@ -23,7 +23,7 @@ settings_config = {
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
-    "ray" : False, # Ray mode = run with raytune if True, to run several settings in parallel
+    "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
     "tensorboard" : True, # Tensorboard mode = show results in tensorboard
     "all_images_DIP" : tune.grid_search(['True']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
@@ -76,10 +76,11 @@ hyperparameters_config = {
     "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     "skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+    "scaling" : tune.grid_search(['standardization','positive_normalization','normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
     "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
     "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
     "input" : tune.grid_search(['random']), # Neural network input (random or CT)
-    #"input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)
+    "input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMLim - OPTITR hyperparameters
