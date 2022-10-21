@@ -137,14 +137,14 @@ for method in config["method"]['grid_search']:
     if (config["method"]["grid_search"][0] == 'Gong' and len(config["method"]["grid_search"]) == 1):
         print("configuration fiiiiiiiiiiiiiiiiiiile")
         #config = np.load(root + 'config_DIP.npy',allow_pickle='TRUE').item()
-        from Gong_configuration import config_func, config_func_MIC
+        from Gong_configuration import config_func_MIC
         #config = config_func()
         config = config_func_MIC()
 
     # nested reconstruction
     if (config["method"]["grid_search"][0] == 'nested' and len(config["method"]["grid_search"]) == 1):
         print("configuration fiiiiiiiiiiiiiiiiiiile")
-        from nested_configuration import config_func, config_func_MIC
+        from nested_configuration import config_func_MIC
         #config = config_func()
         config = config_func_MIC()
 
