@@ -76,6 +76,14 @@ class iWMV(vGeneral):
 
         #'''
         if SUCCESS:
+            # Open output corresponding to epoch star
+            net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
+            out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type='<f')
+            
+            # Descale like at the beginning
+            out = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
+            #out = self.descale_imag(from_numpy(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
+
             # Saving ES point image
             net_outputs_path = self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/ES_out_' + self.net +  str(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
             self.save_img(out, net_outputs_path)

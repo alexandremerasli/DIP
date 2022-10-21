@@ -1,7 +1,6 @@
 ## Python libraries
 
 # Useful
-from audioop import reverse
 from pathlib import Path
 import os
 from functools import partial
@@ -87,23 +86,12 @@ class vGeneral(abc.ABC):
 
             Path(self.subroot+'Images/out_final/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the framework (Last output of the DIP)
 
-            '''
-            Path(self.subroot+'Block2/checkpoint/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
-            Path(self.subroot+'Block2/out_cnn/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
-            Path(self.subroot+'Block2/out_cnn/vae').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
-            Path(self.subroot+'Block2/out_cnn/cnn_metrics/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # DIP block metrics
-            Path(self.subroot+'Block2/x_label/'+format(self.experiment) + '/').mkdir(parents=True, exist_ok=True) # x corrupted - folder
-            Path(self.subroot+'Block2/mu/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
-            '''
-
-            # For post reco mode
             Path(self.subroot+'Block2/' + self.suffix + '/checkpoint/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
             Path(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
             Path(self.subroot+'Block2/' + self.suffix + '/out_cnn/vae').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
             Path(self.subroot+'Block2/' + self.suffix + '/out_cnn/cnn_metrics/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # DIP block metrics
             Path(self.subroot+'Block2/' + self.suffix + '/x_label/'+format(self.experiment) + '/').mkdir(parents=True, exist_ok=True) # x corrupted - folder
             Path(self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
-
 
         Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
                 
@@ -190,9 +178,10 @@ class vGeneral(abc.ABC):
             config["scaling"] = "nothing"
         if (len(config["method"]['grid_search']) == 1):
             if config["method"]['grid_search'][0] == 'Gong':
-                print("Goooooooooooooooooooong_normalization_enforced")
-                config["scaling"]['grid_search'] = ["normalization"]
+                #print("Goooooooooooooooooooong_normalization_enforced")
+                #config["scaling"]['grid_search'] = ["normalization"]
                 #config["scaling"]['grid_search'] = ["positive_normalization"]
+                print("Gooooooooong")
 
         # If ADMMLim (not nested), begin with CASToR default value, which is uniform image of 1
         if (len(config["method"]['grid_search']) == 1):
@@ -470,7 +459,10 @@ class vGeneral(abc.ABC):
 
     def descale_imag(self,image, param_scale1, param_scale2, scaling='standardization'):
         """ Descaling of input """
-        image_np = image.detach().numpy()
+        try:
+            image_np = image.detach().numpy()
+        except:
+            image_np = image
         if (scaling == 'standardization'):
             return self.destand_numpy_imag(image_np, param_scale1, param_scale2)
         elif (scaling == 'normalization'):

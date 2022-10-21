@@ -1,13 +1,14 @@
 ## Python libraries
 
 # Pytorch
-from genericpath import isfile
 import torch
 import pytorch_lightning as pl
 
 # Useful
 import numpy as np
 import os
+from pathlib import Path
+import re
 os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 
 # Local files to import
@@ -70,23 +71,24 @@ class vDenoising(vGeneral):
         # Choose network architecture as model
         model, model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix)
         
-        #checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
-        checkpoint_simple_path_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment)  + '/' + suffix + '/'
-
-        model = self.load_model(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training=True)
+        checkpoint_simple_path_previous_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment) + '/' + str(self.global_it - 1)
+        model = self.load_model(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_previous_exp, training=True)
+        # Define path for this global iteration
+        checkpoint_simple_path_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment) + '/' + str(self.global_it)
+        Path(checkpoint_simple_path_exp+'/').mkdir(parents=True, exist_ok=True)
         
         #from torchsummary import summary
         #summary(model, input_size=(1,112,112,59))
 
         # Start training
         print('Starting optimization, iteration',global_it)
-        trainer = self.create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, global_it, net, checkpoint_simple_path, experiment, checkpoint_simple_path_exp,name=name_run)
+        trainer = self.create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, global_it, net, checkpoint_simple_path, experiment, checkpoint_simple_path_exp, checkpoint_simple_path_previous_exp,name=name_run)
 
         trainer.fit(model, train_dataloader)
 
         return model
 
-    def create_pl_trainer(self,finetuning, processing_unit, sub_iter_DIP, global_it, net, checkpoint_simple_path, experiment, checkpoint_simple_path_exp, name=''):
+    def create_pl_trainer(self,finetuning, processing_unit, sub_iter_DIP, global_it, net, checkpoint_simple_path, experiment, checkpoint_simple_path_exp, checkpoint_simple_path_previous_exp, name=''):
         from ray.tune.integration.pytorch_lightning import TuneReportCallback, \
         TuneReportCheckpointCallback
 
@@ -125,7 +127,17 @@ class vDenoising(vGeneral):
                 logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
                 checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, filename = 'best_loss', monitor='loss_monitor', save_top_k=1) # Save best checkpoint (save_top_k = 1) (according to minimum loss (monitor)) as best_loss.ckpt
                 trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator, profiler="simple") # Prepare trainer model with callback to save checkpoint
-
+            if (finetuning == 'ES'): # best model saved in checkpoint
+                # Delete previous checkpoints from previous runs
+                if (global_it > -1): # Beginning nested or Gong in block2. For first epoch, change number of epochs to sub_iter_DIP_initial for Gong
+                    os.system("rm -rf " + os.path.join(checkpoint_simple_path_previous_exp))
+                    #for f in os.listdir(checkpoint_simple_path_previous_exp):
+                        #if (int(re.search(r'\d+', f).group()) != self.epochStar):
+                        
+                # Checkpoints pl variables
+                logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
+                checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=-1) # Save checkpoint at each epoch (save_top_k = -1) to use the one corresponding to ES point
+                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all") # Prepare trainer model with callback to save checkpoint        
         return trainer
 
     def create_input(self,net,PETImage_shape,config,subroot): #CT map for high-count data, but not CT yet...
@@ -208,19 +220,13 @@ class vDenoising(vGeneral):
             elif (global_it == 0 and not config["unnested_1st_global_iter"]):
                 model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug, suffix=self.suffix) # Load previous model in checkpoint
                 #model = model_class.load_from_checkpoint(self.subroot_data + 'Data/initialization/' + 'last.ckpt', config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # enable to avoid pre iteratio
-        # if (global_it == 0):
-            # DD finetuning, k=32, d=6
-            #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
-            #from torch.utils.tensorboard import SummaryWriter
-            #writer = SummaryWriter()
-            #out = model(image_net_input_torch)
-            #write_image_tensorboard(writer,out.detach().numpy(),"high statistics output)",suffix,image_gt) # Showing all corrupted images with same contrast to compare them together
-            #write_image_tensorboard(writer,out.detach().numpy(),"high statistics (" + "output, suffix,image_gt,FULL CONTRAST)",0,full_contrast=True) # Showing each corrupted image with contrast = 1
-        
-            # Set first network iterations to have convergence, as if we do post processing
-            # model = model_class.load_from_checkpoint(os.path.join(subroot,'post_reco'+net+'.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
-
-        if (finetuning == 'best'): # best model saved in checkpoint
+        elif (finetuning == 'ES'): # ES model saved in checkpoint
+            if (global_it > 0): # if model has already been trained
+                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,"epoch=" + str(self.epochStar) + "-step=" + str(self.epochStar)) + ".ckpt", config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug, suffix=self.suffix) # Load previous model in checkpoint        
+            elif (global_it == 0 and not config["unnested_1st_global_iter"]):
+                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,"epoch=" + str(self.epochStar) + "-step=" + str(self.epochStar)) + ".ckpt", config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug, suffix=self.suffix) # Load previous model in checkpoint        
+                #model = model_class.load_from_checkpoint(self.subroot_data + 'Data/initialization/' + 'last.ckpt', config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # enable to avoid pre iteratio
+        elif (finetuning == 'best'): # best model saved in checkpoint
             if (global_it > 0): # if model has already been trained
                 model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'best_loss.ckpt'), config=config,method=method, all_images_DIP = all_images_DIP) # Load best model in checkpoint
             #if (global_it == 0):
@@ -258,7 +264,10 @@ class vDenoising(vGeneral):
             self.SSIM_WMV = model.SSIM_WMV
             self.SUCCESS = model.SUCCESS
             if (self.SUCCESS and self.epochStar!= self.sub_iter_DIP - self.patienceNumber): # ES point is reached
-                self.sub_iter_DIP = self.epochStar + self.patienceNumber + 1
+                #if (self.all_images_DIP == "Last"):
+                self.sub_iter_DIP = self.epochStar + 1
+                #else:
+                #    self.sub_iter_DIP = self.epochStar + self.patienceNumber + 1
 
         '''
         # Descaling like at the beginning
@@ -277,9 +286,12 @@ class vDenoising(vGeneral):
             epoch_values = np.array([self.sub_iter_DIP-1])
 
         for epoch in epoch_values:
-            net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
+            if (self.all_images_DIP == "Last"):
+                net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + "/ES_out_" + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
+            else:
+                net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
             out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type='<f')
-            out = torch.from_numpy(out)
+            #out = torch.from_numpy(out)
             # Descale like at the beginning
             out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
             """

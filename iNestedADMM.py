@@ -68,6 +68,7 @@ class iNestedADMM(vReconstruction):
                 elif (config["method"] == "Gong"): # Fit MLEM 60it for first global iteration
                     #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
                     x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
+                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
                 self.save_img(x_label,self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
                 #classDenoising.sub_iter_DIP = classDenoising.self.sub_iter_DIP_initial
 
@@ -137,8 +138,9 @@ class iNestedADMM(vReconstruction):
                 self.PSNR_WMV = classDenoising.PSNR_WMV
                 self.SSIM_WMV = classDenoising.SSIM_WMV
                 self.SUCCESS = classDenoising.SUCCESS
-            #if (self.epochStar != self.total_nb_iter - 1): # ES point is reached
-            #    self.total_nb_iter = self.epochStar + self.patienceNumber + 1
+            #if (self.epochStar != classDenoising.sub_iter_DIP - 1): # ES point is reached
+                #classDenoising.sub_iter_DIP = self.epochStar + self.patienceNumber + 1
+            #    classDenoising.sub_iter_DIP = self.epochStar + 1
             
             print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
             
