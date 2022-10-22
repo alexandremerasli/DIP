@@ -37,6 +37,19 @@ class iNestedADMM(vReconstruction):
         else:
             i_init = -1
 
+        subroot_output_path = (self.subroot + 'Block1/' + self.suffix)
+        path_before_eq_22 = (subroot_output_path + '/before_eq22/')
+        import os
+        import re
+        sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(path_before_eq_22) if os.path.splitext(filename)[1] == '.hdr']
+        if (len(sorted_files) > 0):
+            sorted_files.sort(key=self.natural_keys)
+            last_file = sorted_files[-1]
+            i_init = int(re.findall(r'\d+', last_file.split('_')[0])[0])
+            config["unnested_1st_global_iter"] = True
+        
+
+
         for self.global_it in range(i_init, self.max_iter):
             print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Global iteration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', self.global_it)
             start_time_outer_iter = time.time()
@@ -100,7 +113,7 @@ class iNestedADMM(vReconstruction):
             classDenoising.sub_iter_DIP_initial = config["sub_iter_DIP_initial"]
             classDenoising.global_it = self.global_it
 
-            if (self.global_it == i_init): # TESTCT_random    
+            if (self.global_it == i_init and ((i_init == -1 and not config["unnested_1st_global_iter"]) or (i_init == 0 and config["unnested_1st_global_iter"]))): # TESTCT_random
                 classDenoising.global_it = self.global_it
                 config["DIP_early_stopping"] = True # WMV for pre iteration, instead of 300 iterations of Gong
                 config["all_images_DIP"] = "True"
@@ -109,7 +122,7 @@ class iNestedADMM(vReconstruction):
                 print("Denoising in reconstruction")
                 classDenoising.initializeSpecific(config,root)
 
-            if (self.global_it == i_init + 1): # TESTCT_random , put back random input   
+            if (self.global_it == i_init + 1 and ((i_init == -1 and not config["unnested_1st_global_iter"]) or (i_init == 0 and config["unnested_1st_global_iter"]))): # TESTCT_random , put back random input
                 classDenoising.global_it = self.global_it
                 config["all_images_DIP"] = "Last" # TESTCT_random , put back all images to last to save space
                 print("Denoising in reconstruction")
@@ -163,7 +176,7 @@ class iNestedADMM(vReconstruction):
             
             if (self.global_it != i_init or config["unnested_1st_global_iter"]): # Gong after pre iteration
                 # Block 3 - mu update
-                if (self.global_it > i_init): # at first iteration if rho == 0, let mu to 0 to be equivalent to Gong settings
+                if (self.global_it > i_init or ((i_init > -1 and not config["unnested_1st_global_iter"]) or (i_init > 0 and config["unnested_1st_global_iter"]))): # at first iteration if rho == 0, let mu to 0 to be equivalent to Gong settings
                     self.mu = self.x_label - self.f
                     self.save_img(self.mu,self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(self.global_it) + self.suffix + '.img') # saving mu
                     # Write corrupted image over ADMM iterations
@@ -182,19 +195,19 @@ class iNestedADMM(vReconstruction):
                 if (config["adaptive_parameters_DIP"] == "tau"):
                     new_tau = 1 / config["xi_DIP"] * np.sqrt(primal_residual_norm / dual_residual_norm)
                     if (new_tau >= 1 and new_tau < config["tau_DIP"]):
-                        self.tau = new_tau
+                        self.tau_DIP = new_tau
                     elif (new_tau < 1 and new_tau > 1 / config["tau_DIP"]):
-                        self.tau = 1 / new_tau
+                        self.tau_DIP = 1 / new_tau
                     else:
-                        self.tau = config["tau_DIP"]
+                        self.tau_DIP = config["tau_DIP"]
                 else:
-                    self.tau = config["tau_DIP"]
+                    self.tau_DIP = config["tau_DIP"]
                 if (config["adaptive_parameters_DIP"] == "rho" or config["adaptive_parameters_DIP"] == "tau"):
                     previous_rho = self.rho
                     if (primal_residual_norm > config["mu_DIP"] * dual_residual_norm):
-                        self.rho *= self.tau
+                        self.rho *= self.tau_DIP
                     elif (dual_residual_norm > config["mu_DIP"] * primal_residual_norm):
-                        self.rho /= self.tau
+                        self.rho /= self.tau_DIP
                     else:
                         print("Keeping rho for next global iteration.")
 

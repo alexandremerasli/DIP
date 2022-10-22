@@ -17,7 +17,8 @@ class iPostReconstruction(vDenoising):
     def initializeSpecific(self,config,root, *args, **kwargs):
         print("Denoising in post reconstruction")
         # Delete previous ckpt files from previous runs
-        os.system("rm -rf " + self.subroot+'Block2/' + self.suffix + '/checkpoint/'+format(self.experiment) + "*")
+        if (config["finetuning"] == "ES"):
+            os.system("rm -rf " + self.subroot+'Block2/' + self.suffix + '/checkpoint/'+format(self.experiment) + "*")
 
         vDenoising.initializeSpecific(self,config,root)
         # Loading DIP x_label (corrupted image) from block1

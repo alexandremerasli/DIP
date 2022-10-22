@@ -73,8 +73,11 @@ class vDenoising(vGeneral):
 
         # Choose network architecture as model
         model, model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix)
-        
-        checkpoint_simple_path_previous_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment) + '/' + str(self.global_it - 1)
+        checkpoint_simple_path_previous_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment)
+        #if (config["finetuning"] == "ES"):
+        #    checkpoint_simple_path_previous_exp += '/' + str(self.global_it - 1)
+        checkpoint_simple_path_previous_exp += '/' + str(self.global_it - 1)
+
         model = self.load_model(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_previous_exp, training=True)
         # Define path for this global iteration
         checkpoint_simple_path_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment) + '/' + str(self.global_it)
