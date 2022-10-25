@@ -271,8 +271,10 @@ class iFinalCurves(vGeneral):
                     if (fig_nb == 0):
                         reg[fig_nb] = np.zeros((nb_rho*nb_other_dim,np.max(len_mini)))
                     elif (fig_nb == 2):
-                        #reg[fig_nb] = np.zeros((nb_rho*nb_other_dim,np.max(len_mini)))
-                        reg[fig_nb] = np.zeros((nb_rho*nb_other_dim))
+                        if (method != "nested" and method != "Gong"):
+                            reg[fig_nb] = np.zeros((nb_rho*nb_other_dim))
+                        else:
+                            reg[fig_nb] = np.zeros((nb_rho*nb_other_dim,np.max(len_mini)))
                     for rho_idx in range(nb_rho):
                         for other_dim_idx in range(nb_other_dim):
                             for replicate_idx in range(nb_replicates):
@@ -310,8 +312,12 @@ class iFinalCurves(vGeneral):
                     if (fig_nb == 2): # Plot tradeoff curves at convergence
                         for rho_idx in range(nb_rho):
                             for other_dim_idx in range(nb_other_dim):
-                                #reg[fig_nb].append(self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim*rho_idx][:,-1],metrics_final_array[other_dim_idx+nb_other_dim*rho_idx][:,-1]))
-                                reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx] = self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim*rho_idx][:,-1],metrics_final_array[other_dim_idx+nb_other_dim*rho_idx][:,-1])
+                                if (method != "nested" and method != "Gong"):
+                                    reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx] = self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim*rho_idx][:,-1],metrics_final_array[other_dim_idx+nb_other_dim*rho_idx][:,-1])
+                                else:
+                                    for it in range(len(IR_final[case_mini[rho_idx]])):
+                                        reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] = self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim*rho_idx][:,it],metrics_final_array[other_dim_idx+nb_other_dim*rho_idx][:,it])
+
                     #'''
                     #'''
 
@@ -353,9 +359,13 @@ class iFinalCurves(vGeneral):
                     #'''
                     if (fig_nb == 2):
                         for other_dim_idx in range(nb_other_dim):
-                            cases = np.arange(0,nb_other_dim*nb_rho,nb_other_dim) + other_dim_idx
-                            ax[fig_nb].plot(100*avg_IR[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)],'-o',color=color_avg)
-                            ax[fig_nb].fill(np.concatenate((100*(avg_IR[(cases,len_mini-1)] - np.sign(reg[fig_nb][cases])*std_IR[cases,-1]),100*(avg_IR[(cases,len_mini-1)][::-1] + np.sign(reg[fig_nb][cases][::-1])*std_IR[(cases,len_mini-1)][::-1]))),np.concatenate((avg_metrics[(cases,len_mini-1)]-std_metrics[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)][::-1]+std_metrics[(cases,len_mini-1)][::-1])), alpha = 0.4, label='_nolegend_')
+                            if (method != "nested" and method != "Gong"):
+                                cases = np.arange(0,nb_other_dim*nb_rho,nb_other_dim) + other_dim_idx
+                                ax[fig_nb].plot(100*avg_IR[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)],'-o',color=color_avg)
+                                ax[fig_nb].fill(np.concatenate((100*(avg_IR[(cases,len_mini-1)] - np.sign(reg[fig_nb][cases])*std_IR[cases,-1]),100*(avg_IR[(cases,len_mini-1)][::-1] + np.sign(reg[fig_nb][cases][::-1])*std_IR[(cases,len_mini-1)][::-1]))),np.concatenate((avg_metrics[(cases,len_mini-1)]-std_metrics[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)][::-1]+std_metrics[(cases,len_mini-1)][::-1])), alpha = 0.4, label='_nolegend_')
+                            else:
+                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],'-o',color=color_avg)
+                                ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
                             replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!=""))
                         ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)', fontsize = 18)
                         ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)

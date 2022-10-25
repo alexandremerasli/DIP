@@ -219,7 +219,7 @@ class iNestedADMM(vReconstruction):
                 text_file.write("adaptive rho :" + "\n")
                 text_file.write(str(self.rho) + "\n")
                 text_file.write("adaptive tau :" + "\n")
-                text_file.write(str(self.tau) + "\n")
+                text_file.write(str(self.tau_DIP) + "\n")
                 text_file.write("adaptive rho :" + "\n")
                 text_file.write(str(self.rho) + "\n")
                 text_file.write("relPrimal :" + "\n")
