@@ -18,12 +18,12 @@ from ray import tune
 settings_config = {
     "image" : tune.grid_search(['image2_0']), # Image from database
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['Gong']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['APGMAP','OSEM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
-    "ray" : False, # Ray mode = run with raytune if True, to run several settings in parallel
+    "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
     "tensorboard" : True, # Tensorboard mode = show results in tensorboard
     "all_images_DIP" : tune.grid_search(['Last']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
@@ -83,7 +83,7 @@ hyperparameters_config = {
     "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False
     # AML/APGMAP hyperparameters
     "A_AML" : tune.grid_search([-100,-500,-10000]), # AML lower bound A
-    "A_AML" : tune.grid_search([-10,-100]), # AML lower bound A
+    "A_AML" : tune.grid_search([-100]), # AML lower bound A
     # Post smoothing by CASToR after reconstruction
     "post_smoothing" : tune.grid_search([0]), # Post smoothing by CASToR after reconstruction
     #"post_smoothing" : tune.grid_search([6,9,12,15]), # Post smoothing by CASToR after reconstruction
@@ -119,7 +119,7 @@ from iFinalCurves import iFinalCurves
 
 for method in config["method"]['grid_search']:
 
-    '''
+    #'''
     # Gong reconstruction
     if (config["method"]["grid_search"][0] == 'Gong' and len(config["method"]["grid_search"]) == 1):
         print("configuration fiiiiiiiiiiiiiiiiiiile")
@@ -169,7 +169,7 @@ for method in config["method"]['grid_search']:
         from ADMMLim_configuration import config_func_MIC
         #config = config_func()
         config = config_func_MIC()
-    '''
+    #'''
     config_tmp = dict(config)
     config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
 
@@ -203,7 +203,7 @@ for method in config["method"]['grid_search']:
     #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
     #task = 'show_results_post_reco'
     #task = 'show_results'
-    #task = 'show_metrics_results_already_computed'
+    task = 'show_metrics_results_already_computed'
     #task = 'show_metrics_ADMMLim'
     #task = 'show_metrics_nested'
     #task = 'compare_2_methods'
@@ -250,7 +250,8 @@ for method in config["method"]['grid_search']:
     os.system("rm -rf " + root + '/data/Algo/' + 'replicates_for_last_run_' + method + '.txt')
 
     # Launch task
-    classTask.runRayTune(config_tmp,root,task)
+    if task != "show_metrics_results_already_computed":
+        classTask.runRayTune(config_tmp,root,task)
     #'''
 
 if (task != "post_reco"):
@@ -270,9 +271,12 @@ if (task != "post_reco"):
                     if key != 'A_AML' and key != 'post_smoothing' and key != 'lr':
                         config_without_grid_search[key] = config_without_grid_search[key][0]
 
+    print(config_without_grid_search)
+    
     classTask = iFinalCurves(config_without_grid_search)
     config_without_grid_search["ray"] = False
     classTask.runRayTune(config_without_grid_search,root,task)
+
 
 '''
 classTask = iResultsADMMLim_VS_APGMAP(config_without_grid_search)

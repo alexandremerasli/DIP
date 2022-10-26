@@ -21,64 +21,119 @@ class iFinalCurves(vGeneral):
         print("init")
         # show the plots in python or not !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    def runComputation(self,config,root):
+    def runComputation(self,config_all_methods,root):
+
+
+        method_list = config_all_methods["method"]
+        
+        config = dict.fromkeys(method_list)
+        for method in method_list: # Loop over methods
+            
+            
+            
+            
+            
+            
+            #'''
+            # Gong reconstruction
+            if (method == 'Gong'):
+                print("configuration fiiiiiiiiiiiiiiiiiiile")
+                #config[method] = np.load(root + 'config_DIP.npy',allow_pickle='TRUE').item()
+                from Gong_configuration import config_func_MIC
+                #config[method] = config_func()
+                config[method] = config_func_MIC()
+
+            # nested reconstruction
+            if (method == 'nested'):
+                print("configuration fiiiiiiiiiiiiiiiiiiile")
+                from nested_configuration import config_func_MIC
+                #config[method] = config_func()
+                config[method] = config_func_MIC()
+
+            # MLEM reconstruction
+            if (method == 'MLEM'):
+                print("configuration fiiiiiiiiiiiiiiiiiiile")
+                from MLEM_configuration import config_func_MIC
+                #config[method] = config_func()
+                config[method] = config_func_MIC()
+
+            # OSEM reconstruction
+            if (method == 'OSEM'):
+                print("configuration fiiiiiiiiiiiiiiiiiiile")
+                from OSEM_configuration import config_func_MIC
+                #config[method] = config_func()
+                config[method] = config_func_MIC()
+
+            # BSREM reconstruction
+            if (method == 'BSREM'):
+                print("configuration fiiiiiiiiiiiiiiiiiiile")
+                from BSREM_configuration import config_func_MIC
+                #config[method] = config_func()
+                config[method] = config_func_MIC()
+
+            # APGMAP reconstruction
+            if ('APGMAP' in method):
+                print("configuration fiiiiiiiiiiiiiiiiiiile")
+                from APGMAP_configuration import config_func_MIC
+                #config[method] = config_func()
+                config[method] = config_func_MIC()
+
+            # ADMMLim reconstruction
+            if (method == 'ADMMLim'):
+                print("configuration fiiiiiiiiiiiiiiiiiiile")
+                from ADMMLim_configuration import config_func_MIC
+                #config[method] = config_func()
+                config[method] = config_func_MIC()
+            #'''
+            
+
+
+            from ray import tune
+            config_tmp = dict(config[method])
+            config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
+
+            #task = 'full_reco_with_network' # Run Gong or nested ADMM
+            #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
+            #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
+            #task = 'show_results_post_reco'
+            #task = 'show_results'
+            task = 'show_metrics_results_already_computed'
+            #task = 'show_metrics_ADMMLim'
+            #task = 'show_metrics_nested'
+            #task = 'compare_2_methods'
+            
+            from iResultsAlreadyComputed import iResultsAlreadyComputed
+            classTask = iResultsAlreadyComputed(config[method])
+            import os
+            #'''
+            os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + method + '.txt')
+            os.system("rm -rf " + root + '/data/Algo/' + 'replicates_for_last_run_' + method + '.txt')
+
+            # Launch task
+            classTask.runRayTune(config_tmp,root,task)
+            #'''
+
+        
+            config[method] = dict(config[method])
+            
+            for key,value in config[method].items():
+                if (type(value) == type(config[method])):
+                    if ("grid_search" in value):
+                        config[method][key] = value['grid_search']
+                        
+                        if len(config[method][key]) > 1:
+                            print(key)
+
+                        #if len(config[method][key]) == 1:
+                        if key != 'rho' and key != 'replicates' and key != 'method':
+                            if key != 'A_AML' and key != 'post_smoothing' and key != 'lr':
+                                config[method][key] = config[method][key][0]
 
 
 
-        # Initialize general variables
-        self.initializeGeneralVariables(config,root)
-        #vDenoising.initializeSpecific(self,config,root)
+        
+            print(config[method])
 
-        if ('ADMMLim' in config["method"] or 'Gong' in config["method"]):
-            self.i_init = 30 # Remove first iterations
-            self.i_init = 20 # Remove first iterations
-        else:
-            self.i_init = 10
-
-        if ('ADMMLim' in config["method"]):
-            try:
-                self.path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
-                with open(self.path_stopping_criterion) as f:
-                    first_line = f.readline() # Read first line to get second one
-                    self.total_nb_iter = min(int(f.readline().rstrip()) - self.i_init, config["nb_outer_iteration"] - self.i_init + 1)
-                    self.total_nb_iter = int(self.total_nb_iter / self.i_init)
-                    #self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1 # Override value
-            except:
-                self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1
-                self.total_nb_iter = int(self.total_nb_iter / self.i_init)
-            self.beta = config["alpha"]
-        elif (config["method"] == 'nested' or config["method"] == 'Gong'):
-            if ('post_reco' in config["task"]):
-                self.total_nb_iter = config["sub_iter_DIP"]
-            else:
-                self.total_nb_iter = config["max_iter"]
-        else:
-            self.total_nb_iter = self.max_iter
-
-            if (config["method"] == 'AML'):
-                self.beta = config["A_AML"]
-            if (config["method"] == 'BSREM' or config["method"] == 'nested' or config["method"] == 'Gong' or 'APGMAP' in config["method"]):
-                self.rho = config["rho"]
-                self.beta = self.rho
-
-
-
-        # Remove when CRC are computed in iResults.py
-        self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
-        self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
-        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
-        if config["FLTNB"] == "double":
-            self.image_gt = self.image_gt.astype(np.float64)
-        self.phantom_ROI = self.get_phantom_ROI(self.phantom)
-        image_gt_cropped = self.image_gt * self.phantom_ROI
-        C_bkg = np.mean(image_gt_cropped)
-
-        CRC_plot = False
-        plot_all_replicates_curves = False
-        if plot_all_replicates_curves:
-            color_avg = 'black'
-        else:
-            color_avg = None
 
         for ROI in ['hot','cold']:
             # Initialize 3 figures
@@ -89,9 +144,73 @@ class iFinalCurves(vGeneral):
             replicates_legend = [None] * 3
             replicates_legend = [[],[],[]]
 
-            method_list = config["method"]
+            #method_list = config[method]["method"]
 
-            for method in method_list: # Loop over methods
+            for method in method_list:
+
+
+
+
+
+
+
+
+
+                # Initialize general variables
+                #self.initializeGeneralVariables(config[method],root)
+                
+                if ('ADMMLim' in config[method]["method"] or 'Gong' in config[method]["method"]):
+                    self.i_init = 30 # Remove first iterations
+                    self.i_init = 20 # Remove first iterations
+                else:
+                    self.i_init = 1
+
+                if ('ADMMLim' in config[method]["method"]):
+                    try:
+                        self.path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
+                        with open(self.path_stopping_criterion) as f:
+                            first_line = f.readline() # Read first line to get second one
+                            self.total_nb_iter = min(int(f.readline().rstrip()) - self.i_init, config[method]["nb_outer_iteration"] - self.i_init + 1)
+                            self.total_nb_iter = int(self.total_nb_iter / self.i_init)
+                            #self.total_nb_iter = config[method]["nb_outer_iteration"] - self.i_init + 1 # Override value
+                    except:
+                        self.total_nb_iter = config[method]["nb_outer_iteration"] - self.i_init + 1
+                        self.total_nb_iter = int(self.total_nb_iter / self.i_init)
+                    self.beta = config[method]["alpha"]
+                elif (config[method]["method"] == 'nested' or config[method]["method"] == 'Gong'):
+                    if ('post_reco' in config[method]["task"]):
+                        self.total_nb_iter = config[method]["sub_iter_DIP"]
+                    else:
+                        self.total_nb_iter = config[method]["max_iter"]
+                else:
+                    self.total_nb_iter = self.max_iter
+
+                    if (config[method]["method"] == 'AML'):
+                        self.beta = config[method]["A_AML"]
+                    if (config[method]["method"] == 'BSREM' or config[method]["method"] == 'nested' or config[method]["method"] == 'Gong' or 'APGMAP' in config[method]["method"]):
+                        self.rho = config[method]["rho"]
+                        self.beta = self.rho
+
+
+
+              
+
+                CRC_plot = False
+                plot_all_replicates_curves = False
+                if plot_all_replicates_curves:
+                    color_avg = 'black'
+                else:
+                    color_avg = None
+
+
+
+
+
+
+
+
+
+                
                 suffixes = []
                 replicates = []
 
@@ -116,16 +235,16 @@ class iFinalCurves(vGeneral):
                 
                 # Retrieve number of rhos and replicates and other dimension
                 rho_name = "beta"
-                nb_rho = len(config["rho"])
+                nb_rho = len(config[method]["rho"])
                 if ("APGMAP" in method or method == "AML"):
-                    config_other_dim = config["A_AML"]
+                    config_other_dim = config[method]["A_AML"]
                     other_dim_name = "A"
                 elif (method == "MLEM" or method == "OSEM"):
-                    config_other_dim = config["post_smoothing"]
+                    config_other_dim = config[method]["post_smoothing"]
                     rho_name = "smoothing"
                     other_dim_name = ""
                 elif (method == "nested" or method == "Gong"):
-                    config_other_dim = config["lr"]
+                    config_other_dim = config[method]["lr"]
                     other_dim_name = "lr"
                 else:
                     config_other_dim = [""]
@@ -134,7 +253,7 @@ class iFinalCurves(vGeneral):
                 nb_replicates = int(len(replicates[0]) / (nb_rho * nb_other_dim))
 
                 # Sort rho and other dim like suffix
-                config["rho"] = sorted(config["rho"])
+                config[method]["rho"] = sorted(config[method]["rho"])
                 config_other_dim = sorted(config_other_dim)
 
                 # Wanted list of replicates
@@ -165,7 +284,7 @@ class iFinalCurves(vGeneral):
                     i_replicate = idx_wanted[i] # Loop over rhos and replicates, for each sorted rho, take sorted replicate
                     suffix = sorted_suffixes[i].rstrip("\n")
                     replicate = "replicate_" + str(i_replicate + 1)
-                    metrics_file = root + '/data/Algo' + '/metrics/' + config["image"] + '/' + str(replicate) + '/' + method + '/' + suffix + '/' + 'metrics.csv'
+                    metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + method + '/' + suffix + '/' + 'metrics.csv'
                     try:
                         with open(metrics_file, 'r') as myfile:
                             spamreader = reader_csv(myfile,delimiter=';')
@@ -195,12 +314,14 @@ class iFinalCurves(vGeneral):
                                 MA_cold = np.array(rows_csv[8])
                             except:
                                 MA_cold = np.array(rows_csv[6])
-                            CRC_cold = 100*((MA_cold.astype(float)/C_bkg - 1) / (10/C_bkg - 1))
+                            #CRC_cold = 100*((MA_cold.astype(float)/C_bkg - 1) / (10/C_bkg - 1))
+                            CRC_cold = MA_cold
                             try:
                                 AR_hot = np.array(rows_csv[9])
                             except:
                                 AR_hot = np.array(rows_csv[7])
-                            CRC_hot = 100*((AR_hot.astype(float)/C_bkg - 1) / (400/C_bkg - 1))
+                            #CRC_hot = 100*((AR_hot.astype(float)/C_bkg - 1) / (400/C_bkg - 1))
+                            CRC_hot = AR_hot
                             CRC_cold_recon.append(CRC_cold)
                             CRC_hot_recon.append(CRC_hot)
 
@@ -210,7 +331,7 @@ class iFinalCurves(vGeneral):
                 
                 if (method == "MLEM" or method == "OSEM"):
                     nb_rho, nb_other_dim = nb_other_dim, nb_rho
-                    config["rho"], config_other_dim = config_other_dim, config["rho"]
+                    config[method]["rho"], config_other_dim = config_other_dim, config[method]["rho"]
 
 
                 # Select metrics to plot according to ROI
@@ -354,7 +475,7 @@ class iFinalCurves(vGeneral):
                                 ax[fig_nb].set_title(method + " reconstruction averaged on " + str(nb_replicates) + " replicates (" + ROI + " ROI)")
                             #'''
                             if (fig_nb != 2):
-                                replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!=""))
+                                replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!=""))
                         
                     #'''
                     if (fig_nb == 2):
@@ -378,28 +499,28 @@ class iFinalCurves(vGeneral):
 
             # Saving figures locally in png
             for fig_nb in range(3):
-                method = str(config["method"])
-                rho = config["rho"]
-                if (fig_nb == 0):
-                    if ROI == 'hot':
-                        title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
-                    elif ROI == 'cold':
-                        title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
-                elif (fig_nb == 1):
-                    if ROI == 'hot':
-                        title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
-                    elif ROI == 'cold':
-                        title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
-                elif (fig_nb == 2):
-                    if ROI == 'hot':
-                        title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
-                    elif ROI == 'cold':
-                        title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
+                for method in method_list: # Loop over methods
+                    rho = config[method]["rho"]
+                    if (fig_nb == 0):
+                        if ROI == 'hot':
+                            title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
+                        elif ROI == 'cold':
+                            title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
+                    elif (fig_nb == 1):
+                        if ROI == 'hot':
+                            title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
+                        elif ROI == 'cold':
+                            title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
+                    elif (fig_nb == 2):
+                        if ROI == 'hot':
+                            title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
+                        elif ROI == 'cold':
+                            title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
                 fig[fig_nb].savefig(self.subroot_data + 'metrics' + '/' + title)
 
             for method in method_list: # Loop over methods
                 # Swap rho and post smoothing because MLEM and OSEM do not have rho parameter
                 if (method == "MLEM" or method == "OSEM"):
                     nb_rho, nb_other_dim = nb_other_dim, nb_rho
-                    config["rho"], config_other_dim = config_other_dim, config["rho"]
+                    config[method]["rho"], config_other_dim = config_other_dim, config[method]["rho"]
 
