@@ -23,14 +23,13 @@ settings_config = {
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
-    "ray" : False, # Ray mode = run with raytune if True, to run several settings in parallel
+    "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
     "tensorboard" : True, # Tensorboard mode = show results in tensorboard
     "all_images_DIP" : tune.grid_search(['Last']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
     #"f_init" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
     "f_init" : tune.grid_search(['out_DIP-1_FINAL']),
-    "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
-    "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
+    "replicates" : tune.grid_search(list(range(1,100+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
     #"replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
     "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
     "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMLim)
@@ -53,7 +52,7 @@ fixed_config = {
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
-    "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
+    "image_init_path_without_extension" : tune.grid_search(['MLEM_it60']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
     "rho" : tune.grid_search([0.003,8e-4,0.008,0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     "adaptive_parameters_DIP" : tune.grid_search(["nothing"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
@@ -64,7 +63,7 @@ hyperparameters_config = {
     "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
     "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
-    "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
+    "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
     #"scaling" : tune.grid_search(['standardization','positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
     "input" : tune.grid_search(['random']), # Neural network input (random or CT)
     #"input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)

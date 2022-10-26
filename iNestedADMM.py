@@ -69,19 +69,26 @@ class iNestedADMM(vReconstruction):
             start_time_block2= time.time()
             if (self.global_it == i_init and not config["unnested_1st_global_iter"]): # Gong at first epoch -> only pre train the network
                 # Create label corresponding to initial reconstructed image to start with
+                '''
                 #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.img',shape=(self.PETImage_shape),type='<f')
                 if (config["method"] == "nested"): # Nested needs 1 to not add any prior information at the beginning, and to initialize x computation to uniform with 1
-                    #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
-                    #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
-                    #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it10000.img',shape=(self.PETImage_shape),type='<d')
-                    #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_blurred_it10000.img',shape=(self.PETImage_shape),type='<d')
-                    #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it100.img',shape=(self.PETImage_shape),type='<d')
                     x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_100it/replicate_' + str(self.replicate) + '/ADMMLim_it100.img',shape=(self.PETImage_shape),type='<d')
-                    #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_it30.img',shape=(self.PETImage_shape),type='<d')
+                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_1000it/replicate_' + str(self.replicate) + '/ADMMLim_it1000.img',shape=(self.PETImage_shape),type='<d')
+                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_30it/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type='<d')
                 elif (config["method"] == "Gong"): # Fit MLEM 60it for first global iteration
-                    #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f')
-                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
                     x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
+                '''
+                if config["image_init_path_without_extension"] == "ADMMLim_it100":
+                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_100it/replicate_' + str(self.replicate) + '/ADMMLim_it100.img',shape=(self.PETImage_shape),type='<d')
+                elif config["image_init_path_without_extension"] == "ADMMLim_it1000":
+                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_1000it/replicate_' + str(self.replicate) + '/ADMMLim_it1000.img',shape=(self.PETImage_shape),type='<d')
+                elif config["image_init_path_without_extension"] == "MLEM_it60":
+                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
+                elif config["image_init_path_without_extension"] == "BSREM_it30":
+                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_30it/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type='<d')
+                
+
+
                 self.save_img(x_label,self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
                 #classDenoising.sub_iter_DIP = classDenoising.self.sub_iter_DIP_initial
 
