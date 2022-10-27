@@ -8,10 +8,13 @@ import pandas as pd
 # Useful
 from csv import reader as reader_csv
 import re
+from ray import tune
+import os
 
 # Local files to import
 from vGeneral import vGeneral
 from iResults import iResults
+from iResultsAlreadyComputed import iResultsAlreadyComputed
 
 class iFinalCurves(vGeneral):
     def __init__(self,config, *args, **kwargs):
@@ -22,18 +25,10 @@ class iFinalCurves(vGeneral):
         # show the plots in python or not !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     def runComputation(self,config_all_methods,root):
-
-
         method_list = config_all_methods["method"]
-        
-        config = dict.fromkeys(method_list)
+        config = dict.fromkeys(method_list) # Create one config dictionnary for each method
         for method in method_list: # Loop over methods
-            
-            
-            
-            
-            
-            
+
             #'''
             # Gong reconstruction
             if (method == 'Gong'):
@@ -85,34 +80,18 @@ class iFinalCurves(vGeneral):
                 #config[method] = config_func()
                 config[method] = config_func_MIC()
             #'''
-            
-
-
-            from ray import tune
+        
+            # Launch task
             config_tmp = dict(config[method])
             config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
-
-            #task = 'full_reco_with_network' # Run Gong or nested ADMM
-            #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
-            #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
-            #task = 'show_results_post_reco'
-            #task = 'show_results'
-            task = 'show_metrics_results_already_computed'
-            #task = 'show_metrics_ADMMLim'
-            #task = 'show_metrics_nested'
-            #task = 'compare_2_methods'
-            
-            from iResultsAlreadyComputed import iResultsAlreadyComputed
-            classTask = iResultsAlreadyComputed(config[method])
-            import os
-            #'''
             os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + method + '.txt')
             os.system("rm -rf " + root + '/data/Algo/' + 'replicates_for_last_run_' + method + '.txt')
-
-            # Launch task
-            classTask.runRayTune(config_tmp,root,task)
+            classTask = iResultsAlreadyComputed(config[method])
+            task = 'show_metrics_results_already_computed'
+            classTask.runRayTune(config_tmp,root,task) # Only to write suffix and replicate files
             #'''
 
+            # Remove keyword "grid search" in config
         
             config[method] = dict(config[method])
             
@@ -120,21 +99,11 @@ class iFinalCurves(vGeneral):
                 if (type(value) == type(config[method])):
                     if ("grid_search" in value):
                         config[method][key] = value['grid_search']
-                        
-                        if len(config[method][key]) > 1:
-                            print(key)
-
-                        #if len(config[method][key]) == 1:
                         if key != 'rho' and key != 'replicates' and key != 'method':
                             if key != 'A_AML' and key != 'post_smoothing' and key != 'lr':
                                 config[method][key] = config[method][key][0]
 
-
-
-        
-            print(config[method])
-
-
+        # Show figures for each ROI, with all asked methods
         for ROI in ['hot','cold']:
             # Initialize 3 figures
             fig, ax = [None] * 3, [None] * 3
@@ -144,57 +113,17 @@ class iFinalCurves(vGeneral):
             replicates_legend = [None] * 3
             replicates_legend = [[],[],[]]
 
-            #method_list = config[method]["method"]
-
-            for method in method_list:
-
-
-
-
-
-
-
-
-
-                # Initialize general variables
-                #self.initializeGeneralVariables(config[method],root)
-                
-                if ('ADMMLim' in config[method]["method"] or 'Gong' in config[method]["method"]):
+            for method in method_list: # Compute 
+                if ('ADMMLim' in method or 'Gong' in method):
                     self.i_init = 30 # Remove first iterations
                     self.i_init = 20 # Remove first iterations
                 else:
                     self.i_init = 1
 
-                if ('ADMMLim' in config[method]["method"]):
-                    try:
-                        self.path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
-                        with open(self.path_stopping_criterion) as f:
-                            first_line = f.readline() # Read first line to get second one
-                            self.total_nb_iter = min(int(f.readline().rstrip()) - self.i_init, config[method]["nb_outer_iteration"] - self.i_init + 1)
-                            self.total_nb_iter = int(self.total_nb_iter / self.i_init)
-                            #self.total_nb_iter = config[method]["nb_outer_iteration"] - self.i_init + 1 # Override value
-                    except:
-                        self.total_nb_iter = config[method]["nb_outer_iteration"] - self.i_init + 1
-                        self.total_nb_iter = int(self.total_nb_iter / self.i_init)
-                    self.beta = config[method]["alpha"]
-                elif (config[method]["method"] == 'nested' or config[method]["method"] == 'Gong'):
-                    if ('post_reco' in config[method]["task"]):
-                        self.total_nb_iter = config[method]["sub_iter_DIP"]
-                    else:
-                        self.total_nb_iter = config[method]["max_iter"]
-                else:
-                    self.total_nb_iter = self.max_iter
-
-                    if (config[method]["method"] == 'AML'):
-                        self.beta = config[method]["A_AML"]
-                    if (config[method]["method"] == 'BSREM' or config[method]["method"] == 'nested' or config[method]["method"] == 'Gong' or 'APGMAP' in config[method]["method"]):
-                        self.rho = config[method]["rho"]
-                        self.beta = self.rho
+                self.defineTotalNbIter_beta_rho(method,config[method],task)
 
 
-
-              
-
+                # Settings in following curves
                 CRC_plot = False
                 plot_all_replicates_curves = False
                 if plot_all_replicates_curves:
@@ -202,15 +131,7 @@ class iFinalCurves(vGeneral):
                 else:
                     color_avg = None
 
-
-
-
-
-
-
-
-
-                
+                # Initialize variables
                 suffixes = []
                 replicates = []
 
@@ -275,9 +196,6 @@ class iFinalCurves(vGeneral):
                     sorted_suffixes.sort(key=self.natural_keys)
                 else:
                     sorted_suffixes.sort(key=self.natural_keys_ADMMLim)
-                
-                for i in range(len(sorted_suffixes)):
-                    print(sorted_suffixes[i])
 
                 # Load metrics from last runs to merge them in one figure
                 for i in range(len(sorted_suffixes)):

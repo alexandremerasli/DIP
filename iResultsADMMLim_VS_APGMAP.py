@@ -27,27 +27,13 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         vDenoising.initializeSpecific(self,config,root)
 
         if ('ADMMLim' in config["method"]):
-            try:
-                self.path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
-                with open(self.path_stopping_criterion) as f:
-                    first_line = f.readline() # Read first line to get second one
-                    self.total_nb_iter = min(int(f.readline().rstrip()) - 2, config["nb_outer_iteration"] - 1)
-            except:
-                self.total_nb_iter = config["nb_outer_iteration"] - 1
-            self.beta = config["alpha"]
-        elif (config["method"] == 'nested' or config["method"] == 'Gong'):
-            if ('post_reco' in config["task"]):
-                self.total_nb_iter = config["sub_iter_DIP"]
-            else:
-                self.total_nb_iter = config["max_iter"]
+            self.i_init = 30 # Remove first iterations
+            self.i_init = 1 # Remove first iterations
         else:
-            self.total_nb_iter = self.max_iter
+            self.i_init = 1
 
-            if (config["method"] == 'AML'):
-                self.beta = config["A_AML"]
-            if (config["method"] == 'BSREM' or config["method"] == 'nested' or config["method"] == 'Gong' or config["method"] == 'APGMAP'):
-                self.rho = config["rho"]
-                self.beta = self.rho
+        self.defineTotalNbIter_beta_rho(config["method"], config, config["task"])
+
         # Create summary writer from tensorboard
         self.tensorboard = config["tensorboard"]
         self.writer = SummaryWriter()

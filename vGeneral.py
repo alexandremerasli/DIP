@@ -746,3 +746,30 @@ class vGeneral(abc.ABC):
         B1 = B1_num / B1_den
                         
         return B1
+
+    def defineTotalNbIter_beta_rho(self,method,config,task):
+        if ('ADMMLim' in method):
+            try:
+                self.path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
+                with open(self.path_stopping_criterion) as f:
+                    first_line = f.readline() # Read first line to get second one
+                    self.total_nb_iter = min(int(f.readline().rstrip()) - self.i_init, config["nb_outer_iteration"] - self.i_init + 1)
+                    self.total_nb_iter = int(self.total_nb_iter / self.i_init)
+                    #self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1 # Override value
+            except:
+                self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1
+                self.total_nb_iter = int(self.total_nb_iter / self.i_init)
+            self.beta = config["alpha"]
+        elif (method == 'nested' or method == 'Gong'):
+            if ('post_reco' in task):
+                self.total_nb_iter = config["sub_iter_DIP"]
+            else:
+                self.total_nb_iter = config["max_iter"]
+        else:
+            self.total_nb_iter = self.max_iter
+
+            if (config["method"] == 'AML'):
+                self.beta = config["A_AML"]
+            if (config["method"] == 'BSREM' or config["method"] == 'nested' or config["method"] == 'Gong' or 'APGMAP' in config["method"]):
+                self.rho = config["rho"]
+                self.beta = self.rho
