@@ -197,22 +197,22 @@ class vGeneral(abc.ABC):
         if (len(config["method"]['grid_search']) == 1):
             if (config["method"]['grid_search'][0] != "AML" and "APGMAP" not in config["method"]['grid_search'][0]):
                 config.pop("A_AML", None)
-            if (config["method"]['grid_search'][0] == 'BSREM' or config["method"]['grid_search'][0] == 'nested' or config["method"]['grid_search'][0] == 'Gong' or 'APGMAP' in config["method"]['grid_search'][0]):
+            if (config["method"]['grid_search'][0] == 'BSREM' or 'nested' in config["method"]['grid_search'][0] or 'Gong' in config["method"]['grid_search'][0] or 'APGMAP' in config["method"]['grid_search'][0]):
                 config.pop("post_smoothing", None)
-            if ('ADMMLim' not in config["method"]['grid_search'][0] and config["method"]['grid_search'][0] != "nested"):
+            if (config["method"]['grid_search'][0] != 'ADMMLim' and "nested" not in config["method"]['grid_search'][0]):
                 #config.pop("nb_inner_iteration", None)
                 config.pop("alpha", None)
                 config.pop("adaptive_parameters", None)
                 config.pop("mu_adaptive", None)
                 config.pop("tau", None)
                 #config.pop("xi", None)
-            elif (('ADMMLim' in config["method"]['grid_search'][0] or config["method"]['grid_search'][0] == "nested") and config["adaptive_parameters"]['grid_search'][0] == "nothing"):
+            elif ((config["method"]['grid_search'][0] == 'ADMMLim' or "nested" in config["method"]['grid_search'][0]) and config["adaptive_parameters"]['grid_search'][0] == "nothing"):
                 config.pop("mu_adaptive", None)
                 config.pop("tau", None)
                 config.pop("xi", None)
-            if ('ADMMLim' not in config["method"]['grid_search'][0] and config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong"):
+            if ('ADMMLim' not in config["method"]['grid_search'][0] and "nested" not in config["method"]['grid_search'][0] and "Gong" not in config["method"]['grid_search'][0]):
                 config.pop("nb_outer_iteration", None)
-            if (config["method"]['grid_search'][0] != "nested" and config["method"]['grid_search'][0] != "Gong" and task != "post_reco"):
+            if ("nested" not in config["method"]['grid_search'][0] and "Gong" not in config["method"]['grid_search'][0] and task != "post_reco"):
                 config.pop("lr", None)
                 config.pop("sub_iter_DIP", None)
                 config.pop("opti_DIP", None)
@@ -233,7 +233,7 @@ class vGeneral(abc.ABC):
             if (config["method"]['grid_search'][0] == 'MLEM' or config["method"] == 'OPTITR' or config["method"]['grid_search'][0] == 'OSEM' or config["method"]['grid_search'][0] == 'AML'):
                 config.pop("rho", None)
             # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMLim in CASToR
-            if ('ADMMLim' in config["method"]['grid_search'][0] == "nested" or config["method"]['grid_search'][0]):
+            if ('ADMMLim' in config["method"]['grid_search'][0] or "nested" in config["method"]['grid_search'][0]):
                 config["mlem_sequence"]['grid_search'] = [False]
         else:
             if ('results' not in task):
@@ -341,7 +341,8 @@ class vGeneral(abc.ABC):
         config_copy = dict(config)
         if (NNEPPS==False):
             config_copy.pop('NNEPPS',None)
-        #config_copy.pop('nb_outer_iteration',None)
+        if config["method"] == "ADMMLim":
+            config_copy.pop('nb_outer_iteration',None)
         suffix = "config"
         for key, value in config_copy.items():
             if key in self.hyperparameters_list:
@@ -659,7 +660,7 @@ class vGeneral(abc.ABC):
             opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) # ADMMLim dirty 1 or 2
             pnlt = ' -pnlt DIP_ADMM'
             penaltyStrength = ' -pnlt-beta ' + str(rho)
-        elif ('ADMMLim' in method):
+        elif (method == 'ADMMLim'):
             opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) # ADMMLim dirty 1 or 2
             pnlt = ' -pnlt ' + penalty
             if penalty == "MRF":
@@ -748,7 +749,7 @@ class vGeneral(abc.ABC):
         return B1
 
     def defineTotalNbIter_beta_rho(self,method,config,task):
-        if ('ADMMLim' in method):
+        if (method == 'ADMMLim'):
             try:
                 self.path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
                 with open(self.path_stopping_criterion) as f:
@@ -760,7 +761,7 @@ class vGeneral(abc.ABC):
                 self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1
                 self.total_nb_iter = int(self.total_nb_iter / self.i_init)
             self.beta = config["alpha"]
-        elif (method == 'nested' or method == 'Gong'):
+        elif ('nested' in method or 'Gong' in method):
             if ('post_reco' in task):
                 self.total_nb_iter = config["sub_iter_DIP"]
             else:
@@ -770,6 +771,6 @@ class vGeneral(abc.ABC):
 
             if (config["method"] == 'AML'):
                 self.beta = config["A_AML"]
-            if (config["method"] == 'BSREM' or config["method"] == 'nested' or config["method"] == 'Gong' or 'APGMAP' in config["method"]):
+            if (config["method"] == 'BSREM' or 'nested' in config["method"] or 'Gong' in config["method"] or 'APGMAP' in config["method"]):
                 self.rho = config["rho"]
                 self.beta = self.rho

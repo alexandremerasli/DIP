@@ -107,7 +107,7 @@ class iResults(vDenoising):
         if (hasattr(self,'beta')):
             beta_string = ', beta = ' + str(self.beta)
 
-        #if (config["method"] == "nested" or config["method"] == "Gong"):
+        #if ( 'nested' in config["method"] or  'Gong' in config["method"]):
             #self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
             #self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
         #else:
@@ -132,7 +132,7 @@ class iResults(vDenoising):
                         NNEPPS_string = "_NNEPPS"
                     else:
                         NNEPPS_string = ""
-                    if (config["method"] == 'Gong' or config["method"] == 'nested'):
+                    if ( 'Gong' in config["method"] or  'nested' in config["method"]):
                         if ('post_reco' in config["task"]):
                             pet_algo=config["method"]+"to fit"
                             iteration_name="(post reconstruction)"

@@ -71,11 +71,11 @@ class iNestedADMM(vReconstruction):
                 # Create label corresponding to initial reconstructed image to start with
                 '''
                 #x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.img',shape=(self.PETImage_shape),type='<f')
-                if (config["method"] == "nested"): # Nested needs 1 to not add any prior information at the beginning, and to initialize x computation to uniform with 1
+                if ( 'nested' in config["method"]): # Nested needs 1 to not add any prior information at the beginning, and to initialize x computation to uniform with 1
                     x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_100it/replicate_' + str(self.replicate) + '/ADMMLim_it100.img',shape=(self.PETImage_shape),type='<d')
                     x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_1000it/replicate_' + str(self.replicate) + '/ADMMLim_it1000.img',shape=(self.PETImage_shape),type='<d')
                     x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_30it/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type='<d')
-                elif (config["method"] == "Gong"): # Fit MLEM 60it for first global iteration
+                elif ( 'Gong' in config["method"]): # Fit MLEM 60it for first global iteration
                     x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
                 '''
                 if config["image_init_path_without_extension"] == "ADMMLim_it100":

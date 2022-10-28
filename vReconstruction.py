@@ -36,12 +36,12 @@ class vReconstruction(vGeneral):
             self.rho = config["rho"]
         else:
             self.rho = 0
-        if ('ADMMLim' in config["method"] or config["method"] == "nested" or config["method"] == "Gong"):
+        if ('ADMMLim' in config["method"] or  'nested' in config["method"] or  'Gong' in config["method"]):
             if (config["method"] != "ADMMLim"):
                 self.unnested_1st_global_iter = config["unnested_1st_global_iter"]
             else:
                 self.unnested_1st_global_iter = None
-            if (config["method"] == "Gong"):
+            if ( 'Gong' in config["method"]):
                 self.alpha = None
             else:
                 self.alpha = config["alpha"]
@@ -58,7 +58,7 @@ class vReconstruction(vGeneral):
         self.tensorboard = config["tensorboard"]
 
         # Initialize and save mu variable from ADMM
-        if (self.method == "nested" or self.method == "Gong"):
+        if ("nested" in self.method or "Gong" in self.method):
             self.mu = 0* np.ones((self.PETImage_shape))
             if config["FLTNB"] == "float":
                 self.mu = self.mu.astype(np.float32)
@@ -204,14 +204,14 @@ class vReconstruction(vGeneral):
         self.write_hdr(subroot,[i],subdir,phantom,'v_it' + str(it_name),subroot_output_path=subroot_output_path,matrix_type='sino')
 
     def ADMMLim_general(self, config, i, subdir, subroot_output_path,f_mu_for_penalty,writer=None,image_gt=None, i_init=0):
-        if (self.method == "nested"):
+        if ("nested" in self.method):
             self.post_smoothing = 0
         castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing)
 
         base_name_i = format(i)
         full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
 
-        if (self.method == "nested"):
+        if ("nested" in self.method):
             folder_sub_path = os.path.join(self.subroot,"Block1",self.suffix)
         else:
             folder_sub_path = os.path.join(self.subroot,self.suffix)
@@ -328,7 +328,7 @@ class vReconstruction(vGeneral):
             finalOuterIter = config["nb_outer_iteration"]
         
         '''
-        if (self.method == "nested" and self.tensorboard and finalOuterIter > 1):
+        if ("nested" in self.method and self.tensorboard and finalOuterIter > 1):
             for k in range(1,finalOuterIter,max(finalOuterIter//10,1)):
                 x = self.fijii_np(full_output_path_i + '_it' + str(k) + '.img', shape=(self.PETImage_shape))
                 self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations",self.suffix,500, 0+k+i*config["nb_outer_iteration"]) # Showing all corrupted images with same contrast to compare them together

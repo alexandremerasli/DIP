@@ -1,5 +1,6 @@
 ## Python libraries
 # Math
+from ast import Raise
 from audioop import avg
 import numpy as np
 import matplotlib.pyplot as plt
@@ -35,15 +36,21 @@ class iFinalCurves(vGeneral):
 
             #'''
             # Gong reconstruction
-            if (method == 'Gong'):
+            if ('Gong' in method):
                 print("configuration fiiiiiiiiiiiiiiiiiiile")
                 #config[method] = np.load(root + 'config_DIP.npy',allow_pickle='TRUE').item()
                 from Gong_configuration import config_func_MIC
                 #config[method] = config_func()
                 config[method] = config_func_MIC()
+                if ('stand' in method):
+                    config[method]["scaling"] = {'grid_search': ["standardization"]}
+                elif ('norm' in method):
+                    config[method]["scaling"] = {'grid_search': ["positive_normalization"]}
+                else:
+                    raise ValueError("stand norm gong")
 
             # nested reconstruction
-            if (method == 'nested'):
+            if ('nested' in method):
                 print("configuration fiiiiiiiiiiiiiiiiiiile")
                 from nested_configuration import config_func_MIC
                 #config[method] = config_func()
@@ -118,7 +125,7 @@ class iFinalCurves(vGeneral):
             replicates_legend = [[],[],[]]
 
             for method in method_list: # Compute 
-                if ('ADMMLim' in method or 'Gong' in method):
+                if (method == 'ADMMLim' or 'Gong' in method):
                     self.i_init = 30 # Remove first iterations
                     self.i_init = 20 # Remove first iterations
                 else:
@@ -166,7 +173,7 @@ class iFinalCurves(vGeneral):
                     config_other_dim[method] = config[method]["post_smoothing"]
                     rho_name = "smoothing"
                     other_dim_name = ""
-                elif (method == "nested" or method == "Gong"):
+                elif ("nested" in method or "Gong" in method):
                     config_other_dim[method] = config[method]["lr"]
                     other_dim_name = "lr"
                 else:
@@ -199,7 +206,7 @@ class iFinalCurves(vGeneral):
                 
                 # Sort suffixes from file by rho and other dim values 
                 sorted_suffixes = list(suffixes[0])
-                if (method != "ADMMLim" and method != "nested" and "APGMAP" not in method):
+                if (method != "ADMMLim" and "nested" not in method and "APGMAP" not in method):
                     sorted_suffixes.sort(key=self.natural_keys)
                 else:
                     sorted_suffixes.sort(key=self.natural_keys_ADMMLim)
@@ -210,6 +217,9 @@ class iFinalCurves(vGeneral):
                     suffix = sorted_suffixes[i].rstrip("\n")
                     replicate = "replicate_" + str(i_replicate + 1)
                     metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + method + '/' + suffix + '/' + 'metrics.csv'
+                    
+                    with open(metrics_file, 'r') as myfile:
+                        spamreader = reader_csv(myfile,delimiter=';')
                     try:
                         with open(metrics_file, 'r') as myfile:
                             spamreader = reader_csv(myfile,delimiter=';')
@@ -317,7 +327,7 @@ class iFinalCurves(vGeneral):
                     if (fig_nb == 0):
                         reg[fig_nb] = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
                     elif (fig_nb == 2):
-                        if (method != "nested" and method != "Gong"):
+                        if ("nested" not in method and "Gong" not in method):
                             reg[fig_nb] = np.zeros((nb_rho[method]*nb_other_dim[method]))
                         else:
                             reg[fig_nb] = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
@@ -359,7 +369,7 @@ class iFinalCurves(vGeneral):
                     if (fig_nb == 2): # Plot tradeoff curves at convergence
                         for rho_idx in range(nb_rho[method]):
                             for other_dim_idx in range(nb_other_dim[method]):
-                                if (method != "nested" and method != "Gong"):
+                                if ("nested" not in method and "Gong" not in method):
                                     reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx] = self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][:,-1],metrics_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][:,-1])
                                 else:
                                     for it in range(len(IR_final[case_mini[rho_idx]])):
@@ -415,7 +425,7 @@ class iFinalCurves(vGeneral):
                     #'''
                     if (fig_nb == 2):
                         for other_dim_idx in range(nb_other_dim[method]):
-                            if (method != "nested" and method != "Gong"):
+                            if ("nested" not in method and "Gong" not in method):
                                 cases = np.arange(0,nb_other_dim[method]*nb_rho[method],nb_other_dim[method]) + other_dim_idx
                                 ax[fig_nb].plot(100*avg_IR[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)],'-o',color=color_avg)
                                 if (variance_plot):
