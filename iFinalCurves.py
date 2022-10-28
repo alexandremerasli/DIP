@@ -27,6 +27,10 @@ class iFinalCurves(vGeneral):
     def runComputation(self,config_all_methods,root):
         method_list = config_all_methods["method"]
         config = dict.fromkeys(method_list) # Create one config dictionnary for each method
+        nb_rho = dict.fromkeys(method_list)
+        nb_other_dim = dict.fromkeys(method_list)
+        config_other_dim = dict.fromkeys(method_list)
+        nb_replicates = dict.fromkeys(method_list)
         for method in method_list: # Loop over methods
 
             #'''
@@ -124,7 +128,7 @@ class iFinalCurves(vGeneral):
 
 
                 # Settings in following curves
-                CRC_plot = False
+                variance_plot = False
                 plot_all_replicates_curves = False
                 if plot_all_replicates_curves:
                     color_avg = 'black'
@@ -141,8 +145,6 @@ class iFinalCurves(vGeneral):
                 SSIM_recon = []
                 MA_cold_recon = []
                 AR_hot_recon = []
-                CRC_cold_recon = []
-                CRC_hot_recon = []
                 AR_bkg_recon = []
                 IR_bkg_recon = []
 
@@ -156,32 +158,32 @@ class iFinalCurves(vGeneral):
                 
                 # Retrieve number of rhos and replicates and other dimension
                 rho_name = "beta"
-                nb_rho = len(config[method]["rho"])
+                nb_rho[method] = len(config[method]["rho"])
                 if ("APGMAP" in method or method == "AML"):
-                    config_other_dim = config[method]["A_AML"]
+                    config_other_dim[method] = config[method]["A_AML"]
                     other_dim_name = "A"
                 elif (method == "MLEM" or method == "OSEM"):
-                    config_other_dim = config[method]["post_smoothing"]
+                    config_other_dim[method] = config[method]["post_smoothing"]
                     rho_name = "smoothing"
                     other_dim_name = ""
                 elif (method == "nested" or method == "Gong"):
-                    config_other_dim = config[method]["lr"]
+                    config_other_dim[method] = config[method]["lr"]
                     other_dim_name = "lr"
                 else:
-                    config_other_dim = [""]
+                    config_other_dim[method] = [""]
                     other_dim_name = ""
-                nb_other_dim = len(config_other_dim)
-                nb_replicates = int(len(replicates[0]) / (nb_rho * nb_other_dim))
+                nb_other_dim[method] = len(config_other_dim[method])
+                nb_replicates[method] = int(len(replicates[0]) / (nb_rho[method] * nb_other_dim[method]))
 
                 # Sort rho and other dim like suffix
                 config[method]["rho"] = sorted(config[method]["rho"])
-                config_other_dim = sorted(config_other_dim)
+                config_other_dim[method] = sorted(config_other_dim[method])
 
                 # Wanted list of replicates
                 idx_wanted = []
-                for i in range(nb_rho):
-                    for p in range(nb_other_dim):
-                        idx_wanted += range(0,nb_replicates)
+                for i in range(nb_rho[method]):
+                    for p in range(nb_other_dim[method]):
+                        idx_wanted += range(0,nb_replicates[method])
 
                 # Check replicates from results are compatible with this script
                 replicate_idx = [int(re.findall(r'(\w+?)(\d+)', replicates[0][idx].rstrip())[0][-1]) for idx in range(len(replicates[0]))]
@@ -190,6 +192,11 @@ class iFinalCurves(vGeneral):
                     print(np.sort(replicate_idx).astype(int)-1)
                     raise ValueError("Replicates are not the same for each case !")
 
+                if method == method_list[-1]:
+                    if not all(x == list(nb_replicates.values())[0] for x in list(nb_replicates.values())):
+                        print(nb_replicates)
+                        raise ValueError("Replicates are not the same for each method !")
+                
                 # Sort suffixes from file by rho and other dim values 
                 sorted_suffixes = list(suffixes[0])
                 if (method != "ADMMLim" and method != "nested" and "APGMAP" not in method):
@@ -208,6 +215,18 @@ class iFinalCurves(vGeneral):
                             spamreader = reader_csv(myfile,delimiter=';')
                             rows_csv = list(spamreader)
 
+                            '''
+                            # if 1 out of i_init iterations was saved
+                            rows_csv[0] = [float(rows_csv[0][i]) for i in range(int(self.i_init/self.i_init) - 1,min(len(rows_csv[0]),self.total_nb_iter))]
+                            rows_csv[1] = [float(rows_csv[1][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[1]),self.total_nb_iter))]
+                            rows_csv[2] = [float(rows_csv[2][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[2]),self.total_nb_iter))]
+                            rows_csv[3] = [float(rows_csv[3][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[3]),self.total_nb_iter))]
+                            rows_csv[4] = [float(rows_csv[4][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[4]),self.total_nb_iter))]
+                            rows_csv[5] = [float(rows_csv[5][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[5]),self.total_nb_iter))]
+                            rows_csv[6] = [float(rows_csv[6][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[6]),self.total_nb_iter))]
+                            rows_csv[7] = [float(rows_csv[7][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[7]),self.total_nb_iter))]
+                            '''
+                            
                             rows_csv[0] = [float(rows_csv[0][i]) for i in range(int(self.i_init) - 1,min(len(rows_csv[0]),self.total_nb_iter))]
                             rows_csv[1] = [float(rows_csv[1][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[1]),self.total_nb_iter))]
                             rows_csv[2] = [float(rows_csv[2][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[2]),self.total_nb_iter))]
@@ -232,92 +251,80 @@ class iFinalCurves(vGeneral):
                                 MA_cold = np.array(rows_csv[8])
                             except:
                                 MA_cold = np.array(rows_csv[6])
-                            #CRC_cold = 100*((MA_cold.astype(float)/C_bkg - 1) / (10/C_bkg - 1))
-                            CRC_cold = MA_cold
                             try:
                                 AR_hot = np.array(rows_csv[9])
                             except:
                                 AR_hot = np.array(rows_csv[7])
-                            #CRC_hot = 100*((AR_hot.astype(float)/C_bkg - 1) / (400/C_bkg - 1))
-                            CRC_hot = AR_hot
-                            CRC_cold_recon.append(CRC_cold)
-                            CRC_hot_recon.append(CRC_hot)
 
                     except:
                         print("No such file : " + metrics_file)
 
                 
                 if (method == "MLEM" or method == "OSEM"):
-                    nb_rho, nb_other_dim = nb_other_dim, nb_rho
-                    config[method]["rho"], config_other_dim = config_other_dim, config[method]["rho"]
+                    nb_rho[method], nb_other_dim[method] = nb_other_dim[method], nb_rho[method]
+                    config[method]["rho"], config_other_dim[method] = config_other_dim[method], config[method]["rho"]
 
 
                 # Select metrics to plot according to ROI
                 if ROI == 'hot':
-                    if CRC_plot:
-                        metrics = CRC_hot_recon
-                    else:
-                        #metrics = [abs(hot) for hot in AR_hot_recon] # Take absolute value of AR hot for tradeoff curves
-                        metrics = AR_hot_recon # Take absolute value of AR hot for tradeoff curves
+                    #metrics = [abs(hot) for hot in AR_hot_recon] # Take absolute value of AR hot for tradeoff curves
+                    metrics = AR_hot_recon # Take absolute value of AR hot for tradeoff curves
                 else:
-                    if CRC_plot:
-                        metrics = CRC_cold_recon
-                    else:
-                        #metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
-                        metrics = MA_cold_recon # Take absolute value of MA cold for tradeoff curves
+                    #metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
+                    metrics = MA_cold_recon # Take absolute value of MA cold for tradeoff curves
 
                 # Keep useful information to plot from metrics                
                 IR_final = IR_bkg_recon
                 metrics_final = metrics
 
                 # Compute number of displayable iterations for each rho and find case with smallest iterations (useful for ADMMLim)
-                len_mini_list = np.zeros((nb_rho,nb_other_dim,nb_replicates),dtype=int)
-                len_mini = np.zeros((nb_rho),dtype=int)
-                case_mini = np.zeros((nb_rho),dtype=int)
-                for rho_idx in range(nb_rho):
-                    for other_dim_idx in range(nb_other_dim):
-                        for replicate_idx in range(nb_replicates):
-                            len_mini_list[rho_idx,other_dim_idx,replicate_idx] = len(metrics_final[replicate_idx + nb_replicates*other_dim_idx + (nb_replicates*nb_other_dim)*rho_idx])
+                len_mini_list = np.zeros((nb_rho[method],nb_other_dim[method],nb_replicates[method]),dtype=int)
+                len_mini = np.zeros((nb_rho[method]),dtype=int)
+                case_mini = np.zeros((nb_rho[method]),dtype=int)
+                for rho_idx in range(nb_rho[method]):
+                    for other_dim_idx in range(nb_other_dim[method]):
+                        for replicate_idx in range(nb_replicates[method]):
+                            len_mini_list[rho_idx,other_dim_idx,replicate_idx] = len(metrics_final[replicate_idx + nb_replicates[method]*other_dim_idx + (nb_replicates[method]*nb_other_dim[method])*rho_idx])
                         len_mini[rho_idx] = int(np.min(len_mini_list[rho_idx]))
-                        case_mini[rho_idx] = int(np.argmin(len_mini_list[rho_idx,:,:])) + nb_replicates*rho_idx
+                        case_mini[rho_idx] = int(np.argmin(len_mini_list[rho_idx,:,:])) + nb_replicates[method]*rho_idx
 
                 # Create numpy array with same number of iterations for each case
                 IR_final_array = []
                 metrics_final_array = []
-                for rho_idx in range(nb_rho):
-                    for other_dim_idx in range(nb_other_dim):
-                        IR_final_array.append(np.zeros((nb_replicates,len_mini[rho_idx])))
-                        metrics_final_array.append(np.zeros((nb_replicates,len_mini[rho_idx])))
+                for rho_idx in range(nb_rho[method]):
+                    for other_dim_idx in range(nb_other_dim[method]):
+                        IR_final_array.append(np.zeros((nb_replicates[method],len_mini[rho_idx])))
+                        metrics_final_array.append(np.zeros((nb_replicates[method],len_mini[rho_idx])))
                         for common_it in range(len_mini[rho_idx]):
-                            for replicate_idx in range(nb_replicates):
-                                IR_final_array[other_dim_idx+nb_other_dim*rho_idx][replicate_idx,common_it] = IR_final[replicate_idx + nb_replicates*other_dim_idx + (nb_replicates*nb_other_dim)*rho_idx][common_it]
-                                metrics_final_array[other_dim_idx+nb_other_dim*rho_idx][replicate_idx,common_it] = metrics_final[replicate_idx + nb_replicates*other_dim_idx + (nb_replicates*nb_other_dim)*rho_idx][common_it]             
+                            for replicate_idx in range(nb_replicates[method]):
+                                IR_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][replicate_idx,common_it] = IR_final[replicate_idx + nb_replicates[method]*other_dim_idx + (nb_replicates[method]*nb_other_dim[method])*rho_idx][common_it]
+                                metrics_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][replicate_idx,common_it] = metrics_final[replicate_idx + nb_replicates[method]*other_dim_idx + (nb_replicates[method]*nb_other_dim[method])*rho_idx][common_it]             
 
                 
-                IR_final_final_array = np.zeros((nb_rho,nb_other_dim,nb_replicates,np.max(len_mini)))
-                metrics_final_final_array = np.zeros((nb_rho,nb_other_dim,nb_replicates,np.max(len_mini)))
-                for rho_idx in range(nb_rho):
-                    for other_dim_idx in range(nb_other_dim):
+                IR_final_final_array = np.zeros((nb_rho[method],nb_other_dim[method],nb_replicates[method],np.max(len_mini)))
+                metrics_final_final_array = np.zeros((nb_rho[method],nb_other_dim[method],nb_replicates[method],np.max(len_mini)))
+                for rho_idx in range(nb_rho[method]):
+                    for other_dim_idx in range(nb_other_dim[method]):
                         for common_it in range(len_mini[rho_idx]):
-                            for replicate_idx in range(nb_replicates):
-                                IR_final_final_array[rho_idx,other_dim_idx,replicate_idx,common_it] = IR_final_array[other_dim_idx+nb_other_dim*rho_idx][replicate_idx,common_it]
-                                metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,common_it] = metrics_final_array[other_dim_idx+nb_other_dim*rho_idx][replicate_idx,common_it]
+                            for replicate_idx in range(nb_replicates[method]):
+                                IR_final_final_array[rho_idx,other_dim_idx,replicate_idx,common_it] = IR_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][replicate_idx,common_it]
+                                metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,common_it] = metrics_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][replicate_idx,common_it]
 
 
                 # Plot 3 figures for each ROI : tradeoff curve with iteration (metric VS IR), bias with iterations, and tradeoff curve at convergence
                 reg = [None] * 3
                 for fig_nb in range(3):
                     if (fig_nb == 0):
-                        reg[fig_nb] = np.zeros((nb_rho*nb_other_dim,np.max(len_mini)))
+                        reg[fig_nb] = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
                     elif (fig_nb == 2):
                         if (method != "nested" and method != "Gong"):
-                            reg[fig_nb] = np.zeros((nb_rho*nb_other_dim))
+                            reg[fig_nb] = np.zeros((nb_rho[method]*nb_other_dim[method]))
                         else:
-                            reg[fig_nb] = np.zeros((nb_rho*nb_other_dim,np.max(len_mini)))
-                    for rho_idx in range(nb_rho):
-                        for other_dim_idx in range(nb_other_dim):
-                            for replicate_idx in range(nb_replicates):
-                                case = replicate_idx + nb_replicates*other_dim_idx + (nb_replicates*nb_other_dim)*rho_idx
+                            reg[fig_nb] = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
+                    for rho_idx in range(nb_rho[method]):
+                        for other_dim_idx in range(nb_other_dim[method]):
+                            for replicate_idx in range(nb_replicates[method]):
+                                case = replicate_idx + nb_replicates[method]*other_dim_idx + (nb_replicates[method]*nb_other_dim[method])*rho_idx
                                 if (fig_nb == 0): # Plot tradeoff curves with iterations
                                     it = np.arange(len(IR_final[case_mini[rho_idx]]))
                                     if (plot_all_replicates_curves):
@@ -326,90 +333,102 @@ class iFinalCurves(vGeneral):
                             #'''
                             if (fig_nb == 0):
                                 for it in range(len(IR_final[case_mini[rho_idx]])):
-                                    reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] = self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim*rho_idx][:,it],metrics_final_array[other_dim_idx+nb_other_dim*rho_idx][:,it])
+                                    reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][:,it],metrics_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][:,it])
                             #'''
-                            for replicate_idx in range(nb_replicates):
+                            for replicate_idx in range(nb_replicates[method]):
                                 if (fig_nb == 1): # Plot bias curves
                                     if (plot_all_replicates_curves):
+                                        #ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,:len_mini[rho_idx]],label='_nolegend_') # IR in % # if 1 out of i_init iterations was saved
                                         ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,:len_mini[rho_idx]],label='_nolegend_') # IR in %
 
-                    avg_metrics = np.zeros((nb_rho*nb_other_dim,np.max(len_mini)))
-                    avg_IR = np.zeros((nb_rho*nb_other_dim,np.max(len_mini)))
-                    std_metrics = np.zeros((nb_rho*nb_other_dim,np.max(len_mini)))
-                    std_IR = np.zeros((nb_rho*nb_other_dim,np.max(len_mini)))
+                    avg_metrics = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
+                    avg_IR = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
+                    std_metrics = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
+                    std_IR = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
 
 
                     #'''
-                    for replicate_idx in range(nb_replicates):
-                        for other_dim_idx in range(nb_other_dim):
+                    for replicate_idx in range(nb_replicates[method]):
+                        for other_dim_idx in range(nb_other_dim[method]):
                             if (fig_nb == 2): # Plot tradeoff curves at convergence
                                 if (plot_all_replicates_curves):
-                                    ax[fig_nb].plot(100*IR_final_final_array[:,other_dim_idx,replicate_idx,:][(np.arange(nb_rho),len_mini-1)],metrics_final_final_array[:,other_dim_idx,replicate_idx,:][(np.arange(nb_rho),len_mini-1)],label='_nolegend_') # IR in %
+                                    ax[fig_nb].plot(100*IR_final_final_array[:,other_dim_idx,replicate_idx,:][(np.arange(nb_rho[method]),len_mini-1)],metrics_final_final_array[:,other_dim_idx,replicate_idx,:][(np.arange(nb_rho[method]),len_mini-1)],label='_nolegend_') # IR in %
                     #'''
 
                     #'''
                     if (fig_nb == 2): # Plot tradeoff curves at convergence
-                        for rho_idx in range(nb_rho):
-                            for other_dim_idx in range(nb_other_dim):
+                        for rho_idx in range(nb_rho[method]):
+                            for other_dim_idx in range(nb_other_dim[method]):
                                 if (method != "nested" and method != "Gong"):
-                                    reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx] = self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim*rho_idx][:,-1],metrics_final_array[other_dim_idx+nb_other_dim*rho_idx][:,-1])
+                                    reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx] = self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][:,-1],metrics_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][:,-1])
                                 else:
                                     for it in range(len(IR_final[case_mini[rho_idx]])):
-                                        reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] = self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim*rho_idx][:,it],metrics_final_array[other_dim_idx+nb_other_dim*rho_idx][:,it])
+                                        reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][:,it],metrics_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][:,it])
 
                     #'''
                     #'''
 
                     
-                    for rho_idx in range(nb_rho):
-                        for other_dim_idx in range(nb_other_dim):
+                    for rho_idx in range(nb_rho[method]):
+                        for other_dim_idx in range(nb_other_dim[method]):
                             # Compute average of tradeoff and bias curves with iterations
-                            avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] = np.sum(metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_replicates
-                            avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] = np.sum(IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_replicates
+                            avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sum(metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_replicates[method]
+                            avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sum(IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_replicates[method]
                             # Compute std bias curves with iterations
-                            std_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] = np.sqrt(np.sum((metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]] - np.array(avg_metrics)[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]])**2,axis=0) / nb_replicates)
-                            std_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] = np.sqrt(np.sum((IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]]- np.array(avg_IR)[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]])**2,axis=0) / nb_replicates)
+                            std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sqrt(np.sum((metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]] - np.array(avg_metrics)[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]])**2,axis=0) / nb_replicates[method])
+                            std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sqrt(np.sum((IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]]- np.array(avg_IR)[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]])**2,axis=0) / nb_replicates[method])
 
                             if (fig_nb == 0):
-                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],'-o',color=color_avg)
-                                ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
+                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_avg)
+                                if (variance_plot):
+                                    ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
                                 ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)', fontsize = 18)
-                                ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
-                                #ax[fig_nb].set_ylabel(('Bias '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
-                                ax[fig_nb].set_title(('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (with iterations)')
+                                ax[fig_nb].set_ylabel('Activity Recovery (AR) (%) ', fontsize = 18)
+                                #ax[fig_nb].set_ylabel(('Bias ', fontsize = 18)
+                                ax[fig_nb].set_title('AR ' + 'in ' + ROI + ' region vs IR in background (with iterations)')
                             #'''
                             if (fig_nb == 1):
                                 # Plot average and std of bias curves with iterations
-                                ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],color=color_avg)
+                                #ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg) # if 1 out of i_init iterations was saved
+                                ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg)
                                 # Plot dashed line for target value, according to ROI
                                 if ROI == 'hot':
-                                    ax[fig_nb].hlines(100*(CRC_plot==False)+100*CRC_plot,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])-1)*self.i_init,color='grey',linestyle='dashed',label='_nolegend_')
+                                    #ax[fig_nb].hlines(100,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1)*self.i_init,color='grey',linestyle='dashed',label='_nolegend_') # if 1 out of i_init iterations was saved
+                                    ax[fig_nb].hlines(100,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1),color='grey',linestyle='dashed',label='_nolegend_')
                                 else:
-                                    ax[fig_nb].hlines(100*(CRC_plot==False)+100*CRC_plot,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx])-1)*self.i_init,color='grey',linestyle='dashed',label='_nolegend_')
-                                ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim*rho_idx]))*self.i_init, avg_metrics[other_dim_idx+nb_other_dim*rho_idx] - std_metrics[other_dim_idx+nb_other_dim*rho_idx], avg_metrics[other_dim_idx+nb_other_dim*rho_idx] + std_metrics[other_dim_idx+nb_other_dim*rho_idx], alpha = 0.4, label='_nolegend_')
+                                    #ax[fig_nb].hlines(100,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1)*self.i_init,color='grey',linestyle='dashed',label='_nolegend_') # if 1 out of i_init iterations was saved
+                                    ax[fig_nb].hlines(100,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1),color='grey',linestyle='dashed',label='_nolegend_')
+                                if (variance_plot):
+                                    #ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx]))*self.i_init, avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_') # if 1 out of i_init iterations was saved
+                                    ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])), avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_')
                                 ax[fig_nb].set_xlabel('Iterations', fontsize = 18)
-                                ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
-                                #ax[fig_nb].set_ylabel(('Bias '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
-                                ax[fig_nb].set_title(method + " reconstruction averaged on " + str(nb_replicates) + " replicates (" + ROI + " ROI)")
+                                ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '), fontsize = 18)
+                                #ax[fig_nb].set_ylabel(('Bias ', fontsize = 18)
+                                if len(method_list) == 1:
+                                    ax[fig_nb].set_title(method + " reconstruction averaged on " + str(nb_replicates[method]) + " replicates (" + ROI + " ROI)")
+                                else:
+                                    ax[fig_nb].set_title("Several methods" + " reconstruction averaged on " + str(nb_replicates[method]) + " replicates (" + ROI + " ROI)")
                             #'''
                             if (fig_nb != 2):
-                                replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!=""))
+                                replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                         
                     #'''
                     if (fig_nb == 2):
-                        for other_dim_idx in range(nb_other_dim):
+                        for other_dim_idx in range(nb_other_dim[method]):
                             if (method != "nested" and method != "Gong"):
-                                cases = np.arange(0,nb_other_dim*nb_rho,nb_other_dim) + other_dim_idx
+                                cases = np.arange(0,nb_other_dim[method]*nb_rho[method],nb_other_dim[method]) + other_dim_idx
                                 ax[fig_nb].plot(100*avg_IR[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)],'-o',color=color_avg)
-                                ax[fig_nb].fill(np.concatenate((100*(avg_IR[(cases,len_mini-1)] - np.sign(reg[fig_nb][cases])*std_IR[cases,-1]),100*(avg_IR[(cases,len_mini-1)][::-1] + np.sign(reg[fig_nb][cases][::-1])*std_IR[(cases,len_mini-1)][::-1]))),np.concatenate((avg_metrics[(cases,len_mini-1)]-std_metrics[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)][::-1]+std_metrics[(cases,len_mini-1)][::-1])), alpha = 0.4, label='_nolegend_')
+                                if (variance_plot):
+                                    ax[fig_nb].fill(np.concatenate((100*(avg_IR[(cases,len_mini-1)] - np.sign(reg[fig_nb][cases])*std_IR[cases,-1]),100*(avg_IR[(cases,len_mini-1)][::-1] + np.sign(reg[fig_nb][cases][::-1])*std_IR[(cases,len_mini-1)][::-1]))),np.concatenate((avg_metrics[(cases,len_mini-1)]-std_metrics[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)][::-1]+std_metrics[(cases,len_mini-1)][::-1])), alpha = 0.4, label='_nolegend_')
                             else:
-                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],'-o',color=color_avg)
-                                ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
-                            replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[other_dim_idx]))*(other_dim_name!=""))
+                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_avg)
+                                if (variance_plot):
+                                    ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
+                            replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                         ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)', fontsize = 18)
-                        ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
-                        #ax[fig_nb].set_ylabel(('Bias '*(CRC_plot==False) + 'Contrast Recovery (CRC) (%) '*CRC_plot), fontsize = 18)
-                        ax[fig_nb].set_title(('AR '*(CRC_plot==False) + 'CRC '*CRC_plot) + 'in ' + ROI + ' region vs IR in background (at convergence)')
+                        ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '), fontsize = 18)
+                        #ax[fig_nb].set_ylabel(('Bias '), fontsize = 18)
+                        ax[fig_nb].set_title(('AR ') + 'in ' + ROI + ' region vs IR in background (at convergence)')
                     #'''
 
                     if (method == method_list[-1]):
@@ -417,28 +436,31 @@ class iFinalCurves(vGeneral):
 
             # Saving figures locally in png
             for fig_nb in range(3):
-                for method in method_list: # Loop over methods
+                if len(method_list) == 1:
                     rho = config[method]["rho"]
-                    if (fig_nb == 0):
-                        if ROI == 'hot':
-                            title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
-                        elif ROI == 'cold':
-                            title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
-                    elif (fig_nb == 1):
-                        if ROI == 'hot':
-                            title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
-                        elif ROI == 'cold':
-                            title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region for ' + str(nb_replicates) + ' replicates' + '.png'
-                    elif (fig_nb == 2):
-                        if ROI == 'hot':
-                            title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
-                        elif ROI == 'cold':
-                            title = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim))*(other_dim_name!="") + (' : AR'*(CRC_plot==False) + 'CRC '*CRC_plot) + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
+                    pretitle = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[method]))*(other_dim_name!="")
+                else:
+                    pretitle = str(method_list)
+                if (fig_nb == 0):
+                    if ROI == 'hot':
+                        title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
+                    elif ROI == 'cold':
+                        title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
+                elif (fig_nb == 1):
+                    if ROI == 'hot':
+                        title = pretitle + ' : AR ' + ' in ' + ROI + ' region for ' + str(nb_replicates[method]) + ' replicates' + '.png'
+                    elif ROI == 'cold':
+                        title = pretitle + ' : AR ' + ' in ' + ROI + ' region for ' + str(nb_replicates[method]) + ' replicates' + '.png'
+                elif (fig_nb == 2):
+                    if ROI == 'hot':
+                        title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
+                    elif ROI == 'cold':
+                        title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
                 fig[fig_nb].savefig(self.subroot_data + 'metrics' + '/' + title)
 
             for method in method_list: # Loop over methods
                 # Swap rho and post smoothing because MLEM and OSEM do not have rho parameter
                 if (method == "MLEM" or method == "OSEM"):
-                    nb_rho, nb_other_dim = nb_other_dim, nb_rho
-                    config[method]["rho"], config_other_dim = config_other_dim, config[method]["rho"]
+                    nb_rho[method], nb_other_dim[method] = nb_other_dim[method], nb_rho[method]
+                    config[method]["rho"], config_other_dim[method] = config_other_dim[method], config[method]["rho"]
 
