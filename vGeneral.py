@@ -381,11 +381,25 @@ class vGeneral(abc.ABC):
         dtype = np.dtype(type)
         fid = open(file_path, 'rb')
         data = np.fromfile(fid,dtype)
+        #'''
         if (1 in shape): # 2D
             image = data.reshape(shape)
         else: # 3D
             image = data.reshape(shape[::-1])
-
+            
+            
+            '''
+            image = data.reshape(shape)
+            #image = np.transpose(image,axes=(1,2,0)) # imshow ok
+            #image = np.transpose(image,axes=(1,0,2)) # imshow ok
+            #image = np.transpose(image,axes=(0,1,2)) # imshow ok
+            #image = np.transpose(image,axes=(0,2,1)) # imshow ok
+            #image = np.transpose(image,axes=(2,0,1)) # imshow ok
+            #image = np.transpose(image,axes=(2,1,0)) # imshow ok
+            '''
+            
+        #'''
+        #image = data.reshape(shape)
         return image
 
     def norm_imag(self,img):
@@ -579,12 +593,14 @@ class vGeneral(abc.ABC):
         if (len(np.squeeze(image).shape) != 2):
             print('image is ' + str(len(image.shape)) + 'D, plotting only 2D slice')
             image = image[int(image.shape[0] / 2.),:,:]
+            #image = image[:,:,int(image.shape[0] / 2.)]
         if (full_contrast):
             plt.imshow(image, cmap='gray_r',vmin=np.min(image),vmax=np.max(image)) # Showing each image with maximum contrast  
         else:
             plt.imshow(image, cmap='gray_r',vmin=0,vmax=1.25*np.max(image_gt)) # Showing all images with same contrast
         plt.colorbar()
         #plt.axis('off')
+        #plt.show()
 
         # Saving this figure locally
         Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
@@ -696,8 +712,10 @@ class vGeneral(abc.ABC):
         if (my_file.is_file()):
             phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(self.PETImage_shape),type='<f')
         else:
-            raise ValueError("No phantom file for this phantom")
-            phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+            print("No phantom file for this phantom")
+            phantom_ROI = np.ones_like(self.image_gt)
+            #raise ValueError("No phantom file for this phantom")
+            #phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
             
         return phantom_ROI
     

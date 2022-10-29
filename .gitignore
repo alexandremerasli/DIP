@@ -22,6 +22,7 @@ diff_all.py
 BSREM quad pas bcp it/
 MIC runs/
 
+seed.txt
 
 data/Algo/suffixes*
 data/Algo/replicates_*

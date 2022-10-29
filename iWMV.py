@@ -39,10 +39,11 @@ class iWMV(vGeneral):
         out = np.squeeze(out)
         if (len(out.shape) == 2): # 2D
             out = out[:,:,np.newaxis]
+            phantom_ROI = self.get_phantom_ROI(self.phantom)
         else: # 3D
-            out = out.reshape(out.shape[::-1])
+            #out = out.reshape(out.shape[::-1])
+            phantom_ROI = np.ones_like(out)
 
-        phantom_ROI = self.get_phantom_ROI(self.phantom)
         out_cropped = out * phantom_ROI
         image_gt_cropped = self.image_gt * phantom_ROI
 

@@ -53,22 +53,23 @@ class iResults(vDenoising):
         '''
 
         # Defining ROIs
-        self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
-        self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
-        self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
         self.phantom_ROI = self.get_phantom_ROI(self.phantom)
+        if ("3D" not in self.phantom):
+            self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+            self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+            self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
 
-        # Metrics arrays
-        self.PSNR_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-        self.PSNR_norm_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-        self.MSE_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-        self.SSIM_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-        self.MA_cold_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-        self.AR_hot_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-        self.CRC_cold_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-        self.CRC_hot_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-        self.AR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-        self.IR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            # Metrics arrays
+            self.PSNR_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            self.PSNR_norm_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            self.MSE_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            self.SSIM_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            self.MA_cold_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            self.AR_hot_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            self.CRC_cold_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            self.CRC_hot_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            self.AR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            self.IR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
         
     def writeBeginningImages(self,suffix,image_net_input=None):
         if (self.tensorboard):
@@ -88,7 +89,8 @@ class iResults(vDenoising):
 
     def writeEndImagesAndMetrics(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):
         # Metrics for NN output
-        self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.CRC_cold_recon,self.CRC_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer)
+        if ("3D" not in phantom):
+            self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.CRC_cold_recon,self.CRC_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer)
 
         if (self.tensorboard):
             # Write image over ADMM iterations
@@ -169,13 +171,14 @@ class iResults(vDenoising):
                                 f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
 
                     # Compute IR metric (different from others with several replicates)
-                    self.compute_IR_bkg(self.PETImage_shape,f_p,int((i-self.i_init)/self.i_init),self.IR_bkg_recon,self.phantom)
+                    if ("3D" not in self.phantom):
+                        self.compute_IR_bkg(self.PETImage_shape,f_p,int((i-self.i_init)/self.i_init),self.IR_bkg_recon,self.phantom)
 
-                    # Specific average for IR
-                    if (config["average_replicates"] == False and p == self.replicate):
-                        IR = self.IR_bkg_recon[int((i-self.i_init)/self.i_init)]
-                    elif (config["average_replicates"]):
-                        IR += self.IR_bkg_recon[int((i-self.i_init)/self.i_init)] / self.nb_replicates
+                        # Specific average for IR
+                        if (config["average_replicates"] == False and p == self.replicate):
+                            IR = self.IR_bkg_recon[int((i-self.i_init)/self.i_init)]
+                        elif (config["average_replicates"]):
+                            IR += self.IR_bkg_recon[int((i-self.i_init)/self.i_init)] / self.nb_replicates
                         
                     if (config["average_replicates"]): # Average images across replicates (for metrics except IR)
                         f += f_p / self.nb_replicates
@@ -184,11 +187,11 @@ class iResults(vDenoising):
                 
                     del f_p
                     
-                
-            self.IR_bkg_recon[int((i-self.i_init)/self.i_init)] = IR
-            if (self.tensorboard):
-                #print("IR saved in tensorboard")
-                self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[int((i-self.i_init)/self.i_init)], i)
+            if ("3D" not in self.phantom):
+                self.IR_bkg_recon[int((i-self.i_init)/self.i_init)] = IR
+                if (self.tensorboard):
+                    #print("IR saved in tensorboard")
+                    self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[int((i-self.i_init)/self.i_init)], i)
 
             # Show images and metrics in tensorboard (averaged images if asked in config)
             print('Metrics for iteration',int((i-self.i_init)/self.i_init))

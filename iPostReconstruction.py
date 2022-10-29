@@ -22,13 +22,16 @@ class iPostReconstruction(vDenoising):
 
         vDenoising.initializeSpecific(self,config,root)
         # Loading DIP x_label (corrupted image) from block1
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it10000.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_blurred_it10000.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it100.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it10000.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_blurred_it10000.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it100.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'initialization/MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type='<f') # MLEM for Gong
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'initialization/MLEM_it60.img',shape=(self.PETImage_shape),type='<d') # MLEM for Gong
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'initialization/MLEM_it60.img',shape=(self.PETImage_shape),type='<d') # MLEM for Gong
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_3D_it2.img',shape=(self.PETImage_shape),type='<f')
+        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_3D_it30.img',shape=(self.PETImage_shape),type='<d')
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning_it100.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'OPTITR_2it.img',shape=(self.PETImage_shape),type='<d') # ADMMLim for nested
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + 'image2_3D/image2_3D.img',shape=(self.PETImage_shape),type='<f') # ADMMLim for nested
@@ -57,14 +60,40 @@ class iPostReconstruction(vDenoising):
             classResults.hyperparameters_list = self.hyperparameters_list
             classResults.initializeSpecific(config,root)
 
+
+
         # Initialize variables
         # Scaling of x_label image
+        if ("3D" in self.phantom):
+            #self.image_corrupt = self.image_corrupt.reshape(self.image_corrupt.shape[::-1])
+            #self.image_corrupt = np.transpose(self.image_corrupt,axes=(1,2,0)) # imshow ok
+            #self.image_corrupt = np.transpose(self.image_corrupt,axes=(1,0,2)) #bug
+            #self.image_corrupt = np.transpose(self.image_corrupt,axes=(0,1,2)) #nope
+            #self.image_corrupt = np.transpose(self.image_corrupt,axes=(0,2,1)) #bug
+            #self.image_corrupt = np.transpose(self.image_corrupt,axes=(2,0,1)) #nope
+            #self.image_corrupt = np.transpose(self.image_corrupt,axes=(2,1,0)) #nope
+            #self.image_corrupt = self.image_corrupt.reshape(self.image_corrupt.shape[::-1])
+            
+            self.save_img(self.image_corrupt,"/disk/workspace_reco/nested_admm/data/Algo/image2_3D/replicate_1/nested/Block2/post_reco config_image=BSREM_3D_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2_lr=0.0001_sub_i=10_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=3_alpha=1_adapt=tau_mu_ad=2_tau=100_mlem_=False/out_cnn/24/corrupt.raw")
+
+            print("ok")
+
+
         image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image
+
+
+        '''
+        import matplotlib.pyplot as plt
+        plt.imshow(self.image_corrupt[30,:,:],cmap='gray')
+        plt.colorbar()
+        plt.show()
+        '''
 
         # Corrupted image x_label, numpy --> torch float32
         self.image_corrupt_torch = torch.Tensor(image_corrupt_input_scale)
         # Adding dimensions to fit network architecture
-        self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
+        #self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
+        self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[2],self.PETImage_shape[1],self.PETImage_shape[0])
         if (self.PETImage_shape[2] == 1): # if 3D but with dim3 = 1 -> 2D
             self.image_corrupt_torch = self.image_corrupt_torch[:,:,:,:,0]
 
@@ -128,10 +157,11 @@ class iPostReconstruction(vDenoising):
             # Saving (now DESCALED) image output
             self.save_img(out_descale, net_outputs_path)
 
-            # Compute IR metric (different from others with several replicates)
-            classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch,classResults.IR_bkg_recon,self.phantom)
-            classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[epoch], epoch+1)
-            # Write images over epochs
+            if ("3D" not in self.phantom):
+                # Compute IR metric (different from others with several replicates)
+                classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch,classResults.IR_bkg_recon,self.phantom)
+                classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[epoch], epoch+1)
+                # Write images over epochs
             classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
             #classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
 

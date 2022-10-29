@@ -57,7 +57,8 @@ class vDenoising(vGeneral):
             self.image_net_input_torch = torch.Tensor(image_net_input_scale)
             # Adding dimensions to fit network architecture
             if (self.net == 'DIP' or self.net == 'DIP_VAE' or self.net == 'DD_AE'): # For autoencoders structure
-                self.image_net_input_torch = self.image_net_input_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
+                #self.image_net_input_torch = self.image_net_input_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
+                self.image_net_input_torch = self.image_net_input_torch.view(1,1,self.PETImage_shape[2],self.PETImage_shape[1],self.PETImage_shape[0])
                 if (self.PETImage_shape[2] == 1): # if 3D but with dim3 = 1 -> 2D
                         self.image_net_input_torch = self.image_net_input_torch[:,:,:,:,0]
             elif (self.net == 'DD'):
@@ -83,8 +84,9 @@ class vDenoising(vGeneral):
         checkpoint_simple_path_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment) + '/' + str(self.global_it)
         Path(checkpoint_simple_path_exp+'/').mkdir(parents=True, exist_ok=True)
         
-        #from torchsummary import summary
-        #summary(model, input_size=(1,112,112,59))
+        if (self.processing_unit == 'CPU'):
+            from torchsummary import summary
+            summary(model.cuda(), input_size=(1,PETImage_shape[0],PETImage_shape[1],PETImage_shape[2])) # for DIP
 
         # Start training
         print('Starting optimization, iteration',global_it)
@@ -99,11 +101,12 @@ class vDenoising(vGeneral):
         TuneReportCheckpointCallback
 
         tuning_callback = TuneReportCallback({"loss": "val_loss"}, on="validation_end")
-        accelerator = None
         if (processing_unit == 'CPU'): # use cpus and no gpu
             gpus = 0
+            accelerator = "cpu"
         elif (processing_unit == 'GPU' or processing_unit == 'both'): # use all available gpus, no cpu (pytorch lightning does not handle cpus and gpus at the same time)
-            gpus = -1
+            gpus = 1
+            accelerator = "gpu"
             #if (torch.cuda.device_count() > 1):
             #    accelerator = 'dp'
 
@@ -150,12 +153,18 @@ class vDenoising(vGeneral):
         
         # Write image if it does not exist
         if config["input"] == "random":
-            file_path = (subroot+'Data/initialization/random_input_' + net + '.img')
+            name = 'random_input'
         elif config["input"] == "uniform":
-            file_path = (subroot+'Data/initialization/uniform_input_' + net + '.img')
+            name = 'uniform_input'
         else: # CT input, do not need to create one
             return 1
         
+        if (PETImage_shape[2] == 1):
+            name += '_2D_'
+        else:
+            name += '_3D_'
+
+        file_path = (subroot+'Data/initialization/' + name + net + '.img')
         if (not os.path.isfile(file_path) and not config["random_seed"]):
             constant_uniform = 1
             if (self.FLTNB == 'float'):
@@ -195,10 +204,13 @@ class vDenoising(vGeneral):
     def load_input(self,net,PETImage_shape,subroot):
         if (self.global_it == -1): # TESTCT_random
             self.input = "CT"
-            #self.input = "random"
+            self.input = "random"
 
-        if self.input == "random":
-            file_path = (subroot+'Data/initialization/random_input_' + net + '.img')
+        if self.input == "random":        
+            if (PETImage_shape[2] == 1):
+                file_path = (subroot+'Data/initialization/random_input_2D_' + net + '.img')
+            else:
+                file_path = (subroot+'Data/initialization/random_input_3D_' + net + '.img')
         elif self.input == "CT":
             file_path = (subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw') #CT map, but not CT yet, attenuation for now...
         elif self.input == "BSREM":
@@ -251,6 +263,7 @@ class vDenoising(vGeneral):
         self.image_corrupt_torch = torch.Tensor(image_corrupt_input_scale)
         # Adding dimensions to fit network architecture
         self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
+        self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[2],self.PETImage_shape[1],self.PETImage_shape[0])
         if (self.PETImage_shape[2] == 1): # if 3D but with dim3 = 1 -> 2D
             self.image_corrupt_torch = self.image_corrupt_torch[:,:,:,:,0]
         # Training model with sub_iter_DIP iterations

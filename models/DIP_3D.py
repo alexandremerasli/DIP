@@ -44,7 +44,6 @@ class DIP_3D(pl.LightningModule):
         self.SUCCESS = False
         self.stagnate = 0
         '''
-        
         self.DIP_early_stopping = config["DIP_early_stopping"]
         self.classWMV = iWMV(config)
         if(self.DIP_early_stopping):
@@ -55,16 +54,17 @@ class DIP_3D(pl.LightningModule):
             self.classWMV.param1_scale_im_corrupt = param1_scale_im_corrupt
             self.classWMV.param2_scale_im_corrupt = param2_scale_im_corrupt
             self.classWMV.scaling_input = scaling_input
-
+            self.classWMV.suffix = suffix
+            self.classWMV.global_it = global_it
             # Initialize variables
             self.classWMV.do_everything(config,root)
 
         self.write_current_img_mode = True
         #self.suffix = self.suffix_func(config,hyperparameters_list)
+        #if (config["task"] == "post_reco"):
+        #    self.suffix = config["task"] + ' ' + self.suffix
         self.suffix = suffix
-        if (config["task"] == "post_reco"):
-            self.suffix = config["task"] + ' ' + self.suffix
-    
+        
         '''
         if (config['mlem_sequence'] is None):
             self.write_current_img_mode = True
@@ -180,10 +180,10 @@ class DIP_3D(pl.LightningModule):
     def forward(self, x):
 
         # Pad if 3D dimension not divisible by 2^3
-        if (x.shape[-1] % 8 > 0):
-            original_x_dim = x.shape[-1]
+        original_x_dim = x.shape[2]
+        if (x.shape[2] % 8 > 0):
             unpad_half_size = int((8 - original_x_dim % 8) / 2)
-            x = nn.ReplicationPad3d((unpad_half_size,8 - original_x_dim % 8 - unpad_half_size,0,0,0,0))(x)
+            x = nn.ReplicationPad3d((0,0,0,0,unpad_half_size,8 - original_x_dim % 8 - unpad_half_size))(x)
         # Encoder
         out1 = self.deep1(x)
         out = self.down1(out1)
@@ -215,7 +215,7 @@ class DIP_3D(pl.LightningModule):
 
         # Unpad if original 3D dimension was not divisible by 2^3
         if (original_x_dim % 8 > 0):
-            out = out[:,:,:,:,unpad_half_size:original_x_dim + unpad_half_size]
+            out = out[:,:,unpad_half_size:original_x_dim + unpad_half_size,:,:]
 
         if (self.method == 'Gong'):
             out = self.positivity(out)
@@ -227,6 +227,12 @@ class DIP_3D(pl.LightningModule):
 
     def training_step(self, train_batch, batch_idx):
         image_net_input_torch, image_corrupt_torch = train_batch
+        '''
+        import matplotlib.pyplot as plt
+        plt.imshow(image_corrupt_torch.cpu().detach().numpy()[0,0,:,:,:][30,:,:],cmap='gray')
+        plt.colorbar()
+        plt.show()
+        '''
         out = self.forward(image_net_input_torch)
         # Save image over epochs
         if (self.write_current_img_mode):
@@ -239,7 +245,7 @@ class DIP_3D(pl.LightningModule):
         # WMV
         self.log("SUCCESS", int(self.classWMV.SUCCESS))
         if (self.DIP_early_stopping):
-            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out.detach().numpy(),self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
+            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out.cpu().detach().numpy(),self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
             self.VAR_recon = self.classWMV.VAR_recon
             self.MSE_WMV = self.classWMV.MSE_WMV
             self.PSNR_WMV = self.classWMV.PSNR_WMV
@@ -266,11 +272,13 @@ class DIP_3D(pl.LightningModule):
             #optimizer = torch.optim.SGD(self.parameters(), lr=self.lr) # Optimizing using SGD
         elif (self.opti_DIP == 'LBFGS' or self.opti_DIP is None): # None means no argument was given in command line
             optimizer = torch.optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4) # Optimizing using L-BFGS
+        elif (self.opti_DIP == 'SGD'):
+            optimizer = torch.optim.SGD(self.parameters(), lr=self.lr) # Optimizing using SGD
         return optimizer
 
     def write_current_img(self,out):
         if (self.all_images_DIP == "False"):
-            if ((self.current_epoch%(self.sub_iter_DIP // 10) == 0)):
+            if ((self.current_epoch%(self.sub_iter_DIP // 10) == (self.sub_iter_DIP // 10) -1)):
                 self.write_current_img_task(out)
         elif (self.all_images_DIP == "True"):
             self.write_current_img_task(out)
@@ -280,17 +288,23 @@ class DIP_3D(pl.LightningModule):
 
     def write_current_img_task(self,out):
         try:
-            out_np = out.detach().numpy()[0,0,:,:]
+            out_np = out.detach().numpy()[0,0,:,:,:]
         except:
-            out_np = out.cpu().detach().numpy()[0,0,:,:]
+            out_np = out.cpu().detach().numpy()[0,0,:,:,:]
 
+        '''
+        import matplotlib.pyplot as plt
+        plt.imshow(out.cpu().detach().numpy()[0,0,:,:,:][30,:,:],cmap='gray')
+        plt.colorbar()
+        plt.show()
+        '''
         self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
         config_copy = dict(config)
         if (NNEPPS==False):
             config_copy.pop('NNEPPS',None)
-        config_copy.pop('nb_outer_iteration',None)
+        #config_copy.pop('nb_outer_iteration',None)
         suffix = "config"
         for key, value in config_copy.items():
             if key in hyperparameters_list:

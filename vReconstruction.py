@@ -62,13 +62,14 @@ class vReconstruction(vGeneral):
             self.mu = 0* np.ones((self.PETImage_shape))
             if config["FLTNB"] == "float":
                 self.mu = self.mu.astype(np.float32)
-            #self.mu = self.mu.reshape(self.PETImage_shape[::-1])
+            if (self.PETImage_shape[2] > 1):
+                self.mu = self.mu.reshape(self.PETImage_shape[::-1])
             self.save_img(self.mu,self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(-1) + self.suffix + '.img')
 
         #'''
         # Launch short MLEM reconstruction
         path_mlem_init = self.subroot_data + 'Data/MLEM_reco_for_init_hdr/' + self.phantom
-        my_file = Path(path_mlem_init + '/' + self.phantom + '/' + self.phantom + '_it1.img')
+        my_file = Path(path_mlem_init + '/' + self.phantom + '_it1.img')
         if (not my_file.is_file()):
             print("self.nb_replicates",self.nb_replicates)
             if (self.nb_replicates == 1):
