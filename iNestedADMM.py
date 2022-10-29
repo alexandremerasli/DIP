@@ -192,9 +192,10 @@ class iNestedADMM(vReconstruction):
                     # Write corrupted image over ADMM iterations
                     classResults.writeCorruptedImage(self.global_it,config["nb_outer_iteration"],self.mu,self.suffix,pet_algo="mmmmmuuuuuuu")
                     print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))
-                # Compute IR metric (different from others with several replicates)
-                classResults.compute_IR_bkg(self.PETImage_shape,self.f,self.global_it,classResults.IR_bkg_recon,self.phantom)
-                classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[self.global_it], self.global_it+1)
+                if ("3D" not in self.phantom):
+                    # Compute IR metric (different from others with several replicates)
+                    classResults.compute_IR_bkg(self.PETImage_shape,self.f,self.global_it,classResults.IR_bkg_recon,self.phantom)
+                    classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[self.global_it], self.global_it+1)
                 # Write output image and metrics to tensorboard
                 classResults.writeEndImagesAndMetrics(self.global_it,config["nb_outer_iteration"],self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo=config["method"])
 
