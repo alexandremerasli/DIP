@@ -197,7 +197,7 @@ class vGeneral(abc.ABC):
         if (len(config["method"]['grid_search']) == 1):
             if (config["method"]['grid_search'][0] != "AML" and "APGMAP" not in config["method"]['grid_search'][0]):
                 config.pop("A_AML", None)
-            if (config["method"]['grid_search'][0] == 'BSREM' or 'nested' in config["method"]['grid_search'][0] or 'Gong' in config["method"]['grid_search'][0] or 'APGMAP' in config["method"]['grid_search'][0]):
+            if (config["method"]['grid_search'][0] == 'BSREM' or 'nested' in config["method"]['grid_search'][0] or 'Gong' in config["method"]['grid_search'][0] or 'DIPRecon' in config["method"]['grid_search'][0] or 'APGMAP' in config["method"]['grid_search'][0]):
                 config.pop("post_smoothing", None)
             if (config["method"]['grid_search'][0] != 'ADMMLim' and "nested" not in config["method"]['grid_search'][0]):
                 #config.pop("nb_inner_iteration", None)
@@ -210,9 +210,9 @@ class vGeneral(abc.ABC):
                 config.pop("mu_adaptive", None)
                 config.pop("tau", None)
                 config.pop("xi", None)
-            if ('ADMMLim' not in config["method"]['grid_search'][0] and "nested" not in config["method"]['grid_search'][0] and "Gong" not in config["method"]['grid_search'][0]):
+            if ('ADMMLim' not in config["method"]['grid_search'][0] and "nested" not in config["method"]['grid_search'][0] and "Gong" not in config["method"]['grid_search'][0]  and "DIPRecon" not in config["method"]['grid_search'][0]):
                 config.pop("nb_outer_iteration", None)
-            if ("nested" not in config["method"]['grid_search'][0] and "Gong" not in config["method"]['grid_search'][0] and task != "post_reco"):
+            if ("nested" not in config["method"]['grid_search'][0] and "Gong" not in config["method"]['grid_search'][0]  and "DIPRecon" not in config["method"]['grid_search'][0] and task != "post_reco"):
                 config.pop("lr", None)
                 config.pop("sub_iter_DIP", None)
                 config.pop("opti_DIP", None)
@@ -741,7 +741,6 @@ class vGeneral(abc.ABC):
         #return [ self.atoi(c) for c in re.split(r'(\d+)', text) ] # APGMAP final curves + resume computation
         match_number = re.compile('-?\ *[0-9]+\.?[0-9]*(?:[Ee]\ *-?\ *[0-9]+)?')
         final_list = [float(x) for x in re.findall(match_number, text)] # Extract scientific of float numbers in string
-        print(final_list)
         return final_list # ADMMLim final curves
         
     def has_numbers(self,inputString):
@@ -779,7 +778,7 @@ class vGeneral(abc.ABC):
                 self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1
                 self.total_nb_iter = int(self.total_nb_iter / self.i_init)
             self.beta = config["alpha"]
-        elif ('nested' in method or 'Gong' in method):
+        elif ('nested' in method or 'Gong' in method or 'DIPRecon' in method):
             if ('post_reco' in task):
                 self.total_nb_iter = config["sub_iter_DIP"]
             else:
@@ -789,6 +788,6 @@ class vGeneral(abc.ABC):
 
             if (config["method"] == 'AML'):
                 self.beta = config["A_AML"]
-            if (config["method"] == 'BSREM' or 'nested' in config["method"] or 'Gong' in config["method"] or 'APGMAP' in config["method"]):
+            if (config["method"] == 'BSREM' or 'nested' in config["method"] or 'Gong' in config["method"] or 'DIPRecon' in config["method"] or 'APGMAP' in config["method"]):
                 self.rho = config["rho"]
                 self.beta = self.rho

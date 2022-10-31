@@ -27,16 +27,24 @@ class iFinalCurves(vGeneral):
 
     def runComputation(self,config_all_methods,root):
         method_list = config_all_methods["method"]
+        DIPRecon = False
+        for i in range(len(method_list)):
+            if "Gong" in method_list[i]:
+                method_list[i] = method_list[i].replace("Gong","DIPRecon")
+            else:
+                DIPRecon = True
+
         config = dict.fromkeys(method_list) # Create one config dictionnary for each method
         nb_rho = dict.fromkeys(method_list)
         nb_other_dim = dict.fromkeys(method_list)
         config_other_dim = dict.fromkeys(method_list)
         nb_replicates = dict.fromkeys(method_list)
+
         for method in method_list: # Loop over methods
 
             #'''
             # Gong reconstruction
-            if ('Gong' in method):
+            if ('DIPRecon' in method):
                 print("configuration fiiiiiiiiiiiiiiiiiiile")
                 #config[method] = np.load(root + 'config_DIP.npy',allow_pickle='TRUE').item()
                 from Gong_configuration import config_func_MIC
@@ -47,7 +55,13 @@ class iFinalCurves(vGeneral):
                 elif ('norm' in method):
                     config[method]["scaling"] = {'grid_search': ["positive_normalization"]}
                 else:
-                    raise ValueError("stand norm gong")
+                    if (DIPRecon):
+                        config[method]["scaling"] = {'grid_search': ["standardization"]}
+                    else:
+                        raise ValueError("stand norm DIPRecon")
+
+                config[method]["method"] = "DIPRecon"
+                
 
             # nested reconstruction
             if ('nested' in method):
@@ -55,6 +69,10 @@ class iFinalCurves(vGeneral):
                 from nested_configuration import config_func_MIC
                 #config[method] = config_func()
                 config[method] = config_func_MIC()
+                if ('ADMMLim' in method):
+                    config[method]["max_iter"] = {'grid_search': [99]}
+                elif ('BSREM' in method):
+                    config[method]["max_iter"] = {'grid_search': [300]}
 
             # MLEM reconstruction
             if (method == 'MLEM'):
@@ -125,7 +143,7 @@ class iFinalCurves(vGeneral):
             replicates_legend = [[],[],[]]
 
             for method in method_list: # Compute 
-                if (method == 'ADMMLim' or 'Gong' in method):
+                if (method == 'ADMMLim' or 'DIPRecon' in method):
                     self.i_init = 30 # Remove first iterations
                     self.i_init = 20 # Remove first iterations
                 else:
@@ -173,7 +191,7 @@ class iFinalCurves(vGeneral):
                     config_other_dim[method] = config[method]["post_smoothing"]
                     rho_name = "smoothing"
                     other_dim_name = ""
-                elif ("nested" in method or "Gong" in method):
+                elif ("nested" in method or "DIPRecon" in method):
                     config_other_dim[method] = config[method]["lr"]
                     other_dim_name = "lr"
                 else:
@@ -327,7 +345,7 @@ class iFinalCurves(vGeneral):
                     if (fig_nb == 0):
                         reg[fig_nb] = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
                     elif (fig_nb == 2):
-                        if ("nested" not in method and "Gong" not in method):
+                        if ("nested" not in method and "DIPRecon" not in method):
                             reg[fig_nb] = np.zeros((nb_rho[method]*nb_other_dim[method]))
                         else:
                             reg[fig_nb] = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
@@ -369,7 +387,7 @@ class iFinalCurves(vGeneral):
                     if (fig_nb == 2): # Plot tradeoff curves at convergence
                         for rho_idx in range(nb_rho[method]):
                             for other_dim_idx in range(nb_other_dim[method]):
-                                if ("nested" not in method and "Gong" not in method):
+                                if ("nested" not in method and "DIPRecon" not in method):
                                     reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx] = self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][:,-1],metrics_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][:,-1])
                                 else:
                                     for it in range(len(IR_final[case_mini[rho_idx]])):
@@ -381,12 +399,25 @@ class iFinalCurves(vGeneral):
                     
                     for rho_idx in range(nb_rho[method]):
                         for other_dim_idx in range(nb_other_dim[method]):
+                            '''
                             # Compute average of tradeoff and bias curves with iterations
                             avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sum(metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_replicates[method]
                             avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sum(IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_replicates[method]
                             # Compute std bias curves with iterations
                             std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sqrt(np.sum((metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]] - np.array(avg_metrics)[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]])**2,axis=0) / nb_replicates[method])
                             std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sqrt(np.sum((IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]]- np.array(avg_IR)[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]])**2,axis=0) / nb_replicates[method])
+                            '''
+
+                            # Compute average of tradeoff and bias curves with iterations
+                            # Remove NaNs from computation
+                            nb_usable_replicates = np.count_nonzero(~np.isnan(metrics_final_final_array[rho_idx,other_dim_idx,:,len_mini[rho_idx] - 5]))
+
+                            avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.nansum(metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_usable_replicates
+                            avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.nansum(IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_usable_replicates
+                            # Compute std bias curves with iterations
+                            std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sqrt(np.nansum((metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]] - np.array(avg_metrics)[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]])**2,axis=0) / nb_usable_replicates)
+                            std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sqrt(np.nansum((IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]]- np.array(avg_IR)[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]])**2,axis=0) / nb_usable_replicates)
+
 
                             if (fig_nb == 0):
                                 ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_avg)
@@ -415,9 +446,9 @@ class iFinalCurves(vGeneral):
                                 ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '), fontsize = 18)
                                 #ax[fig_nb].set_ylabel(('Bias ', fontsize = 18)
                                 if len(method_list) == 1:
-                                    ax[fig_nb].set_title(method + " reconstruction averaged on " + str(nb_replicates[method]) + " replicates (" + ROI + " ROI)")
+                                    ax[fig_nb].set_title(method + " reconstruction averaged on " + str(nb_usable_replicates) + " replicates (" + ROI + " ROI)")
                                 else:
-                                    ax[fig_nb].set_title("Several methods" + " reconstruction averaged on " + str(nb_replicates[method]) + " replicates (" + ROI + " ROI)")
+                                    ax[fig_nb].set_title("Several methods" + " reconstruction averaged on " + str(nb_usable_replicates) + " replicates (" + ROI + " ROI)")
                             #'''
                             if (fig_nb != 2):
                                 replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
@@ -425,7 +456,7 @@ class iFinalCurves(vGeneral):
                     #'''
                     if (fig_nb == 2):
                         for other_dim_idx in range(nb_other_dim[method]):
-                            if ("nested" not in method and "Gong" not in method):
+                            if ("nested" not in method and "DIPRecon" not in method):
                                 cases = np.arange(0,nb_other_dim[method]*nb_rho[method],nb_other_dim[method]) + other_dim_idx
                                 ax[fig_nb].plot(100*avg_IR[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)],'-o',color=color_avg)
                                 if (variance_plot):
@@ -458,9 +489,9 @@ class iFinalCurves(vGeneral):
                         title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
                 elif (fig_nb == 1):
                     if ROI == 'hot':
-                        title = pretitle + ' : AR ' + ' in ' + ROI + ' region for ' + str(nb_replicates[method]) + ' replicates' + '.png'
+                        title = pretitle + ' : AR ' + ' in ' + ROI + ' region for ' + str(nb_usable_replicates) + ' replicates' + '.png'
                     elif ROI == 'cold':
-                        title = pretitle + ' : AR ' + ' in ' + ROI + ' region for ' + str(nb_replicates[method]) + ' replicates' + '.png'
+                        title = pretitle + ' : AR ' + ' in ' + ROI + ' region for ' + str(nb_usable_replicates) + ' replicates' + '.png'
                 elif (fig_nb == 2):
                     if ROI == 'hot':
                         title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
