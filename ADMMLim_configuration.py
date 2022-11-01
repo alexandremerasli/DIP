@@ -38,19 +38,14 @@ def config_func_MIC():
     }
     # Configuration dictionnary for hyperparameters to tune
     hyperparameters_config = {
-<<<<<<< HEAD
-        "rho" : tune.grid_search([0,3e-5,5e-5,7e-5,9e-5,2e-4,4e-4,6e-4,8e-4,1e-3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        #"rho" : tune.grid_search([1e-3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        #"rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-=======
         #"rho" : tune.grid_search([0.01,0.02,0.03,0.04,0.05]), # NUYTS POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "rho" : tune.grid_search([3e-5,5e-5,7e-5,9e-5,2e-4,4e-4,6e-4,8e-4,1e-3]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         
         "rho" : tune.grid_search([3e-5,5e-5,7e-5,2e-4,4e-4,6e-4,8e-4,1e-3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "rho" : tune.grid_search([3e-5,5e-5,7e-5,2e-4,8e-4,1e-3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+        #"rho" : tune.grid_search([5e-5,8e-4]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         #"rho" : tune.grid_search([3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         #"rho" : tune.grid_search([3e-3,4e-3,5e-3,6e-3,7e-3,8e-3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
->>>>>>> 83cba9959bea07e89b9a6f6739c5f223c8b0458e
         ## network hyperparameters
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
         "sub_iter_DIP" : tune.grid_search([1000]), # Number of epochs in network optimization
@@ -63,7 +58,7 @@ def config_func_MIC():
         "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
         "k_DD" : tune.grid_search([32]), # k for Deep Decoder
         ## ADMMLim - OPTITR hyperparameters
-        "nb_outer_iteration": tune.grid_search([20000]), # Number outer iterations in ADMMLim
+        "nb_outer_iteration": tune.grid_search([1000]), # Number outer iterations in ADMMLim
         "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMLim
         "adaptive_parameters" : tune.grid_search(["tau"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
         "mu_adaptive" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim

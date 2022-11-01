@@ -772,11 +772,11 @@ class vGeneral(abc.ABC):
                 with open(self.path_stopping_criterion) as f:
                     first_line = f.readline() # Read first line to get second one
                     self.total_nb_iter = min(int(f.readline().rstrip()) - self.i_init, config["nb_outer_iteration"] - self.i_init + 1)
-                    self.total_nb_iter = int(self.total_nb_iter / self.i_init)
+                    #self.total_nb_iter = int(self.total_nb_iter / self.i_init) # if 1 out of i_init iterations was saved
                     #self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1 # Override value
             except:
                 self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1
-                self.total_nb_iter = int(self.total_nb_iter / self.i_init)
+                #self.total_nb_iter = int(self.total_nb_iter / self.i_init) # if 1 out of i_init iterations was saved
             self.beta = config["alpha"]
         elif ('nested' in method or 'Gong' in method or 'DIPRecon' in method):
             if ('post_reco' in task):

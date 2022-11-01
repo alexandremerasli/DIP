@@ -27,13 +27,27 @@ class iFinalCurves(vGeneral):
 
     def runComputation(self,config_all_methods,root):
         method_list = config_all_methods["method"]
+
+        APGMAP_vs_ADMMLim = False
         DIPRecon = False
         for i in range(len(method_list)):
             if "Gong" in method_list[i]:
                 method_list[i] = method_list[i].replace("Gong","DIPRecon")
-            else:
-                DIPRecon = True
+                if method_list[i] == "DIPRecon":
+                    DIPRecon = True
 
+
+        '''
+        sub_method_list = list(method_list)
+        DIPRecon = False
+        for i in range(len(method_list)):
+            if "DIPRecon" in method_list[i]:
+                sub_method_list[i] = "DIPRecon"
+            elif "nested" in method_list[i]:
+                sub_method_list[i] = "nested"
+
+        dict_sub_method_list = dict(zip(method_list,sub_method_list))
+        '''
         config = dict.fromkeys(method_list) # Create one config dictionnary for each method
         nb_rho = dict.fromkeys(method_list)
         nb_other_dim = dict.fromkeys(method_list)
@@ -62,7 +76,6 @@ class iFinalCurves(vGeneral):
 
                 config[method]["method"] = "DIPRecon"
                 
-
             # nested reconstruction
             if ('nested' in method):
                 print("configuration fiiiiiiiiiiiiiiiiiiile")
@@ -97,10 +110,17 @@ class iFinalCurves(vGeneral):
 
             # APGMAP reconstruction
             if ('APGMAP' in method):
+                APGMAP_vs_ADMMLim = True
                 print("configuration fiiiiiiiiiiiiiiiiiiile")
                 from APGMAP_configuration import config_func_MIC
                 #config[method] = config_func()
                 config[method] = config_func_MIC()
+                #'''
+                for method2 in method_list: # Loop over methods
+                    if ('APGMAP' not in method2 and 'ADMMLim' not in method2):
+                        APGMAP_vs_ADMMLim = False
+                        #config[method]['A_AML'] = {'grid_search': [100]}
+                #'''
 
             # ADMMLim reconstruction
             if (method == 'ADMMLim'):
@@ -152,13 +172,6 @@ class iFinalCurves(vGeneral):
                 self.defineTotalNbIter_beta_rho(method,config[method],task)
 
 
-                # Settings in following curves
-                variance_plot = False
-                plot_all_replicates_curves = False
-                if plot_all_replicates_curves:
-                    color_avg = 'black'
-                else:
-                    color_avg = None
 
                 # Initialize variables
                 suffixes = []
@@ -197,12 +210,67 @@ class iFinalCurves(vGeneral):
                 else:
                     config_other_dim[method] = [""]
                     other_dim_name = ""
+                    
                 nb_other_dim[method] = len(config_other_dim[method])
                 nb_replicates[method] = int(len(replicates[0]) / (nb_rho[method] * nb_other_dim[method]))
 
                 # Sort rho and other dim like suffix
                 config[method]["rho"] = sorted(config[method]["rho"])
                 config_other_dim[method] = sorted(config_other_dim[method])
+
+
+                # Settings in following curves
+                variance_plot = False
+                plot_all_replicates_curves = False
+                color_dict = {
+                    "nested" : ['red','pink'],
+                    "DIPRecon" : ['cyan','blue','teal','blueviolet'],
+                    "APGMAP" : ['darkgreen','lime','gold'],
+                    "ADMMLim" : ['fuchsia'],
+                    "OSEM" : ['darkorange'],
+                    "BSREM" : ['grey']
+                }
+                color_dict_supp = {
+                    "nested_BSREM_stand" : [color_dict["nested"][0]],
+                    "nested_ADMMLim_stand" : [color_dict["nested"][1]],
+                    "DIPRecon_BSREM_stand" : [color_dict["DIPRecon"][0]],
+                    "DIPRecon_ADMMLim_stand" : [color_dict["DIPRecon"][1]],
+                    "DIPRecon_ADMMLim_norm" : [color_dict["DIPRecon"][2]],
+                    "DIPRecon_MLEM_norm" : [color_dict["DIPRecon"][3]],
+                }
+
+                color_dict = {**color_dict, **color_dict_supp}
+
+
+                marker_dict = {
+                    "nested" : ['-','--'],
+                    "DIPRecon" : ['-','--','loosely dotted','dashdot'],
+                    "APGMAP" : ['-','--','loosely dotted'],
+                    "ADMMLim" : ['-'],
+                    "OSEM" : ['-'],
+                    "BSREM" : ['-']
+                }
+                marker_dict_supp = {
+                    "nested_BSREM_stand" : [marker_dict["nested"][0]],
+                    "nested_ADMMLim_stand" : [marker_dict["nested"][1]],
+                    "DIPRecon_BSREM_stand" : [marker_dict["DIPRecon"][0]],
+                    "DIPRecon_ADMMLim_stand" : [marker_dict["DIPRecon"][1]],
+                    "DIPRecon_ADMMLim_norm" : [marker_dict["DIPRecon"][2]],
+                    "DIPRecon_MLEM_norm" : [marker_dict["DIPRecon"][3]],
+                }
+
+                marker_dict = {**marker_dict, **marker_dict_supp}
+
+
+
+                if plot_all_replicates_curves:
+                    color_avg = 'black'
+                    for key in color_dict.keys():
+                        #for i in range(len(color_dict[key])):
+                        color_dict[key] = len(color_dict[key]) * ['black']
+                else:
+                    color_avg = None    
+                    
 
                 # Wanted list of replicates
                 idx_wanted = []
@@ -236,8 +304,6 @@ class iFinalCurves(vGeneral):
                     replicate = "replicate_" + str(i_replicate + 1)
                     metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + method + '/' + suffix + '/' + 'metrics.csv'
                     
-                    with open(metrics_file, 'r') as myfile:
-                        spamreader = reader_csv(myfile,delimiter=';')
                     try:
                         with open(metrics_file, 'r') as myfile:
                             spamreader = reader_csv(myfile,delimiter=';')
@@ -367,7 +433,7 @@ class iFinalCurves(vGeneral):
                                 if (fig_nb == 1): # Plot bias curves
                                     if (plot_all_replicates_curves):
                                         #ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,:len_mini[rho_idx]],label='_nolegend_') # IR in % # if 1 out of i_init iterations was saved
-                                        ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,:len_mini[rho_idx]],label='_nolegend_') # IR in %
+                                        ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,:len_mini[rho_idx]],label='_nolegend_') # IR in %
 
                     avg_metrics = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
                     avg_IR = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
@@ -423,10 +489,10 @@ class iFinalCurves(vGeneral):
                                 ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_avg)
                                 if (variance_plot):
                                     ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
-                                ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)', fontsize = 18)
-                                ax[fig_nb].set_ylabel('Activity Recovery (AR) (%) ', fontsize = 18)
-                                #ax[fig_nb].set_ylabel(('Bias ', fontsize = 18)
-                                ax[fig_nb].set_title('AR ' + 'in ' + ROI + ' region vs IR in background (with iterations)')
+                                ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)')
+                                ax[fig_nb].set_ylabel('Activity Recovery (AR) (%) ')
+                                #ax[fig_nb].set_ylabel(('Bias ')
+                                #ax[fig_nb].set_title('AR ' + 'in ' + ROI + ' region vs IR in background (with iterations)')
                             #'''
                             if (fig_nb == 1):
                                 # Plot average and std of bias curves with iterations
@@ -442,13 +508,15 @@ class iFinalCurves(vGeneral):
                                 if (variance_plot):
                                     #ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx]))*self.i_init, avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_') # if 1 out of i_init iterations was saved
                                     ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])), avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_')
-                                ax[fig_nb].set_xlabel('Iterations', fontsize = 18)
-                                ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '), fontsize = 18)
-                                #ax[fig_nb].set_ylabel(('Bias ', fontsize = 18)
+                                ax[fig_nb].set_xlabel('Iterations')
+                                ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '))
+                                #ax[fig_nb].set_ylabel(('Bias ')
+                                '''
                                 if len(method_list) == 1:
                                     ax[fig_nb].set_title(method + " reconstruction averaged on " + str(nb_usable_replicates) + " replicates (" + ROI + " ROI)")
                                 else:
                                     ax[fig_nb].set_title("Several methods" + " reconstruction averaged on " + str(nb_usable_replicates) + " replicates (" + ROI + " ROI)")
+                                '''
                             #'''
                             if (fig_nb != 2):
                                 replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
@@ -458,22 +526,32 @@ class iFinalCurves(vGeneral):
                         for other_dim_idx in range(nb_other_dim[method]):
                             if ("nested" not in method and "DIPRecon" not in method):
                                 cases = np.arange(0,nb_other_dim[method]*nb_rho[method],nb_other_dim[method]) + other_dim_idx
-                                ax[fig_nb].plot(100*avg_IR[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)],'-o',color=color_avg)
+                                
+                                if ((not APGMAP_vs_ADMMLim and (method == "APGMAP" and other_dim_idx == 1) or (method != "APGMAP" and other_dim_idx == 0)) or APGMAP_vs_ADMMLim):
+                                #    nb_other_dim["APGMAP"] = 1
+                                    ax[fig_nb].plot(100*avg_IR[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)],'-o',linewidth=3,color=color_dict[method][other_dim_idx])#'-o',)
                                 if (variance_plot):
-                                    ax[fig_nb].fill(np.concatenate((100*(avg_IR[(cases,len_mini-1)] - np.sign(reg[fig_nb][cases])*std_IR[cases,-1]),100*(avg_IR[(cases,len_mini-1)][::-1] + np.sign(reg[fig_nb][cases][::-1])*std_IR[(cases,len_mini-1)][::-1]))),np.concatenate((avg_metrics[(cases,len_mini-1)]-std_metrics[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)][::-1]+std_metrics[(cases,len_mini-1)][::-1])), alpha = 0.4, label='_nolegend_')
+                                    ax[fig_nb].fill(np.concatenate((100*(avg_IR[(cases,len_mini-1)] - np.sign(reg[fig_nb][cases])*std_IR[cases,-1]),100*(avg_IR[(cases,len_mini-1)][::-1] + np.sign(reg[fig_nb][cases][::-1])*std_IR[(cases,len_mini-1)][::-1]))),np.concatenate((avg_metrics[(cases,len_mini-1)]-std_metrics[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)][::-1]+std_metrics[(cases,len_mini-1)][::-1])), alpha = 0.4, label='_nolegend_', ls=marker_dict[method][other_dim_idx])
                             else:
-                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_avg)
+                                #ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],linewidth=4,color=color_dict[method][other_dim_idx])#'-o',)
+                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0:len_mini[rho_idx]:25],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0:len_mini[rho_idx]:25],'-o',linewidth=3,color=color_dict[method][other_dim_idx])#'-o',)
+                                # unnested
+                                plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'o', mfc='none',color='black',label='_nolegend_')
+                                #plt.xlim([12,57])
                                 if (variance_plot):
                                     ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
-                            replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
-                        ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)', fontsize = 18)
-                        ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '), fontsize = 18)
-                        #ax[fig_nb].set_ylabel(('Bias '), fontsize = 18)
-                        ax[fig_nb].set_title(('AR ') + 'in ' + ROI + ' region vs IR in background (at convergence)')
+                            if (APGMAP_vs_ADMMLim):
+                                replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
+                            elif ((not APGMAP_vs_ADMMLim and other_dim_idx == 0) or APGMAP_vs_ADMMLim):
+                                replicates_legend[fig_nb].append(method)
+                        ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)')
+                        ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '))
+                        #ax[fig_nb].set_ylabel(('Bias '))
+                        #ax[fig_nb].set_title(('AR ') + 'in ' + ROI + ' region vs IR in background (at convergence)')
                     #'''
 
                     if (method == method_list[-1]):
-                        ax[fig_nb].legend(replicates_legend[fig_nb])
+                        ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
 
             # Saving figures locally in png
             for fig_nb in range(3):
@@ -497,6 +575,11 @@ class iFinalCurves(vGeneral):
                         title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
                     elif ROI == 'cold':
                         title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
+                
+                import matplotlib
+                font = {'family' : 'normal',
+                'size'   : 12}
+                matplotlib.rc('font', **font)
                 fig[fig_nb].savefig(self.subroot_data + 'metrics' + '/' + title)
 
             for method in method_list: # Loop over methods

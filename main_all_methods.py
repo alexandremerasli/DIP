@@ -22,9 +22,9 @@ settings_config = {
     #"method" : tune.grid_search(['nested_ADMMLim_stand','nested_BSREM_stand']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     #"method" : tune.grid_search(['nested_BSREM_stand','APGMAP','BSREM','Gong_BSREM_stand','Gong_MLEM_norm','OSEM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     #"method" : tune.grid_search(['DIPRecon','nested']),
-    "method" : tune.grid_search(['Gong_MLEM_norm','Gong_ADMMLim_norm','Gong_ADMMLim_stand','Gong_BSREM_stand','nested_BSREM_stand','nested_ADMMLim_stand']),
+    #"method" : tune.grid_search(['Gong_MLEM_norm','Gong_ADMMLim_norm','Gong_ADMMLim_stand','Gong_BSREM_stand','nested_BSREM_stand','nested_ADMMLim_stand']),
     "method" : tune.grid_search(['nested','Gong','ADMMLim','APGMAP','BSREM','OSEM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    "method" : tune.grid_search(['ADMMLim','APGMAP']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    #"method" : tune.grid_search(['ADMMLim','APGMAP']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
