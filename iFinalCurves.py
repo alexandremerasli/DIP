@@ -153,7 +153,12 @@ class iFinalCurves(vGeneral):
                                 config[method][key] = config[method][key][0]
 
         # Show figures for each ROI, with all asked methods
-        for ROI in ['hot','cold']:
+        import matplotlib
+        font = {'family' : 'normal',
+        'size'   : 14}
+        matplotlib.rc('font', **font)
+        #for ROI in ['hot','cold']:
+        for ROI in ['cold','hot']:
             # Initialize 3 figures
             fig, ax = [None] * 3, [None] * 3
             for fig_nb in range(3):
@@ -532,18 +537,52 @@ class iFinalCurves(vGeneral):
                                     ax[fig_nb].plot(100*avg_IR[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)],'-o',linewidth=3,color=color_dict[method][other_dim_idx])#'-o',)
                                 if (variance_plot):
                                     ax[fig_nb].fill(np.concatenate((100*(avg_IR[(cases,len_mini-1)] - np.sign(reg[fig_nb][cases])*std_IR[cases,-1]),100*(avg_IR[(cases,len_mini-1)][::-1] + np.sign(reg[fig_nb][cases][::-1])*std_IR[(cases,len_mini-1)][::-1]))),np.concatenate((avg_metrics[(cases,len_mini-1)]-std_metrics[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)][::-1]+std_metrics[(cases,len_mini-1)][::-1])), alpha = 0.4, label='_nolegend_', ls=marker_dict[method][other_dim_idx])
+                                # BSREM beta 0.01 white circle
+                                #'''
+                                if ('BSREM' in method):
+                                    idx = 0
+                                    plt.plot(100*avg_IR[(cases[idx],len_mini[idx]-1)],avg_metrics[(cases[idx],len_mini[idx]-1)],'X', color='white', label='_nolegend_')
+                                    plt.plot(100*avg_IR[(cases[idx],len_mini[idx]-1)],avg_metrics[(cases[idx],len_mini[idx]-1)],marker='X',markersize=10, color='black', label='_nolegend_')
+                                #'''
                             else:
                                 #ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],linewidth=4,color=color_dict[method][other_dim_idx])#'-o',)
                                 ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0:len_mini[rho_idx]:25],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0:len_mini[rho_idx]:25],'-o',linewidth=3,color=color_dict[method][other_dim_idx])#'-o',)
                                 # unnested
-                                plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'o', mfc='none',color='black',label='_nolegend_')
-                                #plt.xlim([12,57])
+                                plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'D',markersize=10, mfc='none',color=color_dict[method][other_dim_idx],label='_nolegend_')
+                                plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],marker='D',markersize=9,color='white',label='_nolegend_')
+                                # nested it 100 white circle
+                                #'''
+                                if ('nested_BSREM_stand' in method):
+                                    idx = 100
+                                elif ('nested_ADMMLim_stand' in method):
+                                    idx = 75
+                                else:
+                                    idx = 75
+                                if ('nested_BSREM_stand' in method or "DIPRecon_BSREM_stand" in method):
+                                    #plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,idx],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,idx],'o', color='white', label='_nolegend_')
+                                    plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,idx],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,idx],marker='X',markersize=10,color='black', label='_nolegend_')                                   
+                                #'''
+                                #if ROI == 'cold':
+                                #    plt.xlim([12,57])
                                 if (variance_plot):
                                     ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
                             if (APGMAP_vs_ADMMLim):
                                 replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                             elif ((not APGMAP_vs_ADMMLim and other_dim_idx == 0) or APGMAP_vs_ADMMLim):
-                                replicates_legend[fig_nb].append(method)
+                                if ("MLEM_norm" in method):
+                                    replicates_legend[fig_nb].append(r'DIPRecon$_{init~MLEM}^{scal~norm}$')
+                                elif ("ADMMLim_norm" in method):
+                                    replicates_legend[fig_nb].append(r'DIPRecon$_{init~ADMMLim}^{scal~norm}$')
+                                elif ("nested_ADMMLim_stand" in method):
+                                    replicates_legend[fig_nb].append(r'nested$_{init~ADMMLim}^{scal~stand}$')
+                                elif ("DIPRecon_ADMMLim_stand" in method):
+                                    replicates_legend[fig_nb].append(r'DIPRecon$_{init~ADMMLim}^{scal~stand}$')
+                                elif ("nested_BSREM_stand" in method):
+                                    replicates_legend[fig_nb].append('nested')
+                                elif ("DIPRecon_BSREM_stand" in method):
+                                    replicates_legend[fig_nb].append('DIPRecon')
+                                else:
+                                    replicates_legend[fig_nb].append(method)
                         ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)')
                         ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '))
                         #ax[fig_nb].set_ylabel(('Bias '))
@@ -551,7 +590,8 @@ class iFinalCurves(vGeneral):
                     #'''
 
                     if (method == method_list[-1]):
-                        ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
+                        if ROI == 'hot':
+                            ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
 
             # Saving figures locally in png
             for fig_nb in range(3):
@@ -576,10 +616,7 @@ class iFinalCurves(vGeneral):
                     elif ROI == 'cold':
                         title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
                 
-                import matplotlib
-                font = {'family' : 'normal',
-                'size'   : 12}
-                matplotlib.rc('font', **font)
+
                 fig[fig_nb].savefig(self.subroot_data + 'metrics' + '/' + title)
 
             for method in method_list: # Loop over methods
