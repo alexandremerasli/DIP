@@ -337,16 +337,24 @@ class vGeneral(abc.ABC):
                         else:
                             f1.write(line)
 
-    def suffix_func(self,config,NNEPPS=False):
+    def suffix_func(self,config,NNEPPS=False,hyperparameters_list=False):
         config_copy = dict(config)
         if (NNEPPS==False):
             config_copy.pop('NNEPPS',None)
         if config["method"] == "ADMMLim":
             config_copy.pop('nb_outer_iteration',None)
         suffix = "config"
-        for key, value in config_copy.items():
-            if key in self.hyperparameters_list:
-                suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
+        if hyperparameters_list == False:
+            for key, value in config_copy.items():
+                if key in self.hyperparameters_list:
+                    suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
+        else:   
+            #'''
+            #hyperparameters_list = ["lr", "optimizer"]
+            for key, value in config_copy.items():
+                if key in hyperparameters_list:
+                    suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
+            #'''
         return suffix
 
     def read_input_dim(self,file_path):
@@ -606,9 +614,16 @@ class vGeneral(abc.ABC):
         Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
         #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
         from textwrap import wrap
-        wrapped_title = "\n".join(wrap(suffix, 50))
-        plt.title(wrapped_title + "\n" + name,fontsize=12)
-        plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
+
+        # added line for small title of interest
+        suffix = self.suffix_func(self.config,hyperparameters_list = ["lr", "opti_DIP"])
+        
+        wrapped_title = "\n".join(wrap(suffix, 80))
+
+        #plt.title(wrapped_title + "\n" + name,fontsize=8)
+        #plt.title(wrapped_title,fontsize=10)
+        plt.title(wrapped_title,fontsize=16)
+        #plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
         # Adding this figure to tensorboard
         writer.add_figure(name,plt.gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
 

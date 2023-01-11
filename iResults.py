@@ -23,6 +23,7 @@ class iResults(vDenoising):
     def initializeSpecific(self,config,root, *args, **kwargs):
         # Initialize general variables
         self.initializeGeneralVariables(config,root)
+        self.config = config
         #vDenoising.initializeSpecific(self,config,root)
 
         if ('ADMMLim' in config["method"]):
@@ -66,11 +67,16 @@ class iResults(vDenoising):
             self.SSIM_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
             self.MA_cold_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
             self.AR_hot_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-            self.CRC_cold_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            self.loss_DIP_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
             self.CRC_hot_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
             self.AR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
             self.IR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+
+        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'random_1.img',shape=(self.PETImage_shape),type='<d')
         
+
+
     def writeBeginningImages(self,suffix,image_net_input=None):
         if (self.tensorboard):
             self.write_image_tensorboard(self.writer,self.image_gt,"Ground Truth (emission map)",suffix,self.image_gt,0,full_contrast=True) # Ground truth in tensorboard
@@ -90,7 +96,7 @@ class iResults(vDenoising):
     def writeEndImagesAndMetrics(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):
         # Metrics for NN output
         if ("3D" not in phantom):
-            self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.CRC_cold_recon,self.CRC_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer)
+            self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.loss_DIP_recon,self.CRC_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer)
 
         if (self.tensorboard):
             # Write image over ADMM iterations
@@ -263,7 +269,8 @@ class iResults(vDenoising):
         p1, = ax1.plot(self.PSNR_WMV, label="PSNR")
         p2, = ax2.plot(var_x, self.VAR_recon, "r", label="WMV")
         p3, = ax3.plot(self.SSIM_WMV, "orange", label="SSIM")
-        ax1.set_xlim(0, self.total_nb_iter-1)
+        #ax1.set_xlim(0, self.total_nb_iter-1)
+        ax1.set_xlim(0, min(self.epochStar+self.patienceNumber,self.total_nb_iter-1))
         plt.title('skip : ' + str(config["skip_connections"]) + ' lr=' + str(self.lr))
         ax1.set_ylabel("Peak Signal-Noise ratio")
         ax2.set_ylabel("Window-Moving variance")
@@ -325,7 +332,7 @@ class iResults(vDenoising):
         #print("IR_bkg_recon",IR_bkg_recon)
         #print('Image roughness in the background', IR_bkg_recon[i],' , must be as small as possible')
 
-    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,SSIM_recon,MA_cold_recon,AR_hot_recon,CRC_cold_recon,CRC_hot_recon,AR_bkg_recon,IR_bkg_recon,image,writer=None):
+    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,SSIM_recon,MA_cold_recon,AR_hot_recon,loss_DIP_recon,CRC_hot_recon,AR_bkg_recon,IR_bkg_recon,image,writer=None):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
         image_recon_cropped = image_recon*self.phantom_ROI
         image_recon_norm = self.norm_imag(image_recon_cropped)[0] # normalizing DIP output
@@ -354,7 +361,8 @@ class iResults(vDenoising):
         #cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "cold_mask" + image[5:] + '.raw', shape=(PETImage_shape),type='<f')
         cold_ROI_act = image_recon[self.cold_ROI==1]
         MA_cold_recon[i] = np.mean(cold_ROI_act)
-        CRC_cold_recon[i] = np.mean(cold_ROI_act)
+        loss_DIP_recon[i] = np.sqrt(np.mean((self.image_corrupt * self.phantom_ROI - image_recon_cropped)**2)) / np.max(self.image_corrupt)
+
         #IR_cold_recon[i] = np.std(cold_ROI_act) / MA_cold_recon[i]
         #print('Mean activity in cold cylinder', MA_cold_recon[i],' , must be close to 0')
         #print('Image roughness in the cold cylinder', IR_cold_recon[i])
@@ -395,7 +403,7 @@ class iResults(vDenoising):
             wr.writerow(AR_hot_recon)
             wr.writerow(AR_bkg_recon)
             wr.writerow(IR_bkg_recon)
-            wr.writerow(CRC_cold_recon)
+            wr.writerow(loss_DIP_recon)
             wr.writerow(CRC_hot_recon)
 
         '''
@@ -423,4 +431,5 @@ class iResults(vDenoising):
             writer.add_scalar('Mean activity in cold cylinder (best : 0)', MA_cold_recon[i], i)
             writer.add_scalar('Mean Concentration Recovery coefficient in hot cylinder (best : 1)', AR_hot_recon[i], i)
             writer.add_scalar('Mean Concentration Recovery coefficient in background (best : 1)', AR_bkg_recon[i], i)
+            writer.add_scalar('DIP loss', loss_DIP_recon[i], i)
             #writer.add_scalar('Image roughness in the background (best : 0)', IR_bkg_recon[i], i)

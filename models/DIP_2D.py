@@ -223,6 +223,17 @@ class DIP_2D(pl.LightningModule):
             self.write_current_img(out)
 
         loss = self.DIP_loss(out, image_corrupt_torch)
+
+        # print maximum difference between output and noisy image to see if DIP can fit noisy image
+        rel_max_diff = torch.max(torch.abs(out-image_corrupt_torch) / torch.max(image_corrupt_torch)).item()
+        print("max diff = ",rel_max_diff)
+        text_file = open(self.subroot+'Block2/' + self.suffix + '/max_diff.log','a')
+        text_file.write("epoch = " + str(self.current_epoch) + " : " + str(rel_max_diff) + "\n")
+        text_file.close()
+
+
+
+
         # logging using tensorboard logger
         self.logger.experiment.add_scalar('loss', loss,self.current_epoch)        
 
@@ -253,11 +264,15 @@ class DIP_2D(pl.LightningModule):
 
         if (self.opti_DIP == 'Adam'):
             optimizer = torch.optim.Adam(self.parameters(), lr=self.lr, weight_decay=5E-8) # Optimizing using Adam
-            #optimizer = torch.optim.SGD(self.parameters(), lr=self.lr) # Optimizing using SGD
+            #optimizer = torch.optim.Adam(self.parameters(), lr=self.lr) # Optimizing using Adam
         elif (self.opti_DIP == 'LBFGS' or self.opti_DIP is None): # None means no argument was given in command line
-            optimizer = torch.optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4) # Optimizing using L-BFGS
+            optimizer = torch.optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4,line_search_fn=None) # Optimizing using L-BFGS
+            optimizer = torch.optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4,line_search_fn="strong_wolfe") # Optimizing using L-BFGS 1
+            optimizer = torch.optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=40,line_search_fn="strong_wolfe") # Optimizing using L-BFGS 3
         elif (self.opti_DIP == 'SGD'):
             optimizer = torch.optim.SGD(self.parameters(), lr=self.lr) # Optimizing using SGD
+        elif (self.opti_DIP == 'Adadelta'):
+            optimizer = torch.optim.Adadelta(self.parameters()) # Optimizing using Adadelta
         return optimizer
 
     def write_current_img(self,out):
@@ -279,11 +294,12 @@ class DIP_2D(pl.LightningModule):
 
 
         
+        '''
         import matplotlib.pyplot as plt
         plt.imshow(out.cpu().detach().numpy()[0,0,:,:],cmap='gray')
         plt.colorbar()
         plt.show()
-
+        '''
         self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
