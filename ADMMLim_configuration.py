@@ -60,10 +60,13 @@ def config_func_MIC():
         ## ADMMLim - OPTITR hyperparameters
         "nb_outer_iteration": tune.grid_search([1000]), # Number outer iterations in ADMMLim
         "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMLim
-        "adaptive_parameters" : tune.grid_search(["tau"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
+        "adaptive_parameters" : tune.grid_search(["both"]), # which parameters are adaptive ? Must be set to nothing, alpha, or both (which means alpha and tau)
         "mu_adaptive" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
-        "tau" : tune.grid_search([100]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim
-        ## hyperparameters from CASToR algorithms 
+        "tau" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim
+        "tau_max" : tune.grid_search([100]), # Maximum value for tau in adaptive tau in ADMMLim
+        "stoppingCriterionValue" : tune.grid_search([0.001]), # Value of the stopping criterion in ADMMLim
+        "saveSinogramsUAndV" : tune.grid_search([1]), # 1 means save sinograms u and v from CASToR, otherwise it means do not save them
+            ## hyperparameters from CASToR algorithms 
         # Optimization transfer (OPTITR) hyperparameters
         "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False
         # AML/APGMAP hyperparameters

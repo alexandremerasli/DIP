@@ -683,19 +683,18 @@ class vGeneral(abc.ABC):
             opti = ' -opti ' + method + ':' + self.subroot_data + method + '.conf'
             pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
             penaltyStrength = ' -pnlt-beta ' + str(self.beta)
-        elif ('nested' in method):
-            if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
-                rho = 0
-                #self.rho = 0
-            method = 'ADMMLim' + method[6:]
-            opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) # ADMMLim dirty 1 or 2
-            pnlt = ' -pnlt DIP_ADMM'
-            penaltyStrength = ' -pnlt-beta ' + str(rho)
-        elif (method == 'ADMMLim'):
-            opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) # ADMMLim dirty 1 or 2
-            pnlt = ' -pnlt ' + penalty
-            if penalty == "MRF":
-                pnlt += ':' + self.subroot_data + method + '_MRF.conf'
+        elif ('nested' in method or 'ADMMLim' in method):
+            opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) + ',' + str(self.tau_max) + ',' + str(self.stoppingCriterionValue) + ',' + str(self.saveSinogramsUAndV)
+            if ('nested' in method):
+                if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
+                    rho = 0
+                    #self.rho = 0
+                method = 'ADMMLim' + method[6:]
+                pnlt = ' -pnlt DIP_ADMM'
+            elif ('ADMMLim' in method):
+                pnlt = ' -pnlt ' + penalty
+                if penalty == "MRF":
+                    pnlt += ':' + self.subroot_data + method + '_MRF.conf'
             penaltyStrength = ' -pnlt-beta ' + str(rho)
         elif (method == 'Gong'):
             if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
@@ -717,7 +716,7 @@ class vGeneral(abc.ABC):
             return 0
         if (adaptive_parameters == "alpha"): # only adative alpha
             return 1
-        if (adaptive_parameters == "tau"): # both adaptive alpha and tau
+        if (adaptive_parameters == "both"): # both adaptive alpha and tau
             return 2
 
     def get_phantom_ROI(self,image='image0'):

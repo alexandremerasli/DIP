@@ -50,10 +50,17 @@ class vReconstruction(vGeneral):
                     self.mu_adaptive = np.NaN
                     self.tau = np.NaN
                     self.xi = np.NaN
+                    self.tau_max = np.NaN
                 else:
                     self.mu_adaptive = config["mu_adaptive"]
                     self.tau = config["tau"]
                     self.xi = config["xi"]
+                    if (self.adaptive_parameters == "both"):
+                        self.tau_max = config["tau_max"]
+                    else:
+                        self.tau_max = np.NaN
+                self.stoppingCriterionValue = config["stoppingCriterionValue"]
+                self.saveSinogramsUAndV = config["saveSinogramsUAndV"]
         self.image_init_path_without_extension = config["image_init_path_without_extension"]
         self.tensorboard = config["tensorboard"]
 
@@ -190,8 +197,8 @@ class vReconstruction(vGeneral):
     def compute_x_v_u_ADMM(self,x_reconstruction_command_line,subdir,i,phantom,subroot_output_path,subroot, it_name=''):
         # Compute x,u,v
         #os.system(x_reconstruction_command_line + ' -oit 90:' + str(int(self.config["nb_outer_iteration"]*3)))
-        os.system(x_reconstruction_command_line + ' -oit -1')
-        #os.system(x_reconstruction_command_line)
+        #os.system(x_reconstruction_command_line + ' -oit -1')
+        os.system(x_reconstruction_command_line)
         # Change iteration name for header if stopping criterion reached
         try:
             path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
@@ -294,7 +301,7 @@ class vReconstruction(vGeneral):
 
         if (self.adaptive_parameters != "nothing"):
             #'''
-            # -- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho ---- AdaptiveRho --
+            # -- AdaptiveAlpha ---- AdaptiveAlpha ---- AdaptiveAlpha ---- AdaptiveAlpha ---- AdaptiveAlpha ---- AdaptiveAlpha --
             self.path_stopping_criterion = subroot_output_path + '/' + subdir + '/' + format(i) + '_adaptive_stopping_criteria.log'
             if(isfile(self.path_stopping_criterion)):
                 theLog = pd.read_table(self.path_stopping_criterion)
@@ -310,7 +317,7 @@ class vReconstruction(vGeneral):
             for outer_it in range(1,finalOuterIter+1):
                 path_adaptive = subroot_output_path + '/' + subdir + '/' + format(i) + '_adaptive_it' + format(outer_it) + '.log'
                 theLog = pd.read_table(path_adaptive)
-                relativePrimalResidualRow = theLog.loc[[6]]
+                relativePrimalResidualRow = theLog.loc[[4]]
                 relativePrimalResidualRowArray = np.array(relativePrimalResidualRow)
                 relativePrimalResidualRowString = relativePrimalResidualRowArray[0, 0]
                 relativePrimalResidual = float(relativePrimalResidualRowString)
@@ -319,7 +326,7 @@ class vReconstruction(vGeneral):
             for outer_it in range(1,finalOuterIter+1):
                 path_adaptive = subroot_output_path + '/' + subdir + '/' + format(i) + '_adaptive_it' + format(outer_it) + '.log'
                 theLog = pd.read_table(path_adaptive)
-                relativeDualResidualRow = theLog.loc[[8]]
+                relativeDualResidualRow = theLog.loc[[6]]
                 relativeDualResidualRowArray = np.array(relativeDualResidualRow)
                 relativeDualResidualRowString = relativeDualResidualRowArray[0, 0]
                 relativeDualResidual = float(relativeDualResidualRowString)
@@ -336,5 +343,5 @@ class vReconstruction(vGeneral):
                 self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations(FULL CONTRAST)",self.suffix,500, 0+k+i*config["nb_outer_iteration"],full_contrast=True) # Showing all corrupted images with same contrast to compare them together
             return x
         '''
-        x = self.fijii_np(full_output_path_i + '_it' + str(config["nb_outer_iteration"]) + '.img', shape=(self.PETImage_shape))
+        x = self.fijii_np(full_output_path_i + '_it' + str(finalOuterIter) + '.img', shape=(self.PETImage_shape))
         return x
