@@ -194,11 +194,13 @@ class vReconstruction(vGeneral):
 
         return x_label, x
 
-    def compute_x_v_u_ADMM(self,x_reconstruction_command_line,subdir,i,phantom,subroot_output_path,subroot, it_name=''):
+    def compute_x_v_u_ADMM(self,x_reconstruction_command_line,subdir,i,phantom,subroot_output_path,subroot,method, it_name=''):
         # Compute x,u,v
         #os.system(x_reconstruction_command_line + ' -oit 90:' + str(int(self.config["nb_outer_iteration"]*3)))
-        #os.system(x_reconstruction_command_line + ' -oit -1')
-        os.system(x_reconstruction_command_line)
+        if ('nested' in method): # we only need output at last iteration
+            os.system(x_reconstruction_command_line + ' -oit -1')
+        else: # ADMMLim, save output at all iterations
+            os.system(x_reconstruction_command_line)
         # Change iteration name for header if stopping criterion reached
         try:
             path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
@@ -287,7 +289,7 @@ class vReconstruction(vGeneral):
                                         + conv # we need f-mu so that ADMM optimizer works, even if we will not use it...
 
         print(x_reconstruction_command_line)
-        self.compute_x_v_u_ADMM(x_reconstruction_command_line, subdir, i, self.phantom, subroot_output_path, self.subroot_data, it_name = config["nb_outer_iteration"])
+        self.compute_x_v_u_ADMM(x_reconstruction_command_line, subdir, i, self.phantom, subroot_output_path, self.subroot_data, self.method, it_name = config["nb_outer_iteration"])
 
 
         """

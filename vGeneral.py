@@ -684,13 +684,13 @@ class vGeneral(abc.ABC):
             pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
             penaltyStrength = ' -pnlt-beta ' + str(self.beta)
         elif ('nested' in method or 'ADMMLim' in method):
-            opti = ' -opti ' + method + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) + ',' + str(self.tau_max) + ',' + str(self.stoppingCriterionValue) + ',' + str(self.saveSinogramsUAndV)
+            opti = ' -opti ' + 'ADMMLim' + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) + ',' + str(self.tau_max) + ',' + str(self.stoppingCriterionValue) + ',' + str(self.saveSinogramsUAndV)
             if ('nested' in method):
                 if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
                     rho = 0
                     #self.rho = 0
                 method = 'ADMMLim' + method[6:]
-                pnlt = ' -pnlt DIP_ADMM'
+                pnlt = ' -pnlt QUAD'
             elif ('ADMMLim' in method):
                 pnlt = ' -pnlt ' + penalty
                 if penalty == "MRF":
