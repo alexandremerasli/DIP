@@ -127,8 +127,8 @@ class iNestedADMM(vReconstruction):
                 classDenoising.global_it = self.global_it
                 config["DIP_early_stopping"] = True # WMV for pre iteration, instead of 300 iterations of Gong
                 config["all_images_DIP"] = "True"
-                classDenoising.sub_iter_DIP = 1000
-                classDenoising.sub_iter_DIP_initial = 1000
+                classDenoising.sub_iter_DIP = 10
+                classDenoising.sub_iter_DIP_initial = 10
                 print("Denoising in reconstruction")
                 classDenoising.initializeSpecific(config,root)
 

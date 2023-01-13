@@ -226,42 +226,55 @@ class vReconstruction(vGeneral):
         else:
             folder_sub_path = os.path.join(self.subroot,self.suffix)
         sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if (os.path.splitext(filename)[1] == '.hdr' and "u" not in filename and "v" not in filename)]
-        '''
-        if (len(sorted_files) > 0):
-            it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
-            initialimage, it, last_iter = self.ImageAndItToResumeComputation(sorted_files,it,folder_sub_path)
+        #''' Continue previous computation if ADMMLim have already been launched with these settings
+        if ("ADMMLim" in self.method):
+            if (len(sorted_files) > 0):
+                it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
+                initialimage, it, last_iter = self.ImageAndItToResumeComputation(sorted_files,it,folder_sub_path)
 
-            u_for_additional_data = ' -additional-data ' + full_output_path_i + '_u_it' + str(last_iter) + '.hdr'
-            v_for_additional_data = ' -additional-data ' + full_output_path_i + '_v_it' + str(last_iter) + '.hdr'
+                u_path = full_output_path_i + '_u_it' + str(last_iter) + '.hdr'
+                u_for_additional_data = ' -additional-data ' + u_path
+                v_path = full_output_path_i + '_v_it' + str(last_iter) + '.hdr'
+                v_for_additional_data = ' -additional-data ' + v_path
 
-            if (self.adaptive_parameters != "nothing"):
-                last_log_file = os.path.join(folder_sub_path,"0_adaptive_it" + str(last_iter) + ".log")
-                with open(last_log_file) as f:
-                    f.readline() # Read first line to get second one (adaptive alpha value)
-                    second_line = f.readline()
-                    if (self.FLTNB == 'float'):       
-                        self.alpha = np.float32(second_line)
-                    elif (self.FLTNB == 'double'):
-                        self.alpha = np.float64(second_line)
-        '''
-        #else:
-        if (i == 0 and not config["unnested_1st_global_iter"]):   # choose initial image for CASToR reconstruction
-            initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_DIP' + str(i-1) + '_FINAL.hdr' # Gong initializes to DIP output at pre iteratio
-            #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + config["f_init"] + '.hdr' # enable to avoid pre iteration
-            #initialimage = ''
-        elif (i == 0 and config["unnested_1st_global_iter"]):
-            #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-            initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
-        else: # Last image for next global iteration
-            if (i == 1 and ((i_init == -1 and not config["unnested_1st_global_iter"]) or (i_init == 0 and config["unnested_1st_global_iter"])) and config["unnested_1st_global_iter"]):
-                initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
-                initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_DIP' + str(i-1) + '_FINAL.hdr'
+                # Write u and v hdr files for last computed iteration if they do not exist
+                if (not os.path.isfile(u_path)):
+                    self.write_hdr(self.subroot,[0],subdir,self.phantom,'u_it' + str(last_iter),subroot_output_path=subroot_output_path,matrix_type='sino')
+                if (not os.path.isfile(v_path)):
+                    self.write_hdr(self.subroot,[0],subdir,self.phantom,'v_it' + str(last_iter),subroot_output_path=subroot_output_path,matrix_type='sino')
+
+                if (self.adaptive_parameters != "nothing"):
+                    last_log_file = os.path.join(folder_sub_path,"0_adaptive_it" + str(last_iter) + ".log")
+                    with open(last_log_file) as f:
+                        f.readline() # Read first line to get second one (adaptive alpha value)
+                        second_line = f.readline()
+                        if (self.FLTNB == 'float'):       
+                            self.alpha = np.float32(second_line)
+                        elif (self.FLTNB == 'double'):
+                            self.alpha = np.float64(second_line)
+            #'''
             else:
-                initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
-        it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
-        
-        u_for_additional_data = ''
-        v_for_additional_data = ''
+                it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
+                
+                u_for_additional_data = ''
+                v_for_additional_data = ''
+                initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
+
+        # Initialization image if nested according to global iteration
+        if ("nested" in self.method):
+            if (i == 0 and not config["unnested_1st_global_iter"]):   # choose initial image for CASToR reconstruction
+                initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_DIP' + str(i-1) + '_FINAL.hdr' # Gong initializes to DIP output at pre iteratio
+                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + config["f_init"] + '.hdr' # enable to avoid pre iteration
+                #initialimage = ''
+            elif (i == 0 and config["unnested_1st_global_iter"]):
+                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
+                initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
+            else: # Last image for next global iteration
+                if (i == 1 and ((i_init == -1 and not config["unnested_1st_global_iter"]) or (i_init == 0 and config["unnested_1st_global_iter"])) and config["unnested_1st_global_iter"]):
+                    initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
+                    initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_DIP' + str(i-1) + '_FINAL.hdr'
+                else:
+                    initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
 
         if ('ADMMLim' in self.method):
             # Compute one ADMM iteration (x, v, u)

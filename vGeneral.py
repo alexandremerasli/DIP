@@ -205,10 +205,14 @@ class vGeneral(abc.ABC):
                 config.pop("adaptive_parameters", None)
                 config.pop("mu_adaptive", None)
                 config.pop("tau", None)
+                config.pop("tau_max", None)
+                config.pop("stoppingCriterionValue", None)
+                config.pop("saveSinogramsUAndV", None)
                 #config.pop("xi", None)
             elif ((config["method"]['grid_search'][0] == 'ADMMLim' or "nested" in config["method"]['grid_search'][0]) and config["adaptive_parameters"]['grid_search'][0] == "nothing"):
                 config.pop("mu_adaptive", None)
                 config.pop("tau", None)
+                config.pop("tau_max", None)
                 config.pop("xi", None)
             if ('ADMMLim' not in config["method"]['grid_search'][0] and "nested" not in config["method"]['grid_search'][0] and "Gong" not in config["method"]['grid_search'][0]  and "DIPRecon" not in config["method"]['grid_search'][0]):
                 config.pop("nb_outer_iteration", None)
