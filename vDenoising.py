@@ -227,7 +227,7 @@ class vDenoising(vGeneral):
     def load_input(self,net,PETImage_shape,subroot):
         if (self.global_it == -1): # TESTCT_random
             self.input = "CT"
-            self.input = "random"
+            #self.input = "random"
 
         if self.input == "random":        
             if (PETImage_shape[2] == 1):

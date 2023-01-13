@@ -41,13 +41,15 @@ class iNestedADMM(vReconstruction):
         path_before_eq_22 = (subroot_output_path + '/before_eq22/')
         import os
         import re
+        # Resume previous computation if there is one
+        '''
         sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(path_before_eq_22) if os.path.splitext(filename)[1] == '.hdr']
         if (len(sorted_files) > 0):
             sorted_files.sort(key=self.natural_keys)
             last_file = sorted_files[-1]
             i_init = int(re.findall(r'\d+', last_file.split('_')[0])[0])
             config["unnested_1st_global_iter"] = True
-        
+        '''
 
 
         for self.global_it in range(i_init, self.max_iter):
