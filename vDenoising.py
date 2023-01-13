@@ -139,9 +139,9 @@ class vDenoising(vGeneral):
         early_stopping_callback = EarlyStopping(monitor="SUCCESS", mode="max",stopping_threshold=0.9,patience=np.inf) # SUCCESS will be 1 when ES if found, which is greater than stopping_threshold = 0.9
 
         print("global_it",global_it)
-        if (global_it == -1): # Beginning nested or Gong in block2. For first epoch, change number of epochs to sub_iter_DIP_initial for Gong
-            print(str(self.sub_iter_DIP_initial) + " initial iterations for Gong")
-            self.sub_iter_DIP = self.sub_iter_DIP_initial
+        if (global_it == -1 or global_it == self.max_iter - 1): # Number of initial and final iterations are overrided here
+            print(str(self.sub_iter_DIP_initial_and_final) + " initial iterations for Gong")
+            self.sub_iter_DIP = self.sub_iter_DIP_initial_and_final
             sub_iter_DIP = self.sub_iter_DIP
         if (finetuning == 'False'): # Do not save and use checkpoints (still save hparams and event files for now ...)
             logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
@@ -161,7 +161,7 @@ class vDenoising(vGeneral):
                 trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator, profiler="simple") # Prepare trainer model with callback to save checkpoint
             if (finetuning == 'ES'): # best model saved in checkpoint
                 # Delete previous checkpoints from previous runs
-                if (global_it > -1): # Beginning nested or Gong in block2. For first epoch, change number of epochs to sub_iter_DIP_initial for Gong
+                if (global_it > -1): # Beginning nested or Gong in block2. For first epoch, change number of epochs to sub_iter_DIP_initial_and_final for Gong
                     os.system("rm -rf " + os.path.join(checkpoint_simple_path_previous_exp))
                     #for f in os.listdir(checkpoint_simple_path_previous_exp):
                         #if (int(re.search(r'\d+', f).group()) != self.epochStar):

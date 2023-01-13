@@ -28,7 +28,7 @@ def config_func_MIC():
         "finetuning" : tune.grid_search(['False']),
         "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
         "unnested_1st_global_iter" : tune.grid_search([True]), # If True, unnested are computed after 1st global iteration (because rho is set to 0). If False, needs to set f_init to initialize the network, as in Gong paper, and rho is not changed.
-        "sub_iter_DIP_initial" : tune.grid_search([10]), # Number of epochs in first global iteration (pre iteraiton) in network optimization (only for Gong for now)
+        "sub_iter_DIP_initial_and_final" : tune.grid_search([10]), # Number of epochs in first global iteration (pre iteraiton) in network optimization (only for Gong for now)
         "nb_inner_iteration" : tune.grid_search([1]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for Gong). CASToR output is doubled because of 2 inner iterations for 1 inner iteration
         "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMLim
         "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)

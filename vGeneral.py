@@ -283,7 +283,6 @@ class vGeneral(abc.ABC):
             text_file.close()
             # Store replicate to retrieve all replicates in main.py for metrics
             text_file = open(self.subroot_data + 'replicates_for_last_run_' + config["method"] + '.txt', "a")
-            print("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",str(self.replicate))
             text_file.write("replicate_" + str(self.replicate) + "\n")
             text_file.close()
 

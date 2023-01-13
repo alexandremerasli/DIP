@@ -95,7 +95,7 @@ class iNestedADMM(vReconstruction):
                 
 
                 self.save_img(x_label,self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
-                #classDenoising.sub_iter_DIP = classDenoising.self.sub_iter_DIP_initial
+                #classDenoising.sub_iter_DIP = classDenoising.self.sub_iter_DIP_initial_and_final
 
             if (self.global_it == i_init): # Initialize some variables at first global iteration only
             #if (self.global_it == i_init + 1): # enable to avoid pre iteration
@@ -122,15 +122,13 @@ class iNestedADMM(vReconstruction):
             classDenoising.name_run = ""
             # Train network at current global iteration
             classDenoising.sub_iter_DIP = config["sub_iter_DIP"]
-            classDenoising.sub_iter_DIP_initial = config["sub_iter_DIP_initial"]
+            classDenoising.sub_iter_DIP_initial_and_final = config["sub_iter_DIP_initial_and_final"]
             classDenoising.global_it = self.global_it
 
             if (self.global_it == i_init and ((i_init == -1 and not config["unnested_1st_global_iter"]) or (i_init == 0 and config["unnested_1st_global_iter"]))): # TESTCT_random
                 classDenoising.global_it = self.global_it
                 config["DIP_early_stopping"] = True # WMV for pre iteration, instead of 300 iterations of Gong
                 config["all_images_DIP"] = "True"
-                classDenoising.sub_iter_DIP = 1000
-                classDenoising.sub_iter_DIP_initial = 1000
                 print("Denoising in reconstruction")
                 classDenoising.initializeSpecific(config,root)
 
@@ -144,7 +142,6 @@ class iNestedADMM(vReconstruction):
                 classDenoising.global_it = self.global_it
                 config["DIP_early_stopping"] = True # WMV for last iteration, instead of 300 iterations of Gong
                 config["all_images_DIP"] = "True"
-                classDenoising.sub_iter_DIP = 1000
                 classDenoising.initializeSpecific(config,root)
                 print("Denoising in reconstruction")
 
