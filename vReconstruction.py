@@ -262,6 +262,10 @@ class vReconstruction(vGeneral):
 
         # Initialization image if nested according to global iteration
         if ("nested" in self.method):
+            it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
+            u_for_additional_data = ''
+            v_for_additional_data = ''
+
             if (i == 0 and not config["unnested_1st_global_iter"]):   # choose initial image for CASToR reconstruction
                 initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_DIP' + str(i-1) + '_FINAL.hdr' # Gong initializes to DIP output at pre iteratio
                 #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + config["f_init"] + '.hdr' # enable to avoid pre iteration
