@@ -225,7 +225,7 @@ class vDenoising(vGeneral):
             self.save_img(im_input,file_path)
 
     def load_input(self,net,PETImage_shape,subroot):
-        if (self.global_it == -1): # TESTCT_random
+        if (self.override_input): # TESTCT_random
             self.input = "CT"
             #self.input = "random"
 
