@@ -24,6 +24,12 @@ class iWMV(vGeneral):
         self.SSIM_WMV = []
         self.SUCCESS = False
 
+        self.EMA = np.zeros((self.PETImage_shape))
+        self.EMV = 0
+        self.alpha_EMV = 0.1
+
+        #self.queueQ = np.array((self.windowSize,self.PETImage_shape))
+
         #Loading Ground Truth image to compute metrics
         self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
         if config["FLTNB"] == "double":
@@ -53,27 +59,58 @@ class iWMV(vGeneral):
         self.PSNR_WMV.append(peak_signal_noise_ratio(image_gt_cropped, out_cropped, data_range=np.amax(out_cropped) - np.amin(out_cropped)))
         self.SSIM_WMV.append(structural_similarity(np.squeeze(image_gt_cropped), np.squeeze(out_cropped), data_range=out_cropped.max() - out_cropped.min()))
 
-        #####################################  Window Moving Variance  #############################################
-        queueQ.append(out_cropped.flatten())
-        if (len(queueQ) == self.windowSize):
-            mean = queueQ[0].copy()
-            for x in queueQ[1:self.windowSize]:
-                mean += x
-            mean = mean / self.windowSize
-            VAR = np.linalg.norm(queueQ[0] - mean) ** 2
-            for x in queueQ[1:self.windowSize]:
-                VAR += np.linalg.norm(x - mean) ** 2
-            VAR = VAR / self.windowSize
-            if VAR < VAR_min and not SUCCESS:
-                VAR_min = VAR
-                self.epochStar = epoch  # detection point
-                stagnate = 1
-            else:
-                stagnate += 1
-            if stagnate == self.patienceNumber:
-                SUCCESS = True
-            queueQ.pop(0)
-            self.VAR_recon.append(VAR)
+        WMV = True
+        if (WMV):
+            #'''
+            #####################################  Window Moving Variance  #############################################
+            queueQ.append(out_cropped.flatten()) # Add last computed image to last element in queueQ from window
+            if (len(queueQ) == self.windowSize):
+                # Compute mean for this window
+                mean = queueQ[0].copy()
+                for x in queueQ[1:self.windowSize]:
+                    mean += x
+                mean = mean / self.windowSize
+                # Compute variance for this window
+                VAR = np.linalg.norm(queueQ[0] - mean) ** 2
+                for x in queueQ[1:self.windowSize]:
+                    VAR += np.linalg.norm(x - mean) ** 2
+                VAR = VAR / self.windowSize
+                # Check if current variance is smaller than minimum previously computed variance, else count number of iterations since this minimum
+                if VAR < VAR_min and not SUCCESS:
+                    VAR_min = VAR
+                    self.epochStar = epoch  # current detection point
+                    stagnate = 1
+                else:
+                    stagnate += 1
+                # ES point has been found
+                if stagnate == self.patienceNumber:
+                    SUCCESS = True
+                queueQ.pop(0) # Remove first element in queueQ from window for next variance computation
+                self.VAR_recon.append(VAR) # Store current variance to plot variance curve after
+            #'''
+        else:
+            #'''
+            #####################################  Exponential Moving Variance  #############################################
+            queueQ.append(out_cropped.flatten()) # Add last computed image to last element in queueQ from window
+            if (len(queueQ) == self.windowSize):
+                # Compute variance for this window
+                self.EMV = (1-self.alpha_EMV) * (self.EMV + self.alpha_EMV * np.linalg.norm(out_cropped - self.EMA)**2)
+                # Compute EMA to be used in next window
+                self.EMA = (1-self.alpha_EMV) * self.EMA + self.alpha_EMV * out_cropped
+                # Check if current variance is smaller than minimum previously computed variance, else count number of iterations since this minimum
+                if self.EMV < VAR_min and not SUCCESS:
+                    VAR_min = self.EMV
+                    self.epochStar = epoch  # current detection point
+                    stagnate = 1
+                else:
+                    stagnate += 1
+                # ES point has been found
+                if stagnate == self.patienceNumber:
+                    SUCCESS = True
+                queueQ.pop(0) # Remove first element in queueQ from window for next variance computation
+                self.VAR_recon.append(self.EMV) # Store current variance to plot variance curve after
+            #'''
+
 
         #'''
         if SUCCESS:
