@@ -72,9 +72,10 @@ class iResults(vDenoising):
             self.AR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
             self.IR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
 
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'random_1.img',shape=(self.PETImage_shape),type='<d')
-        
+        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'F16_GT_' + str(self.PETImage_shape[0]) + '.img',shape=(self.PETImage_shape),type='<f')
+        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_30it/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type='<d')
 
 
     def writeBeginningImages(self,suffix,image_net_input=None):
@@ -93,7 +94,7 @@ class iResults(vDenoising):
                     self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name,suffix,self.image_gt,i) # Showing all corrupted images with same contrast to compare them together
                     self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name + " (FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
 
-    def writeEndImagesAndMetrics(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):
+    def writeEndImagesAndMetrics(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):       
         # Metrics for NN output
         if ("3D" not in phantom):
             self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.loss_DIP_recon,self.CRC_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer)
@@ -104,11 +105,10 @@ class iResults(vDenoising):
                 self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
                 self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
                 self.write_image_tensorboard(self.writer,f*self.phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
-            else:          
+            else:
                 if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
                     self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
                     self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
-
                     self.write_image_tensorboard(self.writer,f*self.phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
 
     def runComputation(self,config,root):
@@ -149,8 +149,9 @@ class iResults(vDenoising):
                             iteration_name="iterations"
                         if ('post_reco' in config["task"]):
                             try:
-                                f_p = self.fijii_np(self.subroot_p+'Block2/' + 'post_reco ' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(-100) + '_epoch=' + format(i-self.i_init) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+                                f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(-100) + '_epoch=' + format(i-self.i_init) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
                             except:
+                                print("!!!!! failed to read image")
                                 break
                         else:
                             f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-self.i_init) + "_FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
@@ -348,6 +349,14 @@ class iResults(vDenoising):
 
         # MSE calculation
         MSE_recon[i] = np.mean((image_gt - image_recon)**2)
+        """
+        if (i >=80):
+            plt.figure()
+            plt.imshow(image_gt_cropped,cmap='gray')
+            plt.figure()
+            plt.imshow(image_recon_cropped,cmap='gray')
+            plt.show()
+        """
         #print('MSE gt', MSE_recon[i],' , must be as small as possible')
         MSE_recon[i] = np.mean((image_gt_cropped - image_recon_cropped)**2)
         #print('MSE phantom gt', MSE_recon[i],' , must be as small as possible')
@@ -361,7 +370,8 @@ class iResults(vDenoising):
         #cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "cold_mask" + image[5:] + '.raw', shape=(PETImage_shape),type='<f')
         cold_ROI_act = image_recon[self.cold_ROI==1]
         MA_cold_recon[i] = np.mean(cold_ROI_act)
-        loss_DIP_recon[i] = np.sqrt(np.mean((self.image_corrupt * self.phantom_ROI - image_recon_cropped)**2)) / np.max(self.image_corrupt)
+        loss_DIP_recon[i] = np.mean((self.image_corrupt * self.phantom_ROI - image_recon_cropped)**2)
+        #loss_DIP_recon[i] = np.sqrt(np.mean((self.image_corrupt * self.phantom_ROI - image_recon_cropped)**2)) / np.max(self.image_corrupt)
 
         #IR_cold_recon[i] = np.std(cold_ROI_act) / MA_cold_recon[i]
         #print('Mean activity in cold cylinder', MA_cold_recon[i],' , must be close to 0')
@@ -426,6 +436,7 @@ class iResults(vDenoising):
             writer.add_scalars('Mean Concentration Recovery coefficient in background (best : 1)', {'MA_bkg':  AR_bkg_recon[i], 'best': 1,}, i)
             #writer.add_scalars('Image roughness in the background (best : 0)', {'IR':  IR_bkg_recon[i], 'best': 0,}, i)
             '''
+            writer.add_scalar('PSNR gt (best : inf)', PSNR_recon[i], i)
             writer.add_scalar('MSE gt (best : 0)', MSE_recon[i], i)
             writer.add_scalar('SSIM gt (best : 0)', SSIM_recon[i], i)
             writer.add_scalar('Mean activity in cold cylinder (best : 0)', MA_cold_recon[i], i)

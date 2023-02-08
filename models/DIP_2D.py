@@ -11,7 +11,7 @@ from iWMV import iWMV
 
 class DIP_2D(pl.LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, last_iter):
         super().__init__()
 
         #'''
@@ -65,6 +65,8 @@ class DIP_2D(pl.LightningModule):
         #    self.suffix = config["task"] + ' ' + self.suffix
         self.suffix = suffix
         
+        self.last_iter = last_iter + 1
+
         '''
         if (config['mlem_sequence'] is None):
             self.write_current_img_mode = True
@@ -300,7 +302,8 @@ class DIP_2D(pl.LightningModule):
         plt.colorbar()
         plt.show()
         '''
-        self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+        print(self.last_iter)
+        self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
         config_copy = dict(config)

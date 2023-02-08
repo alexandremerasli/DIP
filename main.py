@@ -17,7 +17,7 @@ from ray import tune
 # Configuration dictionnary for general settings parameters (not hyperparameters)
 settings_config = {
     "image" : tune.grid_search(['image2_0']), # Image from database
-    "random_seed" : tune.grid_search([False]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
+    "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
     "method" : tune.grid_search(['ADMMLim']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
@@ -72,7 +72,7 @@ hyperparameters_config = {
     ## ADMMLim - OPTITR hyperparameters
     "nb_outer_iteration": tune.grid_search([30]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
     #"nb_outer_iteration": tune.grid_search([3]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
-    "nb_outer_iteration": tune.grid_search([20]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
+    "nb_outer_iteration": tune.grid_search([30]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
     "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMLim
     "adaptive_parameters" : tune.grid_search(["both"]), # which parameters are adaptive ? Must be set to nothing, alpha, or both (which means alpha and tau)
     "mu_adaptive" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim

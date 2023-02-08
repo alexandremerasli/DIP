@@ -61,8 +61,8 @@ class vGeneral(abc.ABC):
             self.subroot_metrics = self.subroot_data + 'debug/'*self.debug + 'metrics/' + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' # Directory root for metrics
             self.suffix = self.suffix_func(config) # self.suffix to make difference between raytune runs (different hyperparameters)
             self.suffix_metrics = self.suffix_func(config,NNEPPS=True) # self.suffix with NNEPPS information
-            if (config["task"] == "post_reco"):
-                self.suffix = config["task"] + ' ' + self.suffix
+            if ("post_reco" in config["task"] and "post_reco" not in self.suffix):
+                self.suffix = "post_reco" + ' ' + self.suffix
                 self.suffix_metrics = config["task"] + ' ' + self.suffix_metrics
 
 
@@ -167,7 +167,7 @@ class vGeneral(abc.ABC):
 
     def parametersIncompatibility(self,config,task):
         # Additional variables needing every values in config
-        # Number of replicates 
+        # Number of replicates         
         self.nb_replicates = config["replicates"]['grid_search'][-1]
         #if (task == "show_results_replicates" or task == "show_results"):
         #if (task == "compare_2_methods"):
@@ -347,6 +347,8 @@ class vGeneral(abc.ABC):
             config_copy.pop('NNEPPS',None)
         if config["method"] == "ADMMLim":
             config_copy.pop('nb_outer_iteration',None)
+        elif ("post_reco" in config_copy["task"]):
+            config_copy.pop("sub_iter_DIP", None)
         suffix = "config"
         if hyperparameters_list == False:
             for key, value in config_copy.items():
@@ -607,9 +609,9 @@ class vGeneral(abc.ABC):
             image = image[int(image.shape[0] / 2.),:,:]
             #image = image[:,:,int(image.shape[0] / 2.)]
         if (full_contrast):
-            plt.imshow(image, cmap='gray_r',vmin=np.min(image),vmax=np.max(image)) # Showing each image with maximum contrast  
+            plt.imshow(image, cmap='gray_r',vmin=np.min(image),vmax=np.max(image)) # Showing each image with maximum contrast and white is zero (gray_r) 
         else:
-            plt.imshow(image, cmap='gray_r',vmin=0,vmax=1.25*np.max(image_gt)) # Showing all images with same contrast
+            plt.imshow(image, cmap='gray_r',vmin=np.min(image_gt),vmax=1.25*np.max(image_gt)) # Showing all images with same contrast and white is zero (gray_r)
         plt.colorbar()
         #plt.axis('off')
         #plt.show()
@@ -618,6 +620,7 @@ class vGeneral(abc.ABC):
         Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
         #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
         from textwrap import wrap
+        plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
 
         # added line for small title of interest
         suffix = self.suffix_func(self.config,hyperparameters_list = ["lr", "opti_DIP"])
@@ -627,7 +630,6 @@ class vGeneral(abc.ABC):
         #plt.title(wrapped_title + "\n" + name,fontsize=8)
         #plt.title(wrapped_title,fontsize=10)
         plt.title(wrapped_title,fontsize=16)
-        #plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
         # Adding this figure to tensorboard
         writer.add_figure(name,plt.gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
 
@@ -767,6 +769,9 @@ class vGeneral(abc.ABC):
     def ImageAndItToResumeComputation(self,sorted_files, it, folder_sub_path):
         sorted_files.sort(key=self.natural_keys)
         last_file = sorted_files[-1]
+        if ("=" in last_file): # post reco mode
+            last_file = last_file[-10:]
+            last_file = "it_" + last_file.split("=",1)[1]
         last_iter = int(re.findall(r'(\w+?)(\d+)', last_file.split('.')[0])[0][-1])
         initialimage = ' -img ' + folder_sub_path + '/' + last_file
         it += ' -skip-it ' + str(last_iter)
