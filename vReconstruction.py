@@ -235,7 +235,8 @@ class vReconstruction(vGeneral):
                 u_path = full_output_path_i + '_u_it' + str(last_iter) + '.hdr'
                 u_for_additional_data = ' -additional-data ' + u_path
                 v_path = full_output_path_i + '_v_it' + str(last_iter) + '.hdr'
-                v_for_additional_data = ' -additional-data ' + v_path
+                #v_for_additional_data = ' -additional-data ' + v_path
+                v_for_additional_data = ',' + v_path
 
                 # Write u and v hdr files for last computed iteration if they do not exist
                 if (not os.path.isfile(u_path)):
@@ -252,6 +253,16 @@ class vReconstruction(vGeneral):
                             self.alpha = np.float32(second_line)
                         elif (self.FLTNB == 'double'):
                             self.alpha = np.float64(second_line)
+
+                        ''' # Previous tau is not useful to resume computation even in both adaptive mode
+                        f.readline() # Read third line to get fourth one (adaptive tau value)
+                        fourth_line = f.readline()
+                        if (self.FLTNB == 'float'):       
+                            self.tau = np.float32(fourth_line)
+                        elif (self.FLTNB == 'double'):
+                            self.tau = np.float64(fourth_line)
+                        '''
+
             #'''
             else:
                 it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset

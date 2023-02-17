@@ -75,6 +75,10 @@ class vGeneral(abc.ABC):
                 self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
             if (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
                 self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
+            if (self.phantom == "image4_0" and config["task"] != "show_metrics_results_already_computed"):
+                self.define_ROI_image4_0(self.PETImage_shape,self.subroot_data)
+            if (self.phantom == "image4000_0" and config["task"] != "show_metrics_results_already_computed"):
+                self.define_ROI_image4000_0(self.PETImage_shape,self.subroot_data)
 
         return config
 
@@ -600,6 +604,81 @@ class vGeneral(abc.ABC):
         self.save_img(phantom_mask, subroot+'Data/database_v2/' + "image2_3D" + '/' + "phantom_mask2_3D" + '.raw')
         self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image2_3D" + '/' + "background_mask2_3D" + '.raw')
 
+    def define_ROI_image4_0(self,PETImage_shape,subroot):
+        phantom_ROI = self.points_in_circle(0/4,0/4,150/4,PETImage_shape)
+        cold_ROI = self.points_in_circle(-40/4,-40/4,40/4-1,PETImage_shape)
+        hot_ROI = self.points_in_circle(50/4,10/4,20/4-1,PETImage_shape)
+            
+        cold_ROI_bkg = self.points_in_circle(-40/4,-40/4,40/4+1,PETImage_shape)
+        hot_ROI_bkg = self.points_in_circle(50/4,10/4,20/4+1,PETImage_shape)
+        phantom_ROI_bkg = self.points_in_circle(0/4,0/4,150/4-1,PETImage_shape)
+        bkg_ROI = list(set(phantom_ROI_bkg) - set(cold_ROI_bkg) - set(hot_ROI_bkg))
+
+        cold_mask = np.zeros(PETImage_shape, dtype='<f')
+        tumor_mask = np.zeros(PETImage_shape, dtype='<f')
+        phantom_mask = np.zeros(PETImage_shape, dtype='<f')
+        bkg_mask = np.zeros(PETImage_shape, dtype='<f')
+
+        ROI_list = [cold_ROI, hot_ROI, phantom_ROI, bkg_ROI]
+        mask_list = [cold_mask, tumor_mask, phantom_mask, bkg_mask]
+        for i in range(len(ROI_list)):
+            ROI = ROI_list[i]
+            mask = mask_list[i]
+            for couple in ROI:
+                #mask[int(couple[0] - PETImage_shape[0]/2)][int(couple[1] - PETImage_shape[1]/2)] = 1
+                mask[couple] = 1
+
+        # Storing into file instead of defining them at each metrics computation
+        self.save_img(cold_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "cold_mask4_0" + '.raw')
+        self.save_img(tumor_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "tumor_mask4_0" + '.raw')
+        self.save_img(phantom_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "phantom_mask4_0" + '.raw')
+        self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "background_mask4_0" + '.raw')
+
+        '''
+        # Storing into file instead of defining them at each metrics computation
+        self.save_img(cold_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "cold_mask2_0" + '.raw')
+        self.save_img(tumor_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "tumor_mask2_0" + '.raw')
+        self.save_img(phantom_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "phantom_mask2_0" + '.raw')
+        self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "background_mask2_0" + '.raw')
+        '''
+
+    def define_ROI_image4000_0(self,PETImage_shape,subroot):
+        phantom_ROI = self.points_in_circle(0/4,0/4,150/4,PETImage_shape)
+        cold_ROI = self.points_in_circle(-40/4,-40/4,40/4-1,PETImage_shape)
+        hot_ROI = self.points_in_circle(50/4,10/4,20/4-1,PETImage_shape)
+            
+        cold_ROI_bkg = self.points_in_circle(-40/4,-40/4,40/4+1,PETImage_shape)
+        hot_ROI_bkg = self.points_in_circle(50/4,10/4,20/4+1,PETImage_shape)
+        phantom_ROI_bkg = self.points_in_circle(0/4,0/4,150/4-1,PETImage_shape)
+        bkg_ROI = list(set(phantom_ROI_bkg) - set(cold_ROI_bkg) - set(hot_ROI_bkg))
+
+        cold_mask = np.zeros(PETImage_shape, dtype='<f')
+        tumor_mask = np.zeros(PETImage_shape, dtype='<f')
+        phantom_mask = np.zeros(PETImage_shape, dtype='<f')
+        bkg_mask = np.zeros(PETImage_shape, dtype='<f')
+
+        ROI_list = [cold_ROI, hot_ROI, phantom_ROI, bkg_ROI]
+        mask_list = [cold_mask, tumor_mask, phantom_mask, bkg_mask]
+        for i in range(len(ROI_list)):
+            ROI = ROI_list[i]
+            mask = mask_list[i]
+            for couple in ROI:
+                #mask[int(couple[0] - PETImage_shape[0]/2)][int(couple[1] - PETImage_shape[1]/2)] = 1
+                mask[couple] = 1
+
+        # Storing into file instead of defining them at each metrics computation
+        self.save_img(cold_mask, subroot+'Data/database_v2/' + "image4000_0" + '/' + "cold_mask4000_0" + '.raw')
+        self.save_img(tumor_mask, subroot+'Data/database_v2/' + "image4000_0" + '/' + "tumor_mask4000_0" + '.raw')
+        self.save_img(phantom_mask, subroot+'Data/database_v2/' + "image4000_0" + '/' + "phantom_mask4000_0" + '.raw')
+        self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image4000_0" + '/' + "background_mask4000_0" + '.raw')
+
+        '''
+        # Storing into file instead of defining them at each metrics computation
+        self.save_img(cold_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "cold_mask2_0" + '.raw')
+        self.save_img(tumor_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "tumor_mask2_0" + '.raw')
+        self.save_img(phantom_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "phantom_mask2_0" + '.raw')
+        self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "background_mask2_0" + '.raw')
+        '''
 
     def write_image_tensorboard(self,writer,image,name,suffix,image_gt,i=0,full_contrast=False):
         # Creating matplotlib figure with colorbar

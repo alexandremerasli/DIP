@@ -87,6 +87,13 @@ class iNestedADMM(vReconstruction):
             print("Denoising in reconstruction")
             classDenoising.initializeSpecific(config,root)
             classDenoising.runComputation(config,root)
+
+            if (self.global_it == i_init):
+
+                classResults.writeBeginningImages(self.suffix,classDenoising.image_net_input) # Write GT and DIP input
+                classResults.writeCorruptedImage(0,self.max_iter,classDenoising.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
+
+
             print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
             # Saving Final DIP output with name without epochs, and f from previous iteration for adaptive rho computation
             self.f_before = self.f

@@ -115,11 +115,11 @@ class iResults(vDenoising):
         if (hasattr(self,'beta')):
             beta_string = ', beta = ' + str(self.beta)
 
-        #if ( 'nested' in config["method"] or  'Gong' in config["method"]):
-            #self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
-            #self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
-        #else:
-        #    self.writeBeginningImages(self.suffix) # Write GT
+        if ( 'nested' in config["method"] or  'Gong' in config["method"]):
+            self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
+            self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
+        else:
+            self.writeBeginningImages(self.suffix) # Write GT
 
         if (self.FLTNB == 'float'):
             type = '<f'
