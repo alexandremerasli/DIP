@@ -57,7 +57,18 @@ class iResults(vDenoising):
         self.phantom_ROI = self.get_phantom_ROI(self.phantom)
         if ("3D" not in self.phantom):
             self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
-            self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+            if ("4_0" not in self.phantom):
+                self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+                # These ROIs do not exist, so put them equal to hot ROI for the sake of simplicity
+                self.hot_TEP_ROI = np.array(self.hot_ROI)
+                self.hot_TEP_match_square_ROI = np.array(self.hot_ROI)
+                self.hot_perfect_match_ROI = np.array(self.hot_ROI)
+            else:
+                self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+                self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+                self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+                # This ROIs has already been defined, but is computed for the sake of simplicity
+                self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
             self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
 
             # Metrics arrays
@@ -67,6 +78,11 @@ class iResults(vDenoising):
             self.SSIM_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
             self.MA_cold_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
             self.AR_hot_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            
+            self.AR_hot_TEP_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            self.AR_hot_TEP_match_square_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            self.AR_hot_perfect_match_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            
             self.loss_DIP_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
             self.CRC_hot_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
             self.AR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
@@ -98,7 +114,7 @@ class iResults(vDenoising):
     def writeEndImagesAndMetrics(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):       
         # Metrics for NN output
         if ("3D" not in phantom):
-            self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.loss_DIP_recon,self.CRC_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer)
+            self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_hot_TEP_recon,self.AR_hot_TEP_match_square_recon,self.AR_hot_perfect_match_recon,self.loss_DIP_recon,self.CRC_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer)
 
         if (self.tensorboard):
             # Write image over ADMM iterations
@@ -334,7 +350,7 @@ class iResults(vDenoising):
         #print("IR_bkg_recon",IR_bkg_recon)
         #print('Image roughness in the background', IR_bkg_recon[i],' , must be as small as possible')
 
-    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,SSIM_recon,MA_cold_recon,AR_hot_recon,loss_DIP_recon,CRC_hot_recon,AR_bkg_recon,IR_bkg_recon,image,writer=None):
+    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,SSIM_recon,MA_cold_recon,AR_hot_recon,AR_hot_TEP_recon,AR_hot_TEP_match_square_recon,AR_hot_perfect_match_recon,loss_DIP_recon,CRC_hot_recon,AR_bkg_recon,IR_bkg_recon,image,writer=None):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
         image_recon_cropped = image_recon*self.phantom_ROI
         image_recon_norm = self.norm_imag(image_recon_cropped)[0] # normalizing DIP output
@@ -387,6 +403,19 @@ class iResults(vDenoising):
         #IR_hot_recon[i] = np.std(hot_ROI_act) / np.mean(hot_ROI_act)
         #print('Mean Activity Recovery in hot cylinder', AR_hot_recon[i],' , must be close to 1')
         #print('Image roughness in the hot cylinder', IR_hot_recon[i])
+        
+        ### Only useful for new phantom with 3 hot ROIs, but compute it for every phantom for the sake of simplicity ###
+        # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
+        hot_TEP_ROI_act = image_recon[self.hot_TEP_ROI==1]
+        AR_hot_TEP_recon[i] = np.mean(hot_TEP_ROI_act)
+        
+        # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c -20. 70. 0. 20. 4. 400)
+        hot_TEP_match_square_ROI_act = image_recon[self.hot_TEP_match_square_ROI==1]
+        AR_hot_TEP_match_square_recon[i] = np.mean(hot_TEP_match_square_ROI_act)
+        
+        # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c 50. 90. 0. 20. 4. 400)
+        hot_perfect_match_ROI_act = image_recon[self.hot_perfect_match_ROI==1]
+        AR_hot_perfect_match_recon[i] = np.mean(hot_perfect_match_ROI_act)
 
         # Mean Activity Recovery (ARmean) in background calculation (-c 0. 0. 0. 150. 4. 100)
         #m0_bkg = (np.sum(coord_to_value_array(bkg_ROI,image_recon_cropped)) - np.sum([coord_to_value_array(cold_ROI,image_recon_cropped),coord_to_value_array(hot_ROI,image_recon_cropped)])) / (len(bkg_ROI) - (len(cold_ROI) + len(hot_ROI)))
@@ -443,6 +472,9 @@ class iResults(vDenoising):
             writer.add_scalar('SSIM gt (best : 0)', SSIM_recon[i], i)
             writer.add_scalar('Mean activity in cold cylinder (best : 0)', MA_cold_recon[i], i)
             writer.add_scalar('Mean Concentration Recovery coefficient in hot cylinder (best : 1)', AR_hot_recon[i], i)
+            writer.add_scalar('Mean Concentration Recovery coefficient in hot (only in TEP) cylinder (best : 1)', AR_hot_TEP_recon[i], i)
+            writer.add_scalar('Mean Concentration Recovery coefficient in hot (square MR, circle TEP) cylinder (best : 1)', AR_hot_TEP_match_square_recon[i], i)
+            writer.add_scalar('Mean Concentration Recovery coefficient in hot (perfect match) cylinder (best : 1)', AR_hot_perfect_match_recon[i], i)
             writer.add_scalar('Mean Concentration Recovery coefficient in background (best : 1)', AR_bkg_recon[i], i)
             writer.add_scalar('DIP loss', loss_DIP_recon[i], i)
             #writer.add_scalar('Image roughness in the background (best : 0)', IR_bkg_recon[i], i)

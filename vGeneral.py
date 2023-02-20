@@ -607,20 +607,26 @@ class vGeneral(abc.ABC):
     def define_ROI_image4_0(self,PETImage_shape,subroot):
         phantom_ROI = self.points_in_circle(0/4,0/4,150/4,PETImage_shape)
         cold_ROI = self.points_in_circle(-40/4,-40/4,40/4-1,PETImage_shape)
-        hot_ROI = self.points_in_circle(50/4,10/4,20/4-1,PETImage_shape)
+        hot_TEP_ROI = self.points_in_circle(50/4,10/4,20/4-1,PETImage_shape)
+        hot_TEP_match_square_ROI = self.points_in_circle(-20/4,70/4,20/4-1,PETImage_shape)
+        hot_perfect_match_ROI = self.points_in_circle(50/4,90/4,20/4-1,PETImage_shape)
             
         cold_ROI_bkg = self.points_in_circle(-40/4,-40/4,40/4+1,PETImage_shape)
-        hot_ROI_bkg = self.points_in_circle(50/4,10/4,20/4+1,PETImage_shape)
+        hot_TEP_ROI_bkg = self.points_in_circle(50/4,10/4,20/4+1,PETImage_shape)
+        hot_TEP_match_square_ROI_bkg = self.points_in_circle(-20/4,70/4,20/4+1,PETImage_shape)
+        hot_perfect_match_ROI_bkg = self.points_in_circle(50/4,90/4,20/4+1,PETImage_shape)
         phantom_ROI_bkg = self.points_in_circle(0/4,0/4,150/4-1,PETImage_shape)
-        bkg_ROI = list(set(phantom_ROI_bkg) - set(cold_ROI_bkg) - set(hot_ROI_bkg))
+        bkg_ROI = list(set(phantom_ROI_bkg) - set(cold_ROI_bkg) - set(hot_TEP_ROI_bkg) - set(hot_TEP_match_square_ROI_bkg) - set(hot_perfect_match_ROI_bkg))
 
         cold_mask = np.zeros(PETImage_shape, dtype='<f')
-        tumor_mask = np.zeros(PETImage_shape, dtype='<f')
+        tumor_TEP_mask = np.zeros(PETImage_shape, dtype='<f')
+        tumor_TEP_match_square_ROI_mask = np.zeros(PETImage_shape, dtype='<f')
+        tumor_perfect_match_ROI_mask = np.zeros(PETImage_shape, dtype='<f')
         phantom_mask = np.zeros(PETImage_shape, dtype='<f')
         bkg_mask = np.zeros(PETImage_shape, dtype='<f')
 
-        ROI_list = [cold_ROI, hot_ROI, phantom_ROI, bkg_ROI]
-        mask_list = [cold_mask, tumor_mask, phantom_mask, bkg_mask]
+        ROI_list = [cold_ROI, hot_TEP_ROI, hot_TEP_match_square_ROI, hot_perfect_match_ROI, phantom_ROI, bkg_ROI]
+        mask_list = [cold_mask, tumor_TEP_mask, tumor_TEP_match_square_ROI_mask, tumor_perfect_match_ROI_mask, phantom_mask, bkg_mask]
         for i in range(len(ROI_list)):
             ROI = ROI_list[i]
             mask = mask_list[i]
@@ -630,7 +636,9 @@ class vGeneral(abc.ABC):
 
         # Storing into file instead of defining them at each metrics computation
         self.save_img(cold_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "cold_mask4_0" + '.raw')
-        self.save_img(tumor_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "tumor_mask4_0" + '.raw')
+        self.save_img(tumor_TEP_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "tumor_TEP_mask4_0" + '.raw')
+        self.save_img(tumor_TEP_match_square_ROI_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "tumor_TEP_match_square_ROI_mask4_0" + '.raw')
+        self.save_img(tumor_perfect_match_ROI_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "tumor_perfect_match_ROI_mask4_0" + '.raw')
         self.save_img(phantom_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "phantom_mask4_0" + '.raw')
         self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "background_mask4_0" + '.raw')
 
