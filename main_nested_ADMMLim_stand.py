@@ -46,7 +46,7 @@ fixed_config = {
     "xi_DIP" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in Gong and nested
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "DIP_early_stopping" : tune.grid_search([False]), # Use DIP early stopping with WMV strategy
-    "windowSize" : tune.grid_search([10]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
+    "windowSize" : tune.grid_search([50]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "patienceNumber" : tune.grid_search([100]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
 }
 # Configuration dictionnary for hyperparameters to tune

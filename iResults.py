@@ -72,10 +72,11 @@ class iResults(vDenoising):
             self.AR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
             self.IR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
 
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'random_1.img',shape=(self.PETImage_shape),type='<d')
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'F16_GT_' + str(self.PETImage_shape[0]) + '.img',shape=(self.PETImage_shape),type='<f')
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_30it/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type='<d')
+        if ( 'nested' in self.method or  'Gong' in self.method):
+            #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
+            #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'random_1.img',shape=(self.PETImage_shape),type='<d')
+            #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'F16_GT_' + str(self.PETImage_shape[0]) + '.img',shape=(self.PETImage_shape),type='<f')
+            self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type='<d')
 
 
     def writeBeginningImages(self,suffix,image_net_input=None):
@@ -370,8 +371,9 @@ class iResults(vDenoising):
         #cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "cold_mask" + image[5:] + '.raw', shape=(PETImage_shape),type='<f')
         cold_ROI_act = image_recon[self.cold_ROI==1]
         MA_cold_recon[i] = np.mean(cold_ROI_act)
-        loss_DIP_recon[i] = np.mean((self.image_corrupt * self.phantom_ROI - image_recon_cropped)**2)
-        #loss_DIP_recon[i] = np.sqrt(np.mean((self.image_corrupt * self.phantom_ROI - image_recon_cropped)**2)) / np.max(self.image_corrupt)
+        if ( 'nested' in self.method or  'Gong' in self.method):
+            loss_DIP_recon[i] = np.mean((self.image_corrupt * self.phantom_ROI - image_recon_cropped)**2)
+            #loss_DIP_recon[i] = np.sqrt(np.mean((self.image_corrupt * self.phantom_ROI - image_recon_cropped)**2)) / np.max(self.image_corrupt)
 
         #IR_cold_recon[i] = np.std(cold_ROI_act) / MA_cold_recon[i]
         #print('Mean activity in cold cylinder', MA_cold_recon[i],' , must be close to 0')

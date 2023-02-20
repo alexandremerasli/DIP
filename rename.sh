@@ -1,5 +1,5 @@
 
-for ((replicate_id=65;replicate_id<=100;replicate_id++)); do
+for ((replicate_id=1;replicate_id<=100;replicate_id++)); do
     #mv /disk/workspace_reco/nested_admm/data/Algo/image2_0/replicate_"$replicate_id"/BSREM /disk/workspace_reco/nested_admm/data/Algo/image2_0/replicate_"$replicate_id"/BSREM_quadratic
     #mv /disk/workspace_reco/nested_admm/data/Algo/metrics/image2_0/replicate_"$replicate_id"/APGMAP_quadratic /disk/workspace_reco/nested_admm/data/Algo/metrics/image2_0/replicate_"$replicate_id"/APGMAP_Nuyts
     #rm -rf /disk/workspace_reco/nested_admm/data/Algo/metrics/image2_0/replicate_"$replicate_id"/APGMAP
@@ -12,7 +12,9 @@ for ((replicate_id=65;replicate_id<=100;replicate_id++)); do
     #cd data/Algo/image2_0/replicate_"$replicate_id"/nested/Block1/config_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=3_alpha=1_adapt=tau_mu_ad=2_tau=100_mlem_=False/before_eq22
     #ls -1q * | wc -l
 
-    mv /disk/workspace_reco/nested_admm/data/Algo/image2_0_nested_and_Gong_home/ /home/meraslia/workspace_reco/nested_admm/data/Algo/image2_0/
+    #mv /disk/workspace_reco/nested_admm/data/Algo/image2_0_nested_and_Gong_home/ /home/meraslia/workspace_reco/nested_admm/data/Algo/image2_0/
+    mkdir /home/meraslia/workspace_reco/nested_admm/data/Algo/Data/initialization/image4000_0/BSREM_30it/replicate_"$replicate_id"
+    cp /home/meraslia/workspace_reco/nested_admm/data/Algo/image4000_0/replicate_"$replicate_id"/BSREM/config_image=1_im_value_cropped_rho=0.01_mlem_=False/BSREM_it30.img /home/meraslia/workspace_reco/nested_admm/data/Algo/Data/initialization/image4000_0/BSREM_30it/replicate_"$replicate_id"/BSREM_it30.img
     #python3 main_nested_ADMMLim_stand.py
     #scp -r /home/meraslia/workspace_reco/nested_admm/data/Algo/metrics/image2_0/replicate_"$replicate_id"/Gong/ liu:/home/meraslia/workspace_reco/nested_admm/data/Algo/metrics/image2_0/replicate_"$replicate_id"/Gong_ADMMLim_norm
 done
