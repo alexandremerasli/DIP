@@ -266,6 +266,7 @@ if (task == 'show_metrics_results_already_computed'):
 
     classTask = iFinalCurves(config_without_grid_search)
     config_without_grid_search["ray"] = False
+    classTask.config_with_grid_search = config
     classTask.runRayTune(config_without_grid_search,root,task)
 
 '''

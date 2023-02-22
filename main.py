@@ -16,7 +16,7 @@ from ray import tune
 
 # Configuration dictionnary for general settings parameters (not hyperparameters)
 settings_config = {
-    "image" : tune.grid_search(['image2_0']), # Image from database
+    "image" : tune.grid_search(['image4_0']), # Image from database
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
     "method" : tune.grid_search(['ADMMLim']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
@@ -51,7 +51,7 @@ fixed_config = {
 hyperparameters_config = {
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
     "rho" : tune.grid_search([0.003,8e-4,0.008,0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    "rho" : tune.grid_search([0.0002]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "rho" : tune.grid_search([0]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     "adaptive_parameters_DIP" : tune.grid_search(["nothing"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
     "mu_DIP" : tune.grid_search([10]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
     "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
@@ -126,7 +126,7 @@ for method in config["method"]['grid_search']:
     #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
     #task = 'show_results_post_reco'
     #task = 'show_results'
-    #task = 'show_metrics_results_already_computed'
+    task = 'show_metrics_results_already_computed'
     #task = 'show_metrics_ADMMLim'
     #task = 'show_metrics_nested'
     #task = 'compare_2_methods'
@@ -191,7 +191,7 @@ for method in config["method"]['grid_search']:
             #config = config_func()
             config = config_func_MIC()
     '''
-    #config_tmp = dict(config)
+    config_tmp = dict(config)
     #config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
 
 
@@ -240,11 +240,11 @@ for method in config["method"]['grid_search']:
 
     # Launch task
     if task != "show_metrics_results_already_computed":
-        #classTask.runRayTune(config_tmp,root,task)
-        classTask.runRayTune(config,root,task)
+        classTask.runRayTune(config_tmp,root,task)
+        #classTask.runRayTune(config,root,task)
     #'''
 
-if (task == 'show_metrics_results_already_computed'):
+if (task != "post_reco"):
     config_without_grid_search = dict(config)
     task = 'show_metrics_results_already_computed_following_step'
 
@@ -263,11 +263,13 @@ if (task == 'show_metrics_results_already_computed'):
 
     classTask = iFinalCurves(config_without_grid_search)
     config_without_grid_search["ray"] = False
+    classTask.config_with_grid_search = config
     classTask.runRayTune(config_without_grid_search,root,task)
 
 '''
 classTask = iResultsADMMLim_VS_APGMAP(config_without_grid_search)
 config_without_grid_search["ray"] = False
+classTask.config_with_grid_search = config
 classTask.runRayTune(config_without_grid_search,root,task)
 '''
 #sys.stdout.close()

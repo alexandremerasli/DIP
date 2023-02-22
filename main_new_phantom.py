@@ -23,11 +23,11 @@ settings_config = {
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
-    "ray" : False, # Ray mode = run with raytune if True, to run several settings in parallel
+    "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
     "tensorboard" : True, # Tensorboard mode = show results in tensorboard
     "all_images_DIP" : tune.grid_search(['True']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
-    "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
+    "replicates" : tune.grid_search(list(range(1,10+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
     "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
     "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMLim)
 }
@@ -192,7 +192,7 @@ for method in config["method"]['grid_search']:
             #config = config_func()
             config = config_func_MIC()
     '''
-    #config_tmp = dict(config)
+    config_tmp = dict(config)
     #config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
 
 
@@ -241,11 +241,11 @@ for method in config["method"]['grid_search']:
 
     # Launch task
     if task != "show_metrics_results_already_computed":
-        #classTask.runRayTune(config_tmp,root,task)
-        classTask.runRayTune(config,root,task)
+        classTask.runRayTune(config_tmp,root,task)
+        #classTask.runRayTune(config,root,task)
     #'''
 
-if (task == 'show_metrics_results_already_computed'):
+if (task != "post_reco"):
     config_without_grid_search = dict(config)
     task = 'show_metrics_results_already_computed_following_step'
 
@@ -264,6 +264,7 @@ if (task == 'show_metrics_results_already_computed'):
 
     classTask = iFinalCurves(config_without_grid_search)
     config_without_grid_search["ray"] = False
+    classTask.config_with_grid_search = config
     classTask.runRayTune(config_without_grid_search,root,task)
 
 '''

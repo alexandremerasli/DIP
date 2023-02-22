@@ -26,7 +26,10 @@ class iFinalCurves(vGeneral):
         # show the plots in python or not !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     def runComputation(self,config_all_methods,root):
+        config_grid_search = self.config_with_grid_search
         method_list = config_all_methods["method"]
+
+        MIC = False
 
         APGMAP_vs_ADMMLim = False
         DIPRecon = False
@@ -57,78 +60,79 @@ class iFinalCurves(vGeneral):
         for method in method_list: # Loop over methods
 
             #'''
-            # Gong reconstruction
-            if ('DIPRecon' in method):
-                print("configuration fiiiiiiiiiiiiiiiiiiile")
-                #config[method] = np.load(root + 'config_DIP.npy',allow_pickle='TRUE').item()
-                from Gong_configuration import config_func_MIC
-                #config[method] = config_func()
-                config[method] = config_func_MIC()
-                if ('stand' in method):
-                    config[method]["scaling"] = {'grid_search': ["standardization"]}
-                elif ('norm' in method):
-                    config[method]["scaling"] = {'grid_search': ["positive_normalization"]}
-                else:
-                    if (DIPRecon):
+            if (MIC):
+                # Gong reconstruction
+                if ('DIPRecon' in method):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    #config[method] = np.load(root + 'config_DIP.npy',allow_pickle='TRUE').item()
+                    from Gong_configuration import config_func_MIC
+                    #config[method] = config_func()
+                    config[method] = config_func_MIC()
+                    if ('stand' in method):
                         config[method]["scaling"] = {'grid_search': ["standardization"]}
+                    elif ('norm' in method):
+                        config[method]["scaling"] = {'grid_search': ["positive_normalization"]}
                     else:
-                        raise ValueError("stand norm DIPRecon")
+                        if (DIPRecon):
+                            config[method]["scaling"] = {'grid_search': ["standardization"]}
+                        else:
+                            raise ValueError("stand norm DIPRecon")
 
-                config[method]["method"] = "DIPRecon"
-                
-            # nested reconstruction
-            if ('nested' in method):
-                print("configuration fiiiiiiiiiiiiiiiiiiile")
-                from nested_configuration import config_func_MIC
-                #config[method] = config_func()
-                config[method] = config_func_MIC()
-                if ('ADMMLim' in method):
-                    config[method]["max_iter"] = {'grid_search': [99]}
-                elif ('BSREM' in method):
-                    config[method]["max_iter"] = {'grid_search': [300]}
+                    config[method]["method"] = "DIPRecon"
+                    
+                # nested reconstruction
+                if ('nested' in method):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_configuration import config_func_MIC
+                    #config[method] = config_func()
+                    config[method] = config_func_MIC()
+                    if ('ADMMLim' in method):
+                        config[method]["max_iter"] = {'grid_search': [99]}
+                    elif ('BSREM' in method):
+                        config[method]["max_iter"] = {'grid_search': [300]}
 
-            # MLEM reconstruction
-            if (method == 'MLEM'):
-                print("configuration fiiiiiiiiiiiiiiiiiiile")
-                from MLEM_configuration import config_func_MIC
-                #config[method] = config_func()
-                config[method] = config_func_MIC()
+                # MLEM reconstruction
+                if (method == 'MLEM'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from MLEM_configuration import config_func_MIC
+                    #config[method] = config_func()
+                    config[method] = config_func_MIC()
 
-            # OSEM reconstruction
-            if (method == 'OSEM'):
-                print("configuration fiiiiiiiiiiiiiiiiiiile")
-                from OSEM_configuration import config_func_MIC
-                #config[method] = config_func()
-                config[method] = config_func_MIC()
+                # OSEM reconstruction
+                if (method == 'OSEM'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from OSEM_configuration import config_func_MIC
+                    #config[method] = config_func()
+                    config[method] = config_func_MIC()
 
-            # BSREM reconstruction
-            if (method == 'BSREM'):
-                print("configuration fiiiiiiiiiiiiiiiiiiile")
-                from BSREM_configuration import config_func_MIC
-                #config[method] = config_func()
-                config[method] = config_func_MIC()
+                # BSREM reconstruction
+                if (method == 'BSREM'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from BSREM_configuration import config_func_MIC
+                    #config[method] = config_func()
+                    config[method] = config_func_MIC()
 
-            # APGMAP reconstruction
-            if ('APGMAP' in method):
-                APGMAP_vs_ADMMLim = True
-                print("configuration fiiiiiiiiiiiiiiiiiiile")
-                from APGMAP_configuration import config_func_MIC
-                #config[method] = config_func()
-                config[method] = config_func_MIC()
+                # APGMAP reconstruction
+                if ('APGMAP' in method):
+                    APGMAP_vs_ADMMLim = True
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from APGMAP_configuration import config_func_MIC
+                    #config[method] = config_func()
+                    config[method] = config_func_MIC()
+                    #for method2 in method_list: # Loop over methods
+                    #    if ('APGMAP' not in method2 and 'ADMMLim' not in method2):
+                    #        APGMAP_vs_ADMMLim = False
+                            #config[method]['A_AML'] = {'grid_search': [100]}
+                    
+                # ADMMLim reconstruction
+                if (method == 'ADMMLim'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from ADMMLim_configuration import config_func_MIC
+                    #config[method] = config_func()
+                    config[method] = config_func_MIC()
                 #'''
-                for method2 in method_list: # Loop over methods
-                    if ('APGMAP' not in method2 and 'ADMMLim' not in method2):
-                        APGMAP_vs_ADMMLim = False
-                        #config[method]['A_AML'] = {'grid_search': [100]}
-                #'''
-
-            # ADMMLim reconstruction
-            if (method == 'ADMMLim'):
-                print("configuration fiiiiiiiiiiiiiiiiiiile")
-                from ADMMLim_configuration import config_func_MIC
-                #config[method] = config_func()
-                config[method] = config_func_MIC()
-            #'''
+            else:
+                config[method] = self.config_with_grid_search
         
             # Launch task
             config_tmp = dict(config[method])
@@ -171,6 +175,7 @@ class iFinalCurves(vGeneral):
                 if (method == 'ADMMLim' or 'DIPRecon' in method):
                     self.i_init = 30 # Remove first iterations
                     self.i_init = 20 # Remove first iterations
+                    self.i_init = 1
                 else:
                     self.i_init = 1
 
