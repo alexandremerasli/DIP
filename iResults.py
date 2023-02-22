@@ -57,18 +57,18 @@ class iResults(vDenoising):
         self.phantom_ROI = self.get_phantom_ROI(self.phantom)
         if ("3D" not in self.phantom):
             self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
-            if ("4_0" not in self.phantom):
+            if (self.phantom == "image4_0" or self.phantom == "image4000_0"):
+                self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+                self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+                self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+                # This ROIs has already been defined, but is computed for the sake of simplicity
+                self.hot_ROI = self.hot_TEP_ROI
+            else:
                 self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
                 # These ROIs do not exist, so put them equal to hot ROI for the sake of simplicity
                 self.hot_TEP_ROI = np.array(self.hot_ROI)
                 self.hot_TEP_match_square_ROI = np.array(self.hot_ROI)
                 self.hot_perfect_match_ROI = np.array(self.hot_ROI)
-            else:
-                self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
-                self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
-                self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
-                # This ROIs has already been defined, but is computed for the sake of simplicity
-                self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
             self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
 
             # Metrics arrays
@@ -132,7 +132,7 @@ class iResults(vDenoising):
         if (hasattr(self,'beta')):
             beta_string = ', beta = ' + str(self.beta)
 
-        if ( 'nested' in config["method"] or  'Gong' in config["method"]):
+        if (('nested' in config["method"] or  'Gong' in config["method"]) and "results" not in config["task"]):
             self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
             self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
         else:
@@ -442,6 +442,9 @@ class iResults(vDenoising):
             wr.writerow(SSIM_recon)
             wr.writerow(MA_cold_recon)
             wr.writerow(AR_hot_recon)
+            wr.writerow(AR_hot_TEP_recon)
+            wr.writerow(AR_hot_TEP_match_square_recon)
+            wr.writerow(AR_hot_perfect_match_recon)
             wr.writerow(AR_bkg_recon)
             wr.writerow(IR_bkg_recon)
             wr.writerow(loss_DIP_recon)

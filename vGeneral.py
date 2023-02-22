@@ -76,9 +76,7 @@ class vGeneral(abc.ABC):
             if (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
                 self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
             if (self.phantom == "image4_0" and config["task"] != "show_metrics_results_already_computed"):
-                self.define_ROI_image4_0(self.PETImage_shape,self.subroot_data)
-            if (self.phantom == "image4000_0" and config["task"] != "show_metrics_results_already_computed"):
-                self.define_ROI_image4000_0(self.PETImage_shape,self.subroot_data)
+                self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
 
         return config
 
@@ -604,7 +602,7 @@ class vGeneral(abc.ABC):
         self.save_img(phantom_mask, subroot+'Data/database_v2/' + "image2_3D" + '/' + "phantom_mask2_3D" + '.raw')
         self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image2_3D" + '/' + "background_mask2_3D" + '.raw')
 
-    def define_ROI_image4_0(self,PETImage_shape,subroot):
+    def define_ROI_new_phantom(self,PETImage_shape,subroot):
         phantom_ROI = self.points_in_circle(0/4,0/4,150/4,PETImage_shape)
         cold_ROI = self.points_in_circle(-40/4,-40/4,40/4-1,PETImage_shape)
         hot_TEP_ROI = self.points_in_circle(50/4,10/4,20/4-1,PETImage_shape)
@@ -635,12 +633,12 @@ class vGeneral(abc.ABC):
                 mask[couple] = 1
 
         # Storing into file instead of defining them at each metrics computation
-        self.save_img(cold_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "cold_mask4_0" + '.raw')
-        self.save_img(tumor_TEP_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "tumor_TEP_mask4_0" + '.raw')
-        self.save_img(tumor_TEP_match_square_ROI_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "tumor_TEP_match_square_ROI_mask4_0" + '.raw')
-        self.save_img(tumor_perfect_match_ROI_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "tumor_perfect_match_ROI_mask4_0" + '.raw')
-        self.save_img(phantom_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "phantom_mask4_0" + '.raw')
-        self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image4_0" + '/' + "background_mask4_0" + '.raw')
+        self.save_img(cold_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw')
+        self.save_img(tumor_TEP_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw')
+        self.save_img(tumor_TEP_match_square_ROI_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw')
+        self.save_img(tumor_perfect_match_ROI_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw')
+        self.save_img(phantom_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + self.phantom[5:] + '.raw')
+        self.save_img(bkg_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw')
 
         '''
         # Storing into file instead of defining them at each metrics computation
@@ -675,10 +673,10 @@ class vGeneral(abc.ABC):
                 mask[couple] = 1
 
         # Storing into file instead of defining them at each metrics computation
-        self.save_img(cold_mask, subroot+'Data/database_v2/' + "image4000_0" + '/' + "cold_mask4000_0" + '.raw')
-        self.save_img(tumor_mask, subroot+'Data/database_v2/' + "image4000_0" + '/' + "tumor_mask4000_0" + '.raw')
-        self.save_img(phantom_mask, subroot+'Data/database_v2/' + "image4000_0" + '/' + "phantom_mask4000_0" + '.raw')
-        self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image4000_0" + '/' + "background_mask4000_0" + '.raw')
+        self.save_img(cold_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "cold_mask4000_0" + '.raw')
+        self.save_img(tumor_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_mask4000_0" + '.raw')
+        self.save_img(phantom_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "phantom_mask4000_0" + '.raw')
+        self.save_img(bkg_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask4000_0" + '.raw')
 
         '''
         # Storing into file instead of defining them at each metrics computation

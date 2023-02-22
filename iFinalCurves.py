@@ -161,8 +161,15 @@ class iFinalCurves(vGeneral):
         font = {'family' : 'normal',
         'size'   : 14}
         matplotlib.rc('font', **font)
-        #for ROI in ['hot','cold']:
-        for ROI in ['cold','hot']:
+
+        if (self.phantom == "image2_0"):
+            ROI_list = ['cold','hot']
+        elif (self.phantom == "image4_0" or self.phantom == "image4000_0"):
+            ROI_list = ['cold','hot_TEP','hot_TEP_match_square_recon','hot_perfect_match_recon']
+        
+
+        #for ROI in ['cold','hot']: #image2_0
+        for ROI in ROI_list:
             # Initialize 3 figures
             fig, ax = [None] * 3, [None] * 3
             for fig_nb in range(3):
@@ -193,6 +200,9 @@ class iFinalCurves(vGeneral):
                 SSIM_recon = []
                 MA_cold_recon = []
                 AR_hot_recon = []
+                AR_hot_TEP_recon = []
+                AR_hot_TEP_match_square_recon = []
+                AR_hot_perfect_match_recon = []
                 AR_bkg_recon = []
                 IR_bkg_recon = []
 
@@ -230,7 +240,7 @@ class iFinalCurves(vGeneral):
 
 
                 # Settings in following curves
-                variance_plot = False
+                variance_plot = True
                 plot_all_replicates_curves = False
                 color_dict = {
                     "nested" : ['red','pink'],
@@ -339,17 +349,21 @@ class iFinalCurves(vGeneral):
                             rows_csv[5] = [float(rows_csv[5][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[5]),self.total_nb_iter))]
                             rows_csv[6] = [float(rows_csv[6][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[6]),self.total_nb_iter))]
                             rows_csv[7] = [float(rows_csv[7][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[7]),self.total_nb_iter))]
-
+                            rows_csv[8] = [float(rows_csv[8][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[8]),self.total_nb_iter))]
+                            rows_csv[9] = [float(rows_csv[9][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[9]),self.total_nb_iter))]
+                            rows_csv[10] = [float(rows_csv[10][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[10]),self.total_nb_iter))]
+                            
                             PSNR_recon.append(np.array(rows_csv[0]))
                             PSNR_norm_recon.append(np.array(rows_csv[1]))
                             MSE_recon.append(np.array(rows_csv[2]))
                             SSIM_recon.append(np.array(rows_csv[3]))
-                            #MA_cold_recon.append(np.array(rows_csv[4]))
                             MA_cold_recon.append(np.array(rows_csv[4]) / 10 * 100)
-                            #AR_hot_recon.append(np.array(rows_csv[5]))
                             AR_hot_recon.append(np.array(rows_csv[5]) / 400 * 100)
-                            AR_bkg_recon.append(np.array(rows_csv[6]))
-                            IR_bkg_recon.append(np.array(rows_csv[7]))
+                            AR_hot_TEP_recon.append(np.array(rows_csv[6]) / 400 * 100)
+                            AR_hot_TEP_match_square_recon.append(np.array(rows_csv[7]) / 400 * 100)
+                            AR_hot_perfect_match_recon.append(np.array(rows_csv[8]) / 400 * 100)
+                            AR_bkg_recon.append(np.array(rows_csv[9]))
+                            IR_bkg_recon.append(np.array(rows_csv[10]))
                             
                             try:
                                 MA_cold = np.array(rows_csv[8])
@@ -370,12 +384,18 @@ class iFinalCurves(vGeneral):
 
 
                 # Select metrics to plot according to ROI
-                if ROI == 'hot':
+                if ROI == 'hot_TEP':
+                    metrics = AR_hot_TEP_recon
+                elif ROI == 'hot_TEP_match_square_recon':
+                    metrics = AR_hot_TEP_match_square_recon
+                elif ROI == 'hot_perfect_match_recon':
+                    metrics = AR_hot_perfect_match_recon
+                elif ROI == 'hot':
                     #metrics = [abs(hot) for hot in AR_hot_recon] # Take absolute value of AR hot for tradeoff curves
-                    metrics = AR_hot_recon # Take absolute value of AR hot for tradeoff curves
-                else:
+                    metrics = AR_hot_recon
+                elif ROI == 'cold':
                     #metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
-                    metrics = MA_cold_recon # Take absolute value of MA cold for tradeoff curves
+                    metrics = MA_cold_recon
 
                 # Keep useful information to plot from metrics                
                 IR_final = IR_bkg_recon
@@ -606,23 +626,13 @@ class iFinalCurves(vGeneral):
                 else:
                     pretitle = str(method_list)
                 if (fig_nb == 0):
-                    if ROI == 'hot':
-                        title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
-                    elif ROI == 'cold':
-                        title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
+                    title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
                 elif (fig_nb == 1):
-                    if ROI == 'hot':
-                        title = pretitle + ' : AR ' + ' in ' + ROI + ' region for ' + str(nb_usable_replicates) + ' replicates' + '.png'
-                    elif ROI == 'cold':
-                        title = pretitle + ' : AR ' + ' in ' + ROI + ' region for ' + str(nb_usable_replicates) + ' replicates' + '.png'
+                    title = pretitle + ' : AR ' + ' in ' + ROI + ' region for ' + str(nb_usable_replicates) + ' replicates' + '.png'
                 elif (fig_nb == 2):
-                    if ROI == 'hot':
-                        title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
-                    elif ROI == 'cold':
-                        title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
+                    title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
                 
-
-                fig[fig_nb].savefig(self.subroot_data + 'metrics' + '/' + title)
+                fig[fig_nb].savefig(self.subroot_data + 'metrics/' + self.phantom + '/' + title)
 
             for method in method_list: # Loop over methods
                 # Swap rho and post smoothing because MLEM and OSEM do not have rho parameter
