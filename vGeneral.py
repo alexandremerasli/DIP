@@ -175,6 +175,10 @@ class vGeneral(abc.ABC):
         #if (task == "compare_2_methods"):
         #    config["replicates"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
 
+        # By default use ADMMLim in nested, not APGMAP
+        if "recoInNested" not in config:
+            config["recoInNested"] = tune.grid_search(["ADMMLim"])
+
         # Do not scale images if network input is uniform of if Gong's method
         if config["input"]['grid_search'] == 'uniform': # Do not standardize or normalize if uniform, otherwise NaNs
             config["scaling"] = "nothing"
@@ -197,11 +201,11 @@ class vGeneral(abc.ABC):
 
         # Delete hyperparameters specific to others optimizer 
         if (len(config["method"]['grid_search']) == 1):
-            if (config["method"]['grid_search'][0] != "AML" and "APGMAP" not in config["method"]['grid_search'][0]):
+            if (config["method"]['grid_search'][0] != "AML" and "APGMAP" not in config["method"]['grid_search'][0] and "APGMAP" not in config["recoInNested"]['grid_search'][0]):
                 config.pop("A_AML", None)
             if (config["method"]['grid_search'][0] == 'BSREM' or 'nested' in config["method"]['grid_search'][0] or 'Gong' in config["method"]['grid_search'][0] or 'DIPRecon' in config["method"]['grid_search'][0] or 'APGMAP' in config["method"]['grid_search'][0]):
                 config.pop("post_smoothing", None)
-            if (config["method"]['grid_search'][0] != 'ADMMLim' and "nested" not in config["method"]['grid_search'][0]):
+            if ((config["method"]['grid_search'][0] != 'ADMMLim' and "nested" not in config["method"]['grid_search'][0]) or "APGMAP" in config["recoInNested"]['grid_search'][0]):
                 #config.pop("nb_inner_iteration", None)
                 config.pop("alpha", None)
                 config.pop("adaptive_parameters", None)
@@ -767,7 +771,7 @@ class vGeneral(abc.ABC):
             pnlt = ''
             penaltyStrength = ''
         elif (method == 'APGMAP'):
-            opti = ' -opti ' + method + ',1,1e-10,0.01,-1,' + str(self.A_AML)
+            opti = ' -opti ' + "APPGML" + ',1,1e-10,0.01,-1,' + str(self.A_AML)
             pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
             penaltyStrength = ' -pnlt-beta ' + str(self.beta)
         elif (method == 'BSREM'):
@@ -775,18 +779,31 @@ class vGeneral(abc.ABC):
             pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
             penaltyStrength = ' -pnlt-beta ' + str(self.beta)
         elif ('nested' in method or 'ADMMLim' in method):
-            opti = ' -opti ' + 'ADMMLim' + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) + ',' + str(self.tau_max) + ',' + str(self.stoppingCriterionValue) + ',' + str(self.saveSinogramsUAndV)
-            if ('nested' in method):
+            if (self.recoInNested == "ADMMLim"):
+                opti = ' -opti ' + 'ADMMLim' + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) + ',' + str(self.tau_max) + ',' + str(self.stoppingCriterionValue) + ',' + str(self.saveSinogramsUAndV)
+                if ('nested' in method):
+                    if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
+                        rho = 0
+                        #self.rho = 0
+                    method = 'ADMMLim' + method[6:]
+                    pnlt = ' -pnlt QUAD'
+                elif ('ADMMLim' in method):
+                    pnlt = ' -pnlt ' + penalty
+                    if penalty == "MRF":
+                        pnlt += ':' + self.subroot_data + method + '_MRF.conf'
+                penaltyStrength = ' -pnlt-beta ' + str(rho)
+            elif (self.recoInNested == "APGMAP"):
                 if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
                     rho = 0
                     #self.rho = 0
-                method = 'ADMMLim' + method[6:]
+                opti = ' -opti APPGML' + ',1,1e-10,0.01,-1,' + str(self.A_AML)
                 pnlt = ' -pnlt QUAD'
-            elif ('ADMMLim' in method):
-                pnlt = ' -pnlt ' + penalty
-                if penalty == "MRF":
-                    pnlt += ':' + self.subroot_data + method + '_MRF.conf'
-            penaltyStrength = ' -pnlt-beta ' + str(rho)
+                penaltyStrength = ' -pnlt-beta ' + str(rho)
+            
+            # For all optimizers, remove penalty if rho == 0
+            if (rho == 0):
+                pnlt = ''
+                penaltyStrength = ''
         elif (method == 'Gong'):
             if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
                 rho = 0

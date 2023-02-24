@@ -15,7 +15,6 @@ class iWMV(vGeneral):
         self.stagnate = 0
 
     def initializeSpecific(self,config,root, *args, **kwargs):
-        self.windowSize = config["windowSize"]
         self.patienceNumber = config["patienceNumber"]
         self.epochStar = -1
         self.VAR_recon = []
@@ -24,9 +23,13 @@ class iWMV(vGeneral):
         self.SSIM_WMV = []
         self.SUCCESS = False
 
-        self.EMA = np.zeros((self.PETImage_shape))
-        self.EMV = 0
-        self.alpha_EMV = 0.1
+        self.EMV_or_WMV = config["EMV_or_WMV"]
+        if self.EMV_or_WMV == "EMV":    
+            self.EMA = np.zeros((self.PETImage_shape))
+            self.EMV = 0
+            self.alpha_EMV = config["alpha_EMV"]
+        else:
+            self.windowSize = config["windowSize"]
 
         #self.queueQ = np.array((self.windowSize,self.PETImage_shape))
 
@@ -59,8 +62,7 @@ class iWMV(vGeneral):
         self.PSNR_WMV.append(peak_signal_noise_ratio(image_gt_cropped, out_cropped, data_range=np.amax(out_cropped) - np.amin(out_cropped)))
         self.SSIM_WMV.append(structural_similarity(np.squeeze(image_gt_cropped), np.squeeze(out_cropped), data_range=out_cropped.max() - out_cropped.min()))
 
-        WMV = True
-        if (WMV):
+        if (self.EMV_or_WMV == "WMV"):
             #'''
             #####################################  Window Moving Variance  #############################################
             queueQ.append(out_cropped.flatten()) # Add last computed image to last element in queueQ from window
@@ -91,24 +93,21 @@ class iWMV(vGeneral):
         else:
             #'''
             #####################################  Exponential Moving Variance  #############################################
-            queueQ.append(out_cropped.flatten()) # Add last computed image to last element in queueQ from window
-            if (len(queueQ) == self.windowSize):
-                # Compute variance for this window
-                self.EMV = (1-self.alpha_EMV) * (self.EMV + self.alpha_EMV * np.linalg.norm(out_cropped - self.EMA)**2)
-                # Compute EMA to be used in next window
-                self.EMA = (1-self.alpha_EMV) * self.EMA + self.alpha_EMV * out_cropped
-                # Check if current variance is smaller than minimum previously computed variance, else count number of iterations since this minimum
-                if self.EMV < VAR_min and not SUCCESS:
-                    VAR_min = self.EMV
-                    self.epochStar = epoch  # current detection point
-                    stagnate = 1
-                else:
-                    stagnate += 1
-                # ES point has been found
-                if stagnate == self.patienceNumber:
-                    SUCCESS = True
-                queueQ.pop(0) # Remove first element in queueQ from window for next variance computation
-                self.VAR_recon.append(self.EMV) # Store current variance to plot variance curve after
+            # Compute variance for this window
+            self.EMV = (1-self.alpha_EMV) * (self.EMV + self.alpha_EMV * np.linalg.norm(out_cropped - self.EMA)**2)
+            # Compute EMA to be used in next window
+            self.EMA = (1-self.alpha_EMV) * self.EMA + self.alpha_EMV * out_cropped
+            # Check if current variance is smaller than minimum previously computed variance, else count number of iterations since this minimum
+            if self.EMV < VAR_min and not SUCCESS:
+                VAR_min = self.EMV
+                self.epochStar = epoch  # current detection point
+                stagnate = 1
+            else:
+                stagnate += 1
+            # ES point has been found
+            if stagnate == self.patienceNumber:
+                SUCCESS = True
+            self.VAR_recon.append(self.EMV) # Store current variance to plot variance curve after
             #'''
 
 

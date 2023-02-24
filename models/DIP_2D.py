@@ -248,7 +248,12 @@ class DIP_2D(pl.LightningModule):
             self.PSNR_WMV = self.classWMV.PSNR_WMV
             self.SSIM_WMV = self.classWMV.SSIM_WMV
             self.epochStar = self.classWMV.epochStar
-            self.windowSize = self.classWMV.windowSize
+            '''
+            if self.EMV_or_WMV == "EMV":
+                self.alpha_EMV = self.classWMV.alpha_EMV
+            else:
+                self.windowSize = self.classWMV.windowSize
+            '''
             self.patienceNumber = self.classWMV.patienceNumber
             self.SUCCESS = self.classWMV.SUCCESS
 

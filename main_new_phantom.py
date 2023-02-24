@@ -126,7 +126,7 @@ for method in config["method"]['grid_search']:
     #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
     #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
     #task = 'show_results_post_reco'
-    task = 'show_results'
+    #task = 'show_results'
     #task = 'show_metrics_results_already_computed'
     #task = 'show_metrics_ADMMLim'
     #task = 'show_metrics_nested'

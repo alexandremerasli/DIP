@@ -1,3 +1,5 @@
-mv /disk/workspace_reco/nested_admm/data/Algo/image2_0_main_nested_BSREM_stand /home/meraslia/workspace_reco/nested_admm/data/Algo/image2_0
-python3 main_nested_BSREM_stand.py # done
+python3 main_nested_BSREM_stand.py
+python3 main_nested_BSREM_stand_CT2skip.py
+python3 main_nested_BSREM_stand_more_ADMMLim_it.py
+python3 main_nested_BSREM_stand_APPGML.py
 shutdown -P + 1

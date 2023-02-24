@@ -255,7 +255,8 @@ class vDenoising(vGeneral):
         if (self.input == 'CT' and self.net != 'DD'):
             type = '<f'
         else:
-            type = None
+            type = '<d' # random images were generated in double
+            #type = None
 
         im_input = self.fijii_np(file_path, shape=(PETImage_shape),type=type) # Load input of the DNN (CT image)
         return im_input
@@ -309,7 +310,7 @@ class vDenoising(vGeneral):
         self.DIP_early_stopping = model.DIP_early_stopping
         if self.DIP_early_stopping:
             self.epochStar = model.epochStar
-            self.windowSize = model.windowSize
+            #self.windowSize = model.windowSize
             self.patienceNumber = model.patienceNumber
             self.VAR_recon = model.VAR_recon
             self.MSE_WMV = model.MSE_WMV

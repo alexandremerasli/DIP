@@ -44,8 +44,15 @@ class vReconstruction(vGeneral):
             if ( 'Gong' in config["method"]):
                 self.alpha = None
             else:
-                self.alpha = config["alpha"]
-                self.adaptive_parameters = config["adaptive_parameters"]
+                if (config["recoInNested"] == "ADMMLim"):
+                    self.stoppingCriterionValue = config["stoppingCriterionValue"]
+                    self.saveSinogramsUAndV = config["saveSinogramsUAndV"]
+                    self.alpha = config["alpha"]
+                    self.adaptive_parameters = config["adaptive_parameters"]
+                else:
+                    self.alpha = None
+                    self.adaptive_parameters = "nothing"
+                    self.A_AML = config["A_AML"]
                 if (self.adaptive_parameters == "nothing"): # set mu, tau, xi to any values, there will not be used in CASToR
                     self.mu_adaptive = np.NaN
                     self.tau = np.NaN
@@ -59,8 +66,6 @@ class vReconstruction(vGeneral):
                         self.tau_max = config["tau_max"]
                     else:
                         self.tau_max = np.NaN
-                self.stoppingCriterionValue = config["stoppingCriterionValue"]
-                self.saveSinogramsUAndV = config["saveSinogramsUAndV"]
         self.image_init_path_without_extension = config["image_init_path_without_extension"]
         self.tensorboard = config["tensorboard"]
 
@@ -114,8 +119,73 @@ class vReconstruction(vGeneral):
         subdir = 'during_eq22'
 
         # Initialization
-        if (method == 'nested'):            
-            x = self.ADMMLim_general(config, i, subdir, subroot_output_path, f_mu_for_penalty,writer,image_gt, i_init)
+        self.recoInNested = config["recoInNested"]
+        if (method == 'nested'):
+            if config["recoInNested"] == "ADMMLim":
+                x = self.ADMMLim_general(config, i, subdir, subroot_output_path, f_mu_for_penalty,writer,image_gt, i_init)
+            elif config["recoInNested"] == "APGMAP":
+                print("APGMAP in nested")
+                # Choose number of argmax iteration for (second) x computation
+                if (mlem_sequence):
+                    #it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, too many subsets for 2D, but maybe ok for 3D
+                    it = ' -it 16:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, 2D
+                else: 
+                    it = ' -it ' + str(nb_outer_iteration) + ':28' # Put 28 subsets to be quick
+                    #it = ' -it ' + str(nb_outer_iteration) + ':' + str(config["nb_subsets"]) # Only 2 iterations (Gong) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
+
+                # Define command line to run OPTITR with CASToR
+                castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i, self.unnested_1st_global_iter)
+                # Initialize image
+                
+                if (i == 0 and not config["unnested_1st_global_iter"]):   # choose initial image for CASToR reconstruction
+                    initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_DIP' + str(i-1) + '_FINAL.hdr' # Gong initializes to DIP output at pre iteratio
+                    #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + config["f_init"] + '.hdr' # enable to avoid pre iteration
+                elif (i == 0 and config["unnested_1st_global_iter"]):
+                    #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
+                    initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
+                else:
+                    #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_' + format(config["nb_outer_iteration"]) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'
+                    # Trying to initialize OPTITR
+                    #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
+                    #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
+                    if (i == 1 and config["unnested_1st_global_iter"]):
+                        initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config["nb_outer_iteration"]) + '.hdr'    
+                        initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_DIP' + str(i-1) + '_FINAL.hdr'
+                        #import matplotlib.pyplot as plt
+                        #plt.imshow()
+                        #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + config["f_init"] + '.hdr' 
+                    else:
+                        initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config["nb_outer_iteration"]) + '.hdr'    
+                    
+                base_name_i = format(i)
+                full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
+                x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_i + it + f_mu_for_penalty + initialimage            
+                if (i == i_init and config["unnested_1st_global_iter"]): # Gong does MLEM 60 it at the beginning, but we will do OPTITR after to be more coherent # TESTTEST
+                    x_reconstruction_command_line = "castor-recon -dim 112,112,1 -vox 4,4,4 -df /home/meraslia/workspace_reco/nested_admm/data/Algo/Data/database_v2/image2_0/data2_0/data2_0.cdh -vb 3 -th 1 -proj incrementalSiddon -opti-fom -conv gaussian,4,1,3.5::psf -opti MLEM -fout /home/meraslia/workspace_reco/nested_admm/data/Algo/image2_0/replicate_1/Gong/Block1/config_rho=0.003_adapt=rho_mu_DI=2_tau_D=100_lr=0.01_sub_i=300_opti_=Adam_skip_=3_scali=positive_normalization_input=random_mlem_=False/during_eq22/0 -it 60:1" # Gong does MLEM 60 it at the beginning, but we will do OPTITR after to be more coherent # TESTTEST
+                print(x_reconstruction_command_line + ' -oit -1')
+                os.system(x_reconstruction_command_line + ' -oit -1')
+
+                """
+                self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')            
+                img = (0.9+self.rho)*self.image_gt
+
+                for p in range(config["nb_outer_iteration"]):   
+                    img[:p,:,:] = 0 
+                    self.save_img(img,subroot_output_path + "/during_eq22" + "/" + str(i) + "_it" + str(p+1) + ".img")
+                """
+
+                if (mlem_sequence):
+                    x = self.fijii_np(full_output_path_i + '_it30.img', shape=(PETImage_shape))
+                else:
+                    x = self.fijii_np(full_output_path_i + '_it' + str(config["nb_outer_iteration"]) + '.img', shape=(PETImage_shape))
+                    if (i == i_init and config["unnested_1st_global_iter"]): # Gong does MLEM 60 it at the beginning, but we will do OPTITR after to be more coherent # TESTTEST
+                        x = self.fijii_np(full_output_path_i + '_it' + str(60) + '.img', shape=(PETImage_shape))
+                
+                print(full_output_path_i + '_it' + str(config["nb_outer_iteration"]) + '.img')
+
+                self.write_image_tensorboard(writer,x,"x after optimization transfer over iterations",suffix,image_gt, i) # Showing all corrupted images with same contrast to compare them together
+                self.write_image_tensorboard(writer,x,"x after optimization transfer over iterations (FULL CONTRAST)",suffix,image_gt, i,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
+
         elif (method == 'Gong'):
 
             # Choose number of argmax iteration for (second) x computation
