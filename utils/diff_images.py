@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 import argparse
 
-def fijii_np(path,shape,type='<f'):
+def fijii_np(path,shape,type='<d'):
     """"Transforming raw data to numpy array"""
     file_path=(path)
     dtype = np.dtype(type)
@@ -18,8 +18,8 @@ parser.add_argument('--img2', type=str, dest='img2', help='second image .img')
 
 args = parser.parse_args()
 
-root = 'data/Algo/'
-PETImage_shape = (112,112)
+root = '/home/meraslia/workspace_reco/nested_admm/data/Algo/'
+PETImage_shape = (112,112,1)
 
 img1_np = fijii_np(args.img1, shape=(PETImage_shape))
 print("min 1 = " ,np.min(img1_np))
@@ -33,13 +33,13 @@ print("max 2 = " ,np.max(img2_np))
 
 plt.figure()
 #plt.imshow(np.abs(img1_np - img2_np), cmap='gray_r')
-plt.imshow(img1_np - img2_np, cmap='gray_r')
+plt.imshow(img1_np - img2_np, cmap='bwr')
 plt.title('absolute difference between img1 and img2')
 plt.colorbar()
 plt.savefig(root+'diff_img.png')
 
 plt.figure()
-plt.imshow(img1_np / img2_np, cmap='gray_r')
+plt.imshow(img1_np / img2_np, cmap='bwr')
 
 '''
 for i in range(img1_np.shape[0]):
@@ -58,14 +58,14 @@ print("Numerical error below threshold : ",MSE_normed < 1e-5)
 
 plt.figure()
 #plt.imshow(np.abs(img1_np), cmap='gray_r')
-plt.imshow(img1_np, cmap='gray_r')
+plt.imshow(img1_np, cmap='gray_r',vmin=np.min(img1_np),vmax=np.max(img1_np))
 plt.title('img1')
 plt.colorbar()
 plt.savefig(root+'img1.png')
 
 plt.figure()
 #plt.imshow(np.abs(img2_np), cmap='gray_r')
-plt.imshow(img2_np, cmap='gray_r')
+plt.imshow(img2_np, cmap='gray_r',vmin=np.min(img1_np),vmax=np.max(img1_np))
 plt.title('img2')
 plt.colorbar()
 plt.savefig(root+'img2.png')

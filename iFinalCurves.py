@@ -29,7 +29,8 @@ class iFinalCurves(vGeneral):
         config_grid_search = self.config_with_grid_search
         method_list = config_all_methods["method"]
 
-        MIC = False
+        MIC_config = False
+        csv_before_MIC = False
 
         APGMAP_vs_ADMMLim = False
         DIPRecon = False
@@ -60,7 +61,7 @@ class iFinalCurves(vGeneral):
         for method in method_list: # Loop over methods
 
             #'''
-            if (MIC):
+            if (MIC_config):
                 # Gong reconstruction
                 if ('DIPRecon' in method):
                     print("configuration fiiiiiiiiiiiiiiiiiiile")
@@ -349,9 +350,10 @@ class iFinalCurves(vGeneral):
                             rows_csv[5] = [float(rows_csv[5][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[5]),self.total_nb_iter))]
                             rows_csv[6] = [float(rows_csv[6][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[6]),self.total_nb_iter))]
                             rows_csv[7] = [float(rows_csv[7][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[7]),self.total_nb_iter))]
-                            rows_csv[8] = [float(rows_csv[8][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[8]),self.total_nb_iter))]
-                            rows_csv[9] = [float(rows_csv[9][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[9]),self.total_nb_iter))]
-                            rows_csv[10] = [float(rows_csv[10][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[10]),self.total_nb_iter))]
+                            if (not csv_before_MIC):
+                                rows_csv[8] = [float(rows_csv[8][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[8]),self.total_nb_iter))]
+                                rows_csv[9] = [float(rows_csv[9][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[9]),self.total_nb_iter))]
+                                rows_csv[10] = [float(rows_csv[10][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[10]),self.total_nb_iter))]
                             
                             PSNR_recon.append(np.array(rows_csv[0]))
                             PSNR_norm_recon.append(np.array(rows_csv[1]))
@@ -359,12 +361,16 @@ class iFinalCurves(vGeneral):
                             SSIM_recon.append(np.array(rows_csv[3]))
                             MA_cold_recon.append(np.array(rows_csv[4]) / 10 * 100)
                             AR_hot_recon.append(np.array(rows_csv[5]) / 400 * 100)
-                            AR_hot_TEP_recon.append(np.array(rows_csv[6]) / 400 * 100)
-                            AR_hot_TEP_match_square_recon.append(np.array(rows_csv[7]) / 400 * 100)
-                            AR_hot_perfect_match_recon.append(np.array(rows_csv[8]) / 400 * 100)
-                            AR_bkg_recon.append(np.array(rows_csv[9]))
-                            IR_bkg_recon.append(np.array(rows_csv[10]))
-                            
+                            if (not csv_before_MIC):
+                                AR_hot_TEP_recon.append(np.array(rows_csv[6]) / 400 * 100)
+                                AR_hot_TEP_match_square_recon.append(np.array(rows_csv[7]) / 400 * 100)
+                                AR_hot_perfect_match_recon.append(np.array(rows_csv[8]) / 400 * 100)
+                                AR_bkg_recon.append(np.array(rows_csv[9]))
+                                IR_bkg_recon.append(np.array(rows_csv[10]))
+                            else:        
+                                AR_bkg_recon.append(np.array(rows_csv[6]))
+                                IR_bkg_recon.append(np.array(rows_csv[7]))
+                        
                             try:
                                 MA_cold = np.array(rows_csv[8])
                             except:
