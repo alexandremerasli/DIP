@@ -19,6 +19,7 @@ class iComparison(vReconstruction):
             self.beta = config["A_AML"]
         elif ('ADMMLim' in self.method):
             self.beta = config["alpha"]
+            self.recoInNested = "ADMMLim"
         elif (self.method == 'BSREM' or self.method == 'APGMAP'):
             self.beta = self.rho
 

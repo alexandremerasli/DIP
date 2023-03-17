@@ -78,7 +78,7 @@ hyperparameters_config = {
     "tau" : tune.grid_search([100]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim
     "tau_max" : tune.grid_search([100]), # Maximum value for tau in adaptive tau in ADMMLim
     "stoppingCriterionValue" : tune.grid_search([0]), # Value of the stopping criterion in ADMMLim
-    "saveSinogramsUAndV" : tune.grid_search([1]), # 1 means save sinograms u and v from CASToR, otherwise it means do not save them. If adaptive tau, it corresponds to tau max
+    "saveSinogramsUAndV" : tune.grid_search([0]), # 1 means save sinograms u and v from CASToR, otherwise it means do not save them. If adaptive tau, it corresponds to tau max
     ## hyperparameters from CASToR algorithms 
     # Optimization transfer (OPTITR) hyperparameters
     "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False

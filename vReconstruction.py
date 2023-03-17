@@ -115,14 +115,22 @@ class vReconstruction(vGeneral):
         path_before_eq_22 = (subroot_output_path + '/before_eq22/')
         self.save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
         self.write_hdr(self.subroot_data,[i],'before_eq22',phantom,'f_mu',subroot_output_path)
-        f_mu_for_penalty = ' -multimodal ' + subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr' # Will be removed if first global iteration and unnested_1st_global_iter (rho == 0)
+        f_mu_for_penalty_path = subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr' # Will be removed if first global iteration and unnested_1st_global_iter (rho == 0)
         subdir = 'during_eq22'
 
+        # If rho is 0, remove f_mu_for_penalty
+        if ((self.rho == 0) or (i==0 and self.unnested_1st_global_iter) or (i==-1 and not self.unnested_1st_global_iter)): # For first iteration, put rho to zero
+            f_mu_for_penalty_path = ''
+        # Write f_mu path in config
+        text_file = open(self.subroot + 'Block1/' + self.suffix  + '/' + 'QUAD.conf', "w")
+        text_file.write("# Path to target image (default is uniform image with zeros)" + "\n")
+        text_file.write("target image path : " + f_mu_for_penalty_path + "\n")
+        text_file.close()
         # Initialization
         self.recoInNested = config["recoInNested"]
         if (method == 'nested'):
             if config["recoInNested"] == "ADMMLim":
-                x = self.ADMMLim_general(config, i, subdir, subroot_output_path, f_mu_for_penalty,writer,image_gt, i_init)
+                x = self.ADMMLim_general(config, i, subdir, subroot_output_path,writer,image_gt, i_init)
             elif config["recoInNested"] == "APGMAP":
                 print("APGMAP in nested")
                 # Choose number of argmax iteration for (second) x computation
@@ -130,9 +138,28 @@ class vReconstruction(vGeneral):
                     #it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, too many subsets for 2D, but maybe ok for 3D
                     it = ' -it 16:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, 2D
                 else: 
-                    it = ' -it ' + str(nb_outer_iteration) + ':28' # Put 28 subsets to be quick
+                    it = ' -it ' + str(nb_outer_iteration) + ':' + str(config["nb_subsets"]) # Put 28 subsets to be quick
                     #it = ' -it ' + str(nb_outer_iteration) + ':' + str(config["nb_subsets"]) # Only 2 iterations (Gong) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
 
+                # Write shift A in config
+                # Read lines in config file
+                try:
+                    with open(self.subroot + 'Block1/' + self.suffix  + '/' + 'APPGML.conf', 'r') as read_config_file:
+                        data = read_config_file.readlines()
+                except:
+                    with open(self.subroot + 'Block1/' + self.suffix  + '/' + 'APPGML.conf', "w") as write_config_file:
+                        with open(self.subroot_data + 'APPGML_no_replicate.conf', "r") as read_config_file:
+                            write_config_file.write(read_config_file.read())
+                    with open(self.subroot + 'Block1/' + self.suffix  + '/' + 'APPGML.conf', 'r') as read_config_file:
+                        data = read_config_file.readlines()
+                    # Change the line with shift
+                for line_idx in range (len(data)):
+                    line = data[line_idx]
+                    if line.startswith("bound"):
+                        data[line_idx] = "bound: " + str(self.A_AML) + "\n"
+                # Write everything back
+                with open(self.subroot + 'Block1/' + self.suffix  + '/' + 'APPGML.conf', "w") as write_config_file:
+                    write_config_file.writelines(data)
                 # Define command line to run OPTITR with CASToR
                 castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i, self.unnested_1st_global_iter)
                 # Initialize image
@@ -159,11 +186,11 @@ class vReconstruction(vGeneral):
                     
                 base_name_i = format(i)
                 full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
-                x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_i + it + f_mu_for_penalty + initialimage            
+                x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_i + it + initialimage
                 if (i == i_init and config["unnested_1st_global_iter"]): # Gong does MLEM 60 it at the beginning, but we will do OPTITR after to be more coherent # TESTTEST
                     x_reconstruction_command_line = "castor-recon -dim 112,112,1 -vox 4,4,4 -df /home/meraslia/workspace_reco/nested_admm/data/Algo/Data/database_v2/image2_0/data2_0/data2_0.cdh -vb 3 -th 1 -proj incrementalSiddon -opti-fom -conv gaussian,4,1,3.5::psf -opti MLEM -fout /home/meraslia/workspace_reco/nested_admm/data/Algo/image2_0/replicate_1/Gong/Block1/config_rho=0.003_adapt=rho_mu_DI=2_tau_D=100_lr=0.01_sub_i=300_opti_=Adam_skip_=3_scali=positive_normalization_input=random_mlem_=False/during_eq22/0 -it 60:1" # Gong does MLEM 60 it at the beginning, but we will do OPTITR after to be more coherent # TESTTEST
-                print(x_reconstruction_command_line + ' -oit -1')
-                os.system(x_reconstruction_command_line + ' -oit -1')
+                print(x_reconstruction_command_line)# + ' -oit -1')
+                os.system(x_reconstruction_command_line)# + ' -oit -1')
 
                 """
                 self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')            
@@ -222,7 +249,7 @@ class vReconstruction(vGeneral):
                 
             base_name_i = format(i)
             full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
-            x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_i + it + f_mu_for_penalty + initialimage            
+            x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_i + it + initialimage            
             if (i == i_init and config["unnested_1st_global_iter"]): # Gong does MLEM 60 it at the beginning, but we will do OPTITR after to be more coherent # TESTTEST
                 x_reconstruction_command_line = "castor-recon -dim 112,112,1 -vox 4,4,4 -df /home/meraslia/workspace_reco/nested_admm/data/Algo/Data/database_v2/image2_0/data2_0/data2_0.cdh -vb 3 -th 1 -proj incrementalSiddon -opti-fom -conv gaussian,4,1,3.5::psf -opti MLEM -fout /home/meraslia/workspace_reco/nested_admm/data/Algo/image2_0/replicate_1/Gong/Block1/config_rho=0.003_adapt=rho_mu_DI=2_tau_D=100_lr=0.01_sub_i=300_opti_=Adam_skip_=3_scali=positive_normalization_input=random_mlem_=False/during_eq22/0 -it 60:1" # Gong does MLEM 60 it at the beginning, but we will do OPTITR after to be more coherent # TESTTEST
             print(x_reconstruction_command_line + ' -oit -1')
@@ -283,7 +310,7 @@ class vReconstruction(vGeneral):
         self.write_hdr(subroot,[i],subdir,phantom,'u_it' + str(it_name),subroot_output_path=subroot_output_path,matrix_type='sino')
         self.write_hdr(subroot,[i],subdir,phantom,'v_it' + str(it_name),subroot_output_path=subroot_output_path,matrix_type='sino')
 
-    def ADMMLim_general(self, config, i, subdir, subroot_output_path,f_mu_for_penalty,writer=None,image_gt=None, i_init=0):
+    def ADMMLim_general(self, config, i, subdir, subroot_output_path,writer=None,image_gt=None, i_init=0):
         if ("nested" in self.method):
             self.post_smoothing = 0
         castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing)
@@ -375,15 +402,12 @@ class vReconstruction(vGeneral):
 
         # Optimizer and penalty in command line, change rho if first global iteration and unnested_1st_global_iter
         opti_and_penalty = self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i, self.unnested_1st_global_iter)
-        # If rho is 0, remove f_mu_for_penalty
-        if ((self.rho == 0) or (i==0 and self.unnested_1st_global_iter) or (i==-1 and not self.unnested_1st_global_iter)): # For first iteration, put rho to zero
-            f_mu_for_penalty = ''
 
         x_reconstruction_command_line = castor_command_line_x \
                                         + opti_and_penalty \
                                         + ' -fout ' + full_output_path_i + it \
                                         + u_for_additional_data + v_for_additional_data \
-                                        + initialimage + f_mu_for_penalty \
+                                        + initialimage \
                                         + conv # we need f-mu so that ADMM optimizer works, even if we will not use it...
 
         print(x_reconstruction_command_line)

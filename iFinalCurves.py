@@ -361,6 +361,9 @@ class iFinalCurves(vGeneral):
                             SSIM_recon.append(np.array(rows_csv[3]))
                             MA_cold_recon.append(np.array(rows_csv[4]) / 10 * 100)
                             AR_hot_recon.append(np.array(rows_csv[5]) / 400 * 100)
+                            a = np.array(rows_csv[4]) / 10 * 100
+                            if (a[0] < -500):
+                                print(a)
                             if (not csv_before_MIC):
                                 AR_hot_TEP_recon.append(np.array(rows_csv[6]) / 400 * 100)
                                 AR_hot_TEP_match_square_recon.append(np.array(rows_csv[7]) / 400 * 100)

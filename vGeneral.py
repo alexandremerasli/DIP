@@ -331,7 +331,7 @@ class vGeneral(abc.ABC):
                     elif line.startswith("!number format"):
                         f1.write('!number format := ' + (self.FLTNB == "float")*"short" + (self.FLTNB == "double")*"long" +  ' float')
                         f1.write('\n')
-                    elif line.startswith("!number of bytes per pixel := 4"):
+                    elif line.startswith("!number of bytes per pixel"):
                         f1.write('!number of bytes per pixel := ' + (self.FLTNB == "float")*"4" + (self.FLTNB == "double")*"8")
                         f1.write('\n')
                     else:
@@ -771,7 +771,8 @@ class vGeneral(abc.ABC):
             pnlt = ''
             penaltyStrength = ''
         elif (method == 'APGMAP'):
-            opti = ' -opti ' + "APPGML" + ',1,1e-10,0.01,-1,' + str(self.A_AML)
+            #opti = ' -opti ' + "APPGML" + ',1,1e-10,0.01,-1,' + str(self.A_AML) + ',0' # Multimodal image is only used by APPGML
+            opti = ' -opti ' + "APPGML" + ':' + self.subroot + 'Block1/' + self.suffix  + '/' + 'APPGML.conf'
             pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
             penaltyStrength = ' -pnlt-beta ' + str(self.beta)
         elif (method == 'BSREM'):
@@ -786,7 +787,8 @@ class vGeneral(abc.ABC):
                         rho = 0
                         #self.rho = 0
                     method = 'ADMMLim' + method[6:]
-                    pnlt = ' -pnlt QUAD'
+                    #pnlt = ' -pnlt QUAD' # Multimodal image is only used by quadratic penalty
+                    pnlt = ' -pnlt ' + "QUAD" + ':' + self.subroot + 'Block1/' + self.suffix  + '/' + 'QUAD.conf'
                 elif ('ADMMLim' in method):
                     pnlt = ' -pnlt ' + penalty
                     if penalty == "MRF":
@@ -796,8 +798,10 @@ class vGeneral(abc.ABC):
                 if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
                     rho = 0
                     #self.rho = 0
-                opti = ' -opti APPGML' + ',1,1e-10,0.01,-1,' + str(self.A_AML)
-                pnlt = ' -pnlt QUAD'
+                #opti = ' -opti APPGML' + ',1,1e-10,0.01,-1,' + str(self.A_AML) + ',-1' # Do not use a multimodal image for APPGML, so let default multimodal index (-1)
+                opti = ' -opti ' + "APPGML" + ':' + self.subroot + 'Block1/' + self.suffix  + '/' + 'APPGML.conf'
+                #pnlt = ' -pnlt QUAD,0' # Multimodal image is used only for quadratic penalty, so put multimodal index to 0
+                pnlt = ' -pnlt ' + "QUAD" + ':' + self.subroot + 'Block1/' + self.suffix  + '/' + 'QUAD.conf'
                 penaltyStrength = ' -pnlt-beta ' + str(rho)
             
             # For all optimizers, remove penalty if rho == 0
