@@ -363,7 +363,6 @@ class vReconstruction(vGeneral):
             #'''
             else:
                 it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
-                
                 u_for_additional_data = ''
                 v_for_additional_data = ''
                 initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
@@ -371,8 +370,15 @@ class vReconstruction(vGeneral):
         # Initialization image if nested according to global iteration
         if ("nested" in self.method):
             it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
-            u_for_additional_data = ''
-            v_for_additional_data = ''
+            if (not config["use_u_and_v_nested"] or (i == i_init+1)):
+                u_for_additional_data = ''
+                v_for_additional_data = ''
+            else:
+                u_path = subroot_output_path + '/' + subdir + '/' + format(i-1) + '_u_it' + str(config["nb_outer_iteration"]) + '.hdr'
+                u_for_additional_data = ' -additional-data ' + u_path
+                v_path = subroot_output_path + '/' + subdir + '/' + format(i-1) + '_v_it' + str(config["nb_outer_iteration"]) + '.hdr'
+                #v_for_additional_data = ' -additional-data ' + v_path
+                v_for_additional_data = ',' + v_path
 
             if (i == 0 and not config["unnested_1st_global_iter"]):   # choose initial image for CASToR reconstruction
                 initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_DIP' + str(i-1) + '_FINAL.hdr' # Gong initializes to DIP output at pre iteratio
