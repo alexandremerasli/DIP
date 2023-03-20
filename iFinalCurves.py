@@ -29,7 +29,7 @@ class iFinalCurves(vGeneral):
         config_grid_search = self.config_with_grid_search
         method_list = config_all_methods["method"]
 
-        MIC_config = False
+        MIC_config = True
         csv_before_MIC = False
 
         APGMAP_vs_ADMMLim = False
@@ -39,7 +39,6 @@ class iFinalCurves(vGeneral):
                 method_list[i] = method_list[i].replace("Gong","DIPRecon")
                 if method_list[i] == "DIPRecon":
                     DIPRecon = True
-
 
         '''
         sub_method_list = list(method_list)
@@ -132,6 +131,75 @@ class iFinalCurves(vGeneral):
                     #config[method] = config_func()
                     config[method] = config_func_MIC()
                 #'''
+
+
+
+
+
+
+
+
+
+
+
+
+                # Gong reconstruction
+                if ('nested_ADMMLim_u_v' in method):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_ADMMLim_u_v_configuration import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+                    
+                # nested reconstruction
+                if ('nested_ADMMLim_more_ADMMLim_it_10' in method):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_ADMMLim_more_ADMMLim_it_10_configuration import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
+                # MLEM reconstruction
+                if (method == 'nested_ADMMLim_more_ADMMLim_it_30'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_ADMMLim_more_ADMMLim_it_30_configuration import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
+                # OSEM reconstruction
+                if (method == 'nested_ADMMLim_more_ADMMLim_it_80'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_ADMMLim_more_ADMMLim_it_30_configuration import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
+                # BSREM reconstruction
+                if (method == 'nested_APPGML_1subset'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_APPGML_1subset_configuration import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
+                # APGMAP reconstruction
+                if ('nested_APPGML_4subsets' in method):
+                    APGMAP_vs_ADMMLim = True
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_APPGML_4subsets_configuration import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
+                # ADMMLim reconstruction
+                if (method == 'nested_APPGML_14subsets'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_APPGML_14subsets_configuration import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+                
+                # ADMMLim reconstruction
+                if (method == 'nested_APPGML_28subsets'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_APPGML_28subsets_configuration import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
             else:
                 config[method] = self.config_with_grid_search
         
@@ -241,28 +309,48 @@ class iFinalCurves(vGeneral):
 
 
                 # Settings in following curves
-                variance_plot = True
+                variance_plot = False
                 plot_all_replicates_curves = False
-                color_dict = {
-                    "nested" : ['red','pink'],
-                    "DIPRecon" : ['cyan','blue','teal','blueviolet'],
-                    "APGMAP" : ['darkgreen','lime','gold'],
-                    "ADMMLim" : ['fuchsia'],
-                    "OSEM" : ['darkorange'],
-                    "BSREM" : ['grey']
-                }
-                color_dict_supp = {
-                    "nested_BSREM_stand" : [color_dict["nested"][0]],
-                    "nested_ADMMLim_stand" : [color_dict["nested"][1]],
-                    "DIPRecon_BSREM_stand" : [color_dict["DIPRecon"][0]],
-                    "DIPRecon_ADMMLim_stand" : [color_dict["DIPRecon"][1]],
-                    "DIPRecon_ADMMLim_norm" : [color_dict["DIPRecon"][2]],
-                    "DIPRecon_MLEM_norm" : [color_dict["DIPRecon"][3]],
-                }
+                
+                if (self.phantom == "image2_0"):
+                    color_dict = {
+                        "nested" : ['red','pink'],
+                        "DIPRecon" : ['cyan','blue','teal','blueviolet'],
+                        "APGMAP" : ['darkgreen','lime','gold'],
+                        "ADMMLim" : ['fuchsia'],
+                        "OSEM" : ['darkorange'],
+                        "BSREM" : ['grey']
+                    }
+                    color_dict_supp = {
+                        "nested_BSREM_stand" : [color_dict["nested"][0]],
+                        "nested_ADMMLim_stand" : [color_dict["nested"][1]],
+                        "DIPRecon_BSREM_stand" : [color_dict["DIPRecon"][0]],
+                        "DIPRecon_ADMMLim_stand" : [color_dict["DIPRecon"][1]],
+                        "DIPRecon_ADMMLim_norm" : [color_dict["DIPRecon"][2]],
+                        "DIPRecon_MLEM_norm" : [color_dict["DIPRecon"][3]],
+                    }
 
-                color_dict = {**color_dict, **color_dict_supp}
+                    color_dict = {**color_dict, **color_dict_supp} # Comparison between reconstruction methods
+    
+                elif(self.phantom == "image4_0" or self.phantom == "image4000_0"):
+                    color_dict_after_MIC = {
+                        "nested_ADMMLim" : ['cyan','blue','teal','blueviolet'],
+                        "nested_APPGML" : ['darkgreen','lime','gold','darkseagreen'],
+                    }
+                    color_dict_add_tests = {
+                        "nested_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["nested_ADMMLim"][0]],
+                        "nested_ADMMLim_more_ADMMLim_it_30" : [color_dict_after_MIC["nested_ADMMLim"][1]],
+                        "nested_ADMMLim_more_ADMMLim_it_80" : [color_dict_after_MIC["nested_ADMMLim"][2]],
+                        "nested_ADMMLim_u_v" : [color_dict_after_MIC["nested_ADMMLim"][3]],
+                        "nested_APPGML_1subset" : [color_dict_after_MIC["nested_APPGML"][0]],
+                        "nested_APPGML_4subsets" : [color_dict_after_MIC["nested_APPGML"][1]],
+                        "nested_APPGML_14subsets" : [color_dict_after_MIC["nested_APPGML"][2]],
+                        "nested_APPGML_28subsets" : [color_dict_after_MIC["nested_APPGML"][3]],
+                    }
+    
+                    color_dict = {**color_dict_after_MIC, **color_dict_add_tests} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
 
-
+                    
                 marker_dict = {
                     "nested" : ['-','--'],
                     "DIPRecon" : ['-','--','loosely dotted','dashdot'],
@@ -290,7 +378,9 @@ class iFinalCurves(vGeneral):
                         #for i in range(len(color_dict[key])):
                         color_dict[key] = len(color_dict[key]) * ['black']
                 else:
-                    color_avg = None    
+                    color_avg = None
+                    if (self.phantom == "image4_0" or self.phantom == "image4000_0"):
+                        color_avg = color_dict[method][0]    
                     
 
                 # Wanted list of replicates
@@ -323,7 +413,7 @@ class iFinalCurves(vGeneral):
                     i_replicate = idx_wanted[i] # Loop over rhos and replicates, for each sorted rho, take sorted replicate
                     suffix = sorted_suffixes[i].rstrip("\n")
                     replicate = "replicate_" + str(i_replicate + 1)
-                    metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + method + '/' + suffix + '/' + 'metrics.csv'
+                    metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + config[method]["method"] + '/' + suffix + '/' + 'metrics.csv'
                     
                     try:
                         with open(metrics_file, 'r') as myfile:
@@ -361,9 +451,7 @@ class iFinalCurves(vGeneral):
                             SSIM_recon.append(np.array(rows_csv[3]))
                             MA_cold_recon.append(np.array(rows_csv[4]) / 10 * 100)
                             AR_hot_recon.append(np.array(rows_csv[5]) / 400 * 100)
-                            a = np.array(rows_csv[4]) / 10 * 100
-                            if (a[0] < -500):
-                                print(a)
+
                             if (not csv_before_MIC):
                                 AR_hot_TEP_recon.append(np.array(rows_csv[6]) / 400 * 100)
                                 AR_hot_TEP_match_square_recon.append(np.array(rows_csv[7]) / 400 * 100)
@@ -538,7 +626,7 @@ class iFinalCurves(vGeneral):
                                 #ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg) # if 1 out of i_init iterations was saved
                                 ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg)
                                 # Plot dashed line for target value, according to ROI
-                                if ROI == 'hot':
+                                if ROI == ROI_list[-1]:
                                     #ax[fig_nb].hlines(100,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1)*self.i_init,color='grey',linestyle='dashed',label='_nolegend_') # if 1 out of i_init iterations was saved
                                     ax[fig_nb].hlines(100,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1),color='grey',linestyle='dashed',label='_nolegend_')
                                 else:
@@ -558,7 +646,10 @@ class iFinalCurves(vGeneral):
                                 '''
                             #'''
                             if (fig_nb != 2):
-                                replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
+                                if (self.phantom == "image2_0"):
+                                    replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
+                                elif(self.phantom == "image4_0" or self.phantom == "image4000_0"):
+                                    replicates_legend[fig_nb].append(method)
                         
                     #'''
                     if (fig_nb == 2):
@@ -579,6 +670,7 @@ class iFinalCurves(vGeneral):
                                     plt.plot(100*avg_IR[(cases[idx],len_mini[idx]-1)],avg_metrics[(cases[idx],len_mini[idx]-1)],marker='X',markersize=10, color='black', label='_nolegend_')
                                 #'''
                             else:
+                                print(method,color_dict[method])
                                 #ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],linewidth=4,color=color_dict[method][other_dim_idx])#'-o',)
                                 ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0:len_mini[rho_idx]:25],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0:len_mini[rho_idx]:25],'-o',linewidth=3,color=color_dict[method][other_dim_idx])#'-o',)
                                 # unnested
@@ -624,8 +716,8 @@ class iFinalCurves(vGeneral):
                     #'''
 
                     if (method == method_list[-1]):
-                        if ROI == 'hot':
-                            ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
+                        #if ROI == ROI_list[-1]: # if legend is needed only in one ROI
+                        ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
 
             # Saving figures locally in png
             for fig_nb in range(3):
@@ -641,7 +733,12 @@ class iFinalCurves(vGeneral):
                 elif (fig_nb == 2):
                     title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
                 
-                fig[fig_nb].savefig(self.subroot_data + 'metrics/' + self.phantom + '/' + title)
+                try:
+                    fig[fig_nb].savefig(self.subroot_data + 'metrics/' + self.phantom + '/' + title)
+                except OSError:
+                    print("File name too long, setting a shorter one")
+                    fig[fig_nb].savefig(self.subroot_data + 'metrics/' + self.phantom + '/' + title[-250:])
+
 
             for method in method_list: # Loop over methods
                 # Swap rho and post smoothing because MLEM and OSEM do not have rho parameter
