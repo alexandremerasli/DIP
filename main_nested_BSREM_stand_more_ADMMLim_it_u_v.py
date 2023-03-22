@@ -23,14 +23,14 @@ settings_config = {
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
-    "ray" : False, # Ray mode = run with raytune if True, to run several settings in parallel
+    "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
     "tensorboard" : True, # Tensorboard mode = show results in tensorboard
     "all_images_DIP" : tune.grid_search(['Last']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
     "replicates" : tune.grid_search(list(range(1,40+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
     #"replicates" : tune.grid_search([2,19,24,30,32,39,43,51,53,56,61,66,77]), # List of desired replicates. list(range(1,n+1)) means n replicates
-    #"replicates" : tune.grid_search([17,18,26,37]), # List of desired replicates. list(range(1,n+1)) means n replicates
-    #"replicates" : tune.grid_search([6,7,14]), # List of desired replicates. list(range(1,n+1)) means n replicates
+    #"replicates" : tune.grid_search([1,2,3,8,9,10,11,12,15,18,19,20,22,27,28,30,33,34,35,38,40]), # List of desired replicates. list(range(1,n+1)) means n replicates
+    #"replicates" : tune.grid_search([9,19]), # List of desired replicates. list(range(1,n+1)) means n replicates
     #"replicates" : tune.grid_search([1,3,4,13,22,24,28,30,33,39,43]), # List of desired replicates. list(range(1,n+1)) means n replicates
     #"replicates" : tune.grid_search([19,24,28,30,32,39,43,51,53,56,61,66,77,78,86]), # List of desired replicates. list(range(1,n+1)) means n replicates
     "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
@@ -209,7 +209,7 @@ for method in config["method"]['grid_search']:
     #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
     #task = 'show_results_post_reco'
     #task = 'show_results'
-    #task = 'show_metrics_results_already_computed'
+    task = 'show_metrics_results_already_computed'
     #task = 'show_metrics_ADMMLim'
     #task = 'show_metrics_nested'
     #task = 'compare_2_methods'

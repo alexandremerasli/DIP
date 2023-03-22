@@ -29,7 +29,7 @@ class iFinalCurves(vGeneral):
         config_grid_search = self.config_with_grid_search
         method_list = config_all_methods["method"]
 
-        MIC_config = True
+        MIC_config = False
         csv_before_MIC = False
 
         APGMAP_vs_ADMMLim = False
@@ -90,6 +90,8 @@ class iFinalCurves(vGeneral):
                         config[method]["max_iter"] = {'grid_search': [99]}
                     elif ('BSREM' in method):
                         config[method]["max_iter"] = {'grid_search': [300]}
+
+                    config[method]["method"] = "nested"
 
                 # MLEM reconstruction
                 if (method == 'MLEM'):
@@ -167,7 +169,7 @@ class iFinalCurves(vGeneral):
                 # OSEM reconstruction
                 if (method == 'nested_ADMMLim_more_ADMMLim_it_80'):
                     print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_ADMMLim_more_ADMMLim_it_30_configuration import config_func_MIC
+                    from nested_ADMMLim_more_ADMMLim_it_80_configuration import config_func_MIC
                     config[method] = config_func_MIC()
                     config[method]["method"] = "nested"
 
@@ -200,8 +202,24 @@ class iFinalCurves(vGeneral):
                     config[method] = config_func_MIC()
                     config[method]["method"] = "nested"
 
+                # ADMMLim reconstruction
+                if (method == 'nested_CT_2_skip'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_CT_2_skip import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
+
+                # ADMMLim reconstruction
+                if (method == 'nested_CT_3_skip'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_CT_3_skip import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
             else:
                 config[method] = self.config_with_grid_search
+                config[method]["method"] = method
         
             # Launch task
             config_tmp = dict(config[method])
@@ -336,6 +354,7 @@ class iFinalCurves(vGeneral):
                     color_dict_after_MIC = {
                         "nested_ADMMLim" : ['cyan','blue','teal','blueviolet'],
                         "nested_APPGML" : ['darkgreen','lime','gold','darkseagreen'],
+                        "nested_CT_skip" : ['red','pink'],
                     }
                     color_dict_add_tests = {
                         "nested_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["nested_ADMMLim"][0]],
@@ -346,6 +365,9 @@ class iFinalCurves(vGeneral):
                         "nested_APPGML_4subsets" : [color_dict_after_MIC["nested_APPGML"][1]],
                         "nested_APPGML_14subsets" : [color_dict_after_MIC["nested_APPGML"][2]],
                         "nested_APPGML_28subsets" : [color_dict_after_MIC["nested_APPGML"][3]],
+                        "nested_CT_2_skip" : [color_dict_after_MIC["nested_CT_skip"][0]],
+                        "nested_CT_3_skip" : [color_dict_after_MIC["nested_CT_skip"][1]],
+                        "nested" : ['black'],
                     }
     
                     color_dict = {**color_dict_after_MIC, **color_dict_add_tests} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
@@ -688,7 +710,9 @@ class iFinalCurves(vGeneral):
                                     #plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,idx],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,idx],'o', color='white', label='_nolegend_')
                                     plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,idx],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,idx],marker='X',markersize=10,color='black', label='_nolegend_')                                   
                                 #'''
-                                #if ROI == 'cold':
+                                #if 'cold' in ROI:
+                                #    plt.xlim([12,57])
+                                #else:
                                 #    plt.xlim([12,57])
                                 if (variance_plot):
                                     ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')

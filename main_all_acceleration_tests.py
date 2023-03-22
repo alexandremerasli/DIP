@@ -18,9 +18,11 @@ from ray import tune
 settings_config = {
     "image" : tune.grid_search(['image4_0']), # Image from database
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['nested']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "method" : tune.grid_search(['nested_ADMMLim_u_v', 'nested_ADMMLim_more_ADMMLim_it_10', 'nested_ADMMLim_more_ADMMLim_it_30', 'nested_ADMMLim_more_ADMMLim_it_80', 'nested_APPGML_1subset', 'nested_APPGML_4subsets', 'nested_APPGML_14subsets', 'nested_APPGML_28subsets']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "method" : tune.grid_search(['nested_ADMMLim_more_ADMMLim_it_10', 'nested_ADMMLim_more_ADMMLim_it_30', 'nested_ADMMLim_more_ADMMLim_it_80', 'nested_APPGML_1subset', 'nested_APPGML_4subsets', 'nested_APPGML_14subsets', 'nested_APPGML_28subsets']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    #"method" : tune.grid_search(['nested_APPGML_1subset', 'nested_APPGML_4subsets', 'nested_APPGML_14subsets', 'nested_APPGML_28subsets']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested', 'nested_ADMMLim_more_ADMMLim_it_10', 'nested_ADMMLim_more_ADMMLim_it_30', 'nested_ADMMLim_more_ADMMLim_it_80']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested_CT_2_skip', 'nested_CT_3_skip']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     #"method" : tune.grid_search(['nested_APPGML_28subsets','nested_ADMMLim_more_ADMMLim_it_30','nested_ADMMLim_more_ADMMLim_it_10']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     #"method" : tune.grid_search(['nested_ADMMLim_stand']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU

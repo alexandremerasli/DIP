@@ -27,7 +27,7 @@ settings_config = {
     "tensorboard" : True, # Tensorboard mode = show results in tensorboard
     "all_images_DIP" : tune.grid_search(['Last']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
-    "replicates" : tune.grid_search(list(range(1,2+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
+    "replicates" : tune.grid_search(list(range(1,40+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
     #"replicates" : tune.grid_search([2,19,24,30,32,39,43,51,53,56,61,66,77]), # List of desired replicates. list(range(1,n+1)) means n replicates
     #"replicates" : tune.grid_search([17,18,26,37]), # List of desired replicates. list(range(1,n+1)) means n replicates
     #"replicates" : tune.grid_search([6,7,14]), # List of desired replicates. list(range(1,n+1)) means n replicates
@@ -50,9 +50,9 @@ fixed_config = {
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "DIP_early_stopping" : tune.grid_search([False]), # Use DIP early stopping with WMV strategy
     "EMV_or_WMV" : tune.grid_search(["EMV"]), # Use DIP early stopping with WMV or EMV
-    "alpha_EMV" : tune.grid_search([0.991]), # EMV forgetting factor alpha
+    "alpha_EMV" : tune.grid_search([0.1]), # EMV forgetting factor alpha
     "windowSize" : tune.grid_search([50]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "patienceNumber" : tune.grid_search([10]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
+    "patienceNumber" : tune.grid_search([100]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
@@ -64,7 +64,7 @@ hyperparameters_config = {
     "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
     ## network hyperparameters
     "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
-    "sub_iter_DIP" : tune.grid_search([10]), # Number of epochs in network optimization
+    "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
     "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
@@ -75,7 +75,7 @@ hyperparameters_config = {
     ## ADMMLim - OPTITR hyperparameters
     "nb_outer_iteration": tune.grid_search([30]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
     #"nb_outer_iteration": tune.grid_search([3]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
-    "nb_outer_iteration": tune.grid_search([8]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
+    "nb_outer_iteration": tune.grid_search([80]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
     "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMLim
     "adaptive_parameters" : tune.grid_search(["both"]), # which parameters are adaptive ? Must be set to nothing, alpha, or both (which means alpha and tau)
     "mu_adaptive" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
@@ -208,7 +208,7 @@ for method in config["method"]['grid_search']:
     #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
     #task = 'show_results_post_reco'
     #task = 'show_results'
-    #task = 'show_metrics_results_already_computed'
+    task = 'show_metrics_results_already_computed'
     #task = 'show_metrics_ADMMLim'
     #task = 'show_metrics_nested'
     #task = 'compare_2_methods'
