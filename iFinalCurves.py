@@ -29,7 +29,7 @@ class iFinalCurves(vGeneral):
         config_grid_search = self.config_with_grid_search
         method_list = config_all_methods["method"]
 
-        MIC_config = False
+        MIC_config = True
         csv_before_MIC = False
 
         APGMAP_vs_ADMMLim = False
@@ -113,6 +113,7 @@ class iFinalCurves(vGeneral):
                     from BSREM_configuration import config_func_MIC
                     #config[method] = config_func()
                     config[method] = config_func_MIC()
+                    config[method]["method"] = method
 
                 # APGMAP reconstruction
                 if ('APGMAP' in method):
@@ -125,7 +126,8 @@ class iFinalCurves(vGeneral):
                     #    if ('APGMAP' not in method2 and 'ADMMLim' not in method2):
                     #        APGMAP_vs_ADMMLim = False
                             #config[method]['A_AML'] = {'grid_search': [100]}
-                    
+                    config[method]["method"] = method
+
                 # ADMMLim reconstruction
                 if (method == 'ADMMLim'):
                     print("configuration fiiiiiiiiiiiiiiiiiiile")
@@ -220,7 +222,9 @@ class iFinalCurves(vGeneral):
             else:
                 config[method] = self.config_with_grid_search
                 config[method]["method"] = method
-        
+
+            # Initialize config files with good phantom        
+            config[method]["image"] = {'grid_search': [config_all_methods["image"]]}
             # Launch task
             config_tmp = dict(config[method])
             config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
@@ -355,6 +359,9 @@ class iFinalCurves(vGeneral):
                         "nested_ADMMLim" : ['cyan','blue','teal','blueviolet'],
                         "nested_APPGML" : ['darkgreen','lime','gold','darkseagreen'],
                         "nested_CT_skip" : ['red','pink'],
+                        "BSREM" : ['grey'],
+                        #"APGMAP" : ['darkgreen','lime','gold'],
+                        "APGMAP" : ['darkgreen','lime'],
                     }
                     color_dict_add_tests = {
                         "nested_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["nested_ADMMLim"][0]],
@@ -671,7 +678,10 @@ class iFinalCurves(vGeneral):
                                 if (self.phantom == "image2_0"):
                                     replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                                 elif(self.phantom == "image4_0" or self.phantom == "image4000_0"):
-                                    replicates_legend[fig_nb].append(method)
+                                    if ("nested" not in method and "DIPRecon" not in method):
+                                        replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
+                                    else:
+                                        replicates_legend[fig_nb].append(method)
                         
                     #'''
                     if (fig_nb == 2):

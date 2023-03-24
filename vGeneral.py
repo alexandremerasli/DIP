@@ -77,7 +77,8 @@ class vGeneral(abc.ABC):
                 self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
             if (self.phantom == "image4_0" and config["task"] != "show_metrics_results_already_computed"):
                 self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
-
+            if (self.phantom == "image4000_0" and config["task"] != "show_metrics_results_already_computed"):
+                self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
         return config
 
     def createDirectoryAndConfigFile(self,config):
@@ -772,7 +773,7 @@ class vGeneral(abc.ABC):
             penaltyStrength = ''
         elif (method == 'APGMAP'):
             #opti = ' -opti ' + "APPGML" + ',1,1e-10,0.01,-1,' + str(self.A_AML) + ',0' # Multimodal image is only used by APPGML
-            opti = ' -opti ' + "APPGML" + ':' + self.subroot + 'Block1/' + self.suffix  + '/' + 'APPGML.conf'
+            opti = ' -opti ' + "APPGML" + ':' + self.subroot + '/' + self.suffix  + '/' + 'APPGML.conf'
             pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
             penaltyStrength = ' -pnlt-beta ' + str(self.beta)
         elif (method == 'BSREM'):

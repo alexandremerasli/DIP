@@ -62,6 +62,29 @@ class iComparison(vReconstruction):
             initialimage = ''
             it = ' -it ' + str(self.max_iter) + ':' + str(config["nb_subsets"])
             '''
+
+
+            # Write shift A in config
+            # Read lines in config file
+            try:
+                with open(folder_sub_path  + '/' + 'APPGML.conf', 'r') as read_config_file:
+                    data = read_config_file.readlines()
+            except:
+                with open(folder_sub_path  + '/' + 'APPGML.conf', "w") as write_config_file:
+                    with open(self.subroot_data + 'APPGML_no_replicate.conf', "r") as read_config_file:
+                        write_config_file.write(read_config_file.read())
+                with open(folder_sub_path  + '/' + 'APPGML.conf', 'r') as read_config_file:
+                    data = read_config_file.readlines()
+                # Change the line with shift
+            for line_idx in range (len(data)):
+                line = data[line_idx]
+                if line.startswith("bound"):
+                    data[line_idx] = "bound: " + str(self.A_AML) + "\n"
+            # Write everything back
+            with open(folder_sub_path  + '/' + 'APPGML.conf', "w") as write_config_file:
+                write_config_file.writelines(data)
+
+
             print("CASToR command line : ")
             print(self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
             os.system(self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
