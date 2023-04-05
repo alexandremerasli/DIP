@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 
 import argparse
 
-def fijii_np(path,shape,type='<f'):
+def fijii_np(path,shape,type_im='<f'):
     """"Transforming raw data to numpy array"""
     file_path=(path)
-    dtype = np.dtype(type)
+    dtype = np.dtype(type_im)
     fid = open(file_path, 'rb')
     data = np.fromfile(fid,dtype)
     image = data.reshape(shape)

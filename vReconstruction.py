@@ -108,7 +108,7 @@ class vReconstruction(vGeneral):
         # Save image f-mu in .img and .hdr format - block 1
 
         if (i == i_init and i_init > 0 and config["unnested_1st_global_iter"]):   # choose initial image for CASToR reconstruction
-            f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + '_FINAL.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+            f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + '_FINAL.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
             mu = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(i-1) + self.suffix + '.img',shape=(self.PETImage_shape)) # loading mu
 
         subroot_output_path = (subroot + 'Block1/' + suffix)
@@ -193,7 +193,7 @@ class vReconstruction(vGeneral):
                 os.system(x_reconstruction_command_line)# + ' -oit -1')
 
                 """
-                self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')            
+                self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')            
                 img = (0.9+self.rho)*self.image_gt
 
                 for p in range(config["nb_outer_iteration"]):   
@@ -256,7 +256,7 @@ class vReconstruction(vGeneral):
             os.system(x_reconstruction_command_line + ' -oit -1')
 
             """
-            self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')            
+            self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')            
             img = (0.9+self.rho)*self.image_gt
 
             for p in range(config["nb_outer_iteration"]):   
@@ -295,7 +295,7 @@ class vReconstruction(vGeneral):
         # Compute x,u,v
         #os.system(x_reconstruction_command_line + ' -oit 90:' + str(int(self.config["nb_outer_iteration"]*3)))
         if ('nested' in method): # we only need output at last iteration
-            os.system(x_reconstruction_command_line + ' -oit -1')
+            os.system(x_reconstruction_command_line)# + ' -oit -1')
         else: # ADMMLim, save output at all iterations
             os.system(x_reconstruction_command_line)
         # Change iteration name for header if stopping criterion reached
@@ -421,7 +421,7 @@ class vReconstruction(vGeneral):
 
 
         """
-        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')            
+        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')            
         img = (0.9+self.rho)*self.image_gt
 
         for p in range(config["nb_outer_iteration"]):   

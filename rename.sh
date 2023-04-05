@@ -13,8 +13,8 @@ for ((replicate_id=1;replicate_id<=100;replicate_id++)); do
     #ls -1q * | wc -l
 
     #mv /disk/workspace_reco/nested_admm/data/Algo/image2_0_nested_and_Gong_home/ /home/meraslia/workspace_reco/nested_admm/data/Algo/image2_0/
-    mkdir /home/meraslia/workspace_reco/nested_admm/data/Algo/Data/initialization/image4000_0/BSREM_30it/replicate_"$replicate_id"
-    cp /home/meraslia/workspace_reco/nested_admm/data/Algo/image4000_0/replicate_"$replicate_id"/BSREM/config_image=1_im_value_cropped_rho=0.01_mlem_=False/BSREM_it30.img /home/meraslia/workspace_reco/nested_admm/data/Algo/Data/initialization/image4000_0/BSREM_30it/replicate_"$replicate_id"/BSREM_it30.img
+    mkdir /home/meraslia/workspace_reco/nested_admm/data/Algo/Data/initialization/image40_0/BSREM_30it/replicate_"$replicate_id"
+    cp /home/meraslia/workspace_reco/nested_admm/data/Algo/image40_0/replicate_"$replicate_id"/BSREM/config_image=1_im_value_cropped_rho=0.01_mlem_=False/BSREM_it30.img /home/meraslia/workspace_reco/nested_admm/data/Algo/Data/initialization/image40_0/BSREM_30it/replicate_"$replicate_id"/BSREM_it30.img
     #python3 main_nested_ADMMLim_stand.py
     #scp -r /home/meraslia/workspace_reco/nested_admm/data/Algo/metrics/image2_0/replicate_"$replicate_id"/Gong/ liu:/home/meraslia/workspace_reco/nested_admm/data/Algo/metrics/image2_0/replicate_"$replicate_id"/Gong_ADMMLim_norm
 done

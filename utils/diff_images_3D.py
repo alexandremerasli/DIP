@@ -20,6 +20,8 @@ args = parser.parse_args()
 
 root = '/home/meraslia/workspace_reco/nested_admm/data/Algo/'
 PETImage_shape = (112,112,1)
+PETImage_shape = (70,70,55)
+PETImage_shape = (200,200,109)
 
 img1_np = fijii_np(args.img1, shape=(PETImage_shape))
 print("min 1 = " ,np.min(img1_np))
@@ -31,6 +33,7 @@ print("min 2 = " ,np.min(img2_np))
 print("mean 2 = " ,np.mean(img2_np))
 print("max 2 = " ,np.max(img2_np))
 
+'''
 plt.figure()
 #plt.imshow(np.abs(img1_np - img2_np), cmap='gray_r')
 plt.imshow(img1_np - img2_np, cmap='bwr')
@@ -42,15 +45,18 @@ plt.figure()
 plt.imshow(img1_np / img2_np, cmap='bwr')
 
 '''
+'''
 for i in range(img1_np.shape[0]):
     for j in range(img1_np.shape[1]):
         if (np.abs(img1_np[i,j] / img2_np[i,j] > 100)):
             print("img1_np = ",img1_np[i,j])
             print("img2_np = ",img2_np[i,j])
 '''
+'''
 plt.title('relative difference between img1 and img2')
 plt.colorbar()
 plt.savefig(root+'relative_diff_img.png')
+'''
 
 MSE_normed = np.linalg.norm(img1_np - img2_np) / (PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])
 print("MSE : ",MSE_normed)
@@ -58,14 +64,17 @@ print("Numerical error below threshold : ",MSE_normed < 1e-5)
 
 plt.figure()
 #plt.imshow(np.abs(img1_np), cmap='gray_r')
-plt.imshow(img1_np, cmap='gray_r',vmin=np.min(img1_np),vmax=np.max(img1_np))
+#plt.imshow(img1_np, cmap='gray_r',vmin=np.min(img1_np),vmax=np.max(img1_np))
+print(img1_np.shape)
+plt.imshow(img1_np[:,:,55], cmap='gray_r',vmin=0,vmax=8000)
 plt.title('img1')
 plt.colorbar()
 plt.savefig(root+'img1.png')
 
 plt.figure()
 #plt.imshow(np.abs(img2_np), cmap='gray_r')
-plt.imshow(img2_np, cmap='gray_r',vmin=np.min(img1_np),vmax=np.max(img1_np))
+#plt.imshow(img2_np, cmap='gray_r',vmin=np.min(img1_np),vmax=np.max(img1_np))
+plt.imshow(img2_np[:,:,55], cmap='gray_r',vmin=0,vmax=8000)
 plt.title('img2')
 plt.colorbar()
 plt.savefig(root+'img2.png')

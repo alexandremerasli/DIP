@@ -34,7 +34,7 @@ class iWMV(vGeneral):
         #self.queueQ = np.array((self.windowSize,self.PETImage_shape))
 
         #Loading Ground Truth image to compute metrics
-        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type='<f')
+        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')
         if config["FLTNB"] == "double":
             self.image_gt = self.image_gt.astype(np.float64)
 
@@ -115,7 +115,7 @@ class iWMV(vGeneral):
         if SUCCESS:
             # Open output corresponding to epoch star
             net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
-            out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type='<f')
+            out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f')
             
             # Descale like at the beginning
             out = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)

@@ -147,7 +147,7 @@ class iFinalCurves(vGeneral):
 
 
 
-                # Gong reconstruction
+                # nested reconstruction
                 if ('nested_ADMMLim_u_v' in method):
                     print("configuration fiiiiiiiiiiiiiiiiiiile")
                     from nested_ADMMLim_u_v_configuration import config_func_MIC
@@ -161,28 +161,21 @@ class iFinalCurves(vGeneral):
                     config[method] = config_func_MIC()
                     config[method]["method"] = "nested"
 
-                # MLEM reconstruction
+                # nested reconstruction
                 if (method == 'nested_ADMMLim_more_ADMMLim_it_30'):
                     print("configuration fiiiiiiiiiiiiiiiiiiile")
                     from nested_ADMMLim_more_ADMMLim_it_30_configuration import config_func_MIC
                     config[method] = config_func_MIC()
                     config[method]["method"] = "nested"
 
-                # OSEM reconstruction
+                # nested reconstruction
                 if (method == 'nested_ADMMLim_more_ADMMLim_it_80'):
                     print("configuration fiiiiiiiiiiiiiiiiiiile")
                     from nested_ADMMLim_more_ADMMLim_it_80_configuration import config_func_MIC
                     config[method] = config_func_MIC()
                     config[method]["method"] = "nested"
 
-                # BSREM reconstruction
-                if (method == 'nested_APPGML_1subset'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_APPGML_1subset_configuration import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # APGMAP reconstruction
+                # nested reconstruction
                 if ('nested_APPGML_4subsets' in method):
                     APGMAP_vs_ADMMLim = True
                     print("configuration fiiiiiiiiiiiiiiiiiiile")
@@ -190,41 +183,86 @@ class iFinalCurves(vGeneral):
                     config[method] = config_func_MIC()
                     config[method]["method"] = "nested"
 
-                # ADMMLim reconstruction
+                # nested reconstruction
                 if (method == 'nested_APPGML_14subsets'):
                     print("configuration fiiiiiiiiiiiiiiiiiiile")
                     from nested_APPGML_14subsets_configuration import config_func_MIC
                     config[method] = config_func_MIC()
                     config[method]["method"] = "nested"
                 
-                # ADMMLim reconstruction
+                # nested reconstruction
                 if (method == 'nested_APPGML_28subsets'):
                     print("configuration fiiiiiiiiiiiiiiiiiiile")
                     from nested_APPGML_28subsets_configuration import config_func_MIC
                     config[method] = config_func_MIC()
                     config[method]["method"] = "nested"
 
-                # ADMMLim reconstruction
-                if (method == 'nested_CT_2_skip'):
+                # nested reconstruction
+                if (method == 'nested_APPGML_1it' or method == 'nested_APPGML_1subset'):
                     print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_CT_2_skip import config_func_MIC
+                    from nested_APPGML_1it_configuration import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
+                # nested reconstruction
+                if ('nested_APPGML_4it' in method):
+                    APGMAP_vs_ADMMLim = True
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_APPGML_4it_configuration import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
+                # nested reconstruction
+                if (method == 'nested_APPGML_14it'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_APPGML_14it_configuration import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+                
+                # nested reconstruction
+                if (method == 'nested_APPGML_28it'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_APPGML_28it_configuration import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
+                # nested reconstruction
+                if (method == 'nested_CT_2_skip_3it'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_CT_2_skip_3it import config_func_MIC
                     config[method] = config_func_MIC()
                     config[method]["method"] = "nested"
 
 
-                # ADMMLim reconstruction
-                if (method == 'nested_CT_3_skip'):
+                # nested reconstruction
+                if (method == 'nested_CT_3_skip_3it'):
                     print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_CT_3_skip import config_func_MIC
+                    from nested_CT_3_skip_3it import config_func_MIC
                     config[method] = config_func_MIC()
                     config[method]["method"] = "nested"
 
+                # nested reconstruction
+                if (method == 'nested_CT_2_skip_10it'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_CT_2_skip_10it import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
+
+                # nested reconstruction
+                if (method == 'nested_CT_3_skip_10it'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_CT_3_skip_10it import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
             else:
                 config[method] = self.config_with_grid_search
                 config[method]["method"] = method
 
             # Initialize config files with good phantom        
             config[method]["image"] = {'grid_search': [config_all_methods["image"]]}
+            # Initialize config files with good replicates
+            #config[method]["replicates"] = {'grid_search': [config_all_methods["replicates"]]}
             # Launch task
             config_tmp = dict(config[method])
             config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
@@ -255,7 +293,7 @@ class iFinalCurves(vGeneral):
 
         if (self.phantom == "image2_0"):
             ROI_list = ['cold','hot']
-        elif (self.phantom == "image4_0" or self.phantom == "image4000_0"):
+        elif (self.phantom == "image4_0" or self.phantom == "image4000_0" or self.phantom == "image40_0"):
             ROI_list = ['cold','hot_TEP','hot_TEP_match_square_recon','hot_perfect_match_recon']
         
 
@@ -354,16 +392,20 @@ class iFinalCurves(vGeneral):
 
                     color_dict = {**color_dict, **color_dict_supp} # Comparison between reconstruction methods
     
-                elif(self.phantom == "image4_0" or self.phantom == "image4000_0"):
+                elif(self.phantom == "image4_0" or self.phantom == "image4000_0" or self.phantom == "image40_0"):
                     color_dict_after_MIC = {
                         "nested_ADMMLim" : ['cyan','blue','teal','blueviolet'],
+                        #"nested_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
+                        #"nested_APPGML_subsets" : ['darkgreen','lime','gold','darkseagreen'],
                         "nested_APPGML" : ['darkgreen','lime','gold','darkseagreen'],
-                        "nested_CT_skip" : ['red','pink'],
+                        "nested_CT_skip" : ['red','saddlebrown','lightsalmon','peru'],
                         "BSREM" : ['grey'],
+                        "OSEM" : ['orange'],
                         #"APGMAP" : ['darkgreen','lime','gold'],
                         "APGMAP" : ['darkgreen','lime'],
                     }
                     color_dict_add_tests = {
+                        "nested" : ['black'], # 3 it
                         "nested_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["nested_ADMMLim"][0]],
                         "nested_ADMMLim_more_ADMMLim_it_30" : [color_dict_after_MIC["nested_ADMMLim"][1]],
                         "nested_ADMMLim_more_ADMMLim_it_80" : [color_dict_after_MIC["nested_ADMMLim"][2]],
@@ -372,34 +414,67 @@ class iFinalCurves(vGeneral):
                         "nested_APPGML_4subsets" : [color_dict_after_MIC["nested_APPGML"][1]],
                         "nested_APPGML_14subsets" : [color_dict_after_MIC["nested_APPGML"][2]],
                         "nested_APPGML_28subsets" : [color_dict_after_MIC["nested_APPGML"][3]],
-                        "nested_CT_2_skip" : [color_dict_after_MIC["nested_CT_skip"][0]],
-                        "nested_CT_3_skip" : [color_dict_after_MIC["nested_CT_skip"][1]],
-                        "nested" : ['black'],
+                        "nested_APPGML_1it" : [color_dict_after_MIC["nested_APPGML"][0]],
+                        "nested_APPGML_4it" : [color_dict_after_MIC["nested_APPGML"][1]],
+                        "nested_APPGML_14it" : [color_dict_after_MIC["nested_APPGML"][2]],
+                        "nested_APPGML_28it" : [color_dict_after_MIC["nested_APPGML"][3]],
+                        "nested_CT_2_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][0]],
+                        "nested_CT_3_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][1]],
+                        "nested_CT_2_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][2]],
+                        "nested_CT_3_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][3]],
                     }
     
                     color_dict = {**color_dict_after_MIC, **color_dict_add_tests} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
 
-                    
-                marker_dict = {
-                    "nested" : ['-','--'],
-                    "DIPRecon" : ['-','--','loosely dotted','dashdot'],
-                    "APGMAP" : ['-','--','loosely dotted'],
-                    "ADMMLim" : ['-'],
-                    "OSEM" : ['-'],
-                    "BSREM" : ['-']
-                }
-                marker_dict_supp = {
-                    "nested_BSREM_stand" : [marker_dict["nested"][0]],
-                    "nested_ADMMLim_stand" : [marker_dict["nested"][1]],
-                    "DIPRecon_BSREM_stand" : [marker_dict["DIPRecon"][0]],
-                    "DIPRecon_ADMMLim_stand" : [marker_dict["DIPRecon"][1]],
-                    "DIPRecon_ADMMLim_norm" : [marker_dict["DIPRecon"][2]],
-                    "DIPRecon_MLEM_norm" : [marker_dict["DIPRecon"][3]],
-                }
+                if (self.phantom == "image2_0"):                    
+                    marker_dict = {
+                        "nested" : ['-','--'],
+                        "DIPRecon" : ['-','--','loosely dotted','dashdot'],
+                        "APGMAP" : ['-','--','loosely dotted'],
+                        "ADMMLim" : ['-'],
+                        "OSEM" : ['-'],
+                        "BSREM" : ['-']
+                    }
+                    marker_dict_supp = {
+                        "nested_BSREM_stand" : [marker_dict["nested"][0]],
+                        "nested_ADMMLim_stand" : [marker_dict["nested"][1]],
+                        "DIPRecon_BSREM_stand" : [marker_dict["DIPRecon"][0]],
+                        "DIPRecon_ADMMLim_stand" : [marker_dict["DIPRecon"][1]],
+                        "DIPRecon_ADMMLim_norm" : [marker_dict["DIPRecon"][2]],
+                        "DIPRecon_MLEM_norm" : [marker_dict["DIPRecon"][3]],
+                    }
 
-                marker_dict = {**marker_dict, **marker_dict_supp}
-
-
+                    marker_dict = {**marker_dict, **marker_dict_supp}
+                elif(self.phantom == "image4_0" or self.phantom == "image4000_0" or self.phantom == "image40_0"):
+                    marker_dict = {
+                        "APPGML_it" : [':'],
+                        "APPGML_subsets" : ['-'],
+                        "ADMMLim" : ['--'],
+                        "skip" : ['dashdot'],
+                        "APGMAP" : ['-','-'],
+                        "BSREM" : ['-'],
+                        "OSEM" : ['-']
+                    }
+                    marker_dict_supp = {
+                        "nested" : [marker_dict["ADMMLim"][0]], # 3 it
+                        "nested_ADMMLim_more_ADMMLim_it_10" : [marker_dict["ADMMLim"][0]],
+                        "nested_ADMMLim_more_ADMMLim_it_30" : [marker_dict["ADMMLim"][0]],
+                        "nested_ADMMLim_more_ADMMLim_it_80" : [marker_dict["ADMMLim"][0]],
+                        "nested_ADMMLim_u_v" : [marker_dict["ADMMLim"][0]],
+                        "nested_APPGML_1subset" : [marker_dict["APPGML_subsets"][0]],
+                        "nested_APPGML_4subsets" : [marker_dict["APPGML_subsets"][0]],
+                        "nested_APPGML_14subsets" : [marker_dict["APPGML_subsets"][0]],
+                        "nested_APPGML_28subsets" : [marker_dict["APPGML_subsets"][0]],
+                        "nested_APPGML_1it" : [marker_dict["APPGML_it"][0]],
+                        "nested_APPGML_4it" : [marker_dict["APPGML_it"][0]],
+                        "nested_APPGML_14it" : [marker_dict["APPGML_it"][0]],
+                        "nested_APPGML_28it" : [marker_dict["APPGML_it"][0]],
+                        "nested_CT_2_skip_3it" : [marker_dict["skip"][0]],
+                        "nested_CT_3_skip_3it" : [marker_dict["skip"][0]],
+                        "nested_CT_2_skip_10it" : [marker_dict["skip"][0]],
+                        "nested_CT_3_skip_10it" : [marker_dict["skip"][0]],
+                    }
+                    marker_dict = {**marker_dict, **marker_dict_supp}
 
                 if plot_all_replicates_curves:
                     color_avg = 'black'
@@ -408,7 +483,7 @@ class iFinalCurves(vGeneral):
                         color_dict[key] = len(color_dict[key]) * ['black']
                 else:
                     color_avg = None
-                    if (self.phantom == "image4_0" or self.phantom == "image4000_0"):
+                    if (self.phantom == "image4_0" or self.phantom == "image4000_0" or self.phantom == "image40_0"):
                         color_avg = color_dict[method][0]    
                     
 
@@ -510,19 +585,21 @@ class iFinalCurves(vGeneral):
 
 
                 # Select metrics to plot according to ROI
-                if ROI == 'hot_TEP':
-                    metrics = AR_hot_TEP_recon
-                elif ROI == 'hot_TEP_match_square_recon':
-                    metrics = AR_hot_TEP_match_square_recon
-                elif ROI == 'hot_perfect_match_recon':
-                    metrics = AR_hot_perfect_match_recon
-                elif ROI == 'hot':
-                    #metrics = [abs(hot) for hot in AR_hot_recon] # Take absolute value of AR hot for tradeoff curves
-                    metrics = AR_hot_recon
-                elif ROI == 'cold':
-                    #metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
-                    metrics = MA_cold_recon
-
+                if (quantitative_tradeoff):
+                    if ROI == 'hot_TEP':
+                        metrics = AR_hot_TEP_recon
+                    elif ROI == 'hot_TEP_match_square_recon':
+                        metrics = AR_hot_TEP_match_square_recon
+                    elif ROI == 'hot_perfect_match_recon':
+                        metrics = AR_hot_perfect_match_recon
+                    elif ROI == 'hot':
+                        #metrics = [abs(hot) for hot in AR_hot_recon] # Take absolute value of AR hot for tradeoff curves
+                        metrics = AR_hot_recon
+                    elif ROI == 'cold':
+                        #metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
+                        metrics = MA_cold_recon
+                else:
+                    metrics = SSIM_recon
                 # Keep useful information to plot from metrics                
                 IR_final = IR_bkg_recon
                 metrics_final = metrics
@@ -677,7 +754,7 @@ class iFinalCurves(vGeneral):
                             if (fig_nb != 2):
                                 if (self.phantom == "image2_0"):
                                     replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
-                                elif(self.phantom == "image4_0" or self.phantom == "image4000_0"):
+                                elif(self.phantom == "image4_0" or self.phantom == "image4000_0" or self.phantom == "image40_0"):
                                     if ("nested" not in method and "DIPRecon" not in method):
                                         replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                                     else:
@@ -691,7 +768,7 @@ class iFinalCurves(vGeneral):
                                 
                                 if ((not APGMAP_vs_ADMMLim and (method == "APGMAP" and other_dim_idx == 1) or (method != "APGMAP" and other_dim_idx == 0)) or APGMAP_vs_ADMMLim):
                                 #    nb_other_dim["APGMAP"] = 1
-                                    ax[fig_nb].plot(100*avg_IR[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)],'-o',linewidth=3,color=color_dict[method][other_dim_idx])#'-o',)
+                                    ax[fig_nb].plot(100*avg_IR[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)],'-o',linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
                                 if (variance_plot):
                                     ax[fig_nb].fill(np.concatenate((100*(avg_IR[(cases,len_mini-1)] - np.sign(reg[fig_nb][cases])*std_IR[cases,-1]),100*(avg_IR[(cases,len_mini-1)][::-1] + np.sign(reg[fig_nb][cases][::-1])*std_IR[(cases,len_mini-1)][::-1]))),np.concatenate((avg_metrics[(cases,len_mini-1)]-std_metrics[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)][::-1]+std_metrics[(cases,len_mini-1)][::-1])), alpha = 0.4, label='_nolegend_', ls=marker_dict[method][other_dim_idx])
                                 # BSREM beta 0.01 white circle
@@ -704,7 +781,7 @@ class iFinalCurves(vGeneral):
                             else:
                                 print(method,color_dict[method])
                                 #ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],linewidth=4,color=color_dict[method][other_dim_idx])#'-o',)
-                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0:len_mini[rho_idx]:25],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0:len_mini[rho_idx]:25],'-o',linewidth=3,color=color_dict[method][other_dim_idx])#'-o',)
+                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0:len_mini[rho_idx]:25],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0:len_mini[rho_idx]:25],'-o',linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
                                 # unnested
                                 plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'D',markersize=10, mfc='none',color=color_dict[method][other_dim_idx],label='_nolegend_')
                                 plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],marker='D',markersize=9,color='white',label='_nolegend_')

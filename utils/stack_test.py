@@ -16,17 +16,17 @@ def save_img(img,name):
     print('Succesfully save in:', name)
 
 nb_frames = 10
-it = 200
+it = "GT"
 im_3D = np.zeros((nb_frames,112,112))
 root = "/home/meraslia/workspace_reco/test_dynamic_2_type_frame/"
 
 for frame in range(1,nb_frames+1):
     #filename = root + "framebyframe64/FrbyFr_rep1_it" + str(it) + "_fr" + str(frame)
-    subfolder = "framebyframe_all_norm_test"
-    filename = root + subfolder + '/' + subfolder + "_it" + str(it) + "_fr" + str(frame)
+    subfolder = "framebyframe_mlem_ref"
+    filename = root + "imsino" + '/' + "imsino_fr" + str(frame) + "_orig_psf.i"
     path = Path(filename)
     print(path)
-    slice = fijii_np(filename + ".img",(112,112))
+    slice = fijii_np(filename,(112,112))
     im_3D[frame-1,:,:] = slice
 
-save_img(im_3D,root + subfolder + "it_" + str(it) + "_stacked.img")
+save_img(im_3D,root + "it_" + str(it) + "_stacked.img")

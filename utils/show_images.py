@@ -71,10 +71,10 @@ def path_from_config(config,root):
 
     return path
 
-def fijii_np(path,shape,type='<f'):
+def fijii_np(path,shape,type_im='<f'):
     """"Transforming raw data to numpy array"""
     file_path=(path)
-    dtype = np.dtype(type)
+    dtype = np.dtype(type_im)
     fid = open(file_path, 'rb')
     data = np.fromfile(fid,dtype)
     image = data.reshape(shape)
@@ -85,9 +85,9 @@ def show_image(config):
     PETImage_shape = (112,112)
 
     if (method == "Gong" or method == "nested"):
-        img1_np = fijii_np(path_from_config(config,root), shape=(PETImage_shape),type='<f')
+        img1_np = fijii_np(path_from_config(config,root), shape=(PETImage_shape),type_im='<f')
     else:
-        img1_np = fijii_np(path_from_config(config,root), shape=(PETImage_shape),type='<d')
+        img1_np = fijii_np(path_from_config(config,root), shape=(PETImage_shape),type_im='<d')
 
     plt.figure()
     #plt.imshow(np.abs(img1_np), cmap='gray_r')
@@ -100,7 +100,7 @@ def show_image(config):
 def show_image_path(path):
     root = os.getcwd() + '/data/Algo/'
     PETImage_shape = (112,112)
-    img1_np = fijii_np(path, shape=(PETImage_shape),type='<f')
+    img1_np = fijii_np(path, shape=(PETImage_shape),type_im='<f')
 
     plt.figure()
     #plt.imshow(np.abs(img1_np), cmap='gray_r')

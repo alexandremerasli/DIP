@@ -5,9 +5,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def fijii_np(path,shape,type='<d'):
+def fijii_np(path,shape,type_im='<d'):
     file_path=(path)
-    dtype = np.dtype(type)
+    dtype = np.dtype(type_im)
     fid = open(file_path, 'rb')
     data = np.fromfile(fid,dtype)
     if (1 in shape): # 2D

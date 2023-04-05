@@ -75,9 +75,7 @@ class vGeneral(abc.ABC):
                 self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
             if (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
                 self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
-            if (self.phantom == "image4_0" and config["task"] != "show_metrics_results_already_computed"):
-                self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
-            if (self.phantom == "image4000_0" and config["task"] != "show_metrics_results_already_computed"):
+            if ((self.phantom == "image4_0" or self.phantom == "image4000_0" or self.phantom == "image40_0") and config["task"] != "show_metrics_results_already_computed"):
                 self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
         return config
 
@@ -390,23 +388,35 @@ class vGeneral(abc.ABC):
     def input_dim_str_to_list(self,PETImage_shape_str):
         return [int(e.strip()) for e in PETImage_shape_str.split(',')]#[:-1]
 
-    def fijii_np(self,path,shape,type=None):
+    def fijii_np(self,path,shape,type_im=None):
         """"Transforming raw data to numpy array"""
-        if (type is None):
+        if (type_im is None):
             if (self.FLTNB == 'float'):
-                type = '<f'
+                type_im = '<f'
             elif (self.FLTNB == 'double'):
-                type = '<d'
+                type_im = '<d'
 
-        file_path=(path)
-        dtype = np.dtype(type)
-        fid = open(file_path, 'rb')
-        data = np.fromfile(fid,dtype)
-        #'''
-        if (1 in shape): # 2D
-            image = data.reshape(shape)
-        else: # 3D
-            image = data.reshape(shape[::-1])
+        try:
+            file_path=(path)
+            dtype = np.dtype(type_im)
+            fid = open(file_path, 'rb')
+            data = np.fromfile(fid,dtype)
+            #'''
+            if (1 in shape): # 2D
+                image = data.reshape(shape)
+            else: # 3D
+                image = data.reshape(shape[::-1])
+        except:
+            type_im = ('<f')*(type_im=='<d') + ('<d')*(type_im=='<f')
+            file_path=(path)
+            dtype = np.dtype(type_im)
+            fid = open(file_path, 'rb')
+            data = np.fromfile(fid,dtype)
+            #'''
+            if (1 in shape): # 2D
+                image = data.reshape(shape)
+            else: # 3D
+                image = data.reshape(shape[::-1])
             
             
             '''
@@ -653,44 +663,6 @@ class vGeneral(abc.ABC):
         self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "background_mask2_0" + '.raw')
         '''
 
-    def define_ROI_image4000_0(self,PETImage_shape,subroot):
-        phantom_ROI = self.points_in_circle(0/4,0/4,150/4,PETImage_shape)
-        cold_ROI = self.points_in_circle(-40/4,-40/4,40/4-1,PETImage_shape)
-        hot_ROI = self.points_in_circle(50/4,10/4,20/4-1,PETImage_shape)
-            
-        cold_ROI_bkg = self.points_in_circle(-40/4,-40/4,40/4+1,PETImage_shape)
-        hot_ROI_bkg = self.points_in_circle(50/4,10/4,20/4+1,PETImage_shape)
-        phantom_ROI_bkg = self.points_in_circle(0/4,0/4,150/4-1,PETImage_shape)
-        bkg_ROI = list(set(phantom_ROI_bkg) - set(cold_ROI_bkg) - set(hot_ROI_bkg))
-
-        cold_mask = np.zeros(PETImage_shape, dtype='<f')
-        tumor_mask = np.zeros(PETImage_shape, dtype='<f')
-        phantom_mask = np.zeros(PETImage_shape, dtype='<f')
-        bkg_mask = np.zeros(PETImage_shape, dtype='<f')
-
-        ROI_list = [cold_ROI, hot_ROI, phantom_ROI, bkg_ROI]
-        mask_list = [cold_mask, tumor_mask, phantom_mask, bkg_mask]
-        for i in range(len(ROI_list)):
-            ROI = ROI_list[i]
-            mask = mask_list[i]
-            for couple in ROI:
-                #mask[int(couple[0] - PETImage_shape[0]/2)][int(couple[1] - PETImage_shape[1]/2)] = 1
-                mask[couple] = 1
-
-        # Storing into file instead of defining them at each metrics computation
-        self.save_img(cold_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "cold_mask4000_0" + '.raw')
-        self.save_img(tumor_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_mask4000_0" + '.raw')
-        self.save_img(phantom_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "phantom_mask4000_0" + '.raw')
-        self.save_img(bkg_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask4000_0" + '.raw')
-
-        '''
-        # Storing into file instead of defining them at each metrics computation
-        self.save_img(cold_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "cold_mask2_0" + '.raw')
-        self.save_img(tumor_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "tumor_mask2_0" + '.raw')
-        self.save_img(phantom_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "phantom_mask2_0" + '.raw')
-        self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image2_0" + '/' + "background_mask2_0" + '.raw')
-        '''
-
     def write_image_tensorboard(self,writer,image,name,suffix,image_gt,i=0,full_contrast=False):
         # Creating matplotlib figure with colorbar
         plt.figure()
@@ -837,12 +809,12 @@ class vGeneral(abc.ABC):
         path_phantom_ROI = self.subroot_data+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[5:]) + '.raw'
         my_file = Path(path_phantom_ROI)
         if (my_file.is_file()):
-            phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(self.PETImage_shape),type='<f')
+            phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(self.PETImage_shape),type_im='<f')
         else:
             print("No phantom file for this phantom")
             phantom_ROI = np.ones_like(self.image_gt)
             #raise ValueError("No phantom file for this phantom")
-            #phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(self.PETImage_shape),type='<f')
+            #phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             
         return phantom_ROI
     

@@ -63,12 +63,12 @@ class iNestedADMM(vReconstruction):
             ####################    Block 1 - Reconstruction with CASToR (tomographic reconstruction part of ADMM)    ####################
             if (self.global_it != i_init or config["unnested_1st_global_iter"]): # Gong or nested after pre iteration
                 #if (self.global_it == i_init + 1 and config["unnested_1st_global_iter"] == False): # enable to avoid pre iteration
-                #    self.f = self.fijii_np(self.subroot_data + 'Data/initialization/' + config["f_init"] + '.img',shape=(self.PETImage_shape),type='<f') # enable to avoid pre iteration
+                #    self.f = self.fijii_np(self.subroot_data + 'Data/initialization/' + config["f_init"] + '.img',shape=(self.PETImage_shape),type_im='<f') # enable to avoid pre iteration
                 self.x_label, self.x = self.castor_reconstruction(classResults.writer, self.global_it, i_init, self.subroot, config["nb_outer_iteration"], self.experiment, config, self.method, self.phantom, self.replicate, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
                 # Write corrupted image over ADMM iterations
                 classResults.writeCorruptedImage(self.global_it,config["nb_outer_iteration"],self.x_label,self.suffix,pet_algo=config["method"])
 
-            ####################    Block 2 - CNN    ####################
+            ####################    Block 2 - CNN    ####################yy
             start_time_block2= time.time()
             # Create label corresponding to initial reconstructed image to start with
             self.saveLabel(config,i_init)
@@ -97,7 +97,7 @@ class iNestedADMM(vReconstruction):
             print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
             # Saving Final DIP output with name without epochs, and f from previous iteration for adaptive rho computation
             self.f_before = self.f
-            self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+            self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
             self.save_img(self.f,self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_FINAL" + '.img')
             subroot_output_path = (self.subroot + 'Block2/' + self.suffix)
             # Write header with float precision because output of network is a float image
@@ -131,9 +131,18 @@ class iNestedADMM(vReconstruction):
                 # Write file with residuals and adaptive values
                 self.writeAdaptiveRhoFile()
 
+            # Nested ADMM stopping criterion
+            #IR_ref = 0.25
+            im_BSREM = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d') # loading BSREM initialization image
+            IR_ref = [np.NaN]
+            classResults.compute_IR_bkg(self.PETImage_shape,im_BSREM,int((self.global_it-i_init)/i_init),IR_ref,self.phantom)
+            if (classResults.IR_bkg_recon[int((self.global_it-i_init)/i_init)] > IR_ref[0]):
+                print("ok")
+                raise ValueError("Nested ADMM stopping criterion reached")
+
         # Saving final image output
         self.save_img(self.f, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')
-        
+
         ## Averaging for VAE
         if (classDenoising.net == 'DIP_VAE'):
             print('Need to code back this part with abstract classes')
@@ -141,15 +150,18 @@ class iNestedADMM(vReconstruction):
     def saveLabel(self,config,i_init):
         if (self.global_it == i_init and not config["unnested_1st_global_iter"]): # Gong or nested at pre iteration -> only pre train the network
             if config["image_init_path_without_extension"] == "ADMMLim_it100":
-                x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_100it/replicate_' + str(self.replicate) + '/ADMMLim_it100.img',shape=(self.PETImage_shape),type='<d')
+                x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_100it/replicate_' + str(self.replicate) + '/ADMMLim_it100.img',shape=(self.PETImage_shape),type_im='<d')
             elif config["image_init_path_without_extension"] == "ADMMLim_it1000":
-                x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_1000it/replicate_' + str(self.replicate) + '/ADMMLim_it1000.img',shape=(self.PETImage_shape),type='<d')
+                x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_1000it/replicate_' + str(self.replicate) + '/ADMMLim_it1000.img',shape=(self.PETImage_shape),type_im='<d')
             elif config["image_init_path_without_extension"] == "MLEM_it60":
-                x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type='<d')
+                x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type_im='<d')
             elif config["image_init_path_without_extension"] == "BSREM_it30":
-                x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape))
+                try:
+                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<f')
+                except:
+                    x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d')
             elif config["image_init_path_without_extension"] == "BSREM_3D_it30":
-                x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_3D_it30.img',shape=(self.PETImage_shape),type='<d')
+                x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_3D_it30.img',shape=(self.PETImage_shape),type_im='<d')
             self.save_img(x_label,self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
 
     def initializeSettingsForCurrentIteration(self,config,i_init,root,classDenoising):
@@ -185,7 +197,7 @@ class iNestedADMM(vReconstruction):
         # Adaptive rho update
         self.primal_residual_norm = np.linalg.norm((self.x - self.f) / max(np.linalg.norm(self.x),np.linalg.norm(self.f)))
         self.dual_residual_norm = np.linalg.norm((self.f - self.f_before)) / np.linalg.norm(self.mu)
-        if (config["adaptive_parameters_DIP"] == "tau"):
+        if (config["adaptive_parameters_DIP"] == "both"): # tau_DIP is tau_max if adaptive tau
             new_tau = 1 / config["xi_DIP"] * np.sqrt(self.primal_residual_norm / self.dual_residual_norm)
             if (new_tau >= 1 and new_tau < config["tau_DIP"]):
                 self.tau_DIP = new_tau
@@ -195,12 +207,14 @@ class iNestedADMM(vReconstruction):
                 self.tau_DIP = config["tau_DIP"]
         else:
             self.tau_DIP = config["tau_DIP"]
-        if (config["adaptive_parameters_DIP"] == "rho" or config["adaptive_parameters_DIP"] == "tau"):
+        if (config["adaptive_parameters_DIP"] == "rho" or config["adaptive_parameters_DIP"] == "both"):
             previous_rho = self.rho
-            if (self.primal_residual_norm > config["mu_DIP"] * self.dual_residual_norm):
+            #'''
+            if (self.primal_residual_norm > config["xi_DIP"] * config["mu_DIP"] * self.dual_residual_norm):
                 self.rho *= self.tau_DIP
-            elif (self.dual_residual_norm > config["mu_DIP"] * self.primal_residual_norm):
+            elif (self.dual_residual_norm > 1/config["xi_DIP"] * config["mu_DIP"] * self.primal_residual_norm):
                 self.rho /= self.tau_DIP
+            #'''
             else:
                 print("Keeping rho for next global iteration.")
 
@@ -209,17 +223,24 @@ class iNestedADMM(vReconstruction):
             self.mu /= coeff_rho
     
     def writeAdaptiveRhoFile(self):
-        text_file = open(self.subroot + 'Block2/' + self.suffix + '/adaptive_it' + str(self.global_it) + '.log', "a")
+        text_file = open(self.subroot + 'Block2/' + self.suffix + '/adaptive_it' + str(self.global_it) + '.log', "w")
         text_file.write("adaptive rho :" + "\n")
         text_file.write(str(self.rho) + "\n")
         text_file.write("adaptive tau :" + "\n")
         text_file.write(str(self.tau_DIP) + "\n")
-        text_file.write("adaptive rho :" + "\n")
-        text_file.write(str(self.rho) + "\n")
         text_file.write("relPrimal :" + "\n")
         text_file.write(str(self.primal_residual_norm) + "\n")
         text_file.write("relDual :" + "\n")
         text_file.write(str(self.dual_residual_norm) + "\n")
+
+        text_file.write("norm of x(n+1) - f(n+1) :" + "\n")
+        text_file.write(str(np.linalg.norm(self.x - self.f)) + "\n")
+        text_file.write("norm of x(n+1) :" + "\n")
+        text_file.write(str(np.linalg.norm(self.x)) + "\n")
+        text_file.write("norm of f(n+1) :" + "\n")
+        text_file.write(str(np.linalg.norm(self.f)) + "\n")
+        text_file.write("norm of f(n+1) - f(n) :" + "\n")
+        text_file.write(str(np.linalg.norm(self.f - self.f_before)) + "\n")
         text_file.write("norm of mu(n+1) :" + "\n")
         text_file.write(str(np.linalg.norm(self.mu)) + "\n")
         text_file.close()

@@ -42,8 +42,8 @@
 #mv data/Algo/image4_0 /disk/workspace_reco/nested_admm/data/Algo/image4_0_main_nested_BSREM_stand_more_ADMMLim_it_u_v
 
 ###### image4000_0
-python3 main_BSREM_4000.py
-python3 main_BSREM_4000.py
+#python3 main_BSREM_4000.py
+#python3 main_BSREM_4000.py
 #mv data/Algo/image4000_0/* /disk/workspace_reco/nested_admm/data/Algo/image4000_0
 
 #python3 main_MLEM_4000.py
@@ -57,5 +57,17 @@ python3 main_BSREM_4000.py
 
 #python3 main_Gong_4000.py
 #mv data/Algo/image4000_0/* /disk/workspace_reco/nested_admm/data/Algo/image4000_0
+
+#python3 main_nested_BSREM_stand.py
+#mv data/Algo/image4000_0/* /disk/workspace_reco/nested_admm/data/Algo/image4000_0
+
+
+#python3 main_BSREM_4000.py
+#python3 main_BSREM_4000.py
+#./rename.sh
+#python3 main_nested_BSREM_stand_CT2skip.py
+#python3 main_nested_BSREM_stand_CT3skip.py
+python3 main_nested_BSREM_stand_more_ADMMLim_it.py
+#mv data/Algo/image40_0/* /disk/workspace_reco/nested_admm/data/Algo/image40_0
 
 shutdown -P +1

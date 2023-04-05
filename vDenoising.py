@@ -52,18 +52,18 @@ class vDenoising(vGeneral):
 
             # Create random image to fit by DIP (test for ML reading group)
             if (self.FLTNB == 'float'):
-                type = 'float32'
+                type_im = 'float32'
             elif (self.FLTNB == 'double'):
-                type = 'float64'
+                type_im = 'float64'
             file_path = (self.subroot_data+'Data/initialization/random_1.img')
-            im_input = np.random.uniform(0,1,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).astype(type) # initializing input image with random image (for DIP)
+            im_input = np.random.uniform(0,1,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).astype(type_im) # initializing input image with random image (for DIP)
             im_input = im_input.reshape(self.PETImage_shape) # reshaping (for DIP)
             self.save_img(im_input,file_path)
 
 
             # Loading DIP input (we do not have CT-map, so random image created in block 1)
             self.image_net_input = self.load_input(self.net,self.PETImage_shape,self.subroot_data) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
-            #image_atn = fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type='<f')
+            #image_atn = fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type_im='<f')
             #write_image_tensorboard(writer,image_atn,"Attenuation map (FULL CONTRAST)",self.suffix,image_gt,0,full_contrast=True) # Attenuation map in tensorboard
             image_net_input_scale = self.rescale_imag(self.image_net_input,self.scaling_input)[0] # Rescale of network input
             # DIP input image, numpy --> torch
@@ -194,14 +194,14 @@ class vDenoising(vGeneral):
         if (not os.path.isfile(file_path) and not config["random_seed"]):
             constant_uniform = 1
             if (self.FLTNB == 'float'):
-                type = 'float32'
+                type_im = 'float32'
             elif (self.FLTNB == 'double'):
-                type = 'float64'
+                type_im = 'float64'
             if (net == 'DIP' or net == 'DIP_VAE'):
                 if config["input"] == "random":
-                    im_input = np.random.uniform(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type) # initializing input image with random image (for DIP)
+                    im_input = np.random.uniform(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type_im) # initializing input image with random image (for DIP)
                 elif config["input"] == "uniform":
-                    im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type) # initializing input image with random image (for DIP)
+                    im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type_im) # initializing input image with random image (for DIP)
                 else:
                     return "CT input, do not need to create input"
                 im_input = im_input.reshape(PETImage_shape) # reshaping (for DIP)
@@ -209,18 +209,18 @@ class vDenoising(vGeneral):
                 if (net == 'DD'):
                     input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
                     if config["input"] == "random":
-                        im_input = np.random.uniform(0,1,config["k_DD"]*input_size_DD*input_size_DD).astype(type) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+                        im_input = np.random.uniform(0,1,config["k_DD"]*input_size_DD*input_size_DD).astype(type_im) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
                     elif config["input"] == "uniform":
-                        im_input = constant_uniform*np.ones((config["k_DD"],input_size_DD,input_size_DD)).astype(type) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+                        im_input = constant_uniform*np.ones((config["k_DD"],input_size_DD,input_size_DD)).astype(type_im) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
                     else:
                         return "CT input, do not need to create input"
                     im_input = im_input.reshape(config["k_DD"],input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
                     
                 elif (net == 'DD_AE'):
                     if config["input"] == "random":
-                        im_input = np.random.uniform(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+                        im_input = np.random.uniform(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type_im) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
                     elif config["input"] == "uniform":
-                        im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+                        im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type_im) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
                     else:
                         return "CT input, do not need to create input"
                     im_input = im_input.reshape(PETImage_shape[0],PETImage_shape[1],PETImage_shape[2]) # reshaping (for Deep Decoder) # if auto encoder based on Deep Decoder
@@ -238,7 +238,7 @@ class vDenoising(vGeneral):
             else:
                 file_path = (subroot+'Data/initialization/random_input_3D_' + net + '.img')
         elif self.input == "CT":
-            if (self.phantom != "image4_0" and self.phantom != "image4000_0"):
+            if (self.phantom != "image4_0" and self.phantom != "image4000_0" and self.phantom != "image40_0"):
                 file_path = (subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw') #CT map, but not CT yet, attenuation for now...
             else:
                 file_path = (subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw') # MR simulated image
@@ -253,12 +253,12 @@ class vDenoising(vGeneral):
         #    PETImage_shape = (PETImage_shape[0],PETImage_shape[1],PETImage_shape[2]) # if auto encoder based on Deep Decoder
 
         if (self.input == 'CT' and self.net != 'DD'):
-            type = '<f'
+            type_im = '<f'
         else:
-            type = '<d' # random images were generated in double
-            #type = None
+            type_im = '<d' # random images were generated in double
+            #type_im = None
 
-        im_input = self.fijii_np(file_path, shape=(PETImage_shape),type=type) # Load input of the DNN (CT image)
+        im_input = self.fijii_np(file_path, shape=(PETImage_shape),type_im=type_im) # Load input of the DNN (CT image)
         return im_input
 
 
@@ -344,7 +344,7 @@ class vDenoising(vGeneral):
                 net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + "/ES_out_" + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
             else:
                 net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
-            out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type='<f')
+            out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f')
             #out = torch.from_numpy(out)
             # Descale like at the beginning
             out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
@@ -359,7 +359,7 @@ class vDenoising(vGeneral):
             net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
             self.save_img(out_descale, net_outputs_path)
             # Squeeze image by loading it
-            out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type='<f') # loading DIP output
+            out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
             # Saving (now DESCALED) image output
             self.save_img(out_descale, net_outputs_path)
 
