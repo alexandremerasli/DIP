@@ -32,7 +32,13 @@ class iFinalCurves(vGeneral):
         MIC_config = True
         csv_before_MIC = False
 
+        # Plot APGMAP vs ADMMLim (True)
         APGMAP_vs_ADMMLim = False
+
+        # Plot tradeoff with SSIM (False) or AR (True)
+        quantitative_tradeoff = False
+
+        # Convert Gong to DIPRecon
         DIPRecon = False
         for i in range(len(method_list)):
             if "Gong" in method_list[i]:
@@ -40,17 +46,6 @@ class iFinalCurves(vGeneral):
                 if method_list[i] == "DIPRecon":
                     DIPRecon = True
 
-        '''
-        sub_method_list = list(method_list)
-        DIPRecon = False
-        for i in range(len(method_list)):
-            if "DIPRecon" in method_list[i]:
-                sub_method_list[i] = "DIPRecon"
-            elif "nested" in method_list[i]:
-                sub_method_list[i] = "nested"
-
-        dict_sub_method_list = dict(zip(method_list,sub_method_list))
-        '''
         config = dict.fromkeys(method_list) # Create one config dictionnary for each method
         nb_rho = dict.fromkeys(method_list)
         nb_other_dim = dict.fromkeys(method_list)
@@ -58,8 +53,6 @@ class iFinalCurves(vGeneral):
         nb_replicates = dict.fromkeys(method_list)
 
         for method in method_list: # Loop over methods
-
-            #'''
             if (MIC_config):
                 # Gong reconstruction
                 if ('DIPRecon' in method):
@@ -134,16 +127,6 @@ class iFinalCurves(vGeneral):
                     from ADMMLim_configuration import config_func_MIC
                     #config[method] = config_func()
                     config[method] = config_func_MIC()
-                #'''
-
-
-
-
-
-
-
-
-
 
 
 
@@ -291,12 +274,13 @@ class iFinalCurves(vGeneral):
         'size'   : 14}
         matplotlib.rc('font', **font)
 
-        if (self.phantom == "image2_0"):
-            ROI_list = ['cold','hot']
-        elif (self.phantom == "image4_0" or self.phantom == "image4000_0" or self.phantom == "image40_0"):
-            ROI_list = ['cold','hot_TEP','hot_TEP_match_square_recon','hot_perfect_match_recon']
-        
-
+        if (quantitative_tradeoff):
+            if (self.phantom == "image2_0"):
+                ROI_list = ['cold','hot']
+            elif (self.phantom == "image4_0" or self.phantom == "image4000_0" or self.phantom == "image40_0"):
+                ROI_list = ['cold','hot_TEP','hot_TEP_match_square_recon','hot_perfect_match_recon']
+        else:
+            ROI_list = ['phantom']
         #for ROI in ['cold','hot']: #image2_0
         for ROI in ROI_list:
             # Initialize 3 figures
@@ -732,12 +716,16 @@ class iFinalCurves(vGeneral):
                                 #ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg) # if 1 out of i_init iterations was saved
                                 ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg)
                                 # Plot dashed line for target value, according to ROI
+                                if (quantitative_tradeoff):
+                                    target_value = 100
+                                else:
+                                    target_value = 1
                                 if ROI == ROI_list[-1]:
                                     #ax[fig_nb].hlines(100,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1)*self.i_init,color='grey',linestyle='dashed',label='_nolegend_') # if 1 out of i_init iterations was saved
-                                    ax[fig_nb].hlines(100,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1),color='grey',linestyle='dashed',label='_nolegend_')
+                                    ax[fig_nb].hlines(target_value,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1),color='grey',linestyle='dashed',label='_nolegend_')
                                 else:
                                     #ax[fig_nb].hlines(100,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1)*self.i_init,color='grey',linestyle='dashed',label='_nolegend_') # if 1 out of i_init iterations was saved
-                                    ax[fig_nb].hlines(100,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1),color='grey',linestyle='dashed',label='_nolegend_')
+                                    ax[fig_nb].hlines(target_value,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1),color='grey',linestyle='dashed',label='_nolegend_')
                                 if (variance_plot):
                                     #ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx]))*self.i_init, avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_') # if 1 out of i_init iterations was saved
                                     ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])), avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_')
@@ -837,12 +825,16 @@ class iFinalCurves(vGeneral):
                     pretitle = method + " : " + rho_name + " = " + str(rho) + (", " + other_dim_name + " = " + str(config_other_dim[method]))*(other_dim_name!="")
                 else:
                     pretitle = str(method_list)
+                if (quantitative_tradeoff):
+                    metric_AR_or_SSIM = 'AR'
+                else:
+                    metric_AR_or_SSIM = 'SSIM'
                 if (fig_nb == 0):
-                    title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
+                    title = pretitle + ' : ' + metric_AR_or_SSIM + ' ' + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
                 elif (fig_nb == 1):
-                    title = pretitle + ' : AR ' + ' in ' + ROI + ' region for ' + str(nb_usable_replicates) + ' replicates' + '.png'
+                    title = pretitle + ' : ' + metric_AR_or_SSIM + ' ' + ' in ' + ROI + ' region for ' + str(nb_usable_replicates) + ' replicates' + '.png'
                 elif (fig_nb == 2):
-                    title = pretitle + ' : AR ' + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
+                    title = pretitle + ' : ' + metric_AR_or_SSIM + ' ' + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
                 
                 try:
                     fig[fig_nb].savefig(self.subroot_data + 'metrics/' + self.phantom + '/' + title)
