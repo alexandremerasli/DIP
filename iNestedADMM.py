@@ -122,6 +122,9 @@ class iNestedADMM(vReconstruction):
                     # Compute IR metric (different from others with several replicates)
                     classResults.compute_IR_bkg(self.PETImage_shape,self.f,self.global_it,classResults.IR_bkg_recon,self.phantom)
                     classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[self.global_it], self.global_it+1)
+                    # Compute IR in whole phantom (different from others with several replicates)
+                    classResults.compute_IR_whole(self.PETImage_shape,self.f,self.global_it,classResults.IR_whole_recon,self.phantom)
+                    classResults.writer.add_scalar('Image roughness in the phantom', classResults.IR_whole_recon[self.global_it], self.global_it+1)
                 # Write output image and metrics to tensorboard
                 classResults.writeEndImagesAndMetrics(self.global_it,config["nb_outer_iteration"],self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo=config["method"])
 
@@ -135,8 +138,8 @@ class iNestedADMM(vReconstruction):
             #IR_ref = 0.25
             im_BSREM = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d') # loading BSREM initialization image
             IR_ref = [np.NaN]
-            classResults.compute_IR_bkg(self.PETImage_shape,im_BSREM,int((self.global_it-i_init)/i_init),IR_ref,self.phantom)
-            if (classResults.IR_bkg_recon[int((self.global_it-i_init)/i_init)] > IR_ref[0]):
+            classResults.compute_IR_whole(self.PETImage_shape,im_BSREM,int((self.global_it-i_init)/i_init),IR_ref,self.phantom)
+            if (classResults.IR_whole_recon[int((self.global_it-i_init)/i_init)] > IR_ref[0]):
                 print("ok")
                 raise ValueError("Nested ADMM stopping criterion reached")
 

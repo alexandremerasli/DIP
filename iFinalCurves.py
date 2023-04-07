@@ -318,6 +318,7 @@ class iFinalCurves(vGeneral):
                 AR_hot_perfect_match_recon = []
                 AR_bkg_recon = []
                 IR_bkg_recon = []
+                IR_whole_recon = []
 
                 IR_final = []
                 metrics_final = []
@@ -546,6 +547,7 @@ class iFinalCurves(vGeneral):
                                 AR_hot_perfect_match_recon.append(np.array(rows_csv[8]) / 400 * 100)
                                 AR_bkg_recon.append(np.array(rows_csv[9]))
                                 IR_bkg_recon.append(np.array(rows_csv[10]))
+                                IR_whole_recon.append(np.array(rows_csv[13]))
                             else:        
                                 AR_bkg_recon.append(np.array(rows_csv[6]))
                                 IR_bkg_recon.append(np.array(rows_csv[7]))

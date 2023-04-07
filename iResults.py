@@ -87,6 +87,7 @@ class iResults(vDenoising):
             self.CRC_hot_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
             self.AR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
             self.IR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            self.IR_whole_recon = np.empty(int(self.total_nb_iter / self.i_init) + 1)
 
         if ( 'nested' in self.method or  'Gong' in self.method):
             #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type_im='<d')
@@ -118,7 +119,7 @@ class iResults(vDenoising):
     def writeEndImagesAndMetrics(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):       
         # Metrics for NN output
         if ("3D" not in phantom):
-            self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_hot_TEP_recon,self.AR_hot_TEP_match_square_recon,self.AR_hot_perfect_match_recon,self.loss_DIP_recon,self.CRC_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,phantom,writer=self.writer)
+            self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_hot_TEP_recon,self.AR_hot_TEP_match_square_recon,self.AR_hot_perfect_match_recon,self.loss_DIP_recon,self.CRC_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,self.IR_whole_recon,phantom,writer=self.writer)
 
         if (self.tensorboard):
             # Write image over ADMM iterations
@@ -178,6 +179,18 @@ class iResults(vDenoising):
                             f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-self.i_init) + "_FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
                         if config["FLTNB"] == "double":
                             f_p = f_p.astype(np.float64)
+
+                        # Nested ADMM stopping criterion
+                        #if ('nested' in config["method"]):
+                        # Compute IR for BSREM initialization image
+                        #IR_ref = 0.25
+                        im_BSREM = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d') # loading BSREM initialization image
+                        IR_ref = [np.NaN]
+                        self.compute_IR_whole(self.PETImage_shape,im_BSREM,int((self.global_it-self.i_init)/self.i_init),IR_ref,self.phantom)
+                        if (self.IR_whole_recon[int((self.global_it-self.i_init)/self.i_init)] > IR_ref[0]):
+                            print("ok")
+                            raise ValueError("Nested ADMM stopping criterion reached")
+
                     elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'OPTITR' or config["method"] == 'OSEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or 'APGMAP' in config["method"]):
                         pet_algo=config["method"]
                         iteration_name = "iterations"
@@ -201,13 +214,16 @@ class iResults(vDenoising):
                     # Compute IR metric (different from others with several replicates)
                     if ("3D" not in self.phantom):
                         self.compute_IR_bkg(self.PETImage_shape,f_p,int((i-self.i_init)/self.i_init),self.IR_bkg_recon,self.phantom)
+                        self.compute_IR_whole(self.PETImage_shape,f_p,int((i-self.i_init)/self.i_init),self.IR_whole_recon,self.phantom)
 
                         # Specific average for IR
                         if (config["average_replicates"] == False and p == self.replicate):
                             IR = self.IR_bkg_recon[int((i-self.i_init)/self.i_init)]
+                            IR_whole = self.IR_whole_recon[int((i-self.i_init)/self.i_init)]
                         elif (config["average_replicates"]):
                             IR += self.IR_bkg_recon[int((i-self.i_init)/self.i_init)] / self.nb_replicates
-                        
+                            IR_whole += self.IR_whole_recon[int((i-self.i_init)/self.i_init)]
+
                     if (config["average_replicates"]): # Average images across replicates (for metrics except IR)
                         f += f_p / self.nb_replicates
                     elif (config["average_replicates"] == False and p == self.replicate):
@@ -217,9 +233,11 @@ class iResults(vDenoising):
                     
             if ("3D" not in self.phantom):
                 self.IR_bkg_recon[int((i-self.i_init)/self.i_init)] = IR
+                self.IR_whole_recon[int((i-self.i_init)/self.i_init)] = IR_whole
                 if (self.tensorboard):
                     #print("IR saved in tensorboard")
                     self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[int((i-self.i_init)/self.i_init)], i)
+                    self.writer.add_scalar('Image roughness in whole phantom', self.IR_whole_recon[int((i-self.i_init)/self.i_init)], i)
 
             # Show images and metrics in tensorboard (averaged images if asked in config)
             print('Metrics for iteration',int((i-self.i_init)/self.i_init))
@@ -347,14 +365,19 @@ class iResults(vDenoising):
 
     def compute_IR_bkg(self, PETImage_shape, image_recon,i,IR_bkg_recon,image):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
-        #bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(PETImage_shape),type_im='<f')
         bkg_ROI_act = image_recon[self.bkg_ROI==1]
-        #IR_bkg_recon[i] += (np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)) / self.nb_replicates
         IR_bkg_recon[i] = (np.std(bkg_ROI_act) / np.mean(bkg_ROI_act))
         #print("IR_bkg_recon",IR_bkg_recon)
         #print('Image roughness in the background', IR_bkg_recon[i],' , must be as small as possible')
 
-    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,SSIM_recon,MA_cold_recon,AR_hot_recon,AR_hot_TEP_recon,AR_hot_TEP_match_square_recon,AR_hot_perfect_match_recon,loss_DIP_recon,CRC_hot_recon,AR_bkg_recon,IR_bkg_recon,image,writer=None):
+    def compute_IR_whole(self, PETImage_shape, image_recon,i,IR_whole_recon,image):
+        ROI_act = image_recon
+        IR_whole_recon[i] = (np.std(ROI_act) / np.mean(ROI_act))
+        #print("IR_whole_recon",IR_whole_recon)
+        #print('Image roughness in the background', IR_whole_recon[i],' , must be as small as possible')
+
+
+    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,SSIM_recon,MA_cold_recon,AR_hot_recon,AR_hot_TEP_recon,AR_hot_TEP_match_square_recon,AR_hot_perfect_match_recon,loss_DIP_recon,CRC_hot_recon,AR_bkg_recon,IR_bkg_recon,IR_whole_recon,image,writer=None):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
         image_recon_cropped = image_recon*self.phantom_ROI
         image_recon_norm = self.norm_imag(image_recon_cropped)[0] # normalizing DIP output
@@ -453,6 +476,7 @@ class iResults(vDenoising):
             wr.writerow(IR_bkg_recon)
             wr.writerow(loss_DIP_recon)
             wr.writerow(CRC_hot_recon)
+            wr.writerow(IR_whole_recon)
 
         '''
         print(PSNR_recon)
