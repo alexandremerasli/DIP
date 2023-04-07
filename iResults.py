@@ -88,6 +88,7 @@ class iResults(vDenoising):
             self.AR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
             self.IR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
             self.IR_whole_recon = np.empty(int(self.total_nb_iter / self.i_init) + 1)
+            self.IR_whole_recon[:] = 0 #np.nan
 
         if ( 'nested' in self.method or  'Gong' in self.method):
             #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type_im='<d')
@@ -109,12 +110,12 @@ class iResults(vDenoising):
     def writeCorruptedImage(self,i,max_iter,x_label,suffix,pet_algo,iteration_name='iterations'):
         if (self.tensorboard):
             if (self.all_images_DIP == "Last"):
-                self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name,suffix,self.image_gt,i) # Showing all corrupted images with same contrast to compare them together
-                self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name + " (FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
+                self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + self.pet_algo + " " + self.iteration_name,suffix,self.image_gt,i) # Showing all corrupted images with same contrast to compare them together
+                self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + self.pet_algo + " " + self.iteration_name + " (FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
             else:       
                 if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
-                    self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name,suffix,self.image_gt,i) # Showing all corrupted images with same contrast to compare them together
-                    self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name + " (FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
+                    self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + self.pet_algo + " " + self.iteration_name,suffix,self.image_gt,i) # Showing all corrupted images with same contrast to compare them together
+                    self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + self.pet_algo + " " + self.iteration_name + " (FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
 
     def writeEndImagesAndMetrics(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):       
         # Metrics for NN output
@@ -124,18 +125,18 @@ class iResults(vDenoising):
         if (self.tensorboard):
             # Write image over ADMM iterations
             if (self.all_images_DIP == "Last"):
-                self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
-                self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
-                self.write_image_tensorboard(self.writer,f*self.phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
+                self.write_image_tensorboard(self.writer,f,"Image over " + self.pet_algo + " " + self.iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
+                self.write_image_tensorboard(self.writer,f,"Image over " + self.pet_algo + " " + self.iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
+                self.write_image_tensorboard(self.writer,f*self.phantom_ROI,"Image over " + self.pet_algo + " " + self.iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
             else:
                 if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
-                    self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
-                    self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
-                    self.write_image_tensorboard(self.writer,f*self.phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
+                    self.write_image_tensorboard(self.writer,f,"Image over " + self.pet_algo + " " + self.iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
+                    self.write_image_tensorboard(self.writer,f,"Image over " + self.pet_algo + " " + self.iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
+                    self.write_image_tensorboard(self.writer,f*self.phantom_ROI,"Image over " + self.pet_algo + " " + self.iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
 
     def runComputation(self,config,root):
         if (hasattr(self,'beta')):
-            beta_string = ', beta = ' + str(self.beta)
+            self.beta_string = ', beta = ' + str(self.beta)
 
         if (('nested' in config["method"] or  'Gong' in config["method"]) and "results" not in config["task"]):
             self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
@@ -148,92 +149,26 @@ class iResults(vDenoising):
         elif (self.FLTNB == 'double'):
             type_im = '<d'
 
-        f = np.zeros(self.PETImage_shape,dtype=type_im)
+        self.f = np.zeros(self.PETImage_shape,dtype=type_im)
         f_p = np.zeros(self.PETImage_shape,dtype=type_im)
 
+        # Nested ADMM stopping criterion
+        if ('nested' in config["method"]):
+            # Compute IR for BSREM initialization image
+            #IR_ref = 0.25
+            im_BSREM = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d') # loading BSREM initialization image
+            IR_ref = [np.NaN]
+            self.compute_IR_whole(self.PETImage_shape,im_BSREM,0,IR_ref,self.phantom)
+
         for i in range(self.i_init,self.total_nb_iter+self.i_init,self.i_init):
-            IR = 0
-            for p in range(1,self.nb_replicates+1):
-                if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
-                    self.subroot_p = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
-
-                    # Take NNEPPS images if NNEPPS is asked for this run
-                    if (config["NNEPPS"]):
-                        NNEPPS_string = "_NNEPPS"
-                    else:
-                        NNEPPS_string = ""
-                    if ( 'Gong' in config["method"] or  'nested' in config["method"]):
-                        if ('post_reco' in config["task"]):
-                            pet_algo=config["method"]+"to fit"
-                            iteration_name="(post reconstruction)"
-                        else:
-                            pet_algo=config["method"]
-                            iteration_name="iterations"
-                        if ('post_reco' in config["task"]):
-                            try:
-                                f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(-100) + '_epoch=' + format(i-self.i_init) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
-                            except:
-                                print("!!!!! failed to read image")
-                                break
-                        else:
-                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-self.i_init) + "_FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
-                        if config["FLTNB"] == "double":
-                            f_p = f_p.astype(np.float64)
-
-                        # Nested ADMM stopping criterion
-                        #if ('nested' in config["method"]):
-                        # Compute IR for BSREM initialization image
-                        #IR_ref = 0.25
-                        im_BSREM = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d') # loading BSREM initialization image
-                        IR_ref = [np.NaN]
-                        self.compute_IR_whole(self.PETImage_shape,im_BSREM,int((self.global_it-self.i_init)/self.i_init),IR_ref,self.phantom)
-                        if (self.IR_whole_recon[int((self.global_it-self.i_init)/self.i_init)] > IR_ref[0]):
-                            print("ok")
-                            raise ValueError("Nested ADMM stopping criterion reached")
-
-                    elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'OPTITR' or config["method"] == 'OSEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or 'APGMAP' in config["method"]):
-                        pet_algo=config["method"]
-                        iteration_name = "iterations"
-                        if (hasattr(self,'beta')):
-                            iteration_name += beta_string
-                        if ('ADMMLim' in config["method"]):
-                            subdir = 'ADMM' + '_' + str(config["nb_threads"])
-                            subdir = ''
-                            #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
-                            #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it1' + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
-                            #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_1'  + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
-                            f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0'  + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
-                        #elif (config["method"] == 'BSREM'):
-                        #    f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
-                        else:
-                            if ('APGMAP' in config["method"]):
-                                f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  "APGMAP" + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
-                            else:
-                                f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
-
-                    # Compute IR metric (different from others with several replicates)
-                    if ("3D" not in self.phantom):
-                        self.compute_IR_bkg(self.PETImage_shape,f_p,int((i-self.i_init)/self.i_init),self.IR_bkg_recon,self.phantom)
-                        self.compute_IR_whole(self.PETImage_shape,f_p,int((i-self.i_init)/self.i_init),self.IR_whole_recon,self.phantom)
-
-                        # Specific average for IR
-                        if (config["average_replicates"] == False and p == self.replicate):
-                            IR = self.IR_bkg_recon[int((i-self.i_init)/self.i_init)]
-                            IR_whole = self.IR_whole_recon[int((i-self.i_init)/self.i_init)]
-                        elif (config["average_replicates"]):
-                            IR += self.IR_bkg_recon[int((i-self.i_init)/self.i_init)] / self.nb_replicates
-                            IR_whole += self.IR_whole_recon[int((i-self.i_init)/self.i_init)]
-
-                    if (config["average_replicates"]): # Average images across replicates (for metrics except IR)
-                        f += f_p / self.nb_replicates
-                    elif (config["average_replicates"] == False and p == self.replicate):
-                        f = f_p
-                
-                    del f_p
+            self.IR = 0
+            self.IR_whole = 0
+            if (self.loop_on_replicates(config,i)):
+                break
                     
             if ("3D" not in self.phantom):
-                self.IR_bkg_recon[int((i-self.i_init)/self.i_init)] = IR
-                self.IR_whole_recon[int((i-self.i_init)/self.i_init)] = IR_whole
+                self.IR_bkg_recon[int((i-self.i_init)/self.i_init)] = self.IR
+                self.IR_whole_recon[int((i-self.i_init)/self.i_init)] = self.IR_whole
                 if (self.tensorboard):
                     #print("IR saved in tensorboard")
                     self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[int((i-self.i_init)/self.i_init)], i)
@@ -241,7 +176,7 @@ class iResults(vDenoising):
 
             # Show images and metrics in tensorboard (averaged images if asked in config)
             print('Metrics for iteration',int((i-self.i_init)/self.i_init))
-            self.writeEndImagesAndMetrics(int((i-self.i_init)/self.i_init),self.total_nb_iter,self.PETImage_shape,f,self.suffix,self.phantom,self.net,pet_algo,iteration_name)
+            self.writeEndImagesAndMetrics(int((i-self.i_init)/self.i_init),self.total_nb_iter,self.PETImage_shape,self.f,self.suffix,self.phantom,self.net,self.pet_algo,self.iteration_name)
 
         #self.WMV_plot(config)
 
@@ -354,6 +289,83 @@ class iResults(vDenoising):
         plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
             self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '.png')
 
+    def loop_on_replicates(self,config,i):
+        for p in range(1,self.nb_replicates+1):
+            if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
+                self.subroot_p = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
+
+                # Take NNEPPS images if NNEPPS is asked for this run
+                if (config["NNEPPS"]):
+                    NNEPPS_string = "_NNEPPS"
+                else:
+                    NNEPPS_string = ""
+                if ( 'Gong' in config["method"] or  'nested' in config["method"]):
+                    if ('post_reco' in config["task"]):
+                        self.pet_algo=config["method"]+"to fit"
+                        self.iteration_name="(post reconstruction)"
+                    else:
+                        self.pet_algo=config["method"]
+                        self.iteration_name="iterations"
+                    if ('post_reco' in config["task"]):
+                        try:
+                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(-100) + '_epoch=' + format(i-self.i_init) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                        except:
+                            print("!!!!! failed to read image")
+                            break
+                    else:
+                        f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-self.i_init) + "_FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                    if config["FLTNB"] == "double":
+                        f_p = f_p.astype(np.float64)
+
+                elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'OPTITR' or config["method"] == 'OSEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or 'APGMAP' in config["method"]):
+                    self.pet_algo=config["method"]
+                    self.iteration_name = "iterations"
+                    if (hasattr(self,'beta')):
+                        self.iteration_name += self.beta_string
+                    if ('ADMMLim' in config["method"]):
+                        subdir = 'ADMM' + '_' + str(config["nb_threads"])
+                        subdir = ''
+                        #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                        #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it1' + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                        #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_1'  + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                        f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0'  + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                    #elif (config["method"] == 'BSREM'):
+                    #    f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                    else:
+                        if ('APGMAP' in config["method"]):
+                            f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  "APGMAP" + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                        else:
+                            f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+
+                # Compute IR metric (different from others with several replicates)
+                if ("3D" not in self.phantom):
+                    self.compute_IR_bkg(self.PETImage_shape,f_p,int((i-self.i_init)/self.i_init),self.IR_bkg_recon,self.phantom)
+                    self.compute_IR_whole(self.PETImage_shape,f_p,int((i-self.i_init)/self.i_init),self.IR_whole_recon,self.phantom)
+
+                    # Nested ADMM stopping criterion
+                    if (self.IR_whole_recon[int((i-self.i_init)/self.i_init)] > 1.604):# > IR_ref[0]):
+                        print("Nested ADMM stopping criterion reached")
+                        return 1
+
+                    # Specific average for IR
+                    if (config["average_replicates"] == False and p == self.replicate):
+                        self.IR = self.IR_bkg_recon[int((i-self.i_init)/self.i_init)]
+                        self.IR_whole = self.IR_whole_recon[int((i-self.i_init)/self.i_init)]
+                    elif (config["average_replicates"]):
+                        self.IR += self.IR_bkg_recon[int((i-self.i_init)/self.i_init)] / self.nb_replicates
+                        self.IR_whole += self.IR_whole_recon[int((i-self.i_init)/self.i_init)]
+
+                if (config["average_replicates"]): # Average images across replicates (for metrics except IR)
+                    self.f += f_p / self.nb_replicates
+                elif (config["average_replicates"] == False and p == self.replicate):
+                    self.f = f_p
+            
+                del f_p
+
+
+                # Normal end
+                return 0
+
     def moving_average(self, series, n):
         # MVA
         ret = np.cumsum(series, dtype=float)
@@ -373,7 +385,7 @@ class iResults(vDenoising):
     def compute_IR_whole(self, PETImage_shape, image_recon,i,IR_whole_recon,image):
         ROI_act = image_recon
         IR_whole_recon[i] = (np.std(ROI_act) / np.mean(ROI_act))
-        #print("IR_whole_recon",IR_whole_recon)
+        print("IR_whole_recon",IR_whole_recon)
         #print('Image roughness in the background', IR_whole_recon[i],' , must be as small as possible')
 
 
