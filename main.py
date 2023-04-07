@@ -18,7 +18,7 @@ from ray import tune
 settings_config = {
     "image" : tune.grid_search(['image4_0']), # Image from database
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['ADMMLim']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
@@ -28,6 +28,7 @@ settings_config = {
     "all_images_DIP" : tune.grid_search(['True']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
     "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
+    "replicates" : tune.grid_search([4]), # List of desired replicates. list(range(1,n+1)) means n replicates
     "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
     "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMLim)
 }
@@ -57,15 +58,20 @@ hyperparameters_config = {
     "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
     ## network hyperparameters
     "lr" : tune.grid_search([1e-4,4e-4,7e-4,1e-3,4e-3,7e-3,1e-2,4e-2,7e-2,0.1,0.4,0.7,1]), # Learning rate in network optimization
-    "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
-    "sub_iter_DIP" : tune.grid_search([10]), # Number of epochs in network optimization
+    "lr" : tune.grid_search([1e-4,1e-3,1e-2,0.1,1]), # Learning rate in network optimization
+    #"lr" : tune.grid_search([1e-9,1e-8,1e-7,1e-6,1e-5]), # Learning rate in network optimization
+    "lr" : tune.grid_search([1e-9,1e-8,1e-7,1e-6,1e-5,1e-4,1e-3,1e-2,0.1,1,10,100]), # Learning rate in network optimization
+    "lr" : tune.grid_search([1e-5,1e-4,1e-3,1e-2,0.1,1]), # Learning rate in network optimization
+    #"lr" : tune.grid_search([10]), # Learning rate in network optimization
+    "sub_iter_DIP" : tune.grid_search([500]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam','LBFGS']), # Optimization algorithm in neural network training (Adam, LBFGS)
     "opti_DIP" : tune.grid_search(['LBFGS']), # Optimization algorithm in neural network training (Adam, LBFGS)
     "opti_DIP" : tune.grid_search(['Adadelta']), # Optimization algorithm in neural network training (Adam, LBFGS)
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
-    "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+    "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
     "input" : tune.grid_search(['random']), # Neural network input (random or CT)
+    "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
     #"input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
@@ -123,7 +129,7 @@ for method in config["method"]['grid_search']:
     # Choose task to do
     #task = 'full_reco_with_network' # Run Gong or nested ADMM
     #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
-    #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
+    task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
     #task = 'show_results_post_reco'
     #task = 'show_results'
     #task = 'show_metrics_results_already_computed'

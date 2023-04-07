@@ -9,7 +9,7 @@ import os
         
 class DD_2D(pl.LightningModule):
 
-    def __init__(self, config, method):
+    def __init__(self, config, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, last_iter):
         super().__init__()
 
         # Set random seed if asked (for NN weights here)
@@ -25,11 +25,20 @@ class DD_2D(pl.LightningModule):
         self.opti_DIP = config['opti_DIP']
         self.sub_iter_DIP = config['sub_iter_DIP']
         self.method = method
+        self.all_images_DIP = all_images_DIP
+        self.last_iter = last_iter + 1
+        self.subroot = subroot
+        self.config = config
+        self.experiment = config["experiment"]
+        self.suffix = suffix
+        self.global_it = global_it
+        '''
         if (config['mlem_sequence'] is None):
             self.post_reco_mode = True
             self.suffix = self.suffix_func(config)
         else:
             self.post_reco_mode = False
+        '''
         d = config["d_DD"] # Number of layers
         k = config['k_DD'] # Number of channels, depending on how much noise we mant to remove. Small k = less noise, but less fit
 
@@ -51,6 +60,8 @@ class DD_2D(pl.LightningModule):
         # self.positivity = nn.SiLU() # Final SiLU, smoother than ReLU but not positive
         # self.positivity = nn.Softplus() # Final SiLU to enforce positivity of ouput image, smoother than ReLU
 
+        self.write_current_img_mode = True
+        self.DIP_early_stopping = False # need to add WMV init here to do ES
 
     def write_image_tensorboard(self,writer,image,name,suffix,i=0,full_contrast=False):
         # Creating matplotlib figure with colorbar
@@ -84,11 +95,13 @@ class DD_2D(pl.LightningModule):
         image_net_input_torch, image_corrupt_torch = train_batch
         out = self.forward(image_net_input_torch)
         # Save image over epochs
-        if (self.post_reco_mode):
-            self.post_reco(out)
+        if (self.write_current_img_mode):
+            self.write_current_img(out)
+
         loss = self.DIP_loss(out, image_corrupt_torch)
+
         # logging using tensorboard logger
-        self.logger.experiment.add_scalar('loss', loss,self.current_epoch)        
+        self.logger.experiment.add_scalar('loss', loss,self.current_epoch)  
         return loss
 
     def configure_optimizers(self):
@@ -104,19 +117,46 @@ class DD_2D(pl.LightningModule):
             optimizer = torch.optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4) # Optimizing using L-BFGS
         return optimizer
 
-    def post_reco(self,out):
-        from utils.utils_func import save_img
-        if ((self.current_epoch%(self.sub_iter_DIP // 10) == 0)):
-            try:
-                out_np = out.detach().numpy()[0,0,:,:]
-            except:
-                out_np = out.cpu().detach().numpy()[0,0,:,:]
-            subroot = '/home/meraslia/sgld/hernan_folder/data/Algo/'
-            experiment = 24
-            save_img(out_np, subroot+'Block2/out_cnn/' + format(experiment) + '/out_' + 'DD' + '_post_reco_epoch=' + format(self.current_epoch) + self.suffix + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
-                    
-    def suffix_func(self,config):
+    def write_current_img(self,out):
+        if (self.all_images_DIP == "False"):
+            if ((self.current_epoch%(self.sub_iter_DIP // 10) == (self.sub_iter_DIP // 10) -1)):
+                self.write_current_img_task(out)
+        elif (self.all_images_DIP == "True"):
+            self.write_current_img_task(out)
+        elif (self.all_images_DIP == "Last"):
+            if (self.current_epoch == self.sub_iter_DIP - 1):
+                self.write_current_img_task(out)
+
+    def write_current_img_task(self,out):
+        try:
+            out_np = out.detach().numpy()[0,0,:,:]
+        except:
+            out_np = out.cpu().detach().numpy()[0,0,:,:]
+
+
+
+        
+        '''
+        import matplotlib.pyplot as plt
+        plt.imshow(out.cpu().detach().numpy()[0,0,:,:],cmap='gray')
+        plt.colorbar()
+        plt.show()
+        '''
+        print(self.last_iter)
+        self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+
+    def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
+        config_copy = dict(config)
+        if (NNEPPS==False):
+            config_copy.pop('NNEPPS',None)
+        #config_copy.pop('nb_outer_iteration',None)
         suffix = "config"
-        for key, value in config.items():
-            suffix +=  "_" + key + "=" + str(value)
+        for key, value in config_copy.items():
+            if key in hyperparameters_list:
+                suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
         return suffix
+
+    def save_img(self,img,name):
+        fp=open(name,'wb')
+        img.tofile(fp)
+        print('Succesfully save in:', name)
