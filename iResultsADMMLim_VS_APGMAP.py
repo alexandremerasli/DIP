@@ -83,6 +83,9 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         f_p = np.zeros(self.PETImage_shape,dtype=type_im)
         f_var = np.zeros(self.PETImage_shape,dtype=type_im)
 
+        f_init_p = np.zeros(self.PETImage_shape,dtype=type)
+        f_init_avg = np.zeros(self.PETImage_shape,dtype=type)
+
         if ('ADMMLim' in config["method"]):
             i_init = 20
         else:
@@ -113,7 +116,8 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                             except: # ES point is reached
                                 break
                         else:
-                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-i_init) + "_FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-i_init) + "_FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+                            f_init_p = self.fijii_np(self.subroot_p+'Block1/' + self.suffix + '/before_eq22/' + '0_f_mu.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
                         if config["FLTNB"] == "double":
                             f_p.astype(np.float64)
                     elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'OPTITR' or config["method"] == 'OSEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or config["method"] == 'APGMAP'):
@@ -145,6 +149,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                     '''    
                     if (config["average_replicates"]): # Average images across replicates (for metrics except IR)
                         f += f_p / self.nb_replicates
+                        f_init_avg += f_init_p / self.nb_replicates
                     elif (config["average_replicates"] == False and p == self.replicate):
                         f = f_p
 
@@ -157,6 +162,10 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         self.write_image_tensorboard(self.writer,f,self.method + " at convergence, averaged on " + str(self.nb_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # mean of images at convergence across replicates in tensorboard
         self.write_image_tensorboard(self.writer,np.sqrt(f_var),self.method + " at convergence, std over " + str(self.nb_replicates) + " replicates",self.suffix,self.image_gt,0) # std of images at convergence across replicates in tensorboard
         self.write_image_tensorboard(self.writer,np.sqrt(f_var),self.method + " at convergence, std over " + str(self.nb_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # std of images at convergence across replicates in tensorboard
+        self.write_image_tensorboard(self.writer,f_init_p,self.method + " denoised initialization, for replicate 1 " + str(self.nb_replicates) + " replicates",self.suffix,self.image_gt,0) # denoised initialization for one replicate in tensorboard
+        self.write_image_tensorboard(self.writer,f_init_p,self.method + " denoised initialization, for replicate 1 (FULL CONTRAST) " + str(self.nb_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # denoised initialization for one replicate in tensorboard
+        self.write_image_tensorboard(self.writer,f_init_avg,self.method + " denoised initialization over " + str(self.nb_replicates) + " replicates",self.suffix,self.image_gt,0) # denoised initialization across replicates in tensorboard
+        self.write_image_tensorboard(self.writer,f_init_avg,self.method + " denoised initialization over " + str(self.nb_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # denoised initialization across replicates in tensorboard
         
     def compareImages(self,suffix):
         if (self.tensorboard):
