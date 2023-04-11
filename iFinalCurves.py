@@ -36,7 +36,7 @@ class iFinalCurves(vGeneral):
         APGMAP_vs_ADMMLim = False
 
         # Plot tradeoff with SSIM (False) or AR (True)
-        quantitative_tradeoff = False
+        quantitative_tradeoff = True
 
         # Convert Gong to DIPRecon
         DIPRecon = False
@@ -299,10 +299,6 @@ class iFinalCurves(vGeneral):
                 else:
                     self.i_init = 1
 
-                self.defineTotalNbIter_beta_rho(method,config[method],task)
-
-
-
                 # Initialize variables
                 suffixes = []
                 replicates = []
@@ -505,6 +501,10 @@ class iFinalCurves(vGeneral):
                     metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + config[method]["method"] + '/' + suffix + '/' + 'metrics.csv'
                     
                     try:
+                        self.subroot = self.subroot_data + 'debug/'*self.debug + self.phantom + '/'+ str(replicate) + '/' + config[method]["method"] + '/' # Directory root
+                        self.suffix = suffix[:-12] # Remove NNEPPS from suffix
+                        self.defineTotalNbIter_beta_rho(method,config[method],task)
+
                         with open(metrics_file, 'r') as myfile:
                             spamreader = reader_csv(myfile,delimiter=';')
                             rows_csv = list(spamreader)

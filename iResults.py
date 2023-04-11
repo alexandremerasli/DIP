@@ -32,7 +32,7 @@ class iResults(vDenoising):
         else:
             self.i_init = 1
 
-        self.defineTotalNbIter_beta_rho(config["method"], config, config["task"])
+        self.defineTotalNbIter_beta_rho(config["method"], config, config["task"],stopping_criterion=False) # Compute metrics for every iterations, stopping_criterion will be used in final curves
 
 
         # Create summary writer from tensorboard
@@ -155,10 +155,11 @@ class iResults(vDenoising):
         # Nested ADMM stopping criterion
         if ('nested' in config["method"]):
             # Compute IR for BSREM initialization image
-            #IR_ref = 0.25
             im_BSREM = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d') # loading BSREM initialization image
-            IR_ref = [np.NaN]
-            self.compute_IR_whole(self.PETImage_shape,im_BSREM,0,IR_ref,self.phantom)
+            self.IR_ref = [np.NaN]
+            self.compute_IR_whole(self.PETImage_shape,im_BSREM,0,self.IR_ref,self.phantom)
+            # Add 1 to number of iterations before stopping criterion
+            self.total_nb_iter += 1
 
         for i in range(self.i_init,self.total_nb_iter+self.i_init,self.i_init):
             self.IR = 0
@@ -343,8 +344,13 @@ class iResults(vDenoising):
                     self.compute_IR_whole(self.PETImage_shape,f_p,int((i-self.i_init)/self.i_init),self.IR_whole_recon,self.phantom)
 
                     # Nested ADMM stopping criterion
-                    if (self.IR_whole_recon[int((i-self.i_init)/self.i_init)] > 1.604):# > IR_ref[0]):
+                    if (self.IR_whole_recon[int((i-self.i_init)/self.i_init)]> self.IR_ref[0]): # > 1.604):# > self.IR_ref[0]):
                         print("Nested ADMM stopping criterion reached")
+                        self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
+                        stopping_criterion_file = open(self.path_stopping_criterion, "w")
+                        stopping_criterion_file.write("stopping iteration :" + "\n")
+                        stopping_criterion_file.write(str(i) + "\n")
+                        stopping_criterion_file.close()
                         return 1
 
                     # Specific average for IR

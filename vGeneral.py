@@ -867,7 +867,7 @@ class vGeneral(abc.ABC):
                         
         return B1
 
-    def defineTotalNbIter_beta_rho(self,method,config,task):
+    def defineTotalNbIter_beta_rho(self,method,config,task,stopping_criterion=True):
         if (method == 'ADMMLim'):
             try:
                 self.path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
@@ -884,7 +884,19 @@ class vGeneral(abc.ABC):
             if ('post_reco' in task):
                 self.total_nb_iter = config["sub_iter_DIP"]
             else:
-                self.total_nb_iter = config["max_iter"]
+                try:
+                    if (stopping_criterion):
+                        self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
+                        with open(self.path_stopping_criterion) as f:
+                            first_line = f.readline() # Read first line to get second one
+                            #self.total_nb_iter = min(int(f.readline().rstrip()) - self.i_init, config["nb_outer_iteration"] - self.i_init + 1)
+                            self.total_nb_iter = int(f.readline().rstrip()) - self.i_init - 1
+                            #self.total_nb_iter = int(self.total_nb_iter / self.i_init) # if 1 out of i_init iterations was saved
+                            #self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1 # Override value
+                    else:
+                        self.total_nb_iter = config["max_iter"]    
+                except:
+                    self.total_nb_iter = config["max_iter"]
         else:
             self.total_nb_iter = self.max_iter
 
