@@ -83,8 +83,8 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         f_p = np.zeros(self.PETImage_shape,dtype=type_im)
         f_var = np.zeros(self.PETImage_shape,dtype=type_im)
 
-        f_init_p = np.zeros(self.PETImage_shape,dtype=type)
-        f_init_avg = np.zeros(self.PETImage_shape,dtype=type)
+        f_init_p = np.zeros(self.PETImage_shape,dtype=type_im)
+        f_init_avg = np.zeros(self.PETImage_shape,dtype=type_im)
 
         if ('ADMMLim' in config["method"]):
             i_init = 20
@@ -116,8 +116,8 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                             except: # ES point is reached
                                 break
                         else:
-                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-i_init) + "_FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
-                            f_init_p = self.fijii_np(self.subroot_p+'Block1/' + self.suffix + '/before_eq22/' + '0_f_mu.img',shape=(self.PETImage_shape),type='<f') # loading DIP output
+                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-i_init) + "_FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                            f_init_p = self.fijii_np(self.subroot_p+'Block1/' + self.suffix + '/before_eq22/' + '0_f_mu.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
                         if config["FLTNB"] == "double":
                             f_p.astype(np.float64)
                     elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'OPTITR' or config["method"] == 'OSEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or config["method"] == 'APGMAP'):

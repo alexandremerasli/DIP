@@ -277,7 +277,7 @@ class iFinalCurves(vGeneral):
         if (quantitative_tradeoff):
             if (self.phantom == "image2_0"):
                 ROI_list = ['cold','hot']
-            elif (self.phantom == "image4_0" or self.phantom == "image4000_0" or self.phantom == "image40_0"):
+            elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
                 ROI_list = ['cold','hot_TEP','hot_TEP_match_square_recon','hot_perfect_match_recon']
         else:
             ROI_list = ['phantom']
@@ -373,7 +373,7 @@ class iFinalCurves(vGeneral):
 
                     color_dict = {**color_dict, **color_dict_supp} # Comparison between reconstruction methods
     
-                elif(self.phantom == "image4_0" or self.phantom == "image4000_0" or self.phantom == "image40_0"):
+                elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
                     color_dict_after_MIC = {
                         "nested_ADMMLim" : ['cyan','blue','teal','blueviolet'],
                         #"nested_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
@@ -426,7 +426,7 @@ class iFinalCurves(vGeneral):
                     }
 
                     marker_dict = {**marker_dict, **marker_dict_supp}
-                elif(self.phantom == "image4_0" or self.phantom == "image4000_0" or self.phantom == "image40_0"):
+                elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
                     marker_dict = {
                         "APPGML_it" : [':'],
                         "APPGML_subsets" : ['-'],
@@ -464,7 +464,7 @@ class iFinalCurves(vGeneral):
                         color_dict[key] = len(color_dict[key]) * ['black']
                 else:
                     color_avg = None
-                    if (self.phantom == "image4_0" or self.phantom == "image4000_0" or self.phantom == "image40_0"):
+                    if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
                         color_avg = color_dict[method][0]    
                     
 
@@ -503,6 +503,7 @@ class iFinalCurves(vGeneral):
                     try:
                         self.subroot = self.subroot_data + 'debug/'*self.debug + self.phantom + '/'+ str(replicate) + '/' + config[method]["method"] + '/' # Directory root
                         self.suffix = suffix[:-12] # Remove NNEPPS from suffix
+                        self.max_iter = config[method]["max_iter"]
                         self.defineTotalNbIter_beta_rho(method,config[method],task)
 
                         with open(metrics_file, 'r') as myfile:
@@ -745,7 +746,7 @@ class iFinalCurves(vGeneral):
                             if (fig_nb != 2):
                                 if (self.phantom == "image2_0"):
                                     replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
-                                elif(self.phantom == "image4_0" or self.phantom == "image4000_0" or self.phantom == "image40_0"):
+                                elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
                                     if ("nested" not in method and "DIPRecon" not in method):
                                         replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                                     else:
