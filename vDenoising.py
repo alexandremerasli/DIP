@@ -123,6 +123,7 @@ class vDenoising(vGeneral):
         return model
 
     def create_pl_trainer(self,finetuning, processing_unit, sub_iter_DIP, global_it, net, checkpoint_simple_path, experiment, checkpoint_simple_path_exp, checkpoint_simple_path_previous_exp, name=''):
+        
         from ray.tune.integration.pytorch_lightning import TuneReportCallback, \
         TuneReportCheckpointCallback
 
@@ -137,6 +138,10 @@ class vDenoising(vGeneral):
             #    accelerator = 'dp'
 
 
+        # Early stopping callback
+        from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+        early_stopping_callback = EarlyStopping(monitor="SUCCESS", mode="max",stopping_threshold=0.9,patience=np.inf) # SUCCESS will be 1 when ES if found, which is greater than stopping_threshold = 0.9
+
         print("global_it",global_it)
         if (global_it == -1 or global_it == self.max_iter - 1): # Number of initial and final iterations are overrided here
             print(str(self.sub_iter_DIP_initial_and_final) + " initial iterations for Gong")
@@ -146,18 +151,18 @@ class vDenoising(vGeneral):
             logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
             #checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=0, save_weights_only=True) # Do not save any checkpoint (save_top_k = 0)
             checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0). We do not use it a priori, except in post reconstruction to initialize
-            trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, callbacks=[tuning_callback, checkpoint_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple")
+            trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple")
         else:
             if (finetuning == 'last'): # last model saved in checkpoint
                 # Checkpoints pl variables
                 logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
                 checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0)
-                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[tuning_callback, checkpoint_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all") # Prepare trainer model with callback to save checkpoint        
+                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all") # Prepare trainer model with callback to save checkpoint        
             if (finetuning == 'best'): # best model saved in checkpoint
                 # Checkpoints pl variables
                 logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
                 checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, filename = 'best_loss', monitor='loss_monitor', save_top_k=1) # Save best checkpoint (save_top_k = 1) (according to minimum loss (monitor)) as best_loss.ckpt
-                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[tuning_callback, checkpoint_callback],gpus=gpus, accelerator=accelerator, profiler="simple") # Prepare trainer model with callback to save checkpoint
+                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator, profiler="simple") # Prepare trainer model with callback to save checkpoint
             if (finetuning == 'ES'): # best model saved in checkpoint
                 # Delete previous checkpoints from previous runs
                 if (global_it > -1): # Beginning nested or Gong in block2. For first epoch, change number of epochs to sub_iter_DIP_initial_and_final for Gong
@@ -168,7 +173,7 @@ class vDenoising(vGeneral):
                 # Checkpoints pl variables
                 logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
                 checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=-1) # Save checkpoint at each epoch (save_top_k = -1) to use the one corresponding to ES point
-                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[tuning_callback, checkpoint_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all") # Prepare trainer model with callback to save checkpoint        
+                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all") # Prepare trainer model with callback to save checkpoint        
         return trainer
 
     def create_input(self,net,PETImage_shape,config,subroot): #CT map for high-count data, but not CT yet...
@@ -234,7 +239,7 @@ class vDenoising(vGeneral):
             else:
                 file_path = (subroot+'Data/initialization/random_input_3D_' + net + '.img')
         elif self.input == "CT":
-            if (self.phantom != "image4_0" and self.phantom != "image4000_0" and self.phantom != "image40_0"):
+            if (self.phantom != "image4_0" and self.phantom != "image400_0" and self.phantom != "image40_0"):
                 file_path = (subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw') #CT map, but not CT yet, attenuation for now...
             else:
                 file_path = (subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw') # MR simulated image

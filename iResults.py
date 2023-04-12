@@ -57,7 +57,7 @@ class iResults(vDenoising):
         self.phantom_ROI = self.get_phantom_ROI(self.phantom)
         if ("3D" not in self.phantom):
             self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-            if (self.phantom == "image4_0" or self.phantom == "image4000_0" or self.phantom == "image40_0"):
+            if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
                 self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                 self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                 self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
@@ -110,12 +110,12 @@ class iResults(vDenoising):
     def writeCorruptedImage(self,i,max_iter,x_label,suffix,pet_algo,iteration_name='iterations'):
         if (self.tensorboard):
             if (self.all_images_DIP == "Last"):
-                self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + self.pet_algo + " " + self.iteration_name,suffix,self.image_gt,i) # Showing all corrupted images with same contrast to compare them together
-                self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + self.pet_algo + " " + self.iteration_name + " (FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
+                self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name,suffix,self.image_gt,i) # Showing all corrupted images with same contrast to compare them together
+                self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name + " (FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
             else:       
                 if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
-                    self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + self.pet_algo + " " + self.iteration_name,suffix,self.image_gt,i) # Showing all corrupted images with same contrast to compare them together
-                    self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + self.pet_algo + " " + self.iteration_name + " (FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
+                    self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name,suffix,self.image_gt,i) # Showing all corrupted images with same contrast to compare them together
+                    self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name + " (FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
 
     def writeEndImagesAndMetrics(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):       
         # Metrics for NN output
@@ -125,14 +125,14 @@ class iResults(vDenoising):
         if (self.tensorboard):
             # Write image over ADMM iterations
             if (self.all_images_DIP == "Last"):
-                self.write_image_tensorboard(self.writer,f,"Image over " + self.pet_algo + " " + self.iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
-                self.write_image_tensorboard(self.writer,f,"Image over " + self.pet_algo + " " + self.iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
-                self.write_image_tensorboard(self.writer,f*self.phantom_ROI,"Image over " + self.pet_algo + " " + self.iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
+                self.write_image_tensorboard(self.writer,f,"Image over " + self.pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
+                self.write_image_tensorboard(self.writer,f,"Image over " + self.pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
+                self.write_image_tensorboard(self.writer,f*self.phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
             else:
                 if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):
-                    self.write_image_tensorboard(self.writer,f,"Image over " + self.pet_algo + " " + self.iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
-                    self.write_image_tensorboard(self.writer,f,"Image over " + self.pet_algo + " " + self.iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
-                    self.write_image_tensorboard(self.writer,f*self.phantom_ROI,"Image over " + self.pet_algo + " " + self.iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
+                    self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
+                    self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
+                    self.write_image_tensorboard(self.writer,f*self.phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
 
     def runComputation(self,config,root):
         if (hasattr(self,'beta')):
@@ -344,14 +344,15 @@ class iResults(vDenoising):
                     self.compute_IR_whole(self.PETImage_shape,f_p,int((i-self.i_init)/self.i_init),self.IR_whole_recon,self.phantom)
 
                     # Nested ADMM stopping criterion
-                    if (self.IR_whole_recon[int((i-self.i_init)/self.i_init)]> self.IR_ref[0]): # > 1.604):# > self.IR_ref[0]):
-                        print("Nested ADMM stopping criterion reached")
-                        self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
-                        stopping_criterion_file = open(self.path_stopping_criterion, "w")
-                        stopping_criterion_file.write("stopping iteration :" + "\n")
-                        stopping_criterion_file.write(str(i) + "\n")
-                        stopping_criterion_file.close()
-                        return 1
+                    if('nested' in config["method"]):
+                        if (self.IR_whole_recon[int((i-self.i_init)/self.i_init)]> self.IR_ref[0]): # > 1.604):# > self.IR_ref[0]):
+                            print("Nested ADMM stopping criterion reached")
+                            self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
+                            stopping_criterion_file = open(self.path_stopping_criterion, "w")
+                            stopping_criterion_file.write("stopping iteration :" + "\n")
+                            stopping_criterion_file.write(str(i) + "\n")
+                            stopping_criterion_file.close()
+                            return 1
 
                     # Specific average for IR
                     if (config["average_replicates"] == False and p == self.replicate):

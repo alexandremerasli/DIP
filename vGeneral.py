@@ -75,7 +75,7 @@ class vGeneral(abc.ABC):
                 self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
             if (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
                 self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
-            if ((self.phantom == "image4_0" or self.phantom == "image4000_0" or self.phantom == "image40_0") and config["task"] != "show_metrics_results_already_computed"):
+            if ((self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0") and config["task"] != "show_metrics_results_already_computed"):
                 self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
         return config
 

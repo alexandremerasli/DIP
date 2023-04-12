@@ -57,7 +57,8 @@ class iNestedADMM(vReconstruction):
             #IR_ref = 0.25
             im_BSREM = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d') # loading BSREM initialization image
             IR_ref = [np.NaN]
-            self.compute_IR_whole(self.PETImage_shape,im_BSREM,0,IR_ref,self.phantom)
+            classResults.compute_IR_whole(self.PETImage_shape,im_BSREM,0,IR_ref,self.phantom)
+            print("BSREM IR : ",IR_ref[0])
 
         classDenoising = None
         self.tau_DIP = config["tau_DIP"]
@@ -143,9 +144,16 @@ class iNestedADMM(vReconstruction):
                 self.writeAdaptiveRhoFile()
 
             # Nested ADMM stopping criterion
-            if (classResults.IR_whole_recon[int((self.global_it-self.i_init)/self.i_init)] > IR_ref[0]):
-                print("ok")
-                raise ValueError("Nested ADMM stopping criterion reached")
+            '''
+            if (classResults.IR_whole_recon[self.global_it] > IR_ref[0]):
+                print("Nested ADMM stopping criterion reached")
+                self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
+                stopping_criterion_file = open(self.path_stopping_criterion, "w")
+                stopping_criterion_file.write("stopping iteration :" + "\n")
+                stopping_criterion_file.write(str(self.global_it) + "\n")
+                stopping_criterion_file.close()
+                break
+            '''
 
         # Saving final image output
         self.save_img(self.f, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')
