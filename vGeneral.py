@@ -2,13 +2,15 @@
 
 # Useful
 from pathlib import Path
-import os
+from os import getcwd, makedirs
+from os.path import exists
 from functools import partial
-from ray import tune, init
-import numpy as np
-from itertools import product
-import matplotlib.pyplot as plt
-import re
+from ray import tune
+from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, mean, std
+from numpy import max as max_np
+from numpy import min as min_np
+from matplotlib.pyplot import imshow, figure, colorbar, savefig, title, gcf
+from re import split, findall, compile
 
 import abc
 
@@ -95,6 +97,7 @@ class vGeneral(abc.ABC):
             Path(self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
 
         Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
+        Path(self.subroot_data + 'Data/initialization/pytorch/replicate_' + str(self.replicate)).mkdir(parents=True, exist_ok=True)
                 
     def runRayTune(self,config,root,task):
         # Check parameters incompatibility
@@ -138,12 +141,13 @@ class vGeneral(abc.ABC):
 
             # Start tuning of hyperparameters = start each admm computation in parallel
             #try: # resume previous run (if it exists)
-            #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(config) + str(config["max_iter"]), resources_per_trial = resources_per_trial, resume = "ERRORED_ONLY")#, progress_reporter = reporter)
+            #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = getcwd() + '/runs', name=suffix_func(config) + str(config["max_iter"]), resources_per_trial = resources_per_trial, resume = "ERRORED_ONLY")#, progress_reporter = reporter)
             #except: # do not resume previous run because there is no previous one
-            #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = os.getcwd() + '/runs', name=suffix_func(config) + "_max_iter=" + str(config["max_iter"], resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
+            #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = getcwd() + '/runs', name=suffix_func(config) + "_max_iter=" + str(config["max_iter"], resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
 
             #init(log_to_driver=False) # Remove logs stored by raytune, but also from terminal...
-            tune.run(partial(self.do_everything,root=root,suffix_replicate_file = True), config=config,local_dir = os.getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
+            #tune.run(partial(self.do_everything,root=root,suffix_replicate_file = True), config=config,local_dir = getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
+            tune.run(partial(self.do_everything,root=root,suffix_replicate_file = True), config=config,local_dir = getcwd() + '/runs')#, progress_reporter = reporter)
         else: # Without raytune
             # Remove grid search if not using ray and choose first element of each config key.
             if (task != "show_metrics_results_already_computed_following_step"):
@@ -396,50 +400,74 @@ class vGeneral(abc.ABC):
             elif (self.FLTNB == 'double'):
                 type_im = '<d'
 
-        try:
-            file_path=(path)
-            dtype = np.dtype(type_im)
-            fid = open(file_path, 'rb')
-            data = np.fromfile(fid,dtype)
-            #'''
-            if (1 in shape): # 2D
-                image = data.reshape(shape)
-            else: # 3D
-                image = data.reshape(shape[::-1])
-        except:
-            type_im = ('<f')*(type_im=='<d') + ('<d')*(type_im=='<f')
-            file_path=(path)
-            dtype = np.dtype(type_im)
-            fid = open(file_path, 'rb')
-            data = np.fromfile(fid,dtype)
-            #'''
-            if (1 in shape): # 2D
-                image = data.reshape(shape)
-            else: # 3D
-                image = data.reshape(shape[::-1])
-            
-            
+        attempts = 0
+
+        while attempts < 100:
+            attempts += 1
+            try:
+                type_im = ('<f')*(type_im=='<f') + ('<d')*(type_im=='<d')
+                file_path=(path)
+                dtype_np = dtype(type_im)
+                with open(file_path, 'rb') as fid:
+                    data = fromfile(fid,dtype_np)
+                    if (1 in shape): # 2D
+                        #shape = (shape[0],shape[1])
+                        image = data.reshape(shape)
+                    else: # 3D
+                        image = data.reshape(shape[::-1])
+                attempts = 100
+                break
+            except:
+                fid.close()
+                type_im = ('<f')*(type_im=='<d') + ('<d')*(type_im=='<f')
+                file_path=(path)
+                dtype_np = dtype(type_im)
+                with open(file_path, 'rb') as fid:
+                    data = fromfile(fid,dtype_np)
+                    if (1 in shape): # 2D
+                        #shape = (shape[0],shape[1])
+                        try:
+                            image = data.reshape(shape)
+                        except Exception as e:
+                            print(data.shape)
+                            print(type_im)
+                            print(dtype_np)
+                            print(fid)
+                            '''
+                            import numpy as np
+                            data = fromfile(fid,dtype('<f'))
+                            np.save('data' + str(self.replicate) + '_' + str(attempts) + '_f.npy', data)
+                            '''
+                            print('Failed: '+ str(e))
+                    else: # 3D
+                        image = data.reshape(shape[::-1])
+                
+                fid.close()
             '''
             image = data.reshape(shape)
-            #image = np.transpose(image,axes=(1,2,0)) # imshow ok
-            #image = np.transpose(image,axes=(1,0,2)) # imshow ok
-            #image = np.transpose(image,axes=(0,1,2)) # imshow ok
-            #image = np.transpose(image,axes=(0,2,1)) # imshow ok
-            #image = np.transpose(image,axes=(2,0,1)) # imshow ok
-            #image = np.transpose(image,axes=(2,1,0)) # imshow ok
+            #image = transpose(image,axes=(1,2,0)) # imshow ok
+            #image = transpose(image,axes=(1,0,2)) # imshow ok
+            #image = transpose(image,axes=(0,1,2)) # imshow ok
+            #image = transpose(image,axes=(0,2,1)) # imshow ok
+            #image = transpose(image,axes=(2,0,1)) # imshow ok
+            #image = transpose(image,axes=(2,1,0)) # imshow ok
             '''
             
         #'''
         #image = data.reshape(shape)
+        try:
+            print(image[0,0])
+        except Exception as e:
+            print('exception image: '+ str(e))
         return image
 
     def norm_imag(self,img):
         print("nooooooooorm")
         """ Normalization of input - output [0..1] and the normalization value for each slide"""
-        if (np.max(img) - np.min(img)) != 0:
-            return (img - np.min(img)) / (np.max(img) - np.min(img)), np.min(img), np.max(img)
+        if (max_np(img) - min_np(img)) != 0:
+            return (img - min_np(img)) / (max_np(img) - min_np(img)), min_np(img), max_np(img)
         else:
-            return img, np.min(img), np.max(img)
+            return img, min_np(img), max_np(img)
 
     def denorm_imag(self,image, mini, maxi):
         """ Denormalization of input - output [0..1] and the normalization value for each slide"""
@@ -455,12 +483,12 @@ class vGeneral(abc.ABC):
 
     def norm_positive_imag(self,img):
         """ Positive normalization of input - output [0..1] and the normalization value for each slide"""
-        if (np.max(img) - np.min(img)) != 0:
-            print(np.max(img))
-            print(np.min(img))
-            return img / np.max(img), 0, np.max(img)
+        if (max_np(img) - min_np(img)) != 0:
+            print(max_np(img))
+            print(min_np(img))
+            return img / max_np(img), 0, max_np(img)
         else:
-            return img, 0, np.max(img)
+            return img, 0, max_np(img)
 
     def denorm_positive_imag(self,image, mini, maxi):
         """ Positive normalization of input - output [0..1] and the normalization value for each slide"""
@@ -476,21 +504,21 @@ class vGeneral(abc.ABC):
     def stand_imag(self,image_corrupt):
         print("staaaaaaaaaaand")
         """ Standardization of input - output with mean 0 and std 1 for each slide"""
-        mean=np.mean(image_corrupt)
-        std=np.std(image_corrupt)
-        image_center = image_corrupt - mean
-        if (std == 0.):
+        mean_im=mean(image_corrupt)
+        std_im=std(image_corrupt)
+        image_center = image_corrupt - mean_im
+        if (std_im == 0.):
             raise ValueError("std 0")
-        image_corrupt_std = image_center / std
-        return image_corrupt_std,mean,std
+        image_corrupt_std = image_center / std_im
+        return image_corrupt_std,mean_im,std_im
 
-    def destand_numpy_imag(self,image, mean, std):
+    def destand_numpy_imag(self,image, mean_im, std_im):
         """ Destandardization of input - output with mean 0 and std 1 for each slide"""
-        return image * std + mean
+        return image * std_im + mean_im
 
-    def destand_imag(self,image, mean, std):
+    def destand_imag(self,image, mean_im, std_im):
         image_np = image.detach().numpy()
-        return self.destand_numpy_imag(image_np, mean, std)
+        return self.destand_numpy_imag(image_np, mean_im, std_im)
 
     def rescale_imag(self,image_corrupt, scaling):
         """ Scaling of input """
@@ -525,11 +553,11 @@ class vGeneral(abc.ABC):
 
     def find_nan(self,image):
         """ find NaN values on the image"""
-        idx = np.argwhere(np.isnan(image))
+        idx = argwhere(isnan(image))
         print('index with NaN value:',len(idx))
         for i in range(len(idx)):
             image[idx[i,0],idx[i,1]] = 0
-        print('index with NaN value:',len(np.argwhere(np.isnan(image))))
+        print('index with NaN value:',len(argwhere(isnan(image))))
         return image
 
     def points_in_circle(self,center_y,center_x,radius,PETImage_shape,inner_circle=True): # x and y are inverted in an array compared to coordinates
@@ -554,10 +582,10 @@ class vGeneral(abc.ABC):
         phantom_ROI_bkg = self.points_in_circle(0/4,0/4,150/4-1,PETImage_shape)
         bkg_ROI = list(set(phantom_ROI_bkg) - set(cold_ROI_bkg) - set(hot_ROI_bkg))
 
-        cold_mask = np.zeros(PETImage_shape, dtype='<f')
-        tumor_mask = np.zeros(PETImage_shape, dtype='<f')
-        phantom_mask = np.zeros(PETImage_shape, dtype='<f')
-        bkg_mask = np.zeros(PETImage_shape, dtype='<f')
+        cold_mask = zeros(PETImage_shape, dtype='<f')
+        tumor_mask = zeros(PETImage_shape, dtype='<f')
+        phantom_mask = zeros(PETImage_shape, dtype='<f')
+        bkg_mask = zeros(PETImage_shape, dtype='<f')
 
         ROI_list = [cold_ROI, hot_ROI, phantom_ROI, bkg_ROI]
         mask_list = [cold_mask, tumor_mask, phantom_mask, bkg_mask]
@@ -596,10 +624,10 @@ class vGeneral(abc.ABC):
         # Reverse shape for 3D
         PETImage_shape = PETImage_shape[::-1]
 
-        cold_mask = np.zeros(PETImage_shape, dtype='<f')
-        tumor_mask = np.zeros(PETImage_shape, dtype='<f')
-        phantom_mask = np.zeros(PETImage_shape, dtype='<f')
-        bkg_mask = np.zeros(PETImage_shape, dtype='<f')
+        cold_mask = zeros(PETImage_shape, dtype='<f')
+        tumor_mask = zeros(PETImage_shape, dtype='<f')
+        phantom_mask = zeros(PETImage_shape, dtype='<f')
+        bkg_mask = zeros(PETImage_shape, dtype='<f')
 
         ROI_list = [cold_ROI, hot_ROI, phantom_ROI, bkg_ROI]
         mask_list = [cold_mask, tumor_mask, phantom_mask, bkg_mask]
@@ -631,12 +659,12 @@ class vGeneral(abc.ABC):
         phantom_ROI_bkg = self.points_in_circle(0/4,0/4,150/4-1,PETImage_shape)
         bkg_ROI = list(set(phantom_ROI_bkg) - set(cold_ROI_bkg) - set(hot_TEP_ROI_bkg) - set(hot_TEP_match_square_ROI_bkg) - set(hot_perfect_match_ROI_bkg))
 
-        cold_mask = np.zeros(PETImage_shape, dtype='<f')
-        tumor_TEP_mask = np.zeros(PETImage_shape, dtype='<f')
-        tumor_TEP_match_square_ROI_mask = np.zeros(PETImage_shape, dtype='<f')
-        tumor_perfect_match_ROI_mask = np.zeros(PETImage_shape, dtype='<f')
-        phantom_mask = np.zeros(PETImage_shape, dtype='<f')
-        bkg_mask = np.zeros(PETImage_shape, dtype='<f')
+        cold_mask = zeros(PETImage_shape, dtype='<f')
+        tumor_TEP_mask = zeros(PETImage_shape, dtype='<f')
+        tumor_TEP_match_square_ROI_mask = zeros(PETImage_shape, dtype='<f')
+        tumor_perfect_match_ROI_mask = zeros(PETImage_shape, dtype='<f')
+        phantom_mask = zeros(PETImage_shape, dtype='<f')
+        bkg_mask = zeros(PETImage_shape, dtype='<f')
 
         ROI_list = [cold_ROI, hot_TEP_ROI, hot_TEP_match_square_ROI, hot_perfect_match_ROI, phantom_ROI, bkg_ROI]
         mask_list = [cold_mask, tumor_TEP_mask, tumor_TEP_match_square_ROI_mask, tumor_perfect_match_ROI_mask, phantom_mask, bkg_mask]
@@ -665,35 +693,35 @@ class vGeneral(abc.ABC):
 
     def write_image_tensorboard(self,writer,image,name,suffix,image_gt,i=0,full_contrast=False):
         # Creating matplotlib figure with colorbar
-        plt.figure()
-        if (len(np.squeeze(image).shape) != 2):
+        figure()
+        if (len(squeeze(image).shape) != 2):
             print('image is ' + str(len(image.shape)) + 'D, plotting only 2D slice')
             image = image[int(image.shape[0] / 2.),:,:]
             #image = image[:,:,int(image.shape[0] / 2.)]
         if (full_contrast):
-            plt.imshow(image, cmap='gray_r',vmin=np.min(image),vmax=np.max(image)) # Showing each image with maximum contrast and white is zero (gray_r) 
+            imshow(image, cmap='gray_r',vmin=min_np(image),vmax=max_np(image)) # Showing each image with maximum contrast and white is zero (gray_r) 
         else:
-            plt.imshow(image, cmap='gray_r',vmin=np.min(image_gt),vmax=1.25*np.max(image_gt)) # Showing all images with same contrast and white is zero (gray_r)
-        plt.colorbar()
-        #plt.axis('off')
-        #plt.show()
+            imshow(image, cmap='gray_r',vmin=min_np(image_gt),vmax=1.25*max_np(image_gt)) # Showing all images with same contrast and white is zero (gray_r)
+        colorbar()
+        #axis('off')
+        #show()
 
         # Saving this figure locally
         Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
-        #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
+        #system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
         from textwrap import wrap
-        plt.savefig(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
+        savefig(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
 
         # added line for small title of interest
         suffix = self.suffix_func(self.config,hyperparameters_list = ["lr", "opti_DIP"])
         
         wrapped_title = "\n".join(wrap(suffix, 80))
 
-        #plt.title(wrapped_title + "\n" + name,fontsize=8)
-        #plt.title(wrapped_title,fontsize=10)
-        plt.title(wrapped_title,fontsize=16)
+        #title(wrapped_title + "\n" + name,fontsize=8)
+        #title(wrapped_title,fontsize=10)
+        title(wrapped_title,fontsize=16)
         # Adding this figure to tensorboard
-        writer.add_figure(name,plt.gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
+        writer.add_figure(name,gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
 
     def castor_common_command_line(self, subroot, PETImage_shape_str, phantom, replicates, post_smoothing=0):
         executable = 'castor-recon'
@@ -786,7 +814,7 @@ class vGeneral(abc.ABC):
                 rho = 0
                 #self.rho = 0
             opti = ' -opti OPTITR'
-            pnlt = ' -pnlt OPTITR'
+            pnlt = ' -pnlt QUAD'
             penaltyStrength = ' -pnlt-beta ' + str(rho)
         
         # For all optimizers, remove penalty if rho == 0
@@ -812,7 +840,7 @@ class vGeneral(abc.ABC):
             phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(self.PETImage_shape),type_im='<f')
         else:
             print("No phantom file for this phantom")
-            phantom_ROI = np.ones_like(self.image_gt)
+            phantom_ROI = ones_like(self.image_gt)
             #raise ValueError("No phantom file for this phantom")
             #phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             
@@ -820,10 +848,10 @@ class vGeneral(abc.ABC):
     
     def mkdir(self,path):
         # check path exists or no before saving files
-        folder = os.path.exists(path)
+        folder = exists(path)
 
         if not folder:
-            os.makedirs(path)
+            makedirs(path)
 
         return path
 
@@ -832,14 +860,14 @@ class vGeneral(abc.ABC):
         return int(text) if text.isdigit() else text
 
     def natural_keys(self,text):
-        print(re.split(r'(\d+)', text))
-        return [ self.atoi(c) for c in re.split(r'(\d+)', text) ] # APGMAP final curves + resume computation
-        #return [ self.atoi(c) for c in re.split(r'(\+|-)\d+(\.\d+)?', text) ] # ADMMLim final curves
+        print(split(r'(\d+)', text))
+        return [ self.atoi(c) for c in split(r'(\d+)', text) ] # APGMAP final curves + resume computation
+        #return [ self.atoi(c) for c in split(r'(\+|-)\d+(\.\d+)?', text) ] # ADMMLim final curves
     
     def natural_keys_ADMMLim(self,text): # Sort by scientific or float numbers
-        #return [ self.atoi(c) for c in re.split(r'(\d+)', text) ] # APGMAP final curves + resume computation
-        match_number = re.compile('-?\ *[0-9]+\.?[0-9]*(?:[Ee]\ *-?\ *[0-9]+)?')
-        final_list = [float(x) for x in re.findall(match_number, text)] # Extract scientific of float numbers in string
+        #return [ self.atoi(c) for c in split(r'(\d+)', text) ] # APGMAP final curves + resume computation
+        match_number = compile('-?\ *[0-9]+\.?[0-9]*(?:[Ee]\ *-?\ *[0-9]+)?')
+        final_list = [float(x) for x in findall(match_number, text)] # Extract scientific of float numbers in string
         return final_list # ADMMLim final curves
         
     def has_numbers(self,inputString):
@@ -851,7 +879,7 @@ class vGeneral(abc.ABC):
         if ("=" in last_file): # post reco mode
             last_file = last_file[-10:]
             last_file = "it_" + last_file.split("=",1)[1]
-        last_iter = int(re.findall(r'(\w+?)(\d+)', last_file.split('.')[0])[0][-1])
+        last_iter = int(findall(r'(\w+?)(\d+)', last_file.split('.')[0])[0][-1])
         initialimage = ' -img ' + folder_sub_path + '/' + last_file
         it += ' -skip-it ' + str(last_iter)
         

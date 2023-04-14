@@ -6,10 +6,12 @@ import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
 import os
-        
+
+# Local files to import
+from iWMV import iWMV
 class DD_2D(pl.LightningModule):
 
-    def __init__(self, config, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, last_iter):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, last_iter):
         super().__init__()
 
         # Set random seed if asked (for NN weights here)
@@ -41,6 +43,22 @@ class DD_2D(pl.LightningModule):
         '''
         d = config["d_DD"] # Number of layers
         k = config['k_DD'] # Number of channels, depending on how much noise we mant to remove. Small k = less noise, but less fit
+
+
+        self.DIP_early_stopping = config["DIP_early_stopping"]
+        self.classWMV = iWMV(config)
+        if(self.DIP_early_stopping):
+            
+            self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
+            self.classWMV.hyperparameters_list = hyperparameters_list
+            self.classWMV.debug = debug
+            self.classWMV.param1_scale_im_corrupt = param1_scale_im_corrupt
+            self.classWMV.param2_scale_im_corrupt = param2_scale_im_corrupt
+            self.classWMV.scaling_input = scaling_input
+            self.classWMV.suffix = suffix
+            self.classWMV.global_it = global_it
+            # Initialize variables
+            self.classWMV.do_everything(config,root)
 
         # Defining CNN variables
         self.num_channels_up = [k]*(d+1) + [1]
@@ -97,6 +115,27 @@ class DD_2D(pl.LightningModule):
         # Save image over epochs
         if (self.write_current_img_mode):
             self.write_current_img(out)
+
+        # WMV
+        self.log("SUCCESS", int(self.classWMV.SUCCESS))
+        if (self.DIP_early_stopping):
+            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out.detach().numpy(),self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
+            self.VAR_recon = self.classWMV.VAR_recon
+            self.MSE_WMV = self.classWMV.MSE_WMV
+            self.PSNR_WMV = self.classWMV.PSNR_WMV
+            self.SSIM_WMV = self.classWMV.SSIM_WMV
+            self.epochStar = self.classWMV.epochStar
+            '''
+            if self.EMV_or_WMV == "EMV":
+                self.alpha_EMV = self.classWMV.alpha_EMV
+            else:
+                self.windowSize = self.classWMV.windowSize
+            '''
+            self.patienceNumber = self.classWMV.patienceNumber
+            self.SUCCESS = self.classWMV.SUCCESS
+
+            if self.SUCCESS:
+                print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
 
         loss = self.DIP_loss(out, image_corrupt_torch)
 
