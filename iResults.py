@@ -125,8 +125,8 @@ class iResults(vDenoising):
         if (self.tensorboard):
             # Write image over ADMM iterations
             if (self.all_images_DIP == "Last"):
-                self.write_image_tensorboard(self.writer,f,"Image over " + self.pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
-                self.write_image_tensorboard(self.writer,f,"Image over " + self.pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
+                self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
+                self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
                 self.write_image_tensorboard(self.writer,f*self.phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
             else:
                 if (((max_iter>=10) and (i%(max_iter // 10) == 0)) or (max_iter<10)):

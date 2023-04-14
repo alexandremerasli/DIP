@@ -1,26 +1,24 @@
-import torch
-import torch.nn as nn
-import pytorch_lightning as pl
+from torch import max, abs, optim, load
+from torch.nn import ReplicationPad2d, Conv2d, BatchNorm2d, LeakyReLU, Conv2d, BatchNorm2d, LeakyReLU, Sequential, Upsample, ReLU, MSELoss
+from pytorch_lightning import LightningModule, seed_everything
 
-from numpy import inf
-
-import os
+from os.path import isfile
 
 # Local files to import
 from iWMV import iWMV
 
-class DIP_2D(pl.LightningModule):
+class DIP_2D(LightningModule):
 
     def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, last_iter):
         super().__init__()
 
         #'''
         # Set random seed if asked (for NN weights here)
-        if (os.path.isfile(root + "/seed.txt")): # Put root for path because raytune path !!!
+        if (isfile(root + "/seed.txt")): # Put root for path because raytune path !!!
             with open(root + "/seed.txt", 'r') as file:
                 random_seed = file.read().rstrip()
             if (eval(random_seed)):
-                pl.seed_everything(1)
+                seed_everything(1)
 
         #'''
         
@@ -80,104 +78,104 @@ class DIP_2D(pl.LightningModule):
         pad = [0, 0]
 
         # Layers in CNN architecture
-        self.deep1 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(1, num_channel[0], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[0]),
-                                   nn.LeakyReLU(L_relu),
-                                   nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[0], num_channel[0], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[0]),
-                                   nn.LeakyReLU(L_relu))
+        self.deep1 = Sequential(ReplicationPad2d(1),
+                                   Conv2d(1, num_channel[0], (3, 3), stride=1, padding=pad[1]),
+                                   BatchNorm2d(num_channel[0]),
+                                   LeakyReLU(L_relu),
+                                   ReplicationPad2d(1),
+                                   Conv2d(num_channel[0], num_channel[0], (3, 3), stride=1, padding=pad[1]),
+                                   BatchNorm2d(num_channel[0]),
+                                   LeakyReLU(L_relu))
 
-        self.down1 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[0], num_channel[0], 3, stride=(2, 2), padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[0]),
-                                   nn.LeakyReLU(L_relu))
+        self.down1 = Sequential(ReplicationPad2d(1),
+                                   Conv2d(num_channel[0], num_channel[0], 3, stride=(2, 2), padding=pad[1]),
+                                   BatchNorm2d(num_channel[0]),
+                                   LeakyReLU(L_relu))
 
-        self.deep2 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[0], num_channel[1], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[1]),
-                                   nn.LeakyReLU(L_relu),
-                                   nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[1], num_channel[1], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[1]),
-                                   nn.LeakyReLU(L_relu))
+        self.deep2 = Sequential(ReplicationPad2d(1),
+                                   Conv2d(num_channel[0], num_channel[1], (3, 3), stride=1, padding=pad[1]),
+                                   BatchNorm2d(num_channel[1]),
+                                   LeakyReLU(L_relu),
+                                   ReplicationPad2d(1),
+                                   Conv2d(num_channel[1], num_channel[1], (3, 3), stride=1, padding=pad[1]),
+                                   BatchNorm2d(num_channel[1]),
+                                   LeakyReLU(L_relu))
 
-        self.down2 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[1], num_channel[1], 3, stride=(2, 2), padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[1]),
-                                   nn.LeakyReLU(L_relu))
+        self.down2 = Sequential(ReplicationPad2d(1),
+                                   Conv2d(num_channel[1], num_channel[1], 3, stride=(2, 2), padding=pad[1]),
+                                   BatchNorm2d(num_channel[1]),
+                                   LeakyReLU(L_relu))
 
-        self.deep3 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[1], num_channel[2], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[2]),
-                                   nn.LeakyReLU(L_relu),
-                                   nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[2], num_channel[2], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[2]),
-                                   nn.LeakyReLU(L_relu))
+        self.deep3 = Sequential(ReplicationPad2d(1),
+                                   Conv2d(num_channel[1], num_channel[2], (3, 3), stride=1, padding=pad[1]),
+                                   BatchNorm2d(num_channel[2]),
+                                   LeakyReLU(L_relu),
+                                   ReplicationPad2d(1),
+                                   Conv2d(num_channel[2], num_channel[2], (3, 3), stride=1, padding=pad[1]),
+                                   BatchNorm2d(num_channel[2]),
+                                   LeakyReLU(L_relu))
 
-        self.down3 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[2], num_channel[2], 3, stride=(2, 2), padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[2]),
-                                   nn.LeakyReLU(L_relu))
+        self.down3 = Sequential(ReplicationPad2d(1),
+                                   Conv2d(num_channel[2], num_channel[2], 3, stride=(2, 2), padding=pad[1]),
+                                   BatchNorm2d(num_channel[2]),
+                                   LeakyReLU(L_relu))
 
-        self.deep4 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[2], num_channel[3], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[3]),
-                                   nn.LeakyReLU(L_relu),
-                                   nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[3], num_channel[3], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[3]),
-                                   nn.LeakyReLU(L_relu))
+        self.deep4 = Sequential(ReplicationPad2d(1),
+                                   Conv2d(num_channel[2], num_channel[3], (3, 3), stride=1, padding=pad[1]),
+                                   BatchNorm2d(num_channel[3]),
+                                   LeakyReLU(L_relu),
+                                   ReplicationPad2d(1),
+                                   Conv2d(num_channel[3], num_channel[3], (3, 3), stride=1, padding=pad[1]),
+                                   BatchNorm2d(num_channel[3]),
+                                   LeakyReLU(L_relu))
 
-        self.up1 = nn.Sequential(nn.Upsample(scale_factor=(2, 2), mode='bilinear', align_corners=False),
-                                 nn.ReplicationPad2d(1),
-                                 nn.Conv2d(num_channel[3], num_channel[2], 3, stride=(1, 1), padding=pad[0]),
-                                 nn.BatchNorm2d(num_channel[2]),
-                                 nn.LeakyReLU(L_relu))
+        self.up1 = Sequential(Upsample(scale_factor=(2, 2), mode='bilinear', align_corners=False),
+                                 ReplicationPad2d(1),
+                                 Conv2d(num_channel[3], num_channel[2], 3, stride=(1, 1), padding=pad[0]),
+                                 BatchNorm2d(num_channel[2]),
+                                 LeakyReLU(L_relu))
 
-        self.deep5 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[2], num_channel[2], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[2]),
-                                   nn.LeakyReLU(L_relu),
-                                   nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[2], num_channel[2], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[2]),
-                                   nn.LeakyReLU(L_relu))
+        self.deep5 = Sequential(ReplicationPad2d(1),
+                                   Conv2d(num_channel[2], num_channel[2], (3, 3), stride=1, padding=pad[1]),
+                                   BatchNorm2d(num_channel[2]),
+                                   LeakyReLU(L_relu),
+                                   ReplicationPad2d(1),
+                                   Conv2d(num_channel[2], num_channel[2], (3, 3), stride=1, padding=pad[1]),
+                                   BatchNorm2d(num_channel[2]),
+                                   LeakyReLU(L_relu))
 
-        self.up2 = nn.Sequential(nn.Upsample(scale_factor=(2, 2), mode='bilinear', align_corners=False),
-                                 nn.ReplicationPad2d(1),
-                                 nn.Conv2d(num_channel[2], num_channel[1], 3, stride=(1, 1), padding=pad[0]),
-                                 nn.BatchNorm2d(num_channel[1]),
-                                 nn.LeakyReLU(L_relu))
+        self.up2 = Sequential(Upsample(scale_factor=(2, 2), mode='bilinear', align_corners=False),
+                                 ReplicationPad2d(1),
+                                 Conv2d(num_channel[2], num_channel[1], 3, stride=(1, 1), padding=pad[0]),
+                                 BatchNorm2d(num_channel[1]),
+                                 LeakyReLU(L_relu))
 
-        self.deep6 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[1], num_channel[1], (3, 3), stride=1, padding=pad[0]),
-                                   nn.BatchNorm2d(num_channel[1]),
-                                   nn.LeakyReLU(L_relu),
-                                   nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[1], num_channel[1], (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(num_channel[1]),
-                                   nn.LeakyReLU(L_relu))
+        self.deep6 = Sequential(ReplicationPad2d(1),
+                                   Conv2d(num_channel[1], num_channel[1], (3, 3), stride=1, padding=pad[0]),
+                                   BatchNorm2d(num_channel[1]),
+                                   LeakyReLU(L_relu),
+                                   ReplicationPad2d(1),
+                                   Conv2d(num_channel[1], num_channel[1], (3, 3), stride=1, padding=pad[1]),
+                                   BatchNorm2d(num_channel[1]),
+                                   LeakyReLU(L_relu))
 
-        self.up3 = nn.Sequential(nn.Upsample(scale_factor=(2, 2), mode='bilinear', align_corners=False),
-                                 nn.ReplicationPad2d(1),
-                                 nn.Conv2d(num_channel[1], num_channel[0], 3, stride=(1, 1), padding=pad[0]),
-                                 nn.BatchNorm2d(num_channel[0]),
-                                 nn.LeakyReLU(L_relu))
+        self.up3 = Sequential(Upsample(scale_factor=(2, 2), mode='bilinear', align_corners=False),
+                                 ReplicationPad2d(1),
+                                 Conv2d(num_channel[1], num_channel[0], 3, stride=(1, 1), padding=pad[0]),
+                                 BatchNorm2d(num_channel[0]),
+                                 LeakyReLU(L_relu))
 
-        self.deep7 = nn.Sequential(nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[0], num_channel[0], (3, 3), stride=1, padding=pad[0]),
-                                   nn.BatchNorm2d(num_channel[0]),
-                                   nn.LeakyReLU(L_relu),
-                                   nn.ReplicationPad2d(1),
-                                   nn.Conv2d(num_channel[0], 1, (3, 3), stride=1, padding=pad[1]),
-                                   nn.BatchNorm2d(1))
+        self.deep7 = Sequential(ReplicationPad2d(1),
+                                   Conv2d(num_channel[0], num_channel[0], (3, 3), stride=1, padding=pad[0]),
+                                   BatchNorm2d(num_channel[0]),
+                                   LeakyReLU(L_relu),
+                                   ReplicationPad2d(1),
+                                   Conv2d(num_channel[0], 1, (3, 3), stride=1, padding=pad[1]),
+                                   BatchNorm2d(1))
 
-        self.positivity = nn.ReLU() # Final ReLU to enforce positivity of ouput image
-        # self.positivity = nn.SiLU() # Final SiLU, smoother than ReLU but not positive
-        # self.positivity = nn.Softplus() # Final SiLU to enforce positivity of ouput image, smoother than ReLU
+        self.positivity = ReLU() # Final ReLU to enforce positivity of ouput image
+        # self.positivity = SiLU() # Final SiLU, smoother than ReLU but not positive
+        # self.positivity = Softplus() # Final SiLU to enforce positivity of ouput image, smoother than ReLU
 
     def forward(self, x):
         # Encoder
@@ -215,7 +213,7 @@ class DIP_2D(pl.LightningModule):
         return out
 
     def DIP_loss(self, out, image_corrupt_torch):
-        return torch.nn.MSELoss()(out, image_corrupt_torch) # for DIP and DD
+        return MSELoss()(out, image_corrupt_torch) # for DIP and DD
 
     def training_step(self, train_batch, batch_idx):
         image_net_input_torch, image_corrupt_torch = train_batch
@@ -226,16 +224,15 @@ class DIP_2D(pl.LightningModule):
 
         loss = self.DIP_loss(out, image_corrupt_torch)
 
+        '''
         # print maximum difference between output and noisy image to see if DIP can fit noisy image
-        rel_max_diff = torch.max(torch.abs(out-image_corrupt_torch) / torch.max(image_corrupt_torch)).item()
-        print("max diff = ",rel_max_diff)
+        rel_max_diff = max(abs(out-image_corrupt_torch) / max(image_corrupt_torch)).item()
+        #print("max diff = ",rel_max_diff)
         text_file = open(self.subroot+'Block2/' + self.suffix + '/max_diff.log','a')
         text_file.write("epoch = " + str(self.current_epoch) + " : " + str(rel_max_diff) + "\n")
         text_file.close()
-
-
-
-
+        '''
+       
         # logging using tensorboard logger
         self.logger.experiment.add_scalar('loss', loss,self.current_epoch)        
 
@@ -270,16 +267,16 @@ class DIP_2D(pl.LightningModule):
         """
 
         if (self.opti_DIP == 'Adam'):
-            optimizer = torch.optim.Adam(self.parameters(), lr=self.lr, weight_decay=5E-8) # Optimizing using Adam
-            #optimizer = torch.optim.Adam(self.parameters(), lr=self.lr) # Optimizing using Adam
+            optimizer = optim.Adam(self.parameters(), lr=self.lr, weight_decay=5E-8) # Optimizing using Adam
+            #optimizer = optim.Adam(self.parameters(), lr=self.lr) # Optimizing using Adam
         elif (self.opti_DIP == 'LBFGS' or self.opti_DIP is None): # None means no argument was given in command line
-            optimizer = torch.optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4,line_search_fn=None) # Optimizing using L-BFGS
-            optimizer = torch.optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4,line_search_fn="strong_wolfe") # Optimizing using L-BFGS 1
-            #optimizer = torch.optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=40,line_search_fn="strong_wolfe") # Optimizing using L-BFGS 3
+            optimizer = optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4,line_search_fn=None) # Optimizing using L-BFGS
+            optimizer = optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4,line_search_fn="strong_wolfe") # Optimizing using L-BFGS 1
+            #optimizer = optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=40,line_search_fn="strong_wolfe") # Optimizing using L-BFGS 3
         elif (self.opti_DIP == 'SGD'):
-            optimizer = torch.optim.SGD(self.parameters(), lr=self.lr) # Optimizing using SGD
+            optimizer = optim.SGD(self.parameters(), lr=self.lr) # Optimizing using SGD
         elif (self.opti_DIP == 'Adadelta'):
-            optimizer = torch.optim.Adadelta(self.parameters()) # Optimizing using Adadelta
+            optimizer = optim.Adadelta(self.parameters()) # Optimizing using Adadelta
         return optimizer
 
     def write_current_img(self,out):
