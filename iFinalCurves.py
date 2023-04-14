@@ -210,17 +210,44 @@ class iFinalCurves(vGeneral):
                     config[method]["method"] = "nested"
 
                 # nested reconstruction
+                if (method == 'nested_CT_0_skip_3it'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_CT_0_skip_3it import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
+                # nested reconstruction
+                if (method == 'nested_CT_1_skip_3it'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_CT_1_skip_3it import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
+                # nested reconstruction
                 if (method == 'nested_CT_2_skip_3it'):
                     print("configuration fiiiiiiiiiiiiiiiiiiile")
                     from nested_CT_2_skip_3it import config_func_MIC
                     config[method] = config_func_MIC()
                     config[method]["method"] = "nested"
 
-
                 # nested reconstruction
                 if (method == 'nested_CT_3_skip_3it'):
                     print("configuration fiiiiiiiiiiiiiiiiiiile")
                     from nested_CT_3_skip_3it import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
+                # nested reconstruction
+                if (method == 'nested_CT_0_skip_10it'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_CT_0_skip_10it import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
+                # nested reconstruction
+                if (method == 'nested_CT_1_skip_10it'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_CT_1_skip_10it import config_func_MIC
                     config[method] = config_func_MIC()
                     config[method]["method"] = "nested"
 
@@ -231,13 +258,20 @@ class iFinalCurves(vGeneral):
                     config[method] = config_func_MIC()
                     config[method]["method"] = "nested"
 
-
                 # nested reconstruction
                 if (method == 'nested_CT_3_skip_10it'):
                     print("configuration fiiiiiiiiiiiiiiiiiiile")
                     from nested_CT_3_skip_10it import config_func_MIC
                     config[method] = config_func_MIC()
                     config[method]["method"] = "nested"
+
+                # nested reconstruction
+                if (method == 'nested_random_3_skip_10it'):
+                    print("configuration fiiiiiiiiiiiiiiiiiiile")
+                    from nested_random_3_skip_10it import config_func_MIC
+                    config[method] = config_func_MIC()
+                    config[method]["method"] = "nested"
+
             else:
                 config[method] = self.config_with_grid_search
                 config[method]["method"] = method
@@ -379,7 +413,8 @@ class iFinalCurves(vGeneral):
                         #"nested_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
                         #"nested_APPGML_subsets" : ['darkgreen','lime','gold','darkseagreen'],
                         "nested_APPGML" : ['darkgreen','lime','gold','darkseagreen'],
-                        "nested_CT_skip" : ['red','saddlebrown','lightsalmon','peru'],
+                        "nested_CT_skip" : ['red','saddlebrown','lightsalmon','peru','black','yellow','grey','orange'],
+                        "nested_random_skip" : ['fuchsia'],
                         "BSREM" : ['grey'],
                         "OSEM" : ['orange'],
                         #"APGMAP" : ['darkgreen','lime','gold'],
@@ -403,6 +438,11 @@ class iFinalCurves(vGeneral):
                         "nested_CT_3_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][1]],
                         "nested_CT_2_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][2]],
                         "nested_CT_3_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][3]],
+                        "nested_CT_0_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][4]],
+                        "nested_CT_1_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][5]],
+                        "nested_CT_0_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][6]],
+                        "nested_CT_1_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][7]],
+                        "nested_random_3_skip_10it" : [color_dict_after_MIC["nested_random_skip"][0]],
                     }
     
                     color_dict = {**color_dict_after_MIC, **color_dict_add_tests} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
@@ -454,6 +494,11 @@ class iFinalCurves(vGeneral):
                         "nested_CT_3_skip_3it" : [marker_dict["skip"][0]],
                         "nested_CT_2_skip_10it" : [marker_dict["skip"][0]],
                         "nested_CT_3_skip_10it" : [marker_dict["skip"][0]],
+                        "nested_CT_0_skip_3it" : [marker_dict["skip"][0]],
+                        "nested_CT_1_skip_3it" : [marker_dict["skip"][0]],
+                        "nested_CT_0_skip_10it" : [marker_dict["skip"][0]],
+                        "nested_CT_1_skip_10it" : [marker_dict["skip"][0]],
+                        "nested_random_3_skip_10it" : [marker_dict["skip"][0]],
                     }
                     marker_dict = {**marker_dict, **marker_dict_supp}
 

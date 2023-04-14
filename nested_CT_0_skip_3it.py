@@ -50,7 +50,7 @@ def config_func_MIC():
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
         "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
         "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
-        "skip_connections" : tune.grid_search([1]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+        "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
         #"input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)
@@ -59,7 +59,7 @@ def config_func_MIC():
         ## ADMMLim - OPTITR hyperparameters
         "nb_outer_iteration": tune.grid_search([30]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
         #"nb_outer_iteration": tune.grid_search([3]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
-        "nb_outer_iteration": tune.grid_search([10]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
+        "nb_outer_iteration": tune.grid_search([3]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
         "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMLim
         "adaptive_parameters" : tune.grid_search(["both"]), # which parameters are adaptive ? Must be set to nothing, alpha, or both (which means alpha and tau)
         "mu_adaptive" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
