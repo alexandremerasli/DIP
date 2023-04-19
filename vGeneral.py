@@ -402,7 +402,7 @@ class vGeneral(abc.ABC):
 
         attempts = 0
 
-        while attempts < 100:
+        while attempts < 1000:
             attempts += 1
             try:
                 type_im = ('<f')*(type_im=='<f') + ('<d')*(type_im=='<d')
@@ -415,10 +415,10 @@ class vGeneral(abc.ABC):
                         image = data.reshape(shape)
                     else: # 3D
                         image = data.reshape(shape[::-1])
-                attempts = 100
+                attempts = 1000
                 break
             except:
-                fid.close()
+                # fid.close()
                 type_im = ('<f')*(type_im=='<d') + ('<d')*(type_im=='<f')
                 file_path=(path)
                 dtype_np = dtype(type_im)
@@ -429,16 +429,17 @@ class vGeneral(abc.ABC):
                         try:
                             image = data.reshape(shape)
                         except Exception as e:
-                            print(data.shape)
-                            print(type_im)
-                            print(dtype_np)
-                            print(fid)
-                            '''
-                            import numpy as np
-                            data = fromfile(fid,dtype('<f'))
-                            np.save('data' + str(self.replicate) + '_' + str(attempts) + '_f.npy', data)
-                            '''
-                            print('Failed: '+ str(e))
+                            # print(data.shape)
+                            # print(type_im)
+                            # print(dtype_np)
+                            # print(fid)
+                            # '''
+                            # import numpy as np
+                            # data = fromfile(fid,dtype('<f'))
+                            # np.save('data' + str(self.replicate) + '_' + str(attempts) + '_f.npy', data)
+                            # '''
+                            # print('Failed: '+ str(e) + '_' + str(attempts))
+                            pass
                     else: # 3D
                         image = data.reshape(shape[::-1])
                 
@@ -455,10 +456,13 @@ class vGeneral(abc.ABC):
             
         #'''
         #image = data.reshape(shape)
+        '''
         try:
             print(image[0,0])
         except Exception as e:
             print('exception image: '+ str(e))
+        '''
+        print("read from ", path)
         return image
 
     def norm_imag(self,img):
@@ -549,7 +553,7 @@ class vGeneral(abc.ABC):
     def save_img(self,img,name):
         fp=open(name,'wb')
         img.tofile(fp)
-        print('Succesfully save in:', name)
+        #print('Succesfully save in:', name)
 
     def find_nan(self,image):
         """ find NaN values on the image"""
@@ -814,7 +818,7 @@ class vGeneral(abc.ABC):
                 rho = 0
                 #self.rho = 0
             opti = ' -opti OPTITR'
-            pnlt = ' -pnlt QUAD'
+            pnlt = ' -pnlt ' + "QUAD" + ':' + self.subroot + 'Block1/' + self.suffix  + '/' + 'QUAD.conf'            
             penaltyStrength = ' -pnlt-beta ' + str(rho)
         
         # For all optimizers, remove penalty if rho == 0
