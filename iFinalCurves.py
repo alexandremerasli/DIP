@@ -1,10 +1,7 @@
 ## Python libraries
 # Math
-from ast import Raise
-from audioop import avg
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 
 # Useful
 from csv import reader as reader_csv
@@ -14,7 +11,6 @@ import os
 
 # Local files to import
 from vGeneral import vGeneral
-from iResults import iResults
 from iResultsAlreadyComputed import iResultsAlreadyComputed
 
 class iFinalCurves(vGeneral):
@@ -26,7 +22,6 @@ class iFinalCurves(vGeneral):
         # show the plots in python or not !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     def runComputation(self,config_all_methods,root):
-        config_grid_search = self.config_with_grid_search
         method_list = config_all_methods["method"]
 
         MIC_config = True
@@ -54,244 +49,26 @@ class iFinalCurves(vGeneral):
 
         for method in method_list: # Loop over methods
             if (MIC_config):
-                # Gong reconstruction
-                if ('DIPRecon' in method):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    #config[method] = np.load(root + 'config_DIP.npy',allow_pickle='TRUE').item()
-                    from Gong_configuration import config_func_MIC
-                    #config[method] = config_func()
-                    config[method] = config_func_MIC()
-                    if ('stand' in method):
-                        config[method]["scaling"] = {'grid_search': ["standardization"]}
-                    elif ('norm' in method):
-                        config[method]["scaling"] = {'grid_search': ["positive_normalization"]}
-                    else:
-                        if (DIPRecon):
-                            config[method]["scaling"] = {'grid_search': ["standardization"]}
-                        else:
-                            raise ValueError("stand norm DIPRecon")
-
-                    config[method]["method"] = "DIPRecon"
-                    
-                # nested reconstruction
-                if ('nested' in method):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_configuration import config_func_MIC
-                    #config[method] = config_func()
-                    config[method] = config_func_MIC()
-                    if ('ADMMLim' in method):
-                        config[method]["max_iter"] = {'grid_search': [99]}
-                    elif ('BSREM' in method):
-                        config[method]["max_iter"] = {'grid_search': [300]}
-
-                    config[method]["method"] = "nested"
-
-                # MLEM reconstruction
-                if (method == 'MLEM'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from MLEM_configuration import config_func_MIC
-                    #config[method] = config_func()
-                    config[method] = config_func_MIC()
-
-                # OSEM reconstruction
-                if (method == 'OSEM'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from OSEM_configuration import config_func_MIC
-                    #config[method] = config_func()
-                    config[method] = config_func_MIC()
-
-                # BSREM reconstruction
-                if (method == 'BSREM'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from BSREM_configuration import config_func_MIC
-                    #config[method] = config_func()
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = method
-
-                # APGMAP reconstruction
-                if ('APGMAP' in method):
-                    APGMAP_vs_ADMMLim = True
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from APGMAP_configuration import config_func_MIC
-                    #config[method] = config_func()
-                    config[method] = config_func_MIC()
-                    #for method2 in method_list: # Loop over methods
-                    #    if ('APGMAP' not in method2 and 'ADMMLim' not in method2):
-                    #        APGMAP_vs_ADMMLim = False
-                            #config[method]['A_AML'] = {'grid_search': [100]}
-                    config[method]["method"] = method
-
-                # ADMMLim reconstruction
-                if (method == 'ADMMLim'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from ADMMLim_configuration import config_func_MIC
-                    #config[method] = config_func()
-                    config[method] = config_func_MIC()
-
-
-
-                # nested reconstruction
-                if ('nested_ADMMLim_u_v' in method):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_ADMMLim_u_v_configuration import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-                    
-                # nested reconstruction
-                if ('nested_ADMMLim_more_ADMMLim_it_10' in method):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_ADMMLim_more_ADMMLim_it_10_configuration import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # nested reconstruction
-                if (method == 'nested_ADMMLim_more_ADMMLim_it_30'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_ADMMLim_more_ADMMLim_it_30_configuration import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # nested reconstruction
-                if (method == 'nested_ADMMLim_more_ADMMLim_it_80'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_ADMMLim_more_ADMMLim_it_80_configuration import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # nested reconstruction
-                if ('nested_APPGML_4subsets' in method):
-                    APGMAP_vs_ADMMLim = True
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_APPGML_4subsets_configuration import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # nested reconstruction
-                if (method == 'nested_APPGML_14subsets'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_APPGML_14subsets_configuration import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-                
-                # nested reconstruction
-                if (method == 'nested_APPGML_28subsets'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_APPGML_28subsets_configuration import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # nested reconstruction
-                if (method == 'nested_APPGML_1it' or method == 'nested_APPGML_1subset'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_APPGML_1it_configuration import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # nested reconstruction
-                if ('nested_APPGML_4it' in method):
-                    APGMAP_vs_ADMMLim = True
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_APPGML_4it_configuration import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # nested reconstruction
-                if (method == 'nested_APPGML_14it'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_APPGML_14it_configuration import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-                
-                # nested reconstruction
-                if (method == 'nested_APPGML_28it'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_APPGML_28it_configuration import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # nested reconstruction
-                if (method == 'nested_CT_0_skip_3it'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_CT_0_skip_3it import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # nested reconstruction
-                if (method == 'nested_CT_1_skip_3it'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_CT_1_skip_3it import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # nested reconstruction
-                if (method == 'nested_CT_2_skip_3it'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_CT_2_skip_3it import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # nested reconstruction
-                if (method == 'nested_CT_3_skip_3it'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_CT_3_skip_3it import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # nested reconstruction
-                if (method == 'nested_CT_0_skip_10it'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_CT_0_skip_10it import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # nested reconstruction
-                if (method == 'nested_CT_1_skip_10it'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_CT_1_skip_10it import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # nested reconstruction
-                if (method == 'nested_CT_2_skip_10it'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_CT_2_skip_10it import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # nested reconstruction
-                if (method == 'nested_CT_3_skip_10it'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_CT_3_skip_10it import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
-                # nested reconstruction
-                if (method == 'nested_random_3_skip_10it'):
-                    print("configuration fiiiiiiiiiiiiiiiiiiile")
-                    from nested_random_3_skip_10it import config_func_MIC
-                    config[method] = config_func_MIC()
-                    config[method]["method"] = "nested"
-
+                # Read config dictionnary for this method in config file
+                config[method] = self.choose_good_config_file(method,config,csv_before_MIC,DIPRecon)
             else:
-                config[method] = self.config_with_grid_search
                 config[method]["method"] = method
 
             # Initialize config files with good phantom        
             config[method]["image"] = {'grid_search': [config_all_methods["image"]]}
             # Initialize config files with good replicates
-            #config[method]["replicates"] = {'grid_search': [config_all_methods["replicates"]]}
-            # Launch task
+            config[method]["replicates"] = {'grid_search': config_all_methods["replicates"]}
+            # Launch task to write suffix and replicate files
             config_tmp = dict(config[method])
             config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
+            config_tmp["ray"] = True # Activate ray
             os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + method + '.txt')
             os.system("rm -rf " + root + '/data/Algo/' + 'replicates_for_last_run_' + method + '.txt')
             classTask = iResultsAlreadyComputed(config[method])
             task = 'show_metrics_results_already_computed'
-            classTask.runRayTune(config_tmp,root,task) # Only to write suffix and replicate files
-            #'''
+            classTask.runRayTune(config_tmp,root,task,only_suffix_replicate_file=True) # Only to write suffix and replicate files
 
             # Remove keyword "grid search" in config
-        
             config[method] = dict(config[method])
             
             for key,value in config[method].items():
@@ -333,26 +110,13 @@ class iFinalCurves(vGeneral):
                 else:
                     self.i_init = 1
 
+                if ('Gong' in method or 'nested' in method):
+                    self.i_init = 1
+
                 # Initialize variables
                 suffixes = []
                 replicates = []
 
-                PSNR_recon = []
-                PSNR_norm_recon = []
-                MSE_recon = []
-                SSIM_recon = []
-                MA_cold_recon = []
-                AR_hot_recon = []
-                AR_hot_TEP_recon = []
-                AR_hot_TEP_match_square_recon = []
-                AR_hot_perfect_match_recon = []
-                AR_bkg_recon = []
-                IR_bkg_recon = []
-                IR_whole_recon = []
-
-                IR_final = []
-                metrics_final = []
-                
                 with open(root + '/data/Algo' + '/suffixes_for_last_run_' + method + '.txt') as f:
                     suffixes.append(f.readlines())
                 with open(root + '/data/Algo' + '/replicates_for_last_run_' + method + '.txt') as f:
@@ -382,125 +146,11 @@ class iFinalCurves(vGeneral):
                 config[method]["rho"] = sorted(config[method]["rho"])
                 config_other_dim[method] = sorted(config_other_dim[method])
 
-
                 # Settings in following curves
                 variance_plot = False
                 plot_all_replicates_curves = False
                 
-                if (self.phantom == "image2_0"):
-                    color_dict = {
-                        "nested" : ['red','pink'],
-                        "DIPRecon" : ['cyan','blue','teal','blueviolet'],
-                        "APGMAP" : ['darkgreen','lime','gold'],
-                        "ADMMLim" : ['fuchsia'],
-                        "OSEM" : ['darkorange'],
-                        "BSREM" : ['grey']
-                    }
-                    color_dict_supp = {
-                        "nested_BSREM_stand" : [color_dict["nested"][0]],
-                        "nested_ADMMLim_stand" : [color_dict["nested"][1]],
-                        "DIPRecon_BSREM_stand" : [color_dict["DIPRecon"][0]],
-                        "DIPRecon_ADMMLim_stand" : [color_dict["DIPRecon"][1]],
-                        "DIPRecon_ADMMLim_norm" : [color_dict["DIPRecon"][2]],
-                        "DIPRecon_MLEM_norm" : [color_dict["DIPRecon"][3]],
-                    }
-
-                    color_dict = {**color_dict, **color_dict_supp} # Comparison between reconstruction methods
-    
-                elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
-                    color_dict_after_MIC = {
-                        "nested_ADMMLim" : ['cyan','blue','teal','blueviolet'],
-                        #"nested_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
-                        #"nested_APPGML_subsets" : ['darkgreen','lime','gold','darkseagreen'],
-                        "nested_APPGML" : ['darkgreen','lime','gold','darkseagreen'],
-                        "nested_CT_skip" : ['red','saddlebrown','lightsalmon','peru','black','yellow','grey','orange'],
-                        "nested_random_skip" : ['fuchsia'],
-                        "BSREM" : ['grey'],
-                        "OSEM" : ['orange'],
-                        #"APGMAP" : ['darkgreen','lime','gold'],
-                        "APGMAP" : ['darkgreen','lime'],
-                    }
-                    color_dict_add_tests = {
-                        "nested" : ['black'], # 3 it
-                        "nested_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["nested_ADMMLim"][0]],
-                        "nested_ADMMLim_more_ADMMLim_it_30" : [color_dict_after_MIC["nested_ADMMLim"][1]],
-                        "nested_ADMMLim_more_ADMMLim_it_80" : [color_dict_after_MIC["nested_ADMMLim"][2]],
-                        "nested_ADMMLim_u_v" : [color_dict_after_MIC["nested_ADMMLim"][3]],
-                        "nested_APPGML_1subset" : [color_dict_after_MIC["nested_APPGML"][0]],
-                        "nested_APPGML_4subsets" : [color_dict_after_MIC["nested_APPGML"][1]],
-                        "nested_APPGML_14subsets" : [color_dict_after_MIC["nested_APPGML"][2]],
-                        "nested_APPGML_28subsets" : [color_dict_after_MIC["nested_APPGML"][3]],
-                        "nested_APPGML_1it" : [color_dict_after_MIC["nested_APPGML"][0]],
-                        "nested_APPGML_4it" : [color_dict_after_MIC["nested_APPGML"][1]],
-                        "nested_APPGML_14it" : [color_dict_after_MIC["nested_APPGML"][2]],
-                        "nested_APPGML_28it" : [color_dict_after_MIC["nested_APPGML"][3]],
-                        "nested_CT_2_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][0]],
-                        "nested_CT_3_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][1]],
-                        "nested_CT_2_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][2]],
-                        "nested_CT_3_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][3]],
-                        "nested_CT_0_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][4]],
-                        "nested_CT_1_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][5]],
-                        "nested_CT_0_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][6]],
-                        "nested_CT_1_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][7]],
-                        "nested_random_3_skip_10it" : [color_dict_after_MIC["nested_random_skip"][0]],
-                    }
-    
-                    color_dict = {**color_dict_after_MIC, **color_dict_add_tests} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
-
-                if (self.phantom == "image2_0"):                    
-                    marker_dict = {
-                        "nested" : ['-','--'],
-                        "DIPRecon" : ['-','--','loosely dotted','dashdot'],
-                        "APGMAP" : ['-','--','loosely dotted'],
-                        "ADMMLim" : ['-'],
-                        "OSEM" : ['-'],
-                        "BSREM" : ['-']
-                    }
-                    marker_dict_supp = {
-                        "nested_BSREM_stand" : [marker_dict["nested"][0]],
-                        "nested_ADMMLim_stand" : [marker_dict["nested"][1]],
-                        "DIPRecon_BSREM_stand" : [marker_dict["DIPRecon"][0]],
-                        "DIPRecon_ADMMLim_stand" : [marker_dict["DIPRecon"][1]],
-                        "DIPRecon_ADMMLim_norm" : [marker_dict["DIPRecon"][2]],
-                        "DIPRecon_MLEM_norm" : [marker_dict["DIPRecon"][3]],
-                    }
-
-                    marker_dict = {**marker_dict, **marker_dict_supp}
-                elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
-                    marker_dict = {
-                        "APPGML_it" : [':'],
-                        "APPGML_subsets" : ['-'],
-                        "ADMMLim" : ['--'],
-                        "skip" : ['dashdot'],
-                        "APGMAP" : ['-','-'],
-                        "BSREM" : ['-'],
-                        "OSEM" : ['-']
-                    }
-                    marker_dict_supp = {
-                        "nested" : [marker_dict["ADMMLim"][0]], # 3 it
-                        "nested_ADMMLim_more_ADMMLim_it_10" : [marker_dict["ADMMLim"][0]],
-                        "nested_ADMMLim_more_ADMMLim_it_30" : [marker_dict["ADMMLim"][0]],
-                        "nested_ADMMLim_more_ADMMLim_it_80" : [marker_dict["ADMMLim"][0]],
-                        "nested_ADMMLim_u_v" : [marker_dict["ADMMLim"][0]],
-                        "nested_APPGML_1subset" : [marker_dict["APPGML_subsets"][0]],
-                        "nested_APPGML_4subsets" : [marker_dict["APPGML_subsets"][0]],
-                        "nested_APPGML_14subsets" : [marker_dict["APPGML_subsets"][0]],
-                        "nested_APPGML_28subsets" : [marker_dict["APPGML_subsets"][0]],
-                        "nested_APPGML_1it" : [marker_dict["APPGML_it"][0]],
-                        "nested_APPGML_4it" : [marker_dict["APPGML_it"][0]],
-                        "nested_APPGML_14it" : [marker_dict["APPGML_it"][0]],
-                        "nested_APPGML_28it" : [marker_dict["APPGML_it"][0]],
-                        "nested_CT_2_skip_3it" : [marker_dict["skip"][0]],
-                        "nested_CT_3_skip_3it" : [marker_dict["skip"][0]],
-                        "nested_CT_2_skip_10it" : [marker_dict["skip"][0]],
-                        "nested_CT_3_skip_10it" : [marker_dict["skip"][0]],
-                        "nested_CT_0_skip_3it" : [marker_dict["skip"][0]],
-                        "nested_CT_1_skip_3it" : [marker_dict["skip"][0]],
-                        "nested_CT_0_skip_10it" : [marker_dict["skip"][0]],
-                        "nested_CT_1_skip_10it" : [marker_dict["skip"][0]],
-                        "nested_random_3_skip_10it" : [marker_dict["skip"][0]],
-                    }
-                    marker_dict = {**marker_dict, **marker_dict_supp}
+                marker_dict, color_dict = self.marker_color_dict_method()
 
                 if plot_all_replicates_curves:
                     color_avg = 'black'
@@ -539,103 +189,13 @@ class iFinalCurves(vGeneral):
                     sorted_suffixes.sort(key=self.natural_keys_ADMMLim)
 
                 # Load metrics from last runs to merge them in one figure
-                for i in range(len(sorted_suffixes)):
-                    i_replicate = idx_wanted[i] # Loop over rhos and replicates, for each sorted rho, take sorted replicate
-                    suffix = sorted_suffixes[i].rstrip("\n")
-                    replicate = "replicate_" + str(i_replicate + 1)
-                    metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + config[method]["method"] + '/' + suffix + '/' + 'metrics.csv'
-                    
-                    try:
-                        self.subroot = self.subroot_data + 'debug/'*self.debug + self.phantom + '/'+ str(replicate) + '/' + config[method]["method"] + '/' # Directory root
-                        self.suffix = suffix[:-12] # Remove NNEPPS from suffix
-                        self.max_iter = config[method]["max_iter"]
-                        self.defineTotalNbIter_beta_rho(method,config[method],task)
-
-                        with open(metrics_file, 'r') as myfile:
-                            spamreader = reader_csv(myfile,delimiter=';')
-                            rows_csv = list(spamreader)
-
-                            '''
-                            # if 1 out of i_init iterations was saved
-                            rows_csv[0] = [float(rows_csv[0][i]) for i in range(int(self.i_init/self.i_init) - 1,min(len(rows_csv[0]),self.total_nb_iter))]
-                            rows_csv[1] = [float(rows_csv[1][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[1]),self.total_nb_iter))]
-                            rows_csv[2] = [float(rows_csv[2][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[2]),self.total_nb_iter))]
-                            rows_csv[3] = [float(rows_csv[3][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[3]),self.total_nb_iter))]
-                            rows_csv[4] = [float(rows_csv[4][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[4]),self.total_nb_iter))]
-                            rows_csv[5] = [float(rows_csv[5][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[5]),self.total_nb_iter))]
-                            rows_csv[6] = [float(rows_csv[6][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[6]),self.total_nb_iter))]
-                            rows_csv[7] = [float(rows_csv[7][i]) for i in range(int(self.i_init/self.i_init) - 1, min(len(rows_csv[7]),self.total_nb_iter))]
-                            '''
-                            
-                            rows_csv[0] = [float(rows_csv[0][i]) for i in range(int(self.i_init) - 1,min(len(rows_csv[0]),self.total_nb_iter))]
-                            rows_csv[1] = [float(rows_csv[1][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[1]),self.total_nb_iter))]
-                            rows_csv[2] = [float(rows_csv[2][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[2]),self.total_nb_iter))]
-                            rows_csv[3] = [float(rows_csv[3][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[3]),self.total_nb_iter))]
-                            rows_csv[4] = [float(rows_csv[4][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[4]),self.total_nb_iter))]
-                            rows_csv[5] = [float(rows_csv[5][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[5]),self.total_nb_iter))]
-                            rows_csv[6] = [float(rows_csv[6][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[6]),self.total_nb_iter))]
-                            rows_csv[7] = [float(rows_csv[7][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[7]),self.total_nb_iter))]
-                            if (not csv_before_MIC):
-                                rows_csv[8] = [float(rows_csv[8][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[8]),self.total_nb_iter))]
-                                rows_csv[9] = [float(rows_csv[9][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[9]),self.total_nb_iter))]
-                                rows_csv[10] = [float(rows_csv[10][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[10]),self.total_nb_iter))]
-                            
-                            PSNR_recon.append(np.array(rows_csv[0]))
-                            PSNR_norm_recon.append(np.array(rows_csv[1]))
-                            MSE_recon.append(np.array(rows_csv[2]))
-                            SSIM_recon.append(np.array(rows_csv[3]))
-                            MA_cold_recon.append(np.array(rows_csv[4]) / 10 * 100)
-                            AR_hot_recon.append(np.array(rows_csv[5]) / 400 * 100)
-
-                            if (not csv_before_MIC):
-                                AR_hot_TEP_recon.append(np.array(rows_csv[6]) / 400 * 100)
-                                AR_hot_TEP_match_square_recon.append(np.array(rows_csv[7]) / 400 * 100)
-                                AR_hot_perfect_match_recon.append(np.array(rows_csv[8]) / 400 * 100)
-                                AR_bkg_recon.append(np.array(rows_csv[9]))
-                                IR_bkg_recon.append(np.array(rows_csv[10]))
-                                if (not quantitative_tradeoff):
-                                    IR_whole_recon.append(np.array(rows_csv[13]))
-                            else:        
-                                AR_bkg_recon.append(np.array(rows_csv[6]))
-                                IR_bkg_recon.append(np.array(rows_csv[7]))
-                        
-                            try:
-                                MA_cold = np.array(rows_csv[8])
-                            except:
-                                MA_cold = np.array(rows_csv[6])
-                            try:
-                                AR_hot = np.array(rows_csv[9])
-                            except:
-                                AR_hot = np.array(rows_csv[7])
-
-                    except:
-                        print("No such file : " + metrics_file)
-
+                metrics_final, IR_final = self.load_metrics(sorted_suffixes, idx_wanted, root, config, method, task, csv_before_MIC, quantitative_tradeoff, ROI)
                 
                 if (method == "MLEM" or method == "OSEM"):
                     nb_rho[method], nb_other_dim[method] = nb_other_dim[method], nb_rho[method]
                     config[method]["rho"], config_other_dim[method] = config_other_dim[method], config[method]["rho"]
 
 
-                # Select metrics to plot according to ROI
-                if (quantitative_tradeoff):
-                    if ROI == 'hot_TEP':
-                        metrics = AR_hot_TEP_recon
-                    elif ROI == 'hot_TEP_match_square_recon':
-                        metrics = AR_hot_TEP_match_square_recon
-                    elif ROI == 'hot_perfect_match_recon':
-                        metrics = AR_hot_perfect_match_recon
-                    elif ROI == 'hot':
-                        #metrics = [abs(hot) for hot in AR_hot_recon] # Take absolute value of AR hot for tradeoff curves
-                        metrics = AR_hot_recon
-                    elif ROI == 'cold':
-                        #metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
-                        metrics = MA_cold_recon
-                else:
-                    metrics = SSIM_recon
-                # Keep useful information to plot from metrics                
-                IR_final = IR_bkg_recon
-                metrics_final = metrics
 
                 # Compute number of displayable iterations for each rho and find case with smallest iterations (useful for ADMMLim)
                 len_mini_list = np.zeros((nb_rho[method],nb_other_dim[method],nb_replicates[method]),dtype=int)
@@ -818,7 +378,7 @@ class iFinalCurves(vGeneral):
                             else:
                                 print(method,color_dict[method])
                                 #ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],linewidth=4,color=color_dict[method][other_dim_idx])#'-o',)
-                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0:len_mini[rho_idx]:25],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0:len_mini[rho_idx]:25],'-o',linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
+                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,5).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,5).astype(int)],'-o',linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
                                 # unnested
                                 plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'D',markersize=10, mfc='none',color=color_dict[method][other_dim_idx],label='_nolegend_')
                                 plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],marker='D',markersize=9,color='white',label='_nolegend_')
@@ -864,8 +424,8 @@ class iFinalCurves(vGeneral):
                     #'''
 
                     if (method == method_list[-1]):
-                        #if ROI == ROI_list[-1]: # if legend is needed only in one ROI
-                        ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
+                        if ROI == ROI_list[-2]: # if legend is needed only in one ROI
+                            ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
 
             # Saving figures locally in png
             for fig_nb in range(3):
@@ -898,3 +458,424 @@ class iFinalCurves(vGeneral):
                     nb_rho[method], nb_other_dim[method] = nb_other_dim[method], nb_rho[method]
                     config[method]["rho"], config_other_dim[method] = config_other_dim[method], config[method]["rho"]
 
+
+
+    def choose_good_config_file(self,method,config,csv_before_MIC,DIPRecon):
+        # Gong reconstruction
+        if ('DIPRecon' in method):
+            #config[method] = np.load(root + 'config_DIP.npy',allow_pickle='TRUE').item()
+            from all_config.Gong_configuration import config_func_MIC
+            #config[method] = config_func()
+            if (csv_before_MIC):
+                if ('stand' in method):
+                    config[method]["scaling"] = {'grid_search': ["standardization"]}
+                elif ('norm' in method):
+                    config[method]["scaling"] = {'grid_search': ["positive_normalization"]}
+                else:
+                    if (DIPRecon):
+                        config[method]["scaling"] = {'grid_search': ["standardization"]}
+                    else:
+                        raise ValueError("stand norm DIPRecon")
+            else:
+                from all_config.Gong_configuration import config_func_MIC
+                config[method] = config_func_MIC()
+                # method_name = "DIPRecon"
+                method_name = "Gong"
+
+            #method_name = "DIPRecon"
+            method_name = "Gong"
+            
+        # nested reconstruction
+        if ('nested' in method):
+            if(csv_before_MIC):
+                from all_config.nested_configuration import config_func_MIC
+                #config[method] = config_func()
+                if ('ADMMLim' in method):
+                    config[method]["max_iter"] = {'grid_search': [99]}
+                elif ('BSREM' in method):
+                    config[method]["max_iter"] = {'grid_search': [300]}
+
+                method_name = "nested"
+
+        # MLEM reconstruction
+        if (method == 'MLEM'):
+            from all_config.MLEM_configuration import config_func_MIC
+            #config[method] = config_func()
+
+        # OSEM reconstruction
+        if (method == 'OSEM'):
+            from all_config.OSEM_configuration import config_func_MIC
+            #config[method] = config_func()
+
+        # BSREM reconstruction
+        if (method == 'BSREM'):
+            from all_config.BSREM_configuration import config_func_MIC
+            #config[method] = config_func()
+            method_name = method
+
+        # APGMAP reconstruction
+        if ('APGMAP' in method):
+            APGMAP_vs_ADMMLim = True
+            from all_config.APGMAP_configuration import config_func_MIC
+            #config[method] = config_func()
+            #for method2 in method_list: # Loop over methods
+            #    if ('APGMAP' not in method2 and 'ADMMLim' not in method2):
+            #        APGMAP_vs_ADMMLim = False
+                    #config[method]['A_AML'] = {'grid_search': [100]}
+            method_name = method
+
+        # ADMMLim reconstruction
+        if (method == 'ADMMLim'):
+            from all_config.ADMMLim_configuration import config_func_MIC
+            #config[method] = config_func()
+
+
+
+        # nested reconstruction
+        if ('nested_ADMMLim_u_v' in method):
+            from all_config.nested_ADMMLim_u_v_configuration import config_func_MIC
+            method_name = "nested"
+            
+        # nested reconstruction
+        if ('nested_ADMMLim_more_ADMMLim_it_10' in method):
+            from all_config.nested_ADMMLim_more_ADMMLim_it_10_configuration import config_func_MIC
+            method_name = "nested"
+
+        # nested reconstruction
+        if (method == 'nested_ADMMLim_more_ADMMLim_it_30'):
+            from all_config.nested_ADMMLim_more_ADMMLim_it_30_configuration import config_func_MIC
+            method_name = "nested"
+
+        # nested reconstruction
+        if (method == 'nested_ADMMLim_more_ADMMLim_it_80'):
+            from all_config.nested_ADMMLim_more_ADMMLim_it_80_configuration import config_func_MIC
+            method_name = "nested"
+
+        # nested reconstruction
+        if ('nested_APPGML_4subsets' in method):
+            APGMAP_vs_ADMMLim = True
+            from all_config.nested_APPGML_4subsets_configuration import config_func_MIC
+            method_name = "nested"
+
+        # nested reconstruction
+        if (method == 'nested_APPGML_14subsets'):
+            from all_config.nested_APPGML_14subsets_configuration import config_func_MIC
+            method_name = "nested"
+        
+        # nested reconstruction
+        if (method == 'nested_APPGML_28subsets'):
+            from all_config.nested_APPGML_28subsets_configuration import config_func_MIC
+            method_name = "nested"
+
+        # nested reconstruction
+        if (method == 'nested_APPGML_1it' or method == 'nested_APPGML_1subset'):
+            from all_config.nested_APPGML_1it_configuration import config_func_MIC
+            method_name = "nested"
+
+        # nested reconstruction
+        if ('nested_APPGML_4it' in method):
+            APGMAP_vs_ADMMLim = True
+            from all_config.nested_APPGML_4it_configuration import config_func_MIC
+            method_name = "nested"
+
+        # nested reconstruction
+        if (method == 'nested_APPGML_14it'):
+            from all_config.nested_APPGML_14it_configuration import config_func_MIC
+            method_name = "nested"
+        
+        # nested reconstruction
+        if (method == 'nested_APPGML_28it'):
+            from all_config.nested_APPGML_28it_configuration import config_func_MIC
+            method_name = "nested"
+
+        # nested reconstruction
+        if (method == 'nested_CT_0_skip_3it'):
+            from all_config.nested_CT_0_skip_3it import config_func_MIC
+            method_name = "nested"
+
+        # nested reconstruction
+        if (method == 'nested_CT_1_skip_3it'):
+            from all_config.nested_CT_1_skip_3it import config_func_MIC
+            method_name = "nested"
+
+        # nested reconstruction
+        if (method == 'nested_CT_2_skip_3it'):
+            from all_config.nested_CT_2_skip_3it import config_func_MIC
+            method_name = "nested"
+
+        # nested reconstruction
+        if (method == 'nested_CT_3_skip_3it'):
+            from all_config.nested_CT_3_skip_3it import config_func_MIC
+            method_name = "nested"
+
+        # nested reconstruction
+        if (method == 'nested_CT_0_skip_10it'):
+            from all_config.nested_CT_0_skip_10it import config_func_MIC
+            method_name = "nested"
+
+        # nested reconstruction
+        if (method == 'nested_CT_1_skip_10it'):
+            from all_config.nested_CT_1_skip_10it import config_func_MIC
+            method_name = "nested"
+
+        # nested reconstruction
+        if (method == 'nested_CT_2_skip_10it'):
+            from all_config.nested_CT_2_skip_10it import config_func_MIC
+            method_name = "nested"
+
+        # nested reconstruction
+        if (method == 'nested_CT_3_skip_10it'):
+            from all_config.nested_CT_3_skip_10it import config_func_MIC
+            method_name = "nested"
+
+        # nested reconstruction
+        if (method == 'nested_random_3_skip_10it'):
+            from all_config.nested_random_3_skip_10it import config_func_MIC
+            method_name = "nested"
+
+        # Gong reconstruction
+        if (method == 'DIPRecon_CT_1_skip'):
+            from all_config.Gong_CT_1_skip import config_func_MIC
+            method_name = "Gong"
+
+        # Gong reconstruction
+        if (method == 'DIPRecon_CT_2_skip'):
+            from all_config.Gong_CT_2_skip import config_func_MIC
+            method_name = "Gong"
+
+        # Gong reconstruction
+        if (method == 'DIPRecon_CT_3_skip'):
+            from all_config.Gong_CT_3_skip import config_func_MIC
+            method_name = "Gong"
+
+        config[method] = config_func_MIC()
+        config[method]["method"] = method_name
+        return config[method]
+
+    def marker_color_dict_method(self):
+        if (self.phantom == "image2_0"):
+            color_dict = {
+                "nested" : ['red','pink'],
+                "DIPRecon" : ['cyan','blue','teal','blueviolet'],
+                "APGMAP" : ['darkgreen','lime','gold'],
+                "ADMMLim" : ['fuchsia'],
+                "OSEM" : ['darkorange'],
+                "BSREM" : ['grey']
+            }
+            color_dict_supp = {
+                "nested_BSREM_stand" : [color_dict["nested"][0]],
+                "nested_ADMMLim_stand" : [color_dict["nested"][1]],
+                "DIPRecon_BSREM_stand" : [color_dict["DIPRecon"][0]],
+                "DIPRecon_ADMMLim_stand" : [color_dict["DIPRecon"][1]],
+                "DIPRecon_ADMMLim_norm" : [color_dict["DIPRecon"][2]],
+                "DIPRecon_MLEM_norm" : [color_dict["DIPRecon"][3]],
+            }
+
+            color_dict = {**color_dict, **color_dict_supp} # Comparison between reconstruction methods
+
+        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
+            color_dict_after_MIC = {
+                "nested_ADMMLim" : ['cyan','blue','teal','blueviolet'],
+                #"nested_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
+                #"nested_APPGML_subsets" : ['darkgreen','lime','gold','darkseagreen'],
+                "nested_APPGML" : ['darkgreen','lime','gold','darkseagreen'],
+                "nested_CT_skip" : ['red','saddlebrown','lightsalmon','peru','black','yellow','grey','orange'],
+                "nested_random_skip" : ['fuchsia'],
+                "DIPRecon" : ['cyan','blue','teal','blueviolet'],
+                "BSREM" : ['grey'],
+                "OSEM" : ['orange'],
+                #"APGMAP" : ['darkgreen','lime','gold'],
+                "APGMAP" : ['darkgreen','lime'],
+            }
+            color_dict_add_tests = {
+                "nested" : ['black'], # 3 it
+                "nested_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["nested_ADMMLim"][0]],
+                "nested_ADMMLim_more_ADMMLim_it_30" : [color_dict_after_MIC["nested_ADMMLim"][1]],
+                "nested_ADMMLim_more_ADMMLim_it_80" : [color_dict_after_MIC["nested_ADMMLim"][2]],
+                "nested_ADMMLim_u_v" : [color_dict_after_MIC["nested_ADMMLim"][3]],
+                "nested_APPGML_1subset" : [color_dict_after_MIC["nested_APPGML"][0]],
+                "nested_APPGML_4subsets" : [color_dict_after_MIC["nested_APPGML"][1]],
+                "nested_APPGML_14subsets" : [color_dict_after_MIC["nested_APPGML"][2]],
+                "nested_APPGML_28subsets" : [color_dict_after_MIC["nested_APPGML"][3]],
+                "nested_APPGML_1it" : [color_dict_after_MIC["nested_APPGML"][0]],
+                "nested_APPGML_4it" : [color_dict_after_MIC["nested_APPGML"][1]],
+                "nested_APPGML_14it" : [color_dict_after_MIC["nested_APPGML"][2]],
+                "nested_APPGML_28it" : [color_dict_after_MIC["nested_APPGML"][3]],
+                "nested_CT_2_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][0]],
+                "nested_CT_3_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][1]],
+                "nested_CT_2_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][2]],
+                "nested_CT_3_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][3]],
+                "nested_CT_0_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][4]],
+                "nested_CT_1_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][5]],
+                "nested_CT_0_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][6]],
+                "nested_CT_1_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][7]],
+                "nested_random_3_skip_10it" : [color_dict_after_MIC["nested_random_skip"][0]],
+                "DIPRecon_BSREM_stand" : [color_dict_after_MIC["DIPRecon"][0]],
+                "DIPRecon_CT_3_skip" : [color_dict_after_MIC["DIPRecon"][1]],
+                "DIPRecon_CT_2_skip" : [color_dict_after_MIC["DIPRecon"][2]],
+                "DIPRecon_CT_1_skip" : [color_dict_after_MIC["DIPRecon"][3]],
+            }
+
+            color_dict = {**color_dict_after_MIC, **color_dict_add_tests} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
+
+        if (self.phantom == "image2_0"):                    
+            marker_dict = {
+                "nested" : ['-','--'],
+                "DIPRecon" : ['-','--','loosely dotted','dashdot'],
+                "APGMAP" : ['-','--','loosely dotted'],
+                "ADMMLim" : ['-'],
+                "OSEM" : ['-'],
+                "BSREM" : ['-']
+            }
+            marker_dict_supp = {
+                "nested_BSREM_stand" : [marker_dict["nested"][0]],
+                "nested_ADMMLim_stand" : [marker_dict["nested"][1]],
+                "DIPRecon_BSREM_stand" : [marker_dict["DIPRecon"][0]],
+                "DIPRecon_ADMMLim_stand" : [marker_dict["DIPRecon"][1]],
+                "DIPRecon_ADMMLim_norm" : [marker_dict["DIPRecon"][2]],
+                "DIPRecon_MLEM_norm" : [marker_dict["DIPRecon"][3]],
+            }
+
+            marker_dict = {**marker_dict, **marker_dict_supp}
+        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
+            marker_dict = {
+                "APPGML_it" : [':'],
+                "APPGML_subsets" : ['-'],
+                "ADMMLim" : ['--'],
+                "skip" : ['dashdot'],
+                "APGMAP" : ['-','-'],
+                "BSREM" : ['-'],
+                "OSEM" : ['-'],
+                "DIPRecon" : ['-']
+            }
+            marker_dict_supp = {
+                "nested" : [marker_dict["ADMMLim"][0]], # 3 it
+                "nested_ADMMLim_more_ADMMLim_it_10" : [marker_dict["ADMMLim"][0]],
+                "nested_ADMMLim_more_ADMMLim_it_30" : [marker_dict["ADMMLim"][0]],
+                "nested_ADMMLim_more_ADMMLim_it_80" : [marker_dict["ADMMLim"][0]],
+                "nested_ADMMLim_u_v" : [marker_dict["ADMMLim"][0]],
+                "nested_APPGML_1subset" : [marker_dict["APPGML_subsets"][0]],
+                "nested_APPGML_4subsets" : [marker_dict["APPGML_subsets"][0]],
+                "nested_APPGML_14subsets" : [marker_dict["APPGML_subsets"][0]],
+                "nested_APPGML_28subsets" : [marker_dict["APPGML_subsets"][0]],
+                "nested_APPGML_1it" : [marker_dict["APPGML_it"][0]],
+                "nested_APPGML_4it" : [marker_dict["APPGML_it"][0]],
+                "nested_APPGML_14it" : [marker_dict["APPGML_it"][0]],
+                "nested_APPGML_28it" : [marker_dict["APPGML_it"][0]],
+                "nested_CT_2_skip_3it" : [marker_dict["skip"][0]],
+                "nested_CT_3_skip_3it" : [marker_dict["skip"][0]],
+                "nested_CT_2_skip_10it" : [marker_dict["skip"][0]],
+                "nested_CT_3_skip_10it" : [marker_dict["skip"][0]],
+                "nested_CT_0_skip_3it" : [marker_dict["skip"][0]],
+                "nested_CT_1_skip_3it" : [marker_dict["skip"][0]],
+                "nested_CT_0_skip_10it" : [marker_dict["skip"][0]],
+                "nested_CT_1_skip_10it" : [marker_dict["skip"][0]],
+                "nested_random_3_skip_10it" : [marker_dict["skip"][0]],
+                "DIPRecon_BSREM_stand" : [marker_dict["DIPRecon"][0]],
+                "DIPRecon_CT_3_skip" : [marker_dict["DIPRecon"][0]],
+                "DIPRecon_CT_2_skip" : [marker_dict["DIPRecon"][0]],
+                "DIPRecon_CT_1_skip" : [marker_dict["DIPRecon"][0]],
+            }
+            marker_dict = {**marker_dict, **marker_dict_supp}
+
+        return marker_dict, color_dict
+
+
+    def load_metrics(self, sorted_suffixes, idx_wanted, root, config, method, task, csv_before_MIC, quantitative_tradeoff, ROI):
+        # Initialize metrics arrays
+        PSNR_recon = []
+        PSNR_norm_recon = []
+        MSE_recon = []
+        SSIM_recon = []
+        MA_cold_recon = []
+        AR_hot_recon = []
+        AR_hot_TEP_recon = []
+        AR_hot_TEP_match_square_recon = []
+        AR_hot_perfect_match_recon = []
+        AR_bkg_recon = []
+        IR_bkg_recon = []
+        IR_whole_recon = []
+
+        IR_final = []
+        metrics_final = []
+
+        for i in range(len(sorted_suffixes)):
+            i_replicate = idx_wanted[i] # Loop over rhos and replicates, for each sorted rho, take sorted replicate
+            suffix = sorted_suffixes[i].rstrip("\n")
+            replicate = "replicate_" + str(i_replicate + 1)
+            metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + config[method]["method"] + '/' + suffix + '/' + 'metrics.csv'
+            
+            try:
+                self.subroot = self.subroot_data + 'debug/'*self.debug + self.phantom + '/'+ str(replicate) + '/' + config[method]["method"] + '/' # Directory root
+                self.suffix = suffix[:-12] # Remove NNEPPS from suffix
+                self.max_iter = config[method]["max_iter"]
+                self.defineTotalNbIter_beta_rho(method,config[method],task)
+
+                with open(metrics_file, 'r') as myfile:
+                    spamreader = reader_csv(myfile,delimiter=';')
+                    rows_csv = list(spamreader)
+                    rows_csv[0] = [float(rows_csv[0][i]) for i in range(int(self.i_init) - 1,min(len(rows_csv[0]),self.total_nb_iter))]
+                    rows_csv[1] = [float(rows_csv[1][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[1]),self.total_nb_iter))]
+                    rows_csv[2] = [float(rows_csv[2][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[2]),self.total_nb_iter))]
+                    rows_csv[3] = [float(rows_csv[3][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[3]),self.total_nb_iter))]
+                    rows_csv[4] = [float(rows_csv[4][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[4]),self.total_nb_iter))]
+                    rows_csv[5] = [float(rows_csv[5][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[5]),self.total_nb_iter))]
+                    rows_csv[6] = [float(rows_csv[6][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[6]),self.total_nb_iter))]
+                    rows_csv[7] = [float(rows_csv[7][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[7]),self.total_nb_iter))]
+                    if (not csv_before_MIC):
+                        rows_csv[8] = [float(rows_csv[8][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[8]),self.total_nb_iter))]
+                        rows_csv[9] = [float(rows_csv[9][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[9]),self.total_nb_iter))]
+                        rows_csv[10] = [float(rows_csv[10][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[10]),self.total_nb_iter))]
+
+                    PSNR_recon.append(np.array(rows_csv[0]))
+                    PSNR_norm_recon.append(np.array(rows_csv[1]))
+                    MSE_recon.append(np.array(rows_csv[2]))
+                    SSIM_recon.append(np.array(rows_csv[3]))
+                    MA_cold_recon.append(np.array(np.array(rows_csv[4]) - 10) / 10 * 100)
+                    AR_hot_recon.append(np.array(rows_csv[5]) / 400 * 100)
+
+                    if (not csv_before_MIC):
+                        AR_hot_TEP_recon.append(np.array(rows_csv[6]) / 400 * 100)
+                        AR_hot_TEP_match_square_recon.append(np.array(rows_csv[7]) / 400 * 100)
+                        AR_hot_perfect_match_recon.append(np.array(rows_csv[8]) / 400 * 100)
+                        AR_bkg_recon.append(np.array(rows_csv[9]))
+                        IR_bkg_recon.append(np.array(rows_csv[10]))
+                        if (not quantitative_tradeoff):
+                            IR_whole_recon.append(np.array(rows_csv[13]))
+                    else:        
+                        AR_bkg_recon.append(np.array(rows_csv[6]))
+                        IR_bkg_recon.append(np.array(rows_csv[7]))
+                
+                    try:
+                        MA_cold = np.array(rows_csv[8])
+                    except:
+                        MA_cold = np.array(rows_csv[6])
+                    try:
+                        AR_hot = np.array(rows_csv[9])
+                    except:
+                        AR_hot = np.array(rows_csv[7])
+
+            except:
+                print("No such file : " + metrics_file)
+
+        # Select metrics to plot according to ROI
+        if (quantitative_tradeoff):
+            if ROI == 'hot_TEP':
+                metrics = AR_hot_TEP_recon
+            elif ROI == 'hot_TEP_match_square_recon':
+                metrics = AR_hot_TEP_match_square_recon
+            elif ROI == 'hot_perfect_match_recon':
+                metrics = AR_hot_perfect_match_recon
+            elif ROI == 'hot':
+                #metrics = [abs(hot) for hot in AR_hot_recon] # Take absolute value of AR hot for tradeoff curves
+                metrics = AR_hot_recon
+            elif ROI == 'cold':
+                #metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
+                metrics = MA_cold_recon
+        else:
+            metrics = self.SSIM_recon
+        # Keep useful information to plot from metrics                
+        IR_final = IR_bkg_recon
+        metrics_final = metrics
+
+        return metrics_final, IR_final

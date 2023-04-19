@@ -158,7 +158,7 @@ class vDenoising(vGeneral):
                 # Checkpoints pl variables
                 logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
                 checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0)
-                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all", weights_summary=None, profiler="simple") # Prepare trainer model with callback to save checkpoint        
+                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all", progress_bar_refresh_rate=0, weights_summary=None, profiler="simple") # Prepare trainer model with callback to save checkpoint        
             if (finetuning == 'best'): # best model saved in checkpoint
                 # Checkpoints pl variables
                 logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path

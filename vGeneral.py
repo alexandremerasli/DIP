@@ -99,7 +99,7 @@ class vGeneral(abc.ABC):
         Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
         Path(self.subroot_data + 'Data/initialization/pytorch/replicate_' + str(self.replicate)).mkdir(parents=True, exist_ok=True)
                 
-    def runRayTune(self,config,root,task):
+    def runRayTune(self,config,root,task,only_suffix_replicate_file=False):
         # Check parameters incompatibility
         if (task != "show_metrics_results_already_computed_following_step"): # there is no grid_search in config for this task
             self.parametersIncompatibility(config,task)
@@ -147,7 +147,7 @@ class vGeneral(abc.ABC):
 
             #init(log_to_driver=False) # Remove logs stored by raytune, but also from terminal...
             #tune.run(partial(self.do_everything,root=root,suffix_replicate_file = True), config=config,local_dir = getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
-            tune.run(partial(self.do_everything,root=root,suffix_replicate_file = True), config=config,local_dir = getcwd() + '/runs')#, progress_reporter = reporter)
+            tune.run(partial(self.do_everything,root=root,only_suffix_replicate_file = only_suffix_replicate_file), config=config,local_dir = getcwd() + '/runs')#, progress_reporter = reporter)
         else: # Without raytune
             # Remove grid search if not using ray and choose first element of each config key.
             if (task != "show_metrics_results_already_computed_following_step"):
@@ -167,7 +167,7 @@ class vGeneral(abc.ABC):
             else:
                 config["task"] = task
             # Launch computation
-            self.do_everything(config,root,suffix_replicate_file = True)
+            self.do_everything(config,root,only_suffix_replicate_file = only_suffix_replicate_file)
 
 
     def parametersIncompatibility(self,config,task):
@@ -275,17 +275,23 @@ class vGeneral(abc.ABC):
             else:
                 raise ValueError("There must be only one method to average over replicates")
 
-    def do_everything(self,config,root,suffix_replicate_file = False):
-        # Initialize variables
-        self.config = config
-        self.root = root
-        self.subroot_data = root + '/data/Algo/' # Directory root
-        #if (config["task"] != "show_metrics_results_already_computed_following_step"):
-        self.initializeGeneralVariables(config,root)
-        self.initializeSpecific(config,root)
-        # Run task computation
-        self.runComputation(config,root)
-        if (suffix_replicate_file and config["task"] != "show_metrics_results_already_computed_following_step"):
+    def do_everything(self,config,root,only_suffix_replicate_file = False):
+        if (not only_suffix_replicate_file):
+            # Initialize variables
+            self.config = config
+            self.root = root
+            self.subroot_data = root + '/data/Algo/' # Directory root
+            #if (config["task"] != "show_metrics_results_already_computed_following_step"):
+            self.initializeGeneralVariables(config,root)
+            self.initializeSpecific(config,root)
+            # Run task computation
+            self.runComputation(config,root)
+        if (only_suffix_replicate_file and config["task"] != "show_metrics_results_already_computed_following_step"):
+            # Initialize general variables
+            self.replicate = config["replicates"] # Label of the replicate
+            self.subroot_data = root + '/data/Algo/' # Directory root
+            self.suffix_metrics = self.suffix_func(config,NNEPPS=True) # self.suffix with NNEPPS information
+
             # Store suffix to retrieve all suffixes in main.py for metrics
             text_file = open(self.subroot_data + 'suffixes_for_last_run_' + config["method"] + '.txt', "a")
             text_file.write(self.suffix_metrics + "\n")

@@ -72,22 +72,22 @@ class iResults(vDenoising):
             self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
 
             # Metrics arrays
-            self.PSNR_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-            self.PSNR_norm_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-            self.MSE_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-            self.SSIM_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-            self.MA_cold_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-            self.AR_hot_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            self.PSNR_recon = np.zeros(int(self.total_nb_iter ) + 1)
+            self.PSNR_norm_recon = np.zeros(int(self.total_nb_iter ) + 1)
+            self.MSE_recon = np.zeros(int(self.total_nb_iter ) + 1)
+            self.SSIM_recon = np.zeros(int(self.total_nb_iter ) + 1)
+            self.MA_cold_recon = np.zeros(int(self.total_nb_iter ) + 1)
+            self.AR_hot_recon = np.zeros(int(self.total_nb_iter ) + 1)
             
-            self.AR_hot_TEP_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-            self.AR_hot_TEP_match_square_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-            self.AR_hot_perfect_match_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
+            self.AR_hot_TEP_recon = np.zeros(int(self.total_nb_iter ) + 1)
+            self.AR_hot_TEP_match_square_recon = np.zeros(int(self.total_nb_iter ) + 1)
+            self.AR_hot_perfect_match_recon = np.zeros(int(self.total_nb_iter ) + 1)
             
-            self.loss_DIP_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-            self.CRC_hot_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-            self.AR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-            self.IR_bkg_recon = np.zeros(int(self.total_nb_iter / self.i_init) + 1)
-            self.IR_whole_recon = np.empty(int(self.total_nb_iter / self.i_init) + 1)
+            self.loss_DIP_recon = np.zeros(int(self.total_nb_iter ) + 1)
+            self.CRC_hot_recon = np.zeros(int(self.total_nb_iter ) + 1)
+            self.AR_bkg_recon = np.zeros(int(self.total_nb_iter ) + 1)
+            self.IR_bkg_recon = np.zeros(int(self.total_nb_iter ) + 1)
+            self.IR_whole_recon = np.empty(int(self.total_nb_iter ) + 1)
             self.IR_whole_recon[:] = 0 #np.nan
 
         if ( 'nested' in self.method or  'Gong' in self.method):
@@ -100,6 +100,8 @@ class iResults(vDenoising):
                 self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d')
             #self.image_corrupt = self.fijii_np("/home/meraslia/workspace_reco/nested_admm/data/Algo/image4_0/replicate_10/nested/Block2/config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=14_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=1_mlem_=False_A_AML=-100/x_label/24/" + "-1_x_labelconfig_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=14_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=1_mlem_=False_A_AML=-100.img",shape=(self.PETImage_shape))
 
+        if ('Gong' in config["method"] or 'nested' in config["method"]):
+            self.i_init = 0
 
     def writeBeginningImages(self,suffix,image_net_input=None):
         if (self.tensorboard):
@@ -161,23 +163,23 @@ class iResults(vDenoising):
             # Add 1 to number of iterations before stopping criterion
             self.total_nb_iter += 1
 
-        for i in range(self.i_init,self.total_nb_iter+self.i_init,self.i_init):
+        for i in range(self.i_init,self.total_nb_iter+self.i_init):
             self.IR = 0
             self.IR_whole = 0
             if (self.loop_on_replicates(config,i)):
                 break
                     
             if ("3D" not in self.phantom):
-                self.IR_bkg_recon[int((i-self.i_init)/self.i_init)] = self.IR
-                self.IR_whole_recon[int((i-self.i_init)/self.i_init)] = self.IR_whole
+                self.IR_bkg_recon[int((i-self.i_init))] = self.IR
+                self.IR_whole_recon[int((i-self.i_init))] = self.IR_whole
                 if (self.tensorboard):
                     #print("IR saved in tensorboard")
-                    self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[int((i-self.i_init)/self.i_init)], i)
-                    self.writer.add_scalar('Image roughness in whole phantom', self.IR_whole_recon[int((i-self.i_init)/self.i_init)], i)
+                    self.writer.add_scalar('Image roughness in the background (best : 0)', self.IR_bkg_recon[int((i-self.i_init))], i)
+                    self.writer.add_scalar('Image roughness in whole phantom', self.IR_whole_recon[int((i-self.i_init))], i)
 
             # Show images and metrics in tensorboard (averaged images if asked in config)
-            print('Metrics for iteration',int((i-self.i_init)/self.i_init))
-            self.writeEndImagesAndMetrics(int((i-self.i_init)/self.i_init),self.total_nb_iter,self.PETImage_shape,self.f,self.suffix,self.phantom,self.net,self.pet_algo,self.iteration_name)
+            print('Metrics for iteration',int((i-self.i_init)))
+            self.writeEndImagesAndMetrics(int((i-self.i_init)),self.total_nb_iter,self.PETImage_shape,self.f,self.suffix,self.phantom,self.net,self.pet_algo,self.iteration_name)
 
         #self.WMV_plot(config)
 
@@ -314,7 +316,7 @@ class iResults(vDenoising):
                             print("!!!!! failed to read image")
                             break
                     else:
-                        f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-self.i_init) + "_FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                        f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + "_FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
                     if config["FLTNB"] == "double":
                         f_p = f_p.astype(np.float64)
 
@@ -340,12 +342,12 @@ class iResults(vDenoising):
 
                 # Compute IR metric (different from others with several replicates)
                 if ("3D" not in self.phantom):
-                    self.compute_IR_bkg(self.PETImage_shape,f_p,int((i-self.i_init)/self.i_init),self.IR_bkg_recon,self.phantom)
-                    self.compute_IR_whole(self.PETImage_shape,f_p,int((i-self.i_init)/self.i_init),self.IR_whole_recon,self.phantom)
+                    self.compute_IR_bkg(self.PETImage_shape,f_p,int((i-self.i_init)),self.IR_bkg_recon,self.phantom)
+                    self.compute_IR_whole(self.PETImage_shape,f_p,int((i-self.i_init)),self.IR_whole_recon,self.phantom)
 
                     # Nested ADMM stopping criterion
                     if('nested' in config["method"]):
-                        if (self.IR_whole_recon[int((i-self.i_init)/self.i_init)]> self.IR_ref[0]): # > 1.604):# > self.IR_ref[0]):
+                        if (self.IR_whole_recon[int((i-self.i_init))]> self.IR_ref[0]): # > 1.604):# > self.IR_ref[0]):
                             print("Nested ADMM stopping criterion reached")
                             self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
                             stopping_criterion_file = open(self.path_stopping_criterion, "w")
@@ -356,11 +358,11 @@ class iResults(vDenoising):
 
                     # Specific average for IR
                     if (config["average_replicates"] == False and p == self.replicate):
-                        self.IR = self.IR_bkg_recon[int((i-self.i_init)/self.i_init)]
-                        self.IR_whole = self.IR_whole_recon[int((i-self.i_init)/self.i_init)]
+                        self.IR = self.IR_bkg_recon[int((i-self.i_init))]
+                        self.IR_whole = self.IR_whole_recon[int((i-self.i_init))]
                     elif (config["average_replicates"]):
-                        self.IR += self.IR_bkg_recon[int((i-self.i_init)/self.i_init)] / self.nb_replicates
-                        self.IR_whole += self.IR_whole_recon[int((i-self.i_init)/self.i_init)]
+                        self.IR += self.IR_bkg_recon[int((i-self.i_init))] / self.nb_replicates
+                        self.IR_whole += self.IR_whole_recon[int((i-self.i_init))]
 
                 if (config["average_replicates"]): # Average images across replicates (for metrics except IR)
                     self.f += f_p / self.nb_replicates
