@@ -38,7 +38,7 @@ def config_func_MIC():
     }
     # Configuration dictionnary for hyperparameters to tune
     hyperparameters_config = {
-        #"image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
+        "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
         #"image_init_path_without_extension" : tune.grid_search(['MLEM_it60','BSREM_it30']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
         "rho" : tune.grid_search([0.003,8e-4,0.008,0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
