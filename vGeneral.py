@@ -14,6 +14,12 @@ from re import split, findall, compile
 
 import abc
 
+from ray.tune import CLIReporter
+class ExperimentTerminationReporter(CLIReporter):
+    def should_report(self, trials, done=False):
+        """Reports only on experiment termination."""
+        return False
+
 class vGeneral(abc.ABC):
     @abc.abstractmethod
     def __init__(self,config, *args, **kwargs):
@@ -147,7 +153,8 @@ class vGeneral(abc.ABC):
 
             #init(log_to_driver=False) # Remove logs stored by raytune, but also from terminal...
             #tune.run(partial(self.do_everything,root=root,suffix_replicate_file = True), config=config,local_dir = getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
-            tune.run(partial(self.do_everything,root=root,only_suffix_replicate_file = only_suffix_replicate_file), config=config,local_dir = getcwd() + '/runs')#, progress_reporter = reporter)
+            reporter = ExperimentTerminationReporter()
+            tune.run(partial(self.do_everything,root=root,only_suffix_replicate_file = only_suffix_replicate_file), config=config,local_dir = getcwd() + '/runs', progress_reporter = reporter)
         else: # Without raytune
             # Remove grid search if not using ray and choose first element of each config key.
             if (task != "show_metrics_results_already_computed_following_step"):
@@ -870,7 +877,7 @@ class vGeneral(abc.ABC):
         return int(text) if text.isdigit() else text
 
     def natural_keys(self,text):
-        print(split(r'(\d+)', text))
+        # print(split(r'(\d+)', text))
         return [ self.atoi(c) for c in split(r'(\d+)', text) ] # APGMAP final curves + resume computation
         #return [ self.atoi(c) for c in split(r'(\+|-)\d+(\.\d+)?', text) ] # ADMMLim final curves
     
