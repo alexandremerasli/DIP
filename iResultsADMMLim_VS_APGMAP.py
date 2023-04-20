@@ -117,6 +117,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         #for i in range(i_init,self.total_nb_iter+1):
         for i in range(self.total_nb_iter,self.total_nb_iter+1):
             IR = 0
+            nan_replicates = []
             for p in range(self.nb_replicates,0,-1):
                 if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
                     self.subroot_p = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
@@ -160,30 +161,39 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                         else:
                             self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
 
+                    if (np.isnan(np.sum(self.f_p.astype(float)))):
+                        nan_replicates.append(p)
+                        continue
+
                     if (config["average_replicates"]): # Average images across replicates (for metrics except IR)
-                        f += self.f_p / self.nb_replicates
-                        f_init_avg += f_init_p / self.nb_replicates
+                        f += self.f_p
+                        f_init_avg += f_init_p
                     elif (config["average_replicates"] == False and p == self.replicate):
                         f = self.f_p
 
                     f_list[p-1] = self.f_p
 
+            # if len(nan_replicates) > 0:
+            #     raise ValueError("naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan",nan_replicates)
 
+            nb_usable_replicates = self.nb_replicates - len(nan_replicates)
+            f /= self.nb_usable_replicates
+            f_init_avg /= self.nb_usable_replicates
 
             Path(self.subroot + 'Images/tmp/' + self.suffix + '/' + 'binary/').mkdir(parents=True, exist_ok=True)
 
-            for p in range(self.nb_replicates,0,-1):
-                f_var[self.phantom_ROI==1] += (f[self.phantom_ROI==1] - f_list[p-1][self.phantom_ROI==1])**2 / self.nb_replicates
+            for p in set(range(self.nb_replicates,0,-1)) - set(nan_replicates):
+                f_var[self.phantom_ROI==1] += (f[self.phantom_ROI==1] - f_list[p-1][self.phantom_ROI==1])**2 / self.nb_usable_replicates
             
-            self.write_image_tensorboard(self.writer,np.sqrt(f_var),self.method + " at convergence, std (not normalised) over " + str(self.nb_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # std of images at convergence across replicates in tensorboard
+            self.write_image_tensorboard(self.writer,np.sqrt(f_var),self.method + " at convergence, std (not normalised) over " + str(self.nb_usable_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # std of images at convergence across replicates in tensorboard
             path_img = self.subroot + 'Images/tmp/' + self.suffix + '/' + 'binary/'
-            self.save_img(np.sqrt(f_var),path_img + self.method + " at convergence, std (not normalised) over " + str(self.nb_replicates) + " replicates (FULL CONTRAST)" + ".img")
+            self.save_img(np.sqrt(f_var),path_img + self.method + " at convergence, std (not normalised) over " + str(self.nb_usable_replicates) + " replicates (FULL CONTRAST)" + ".img")
 
             f_var_gt = np.array(f_var)
             f_var[self.phantom_ROI==1] /= np.abs(f[self.phantom_ROI==1])
             f_var_gt[self.phantom_ROI==1] /= np.abs(self.image_gt[self.phantom_ROI==1])
             # print("f_var[0,:]",f_var[0,:].T)
-            # f_var[self.phantom_ROI==1] += (f[self.phantom_ROI==1] - f_list[p-1][self.phantom_ROI==1])**2 / self.nb_replicates
+            # f_var[self.phantom_ROI==1] += (f[self.phantom_ROI==1] - f_list[p-1][self.phantom_ROI==1])**2 / self.nb_usable_replicates
             # print("self.phantom_ROI[0,:]",self.phantom_ROI[0,:].T)
             # print("f[0,:]",f[0,:].T)
             # print("self.f_p[0,:]",f_list[p-1][0,:].T)
@@ -199,25 +209,25 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         # Save images 
         self.write_image_tensorboard(self.writer,self.f_p,self.method + " at convergence, for replicate 1",self.suffix,self.image_gt,0) # image at convergence in tensorboard
         self.write_image_tensorboard(self.writer,self.f_p,self.method + " at convergence, for replicate 1 (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # image at convergence in tensorboard
-        self.write_image_tensorboard(self.writer,f,self.method + " at convergence, averaged on " + str(self.nb_replicates) + " replicates",self.suffix,self.image_gt,0) # mean of images at convergence across replicates in tensorboard
-        self.write_image_tensorboard(self.writer,f,self.method + " at convergence, averaged on " + str(self.nb_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # mean of images at convergence across replicates in tensorboard
-        # self.write_image_tensorboard(self.writer,np.sqrt(f_var),self.method + " at convergence, std over " + str(self.nb_replicates) + " replicates",self.suffix,self.image_gt,0) # std of images at convergence across replicates in tensorboard
+        self.write_image_tensorboard(self.writer,f,self.method + " at convergence, averaged on " + str(self.nb_usable_replicates) + " replicates",self.suffix,self.image_gt,0) # mean of images at convergence across replicates in tensorboard
+        self.write_image_tensorboard(self.writer,f,self.method + " at convergence, averaged on " + str(self.nb_usable_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # mean of images at convergence across replicates in tensorboard
+        # self.write_image_tensorboard(self.writer,np.sqrt(f_var),self.method + " at convergence, std over " + str(self.nb_usable_replicates) + " replicates",self.suffix,self.image_gt,0) # std of images at convergence across replicates in tensorboard
         # self.write_image_tensorboard(self.writer,self.phantom_ROI,"self.phantom_ROI",self.suffix,self.image_gt,0,full_contrast=True) # std of images at convergence across replicates in tensorboard
-        self.write_image_tensorboard(self.writer,np.sqrt(f_var),self.method + " at convergence, std over " + str(self.nb_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # std of images at convergence across replicates in tensorboard
-        self.write_image_tensorboard(self.writer,np.sqrt(f_var_gt),self.method + " at convergence, std (normalised by GT) over " + str(self.nb_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # std of images at convergence across replicates in tensorboard
-        self.write_image_tensorboard(self.writer,f_init_p,self.method + " denoised initialization, for replicate 1 " + str(self.nb_replicates) + " replicates",self.suffix,self.image_gt,0) # denoised initialization for one replicate in tensorboard
-        self.write_image_tensorboard(self.writer,f_init_p,self.method + " denoised initialization, for replicate 1 (FULL CONTRAST) " + str(self.nb_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # denoised initialization for one replicate in tensorboard
-        self.write_image_tensorboard(self.writer,f_init_avg,self.method + " denoised initialization over " + str(self.nb_replicates) + " replicates",self.suffix,self.image_gt,0) # denoised initialization across replicates in tensorboard
-        self.write_image_tensorboard(self.writer,f_init_avg,self.method + " denoised initialization over " + str(self.nb_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # denoised initialization across replicates in tensorboard
+        self.write_image_tensorboard(self.writer,np.sqrt(f_var),self.method + " at convergence, std over " + str(self.nb_usable_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # std of images at convergence across replicates in tensorboard
+        self.write_image_tensorboard(self.writer,np.sqrt(f_var_gt),self.method + " at convergence, std (normalised by GT) over " + str(self.nb_usable_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # std of images at convergence across replicates in tensorboard
+        self.write_image_tensorboard(self.writer,f_init_p,self.method + " denoised initialization, for replicate 1 " + str(self.nb_usable_replicates) + " replicates",self.suffix,self.image_gt,0) # denoised initialization for one replicate in tensorboard
+        self.write_image_tensorboard(self.writer,f_init_p,self.method + " denoised initialization, for replicate 1 (FULL CONTRAST) " + str(self.nb_usable_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # denoised initialization for one replicate in tensorboard
+        self.write_image_tensorboard(self.writer,f_init_avg,self.method + " denoised initialization over " + str(self.nb_usable_replicates) + " replicates",self.suffix,self.image_gt,0) # denoised initialization across replicates in tensorboard
+        self.write_image_tensorboard(self.writer,f_init_avg,self.method + " denoised initialization over " + str(self.nb_usable_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # denoised initialization across replicates in tensorboard
         
         # Save images as .img
         path_img = self.subroot + 'Images/tmp/' + self.suffix + '/' + 'binary/'
         self.save_img(self.f_p,path_img + self.method + " at convergence, for replicate 1" + ".img")
-        self.save_img(f,path_img + self.method + " at convergence, averaged on " + str(self.nb_replicates) + " replicates" + ".img")
-        self.save_img(np.sqrt(f_var),path_img + self.method + " at convergence, std over " + str(self.nb_replicates) + " replicates (FULL CONTRAST)" + ".img")
-        self.save_img(np.sqrt(f_var_gt),path_img + self.method + " at convergence, std (normalised by GT) over " + str(self.nb_replicates) + " replicates (FULL CONTRAST)" + ".img")
-        self.save_img(f_init_p,path_img + self.method + " denoised initialization, for replicate 1 " + str(self.nb_replicates) + " replicates" + ".img")
-        self.save_img(f_init_avg,path_img + self.method + " denoised initialization over " + str(self.nb_replicates) + " replicates" + ".img")
+        self.save_img(f,path_img + self.method + " at convergence, averaged on " + str(self.nb_usable_replicates) + " replicates" + ".img")
+        self.save_img(np.sqrt(f_var),path_img + self.method + " at convergence, std over " + str(self.nb_usable_replicates) + " replicates (FULL CONTRAST)" + ".img")
+        self.save_img(np.sqrt(f_var_gt),path_img + self.method + " at convergence, std (normalised by GT) over " + str(self.nb_usable_replicates) + " replicates (FULL CONTRAST)" + ".img")
+        self.save_img(f_init_p,path_img + self.method + " denoised initialization, for replicate 1 " + str(self.nb_usable_replicates) + " replicates" + ".img")
+        self.save_img(f_init_avg,path_img + self.method + " denoised initialization over " + str(self.nb_usable_replicates) + " replicates" + ".img")
 
         IR_common = 23 # in %
         IR_common = 11 # in %

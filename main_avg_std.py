@@ -15,16 +15,21 @@ from ray import tune
 #sys.stdout = open("test_log.txt", "w")
 
 import importlib
-modnames = ["nested_random_3_skip_10it", "nested_CT_2_skip_10it", "nested_CT_1_skip_10it"]
+# config_files = ["nested_random_3_skip_10it", "nested_CT_2_skip_10it", "nested_CT_1_skip_10it"]
+config_files = ["Gong_CT_1_skip", "Gong_CT_2_skip"]#, "Gong_CT_3_skip"]
+config_files = ["Gong_CT_3_skip"]
 
-# modnames = [f[:-3] for f in os.listdir('all_config') if os.path.isfile(os.path.join('all_config', f))]
+# config_files = [f[:-3] for f in os.listdir('all_config') if os.path.isfile(os.path.join('all_config', f))]
 
-for lib_string in modnames:
-    try:
+for lib_string in config_files:
+    # try:
+    if (True):
         lib = importlib.import_module('all_config.' + lib_string)
         config = lib.config_func_MIC()
         config["image"] = tune.grid_search(['image40_0'])
         config["replicates"] = tune.grid_search(list(range(1,40+1)))
+        config["max_iter"] = tune.grid_search([98])
+        config["ray"] = True
 
         root = os.getcwd()
 
@@ -33,17 +38,6 @@ for lib_string in modnames:
         file_seed = open(os.getcwd() + "/seed.txt","w+")
         file_seed.write(str(config["random_seed"]["grid_search"][0]))
         file_seed.close()
-
-        # Local files to import, AFTER CONFIG TO SET RANDOM SEED OR NOT
-        from iNestedADMM import iNestedADMM
-        from iComparison import iComparison
-        from iPostReconstruction import iPostReconstruction
-        from iResults import iResults
-        from iMeritsADMMLim import iMeritsADMMLim
-        from iMeritsNested import iMeritsNested
-        from iResultsAlreadyComputed import iResultsAlreadyComputed
-        from iResultsADMMLim_VS_APGMAP import iResultsADMMLim_VS_APGMAP
-        from iFinalCurves import iFinalCurves
 
         for method in config["method"]['grid_search']:
 
@@ -136,26 +130,36 @@ for lib_string in modnames:
             #task = 'show_metrics_nested'
             task = 'compare_2_methods'
 
+            # Local files to import, AFTER CONFIG TO SET RANDOM SEED OR NOT
             if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
+                from iNestedADMM import iNestedADMM
                 # classTask = iNestedADMM(hyperparameters_config)
                 raise ValueError("needs hyperparameters_config")
             elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
+                from iComparison import iComparison
                 classTask = iComparison(config)
             elif (task == 'post_reco'): # Run network denoising after a given reconstructed image im_corrupt
+                from iPostReconstruction import iPostReconstruction
                 classTask = iPostReconstruction(config)
             elif (task == 'show_results'): # Show already computed results over iterations
+                from iResults import iResults
                 classTask = iResults(config)
             elif (task == 'show_results_post_reco'): # Show already computed results over iterations of post reconstruction mode
-                config["task"] = "show_results_post_reco"
+                from iResults import iResults
                 classTask = iResults(config)
             elif (task == 'show_metrics_ADMMLim'): # Show ADMMLim FOMs over iterations
+                config["task"] = "show_results_post_reco"
+                from iMeritsADMMLim import iMeritsADMMLim
                 classTask = iMeritsADMMLim(config)
             elif (task == 'show_metrics_nested'): # Show nested or Gong FOMs over iterations
+                from iMeritsNested import iMeritsNested
                 classTask = iMeritsNested(config)
-            elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
-                classTask = iResultsAlreadyComputed(config)
+            # elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
+            #     from iResultsAlreadyComputed import iResultsAlreadyComputed
+            #     classTask = iResultsAlreadyComputed(config)
             elif (task == 'compare_2_methods'): # Show already computed results averaging over replicates
                 config["average_replicates"] = tune.grid_search([True])
+                from iResultsADMMLim_VS_APGMAP import iResultsADMMLim_VS_APGMAP
                 classTask = iResultsADMMLim_VS_APGMAP(config)
 
             # Incompatible parameters (should be written in vGeneral I think)
@@ -199,10 +203,10 @@ for lib_string in modnames:
                             if key != 'A_AML' and key != 'post_smoothing' and key != 'lr':
                                 config_without_grid_search[key] = config_without_grid_search[key][0]
 
-            classTask = iFinalCurves(config_without_grid_search)
-            config_without_grid_search["ray"] = False
-            classTask.config_with_grid_search = config
-            #classTask.runRayTune(config_without_grid_search,root,task)
+            # classTask = iFinalCurves(config_without_grid_search)
+            # config_without_grid_search["ray"] = False
+            # classTask.config_with_grid_search = config
+            # classTask.runRayTune(config_without_grid_search,root,task)
 
         '''
         classTask = iResultsADMMLim_VS_APGMAP(config_without_grid_search)
@@ -211,5 +215,5 @@ for lib_string in modnames:
         '''
         #sys.stdout.close()
         #sys.stdout=stdoutOrigin
-    except:
-        print(lib_string + " did not work")
+    # except:
+    #     print(lib_string + " did not work")

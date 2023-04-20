@@ -475,7 +475,7 @@ class vGeneral(abc.ABC):
         except Exception as e:
             print('exception image: '+ str(e))
         '''
-        print("read from ", path)
+        # print("read from ", path)
         return image
 
     def norm_imag(self,img):
