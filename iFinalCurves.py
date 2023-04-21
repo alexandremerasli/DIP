@@ -629,8 +629,12 @@ class iFinalCurves(vGeneral):
             method_name = "nested"
 
         # nested reconstruction
-        if (method == 'nested_random_3_skip_10it'):
-            from all_config.nested_random_3_skip_10it import config_func_MIC
+        if ('nested_random' in method):
+            # from all_config.nested_random_3_skip_10it import config_func_MIC
+            # import_str = "from all_config." + method + " import config_func_MIC"
+            # exec(import_str,globals())
+            import importlib
+            globals().update(importlib.import_module('all_config.' + method).__dict__) 
             method_name = "nested"
 
         # Gong reconstruction
@@ -648,7 +652,10 @@ class iFinalCurves(vGeneral):
             from all_config.Gong_CT_3_skip import config_func_MIC
             method_name = "Gong"
 
-        config[method] = config_func_MIC()
+        try:
+            config[method] = config_func_MIC()
+        except:
+            config[method] = config_MIC
         config[method]["method"] = method_name
         return config[method]
 
@@ -680,7 +687,7 @@ class iFinalCurves(vGeneral):
                 #"nested_APPGML_subsets" : ['darkgreen','lime','gold','darkseagreen'],
                 "nested_APPGML" : ['darkgreen','lime','gold','darkseagreen'],
                 "nested_CT_skip" : ['red','saddlebrown','lightsalmon','peru','black','yellow','grey','orange'],
-                "nested_random_skip" : ['fuchsia'],
+                "nested_random_skip" : ['fuchsia','orange','darkgreen','lime'],
                 "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "BSREM" : ['grey'],
                 "OSEM" : ['orange'],
@@ -710,6 +717,9 @@ class iFinalCurves(vGeneral):
                 "nested_CT_0_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][6]],
                 "nested_CT_1_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][7]],
                 "nested_random_3_skip_10it" : [color_dict_after_MIC["nested_random_skip"][0]],
+                "nested_random_2_skip_10it" : [color_dict_after_MIC["nested_random_skip"][1]],
+                "nested_random_1_skip_10it" : [color_dict_after_MIC["nested_random_skip"][2]],
+                "nested_random_0_skip_10it" : [color_dict_after_MIC["nested_random_skip"][3]],
                 "DIPRecon_BSREM_stand" : [color_dict_after_MIC["DIPRecon"][0]],
                 "DIPRecon_CT_3_skip" : [color_dict_after_MIC["DIPRecon"][1]],
                 "DIPRecon_CT_2_skip" : [color_dict_after_MIC["DIPRecon"][2]],
@@ -771,6 +781,9 @@ class iFinalCurves(vGeneral):
                 "nested_CT_0_skip_10it" : [marker_dict["skip"][0]],
                 "nested_CT_1_skip_10it" : [marker_dict["skip"][0]],
                 "nested_random_3_skip_10it" : [marker_dict["skip"][0]],
+                "nested_random_2_skip_10it" : [marker_dict["skip"][0]],
+                "nested_random_1_skip_10it" : [marker_dict["skip"][0]],
+                "nested_random_0_skip_10it" : [marker_dict["skip"][0]],
                 "DIPRecon_BSREM_stand" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_CT_3_skip" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_CT_2_skip" : [marker_dict["DIPRecon"][0]],

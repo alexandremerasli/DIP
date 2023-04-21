@@ -6,7 +6,7 @@ from os import getcwd, makedirs
 from os.path import exists
 from functools import partial
 from ray import tune
-from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, mean, std
+from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, mean, std, sum
 from numpy import max as max_np
 from numpy import min as min_np
 from matplotlib.pyplot import imshow, figure, colorbar, savefig, title, gcf
@@ -49,7 +49,7 @@ class vGeneral(abc.ABC):
         # Initialize some parameters from config
         self.finetuning = config["finetuning"]
         self.all_images_DIP = config["all_images_DIP"]
-        self.phantom = config["image"]
+        # self.phantom = config["image"]
         self.net = config["net"]
         self.method = config["method"]
         self.processing_unit = config["processing_unit"]
@@ -61,7 +61,7 @@ class vGeneral(abc.ABC):
         self.castor_foms = config["castor_foms"]
         self.FLTNB = config["FLTNB"]
 
-        self.subroot_data = root + '/data/Algo/' # Directory root
+        # self.subroot_data = root + '/data/Algo/' # Directory root
         
         if (config["task"] != "show_metrics_results_already_computed_following_step"):
             # Initialize useful variables
@@ -74,9 +74,9 @@ class vGeneral(abc.ABC):
                 self.suffix_metrics = config["task"] + ' ' + self.suffix_metrics
 
 
-            # Define PET input dimensions according to input data dimensions
-            self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
-            self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
+            # # Define PET input dimensions according to input data dimensions
+            # self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+            # self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
             # Define ROIs for image0 phantom, otherwise it is already done in the database
             if (self.phantom == "image0" or self.phantom == "image2_0" and config["task"] != "show_metrics_results_already_computed"):
@@ -125,21 +125,21 @@ class vGeneral(abc.ABC):
         config["task"] = {'grid_search': [task]}
 
         if (self.ray): # Launch raytune
-            config_combination = 1
-            for i in range(len(config)): # List of hyperparameters keys is still in config dictionary
-                config_combination *= len(list(list(config.values())[i].values())[0])
-                config_combination *= len(list(list(config.values())[i].values())[0])
+            # config_combination = 1
+            # for i in range(len(config)): # List of hyperparameters keys is still in config dictionary
+            #     config_combination *= len(list(list(config.values())[i].values())[0])
+            #     config_combination *= len(list(list(config.values())[i].values())[0])
 
-            self.processing_unit = config["processing_unit"]
-            resources_per_trial = {"cpu": 1, "gpu": 0}
-            if self.processing_unit == 'CPU':
-                resources_per_trial = {"cpu": 1, "gpu": 0}
-            elif self.processing_unit == 'GPU':
-                resources_per_trial = {"cpu": 1, "gpu": 0}
-                #resources_per_trial = {"cpu": 0, "gpu": 0.1} # "gpu": 1 / config_combination
-                #resources_per_trial = {"cpu": 0, "gpu": 1} # "gpu": 1 / config_combination
-            elif self.processing_unit == 'both':
-                resources_per_trial = {"cpu": 10, "gpu": 1} # not efficient
+            # self.processing_unit = config["processing_unit"]
+            # resources_per_trial = {"cpu": 1, "gpu": 0}
+            # if self.processing_unit == 'CPU':
+            #     resources_per_trial = {"cpu": 1, "gpu": 0}
+            # elif self.processing_unit == 'GPU':
+            #     resources_per_trial = {"cpu": 1, "gpu": 0}
+            #     #resources_per_trial = {"cpu": 0, "gpu": 0.1} # "gpu": 1 / config_combination
+            #     #resources_per_trial = {"cpu": 0, "gpu": 1} # "gpu": 1 / config_combination
+            # elif self.processing_unit == 'both':
+            #     resources_per_trial = {"cpu": 10, "gpu": 1} # not efficient
 
             #reporter = CLIReporter(
             #    parameter_columns=['lr'],
@@ -154,6 +154,18 @@ class vGeneral(abc.ABC):
             #init(log_to_driver=False) # Remove logs stored by raytune, but also from terminal...
             #tune.run(partial(self.do_everything,root=root,suffix_replicate_file = True), config=config,local_dir = getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
             reporter = ExperimentTerminationReporter()
+            
+            self.subroot_data = root + '/data/Algo/' # Directory root
+            self.phantom = config["image"]
+            # Define PET input dimensions according to input data dimensions
+            self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+            self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
+
+            
+            self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            
+            
             tune.run(partial(self.do_everything,root=root,only_suffix_replicate_file = only_suffix_replicate_file), config=config,local_dir = getcwd() + '/runs', progress_reporter = reporter)
         else: # Without raytune
             # Remove grid search if not using ray and choose first element of each config key.
@@ -722,6 +734,9 @@ class vGeneral(abc.ABC):
         colorbar()
         #axis('off')
         #show()
+
+        if (isnan(sum(image))):
+            raise ValueError("NaNs detected in image. Stopping computation")
 
         # Saving this figure locally
         Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)

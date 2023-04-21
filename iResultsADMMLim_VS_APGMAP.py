@@ -44,8 +44,8 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             self.image_gt = self.image_gt.astype(np.float64)
 
         # Defining ROIs
-        self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-        self.phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        # self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        # self.phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
         self.phantom_ROI = (self.phantom_ROI).astype(np.int)
         # Metrics arrays
         '''
@@ -176,7 +176,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             # if len(nan_replicates) > 0:
             #     raise ValueError("naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan",nan_replicates)
 
-            nb_usable_replicates = self.nb_replicates - len(nan_replicates)
+            self.nb_usable_replicates = self.nb_replicates - len(nan_replicates)
             f /= self.nb_usable_replicates
             f_init_avg /= self.nb_usable_replicates
 

@@ -95,3 +95,5 @@ def config_func_MIC():
     config = {**settings_config, **fixed_config, **hyperparameters_config, **split_config}
 
     return config
+
+config_MIC = config_func_MIC()
