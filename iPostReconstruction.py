@@ -111,7 +111,6 @@ class iPostReconstruction(vDenoising):
         classResults.writeBeginningImages(self.suffix,self.image_net_input)
         classResults.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
         classResults.image_corrupt = self.image_corrupt
-
         # Train model using previously trained network (at iteration before)
        
        
@@ -194,7 +193,7 @@ class iPostReconstruction(vDenoising):
                 classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch,classResults.IR_bkg_recon,self.phantom)
                 classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[epoch], epoch+1)
                 # Compute IR in whole phantom (different from others with several replicates)
-                classResults.compute_IR_whole(self.PETImage_shape,self.f,self.global_it,classResults.IR_whole_recon,self.phantom)
+                classResults.compute_IR_whole(self.PETImage_shape,out_descale,self.global_it,classResults.IR_whole_recon,self.phantom)
                 classResults.writer.add_scalar('Image roughness in the phantom', classResults.IR_whole_recon[self.global_it], self.global_it+1)
                 # Write images over epochs
             classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")

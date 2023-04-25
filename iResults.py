@@ -44,6 +44,14 @@ class iResults(vDenoising):
         if config["FLTNB"] == "double":
             self.image_gt = self.image_gt.astype(np.float64)
 
+        # # Loading attenuation map
+        # image_atn = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type_im='<f')
+        # self.write_image_tensorboard(self.writer,image_atn,"Attenuation map (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # Attenuation map in tensorboard
+    
+        # # Loading MR-like image
+        # image_mr = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw',shape=(self.PETImage_shape),type_im='<f')
+        # self.write_image_tensorboard(self.writer,image_atn,"Attenuation map (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # Attenuation map in tensorboard
+
         '''
         image = self.image_gt
         image = image[20,:,:]
@@ -100,6 +108,9 @@ class iResults(vDenoising):
                 self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d')
             #self.image_corrupt = self.fijii_np("/home/meraslia/workspace_reco/nested_admm/data/Algo/image4_0/replicate_10/nested/Block2/config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=14_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=1_mlem_=False_A_AML=-100/x_label/24/" + "-1_x_labelconfig_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=14_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=1_mlem_=False_A_AML=-100.img",shape=(self.PETImage_shape))
 
+        PSNR_corrupt = peak_signal_noise_ratio(self.image_gt, self.image_corrupt, data_range=np.amax(self.image_corrupt) - np.amin(self.image_corrupt)) # PSNR with true values
+        SSIM_corrupt = structural_similarity(np.squeeze(self.image_gt), np.squeeze(self.image_corrupt), data_range=(self.image_corrupt).max() - (self.image_corrupt).min())
+
         if ('Gong' in config["method"] or 'nested' in config["method"]):
             self.i_init = 0
 
@@ -107,7 +118,9 @@ class iResults(vDenoising):
         if (self.tensorboard):
             self.write_image_tensorboard(self.writer,self.image_gt,"Ground Truth (emission map)",suffix,self.image_gt,0,full_contrast=True) # Ground truth in tensorboard
             if (image_net_input is not None):
-                self.write_image_tensorboard(self.writer,image_net_input,"DIP input (FULL CONTRAST)",suffix,image_net_input,0,full_contrast=True) # DIP input in tensorboard
+                image_net_input_reversed = np.max(image_net_input) - image_net_input
+                # image_net_input_reversed = image_net_input
+                self.write_image_tensorboard(self.writer,image_net_input_reversed,"DIP input (FULL CONTRAST)",suffix,image_net_input_reversed,0,full_contrast=True) # DIP input in tensorboard
 
     def writeCorruptedImage(self,i,max_iter,x_label,suffix,pet_algo,iteration_name='iterations'):
         if (self.tensorboard):
@@ -144,7 +157,12 @@ class iResults(vDenoising):
             self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
             self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
         else:
-            self.writeBeginningImages(self.suffix) # Write GT
+            # self.writeBeginningImages(self.suffix) # Write GT
+            if (not hasattr(self,"image_net_input")):
+                self.input = config["input"]
+                self.override_input = False
+                self.image_net_input = self.load_input(self.net,self.PETImage_shape,self.subroot_data) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
+            self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
 
         if (self.FLTNB == 'float'):
             type_im = '<f'
@@ -345,16 +363,16 @@ class iResults(vDenoising):
                     self.compute_IR_bkg(self.PETImage_shape,f_p,int((i-self.i_init)),self.IR_bkg_recon,self.phantom)
                     self.compute_IR_whole(self.PETImage_shape,f_p,int((i-self.i_init)),self.IR_whole_recon,self.phantom)
 
-                    # Nested ADMM stopping criterion
-                    if('nested' in config["method"]):
-                        if (self.IR_whole_recon[int((i-self.i_init))]> self.IR_ref[0]): # > 1.604):# > self.IR_ref[0]):
-                            print("Nested ADMM stopping criterion reached")
-                            self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
-                            stopping_criterion_file = open(self.path_stopping_criterion, "w")
-                            stopping_criterion_file.write("stopping iteration :" + "\n")
-                            stopping_criterion_file.write(str(i) + "\n")
-                            stopping_criterion_file.close()
-                            return 1
+                    # # Nested ADMM stopping criterion
+                    # if('nested' in config["method"]):
+                    #     if (self.IR_whole_recon[int((i-self.i_init))]> self.IR_ref[0]): # > 1.604):# > self.IR_ref[0]):
+                    #         print("Nested ADMM stopping criterion reached")
+                    #         self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
+                    #         stopping_criterion_file = open(self.path_stopping_criterion, "w")
+                    #         stopping_criterion_file.write("stopping iteration :" + "\n")
+                    #         stopping_criterion_file.write(str(i) + "\n")
+                    #         stopping_criterion_file.close()
+                    #         return 1
 
                     # Specific average for IR
                     if (config["average_replicates"] == False and p == self.replicate):
@@ -408,6 +426,7 @@ class iResults(vDenoising):
         #print('Dif for PSNR calculation',np.amax(image_recon_cropped) - np.amin(image_recon_cropped),' , must be as small as possible')
 
         # PSNR calculation
+        PSNR_whole = peak_signal_noise_ratio(image_gt, image_recon, data_range=np.amax(image_recon_cropped) - np.amin(image_recon_cropped)) # PSNR with true values
         PSNR_recon[i] = peak_signal_noise_ratio(image_gt_cropped, image_recon_cropped, data_range=np.amax(image_recon_cropped) - np.amin(image_recon_cropped)) # PSNR with true values
         PSNR_norm_recon[i] = peak_signal_noise_ratio(image_gt_norm,image_recon_norm) # PSNR with scaled values [0-1]
         #print('PSNR calculation', PSNR_norm_recon[i],' , must be as high as possible')

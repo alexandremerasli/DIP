@@ -9,7 +9,7 @@ from ray import tune
 from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, mean, std, sum
 from numpy import max as max_np
 from numpy import min as min_np
-from matplotlib.pyplot import imshow, figure, colorbar, savefig, title, gcf
+from matplotlib.pyplot import imshow, figure, colorbar, savefig, title, gcf, axis
 from re import split, findall, compile
 
 import abc
@@ -49,7 +49,7 @@ class vGeneral(abc.ABC):
         # Initialize some parameters from config
         self.finetuning = config["finetuning"]
         self.all_images_DIP = config["all_images_DIP"]
-        # self.phantom = config["image"]
+        self.phantom = config["image"]
         self.net = config["net"]
         self.method = config["method"]
         self.processing_unit = config["processing_unit"]
@@ -61,7 +61,7 @@ class vGeneral(abc.ABC):
         self.castor_foms = config["castor_foms"]
         self.FLTNB = config["FLTNB"]
 
-        # self.subroot_data = root + '/data/Algo/' # Directory root
+        self.subroot_data = root + '/data/Algo/' # Directory root
         
         if (config["task"] != "show_metrics_results_already_computed_following_step"):
             # Initialize useful variables
@@ -74,9 +74,9 @@ class vGeneral(abc.ABC):
                 self.suffix_metrics = config["task"] + ' ' + self.suffix_metrics
 
 
-            # # Define PET input dimensions according to input data dimensions
-            # self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
-            # self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
+            # Define PET input dimensions according to input data dimensions
+            self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+            self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
             # Define ROIs for image0 phantom, otherwise it is already done in the database
             if (self.phantom == "image0" or self.phantom == "image2_0" and config["task"] != "show_metrics_results_already_computed"):
@@ -156,7 +156,10 @@ class vGeneral(abc.ABC):
             reporter = ExperimentTerminationReporter()
             
             self.subroot_data = root + '/data/Algo/' # Directory root
-            self.phantom = config["image"]
+            try:
+                self.phantom = config["image"]
+            except:
+                self.phantom = "image40_0"
             # Define PET input dimensions according to input data dimensions
             self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
             self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
@@ -185,6 +188,22 @@ class vGeneral(abc.ABC):
                                 config["mlem_sequence"] = False
             else:
                 config["task"] = task
+            
+            self.subroot_data = root + '/data/Algo/' # Directory root
+            try:
+                self.phantom = config["image"]
+            except:
+                self.phantom = "image40_0"
+            # Define PET input dimensions according to input data dimensions
+            self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+            self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
+
+            
+            self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            
+            
+            
             # Launch computation
             self.do_everything(config,root,only_suffix_replicate_file = only_suffix_replicate_file)
 
@@ -731,17 +750,20 @@ class vGeneral(abc.ABC):
             imshow(image, cmap='gray_r',vmin=min_np(image),vmax=max_np(image)) # Showing each image with maximum contrast and white is zero (gray_r) 
         else:
             imshow(image, cmap='gray_r',vmin=min_np(image_gt),vmax=1.25*max_np(image_gt)) # Showing all images with same contrast and white is zero (gray_r)
-        colorbar()
-        #axis('off')
+        # colorbar()
+        axis('off')
         #show()
 
-        if (isnan(sum(image))):
-            raise ValueError("NaNs detected in image. Stopping computation")
+        # if (isnan(sum(image))):
+        #     raise ValueError("NaNs detected in image. Stopping computation (" + "replicate_" + str(i) + "/" + suffix + ")")
 
         # Saving this figure locally
         Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
         #system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
         from textwrap import wrap
+        import matplotlib.pyplot as plt
+        plt.tight_layout()
+        plt.rcParams['figure.figsize'] = 10, 10
         savefig(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
 
         # added line for small title of interest
