@@ -17,7 +17,9 @@ from ray import tune
 import importlib
 # config_files = ["nested_random_3_skip_10it", "nested_CT_2_skip_10it", "nested_CT_1_skip_10it"]
 config_files = ["Gong_CT_1_skip", "Gong_CT_2_skip"]#, "Gong_CT_3_skip"]
-config_files = ["Gong_CT_3_skip"]
+config_files = ["Gong_CT_3_skip","Gong_CT_1_skip","Gong_CT_2_skip"]
+config_files = ["Gong_CT_1_skip","Gong_CT_2_skip"]
+config_files = ['nested_ADMMLim_more_ADMMLim_it_10_configuration']
 
 # config_files = [f[:-3] for f in os.listdir('all_config') if os.path.isfile(os.path.join('all_config', f))]
 
@@ -26,7 +28,8 @@ for lib_string in config_files:
     if (True):
         lib = importlib.import_module('all_config.' + lib_string)
         config = lib.config_func_MIC()
-        config["image"] = tune.grid_search(['image40_0'])
+        # config["image"] = tune.grid_search(['image40_0'])
+        config["image"] = 'image40_0'
         config["replicates"] = tune.grid_search(list(range(1,40+1)))
         config["max_iter"] = tune.grid_search([98])
         config["ray"] = True
