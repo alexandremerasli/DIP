@@ -29,6 +29,7 @@ data/Algo/replicates_*
 data/Algo/debug/
 
 models/__pycache__/
+all_config/__pycache__/
 
 runs (copy)/
 runs/

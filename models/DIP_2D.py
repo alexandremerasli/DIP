@@ -9,7 +9,7 @@ from iWMV import iWMV
 
 class DIP_2D(LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, last_iter):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, last_iter, override_input):
         super().__init__()
 
         #'''
@@ -32,7 +32,13 @@ class DIP_2D(LightningModule):
         self.global_it = global_it
         self.param1_scale_im_corrupt = param1_scale_im_corrupt
         self.param2_scale_im_corrupt = param2_scale_im_corrupt
+
+        self.fixed_hyperparameters_list = fixed_hyperparameters_list
+        self.hyperparameters_list = hyperparameters_list
+        self.scaling_input = scaling_input
+        self.debug = debug
         self.subroot = subroot
+        self.root = root
         self.config = config
         self.experiment = config["experiment"]
         '''
@@ -43,19 +49,11 @@ class DIP_2D(LightningModule):
         self.stagnate = 0
         '''
         self.DIP_early_stopping = config["DIP_early_stopping"]
-        self.classWMV = iWMV(config)
+        self.override_input = override_input
+        
+        # Initialize early stopping method if asked for
         if(self.DIP_early_stopping):
-            
-            self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
-            self.classWMV.hyperparameters_list = hyperparameters_list
-            self.classWMV.debug = debug
-            self.classWMV.param1_scale_im_corrupt = param1_scale_im_corrupt
-            self.classWMV.param2_scale_im_corrupt = param2_scale_im_corrupt
-            self.classWMV.scaling_input = scaling_input
-            self.classWMV.suffix = suffix
-            self.classWMV.global_it = global_it
-            # Initialize variables
-            self.classWMV.do_everything(config,root)
+            self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root)
 
         self.write_current_img_mode = True
         #self.suffix = self.suffix_func(config,hyperparameters_list)
@@ -195,13 +193,13 @@ class DIP_2D(LightningModule):
         else:
             out = self.deep5(out)
         out = self.up2(out)
-        if (self.skip >= 2):
+        if (self.skip >= 2): # or self.override_input):
             out_skip2 = out2 + out
             out = self.deep6(out_skip2)
         else:
             out = self.deep6(out)
         out = self.up3(out)
-        if (self.skip >= 3):
+        if (self.skip >= 3): # or self.override_input):
             out_skip3 = out1 + out
             out = self.deep7(out_skip3)
         else:
@@ -237,26 +235,7 @@ class DIP_2D(LightningModule):
         self.logger.experiment.add_scalar('loss', loss,self.current_epoch)        
 
         # WMV
-        self.log("SUCCESS", int(self.classWMV.SUCCESS))
-        if (self.DIP_early_stopping):
-            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out.detach().numpy(),self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
-            self.VAR_recon = self.classWMV.VAR_recon
-            self.MSE_WMV = self.classWMV.MSE_WMV
-            self.PSNR_WMV = self.classWMV.PSNR_WMV
-            self.SSIM_WMV = self.classWMV.SSIM_WMV
-            self.epochStar = self.classWMV.epochStar
-            '''
-            if self.EMV_or_WMV == "EMV":
-                self.alpha_EMV = self.classWMV.alpha_EMV
-            else:
-                self.windowSize = self.classWMV.windowSize
-            '''
-            self.patienceNumber = self.classWMV.patienceNumber
-            self.SUCCESS = self.classWMV.SUCCESS
-
-            if self.SUCCESS:
-                print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
-        
+        self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root)
         return loss
 
     def configure_optimizers(self):
@@ -295,16 +274,7 @@ class DIP_2D(LightningModule):
         except:
             out_np = out.cpu().detach().numpy()[0,0,:,:]
 
-
-
-        
-        '''
-        import matplotlib.pyplot as plt
-        plt.imshow(out.cpu().detach().numpy()[0,0,:,:],cmap='gray')
-        plt.colorbar()
-        plt.show()
-        '''
-        print(self.last_iter)
+        print("self.current_epoch",self.current_epoch)
         self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
@@ -322,3 +292,42 @@ class DIP_2D(LightningModule):
         fp=open(name,'wb')
         img.tofile(fp)
         print('Succesfully save in:', name)
+
+    def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root):
+        self.classWMV = iWMV(config)            
+        self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
+        self.classWMV.hyperparameters_list = hyperparameters_list
+        self.classWMV.debug = debug
+        self.classWMV.param1_scale_im_corrupt = param1_scale_im_corrupt
+        self.classWMV.param2_scale_im_corrupt = param2_scale_im_corrupt
+        self.classWMV.scaling_input = scaling_input
+        self.classWMV.suffix = suffix
+        self.classWMV.global_it = global_it
+        # Initialize variables
+        self.classWMV.do_everything(config,root)
+
+    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root):
+        if (self.DIP_early_stopping):
+            self.SUCCESS = self.classWMV.SUCCESS
+            self.log("SUCCESS", int(self.classWMV.SUCCESS))
+
+            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out.detach().numpy(),self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
+            self.VAR_recon = self.classWMV.VAR_recon
+            self.MSE_WMV = self.classWMV.MSE_WMV
+            self.PSNR_WMV = self.classWMV.PSNR_WMV
+            self.SSIM_WMV = self.classWMV.SSIM_WMV
+            self.epochStar = self.classWMV.epochStar
+            '''
+            if self.EMV_or_WMV == "EMV":
+                self.alpha_EMV = self.classWMV.alpha_EMV
+            else:
+                self.windowSize = self.classWMV.windowSize
+            '''
+            self.patienceNumber = self.classWMV.patienceNumber
+
+            if self.SUCCESS:
+                print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
+                self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root)
+        
+        else:
+            self.log("SUCCESS", int(False))

@@ -157,7 +157,8 @@ class vGeneral(abc.ABC):
             
             self.subroot_data = root + '/data/Algo/' # Directory root
             try:
-                self.phantom = config["image"]
+                self.phantom = "image40_0"
+                # self.phantom = config["image"]
             except:
                 self.phantom = "image40_0"
             # Define PET input dimensions according to input data dimensions

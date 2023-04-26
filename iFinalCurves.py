@@ -655,6 +655,9 @@ class iFinalCurves(vGeneral):
         try:
             config[method] = config_func_MIC()
         except:
+            import importlib
+            globals().update(importlib.import_module('all_config.' + method).__dict__) 
+            method_name = "nested"
             config[method] = config_MIC
         config[method]["method"] = method_name
         return config[method]
@@ -686,7 +689,7 @@ class iFinalCurves(vGeneral):
                 #"nested_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
                 #"nested_APPGML_subsets" : ['darkgreen','lime','gold','darkseagreen'],
                 "nested_APPGML" : ['darkgreen','lime','gold','darkseagreen'],
-                "nested_CT_skip" : ['red','saddlebrown','lightsalmon','peru','black','yellow','grey','orange'],
+                "nested_CT_skip" : ['red','saddlebrown','lightsalmon','peru','black','yellow','grey','lime'],
                 "nested_random_skip" : ['fuchsia','orange','darkgreen','lime'],
                 "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "BSREM" : ['grey'],
@@ -696,6 +699,7 @@ class iFinalCurves(vGeneral):
             }
             color_dict_add_tests = {
                 "nested" : ['black'], # 3 it
+                "nested_skip1_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][3]],
                 "nested_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["nested_ADMMLim"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_30" : [color_dict_after_MIC["nested_ADMMLim"][1]],
                 "nested_ADMMLim_more_ADMMLim_it_80" : [color_dict_after_MIC["nested_ADMMLim"][2]],
@@ -760,6 +764,7 @@ class iFinalCurves(vGeneral):
             }
             marker_dict_supp = {
                 "nested" : [marker_dict["ADMMLim"][0]], # 3 it
+                "nested_skip1_3_my_settings" : [marker_dict["ADMMLim"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_10" : [marker_dict["ADMMLim"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_30" : [marker_dict["ADMMLim"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_80" : [marker_dict["ADMMLim"][0]],
