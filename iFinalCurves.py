@@ -30,9 +30,6 @@ class iFinalCurves(vGeneral):
         # Plot APGMAP vs ADMMLim (True)
         APGMAP_vs_ADMMLim = False
 
-        # Plot tradeoff with SSIM (False) or AR (True)
-        quantitative_tradeoff = True
-
         # Convert Gong to DIPRecon
         DIPRecon = False
         for i in range(len(method_list)):
@@ -85,15 +82,17 @@ class iFinalCurves(vGeneral):
         'size'   : 14}
         matplotlib.rc('font', **font)
 
-        if (quantitative_tradeoff):
-            if (self.phantom == "image2_0"):
-                ROI_list = ['cold','hot']
-            elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
-                ROI_list = ['cold','hot_TEP','hot_TEP_match_square_recon','hot_perfect_match_recon']
-        else:
-            ROI_list = ['phantom']
-        #for ROI in ['cold','hot']: #image2_0
+        if (self.phantom == "image2_0"):
+            ROI_list = ['cold','hot','phantom']
+        elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
+            ROI_list = ['cold','hot_TEP','hot_TEP_match_square_recon','hot_perfect_match_recon','phantom']
+
         for ROI in ROI_list:
+            # Plot tradeoff with SSIM (set quantitative_tradeoff is False) or AR (set quantitative_tradeoff to True)
+            if ROI == 'phantom':
+                quantitative_tradeoff = False
+            else:
+                quantitative_tradeoff = True
             # Initialize 3 figures
             fig, ax = [None] * 3, [None] * 3
             for fig_nb in range(3):
@@ -316,8 +315,11 @@ class iFinalCurves(vGeneral):
                                 if (variance_plot):
                                     ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
                                 ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)')
-                                ax[fig_nb].set_ylabel('Activity Recovery (AR) (%) ')
-                                #ax[fig_nb].set_ylabel(('Bias ')
+                                if 'cold' in ROI:
+                                    ax[fig_nb].set_ylabel('Bias ')
+                                else:
+                                    ax[fig_nb].set_ylabel('Activity Recovery (AR) (%) ')
+                                
                                 #ax[fig_nb].set_title('AR ' + 'in ' + ROI + ' region vs IR in background (with iterations)')
                             #'''
                             if (fig_nb == 1):
@@ -339,7 +341,10 @@ class iFinalCurves(vGeneral):
                                     #ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx]))*self.i_init, avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_') # if 1 out of i_init iterations was saved
                                     ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])), avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_')
                                 ax[fig_nb].set_xlabel('Iterations')
-                                ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '))
+                                if 'cold' in ROI:
+                                    ax[fig_nb].set_ylabel('Bias ')
+                                else:
+                                    ax[fig_nb].set_ylabel('Activity Recovery (AR) (%) ')
                                 #ax[fig_nb].set_ylabel(('Bias ')
                                 '''
                                 if len(method_list) == 1:
@@ -377,8 +382,8 @@ class iFinalCurves(vGeneral):
                                 #'''
                             else:
                                 print(method,color_dict[method])
-                                #ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],linewidth=4,color=color_dict[method][other_dim_idx])#'-o',)
-                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,5).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,5).astype(int)],'-o',linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
+                                # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,30).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,30).astype(int)],'-o',linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
+                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:],'-o',linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
                                 # unnested
                                 plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'D',markersize=10, mfc='none',color=color_dict[method][other_dim_idx],label='_nolegend_')
                                 plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],marker='D',markersize=9,color='white',label='_nolegend_')
@@ -418,13 +423,19 @@ class iFinalCurves(vGeneral):
                                 else:
                                     replicates_legend[fig_nb].append(method)
                         ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)')
-                        ax[fig_nb].set_ylabel(('Activity Recovery (AR) (%) '))
+                        if 'cold' in ROI:
+                            ax[fig_nb].set_ylabel('Bias ')
+                        else:
+                            ax[fig_nb].set_ylabel('Activity Recovery (AR) (%) ')
                         #ax[fig_nb].set_ylabel(('Bias '))
                         #ax[fig_nb].set_title(('AR ') + 'in ' + ROI + ' region vs IR in background (at convergence)')
                     #'''
 
                     if (method == method_list[-1]):
-                        if ROI == ROI_list[-2]: # if legend is needed only in one ROI
+                        if (quantitative_tradeoff): # AR
+                            # if ROI == ROI_list[-2]: # if legend is needed only in one ROI
+                            ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
+                        else: # SSIM
                             ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
 
             # Saving figures locally in png
@@ -435,7 +446,10 @@ class iFinalCurves(vGeneral):
                 else:
                     pretitle = str(method_list)
                 if (quantitative_tradeoff):
-                    metric_AR_or_SSIM = 'AR'
+                    if ('cold' in ROI):
+                        metric_AR_or_SSIM = 'bias'
+                    else:
+                        metric_AR_or_SSIM = 'AR'
                 else:
                     metric_AR_or_SSIM = 'SSIM'
                 if (fig_nb == 0):
@@ -700,6 +714,7 @@ class iFinalCurves(vGeneral):
             color_dict_add_tests = {
                 "nested" : ['black'], # 3 it
                 "nested_skip1_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][3]],
+                "nested_skip2_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][2]],
                 "nested_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["nested_ADMMLim"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_30" : [color_dict_after_MIC["nested_ADMMLim"][1]],
                 "nested_ADMMLim_more_ADMMLim_it_80" : [color_dict_after_MIC["nested_ADMMLim"][2]],
@@ -765,6 +780,7 @@ class iFinalCurves(vGeneral):
             marker_dict_supp = {
                 "nested" : [marker_dict["ADMMLim"][0]], # 3 it
                 "nested_skip1_3_my_settings" : [marker_dict["ADMMLim"][0]],
+                "nested_skip2_3_my_settings" : [marker_dict["ADMMLim"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_10" : [marker_dict["ADMMLim"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_30" : [marker_dict["ADMMLim"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_80" : [marker_dict["ADMMLim"][0]],
@@ -891,7 +907,7 @@ class iFinalCurves(vGeneral):
                 #metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
                 metrics = MA_cold_recon
         else:
-            metrics = self.SSIM_recon
+            metrics = SSIM_recon
         # Keep useful information to plot from metrics                
         IR_final = IR_bkg_recon
         metrics_final = metrics
