@@ -55,6 +55,8 @@ class iFinalCurves(vGeneral):
             config[method]["image"] = {'grid_search': [config_all_methods["image"]]}
             # Initialize config files with good replicates
             config[method]["replicates"] = {'grid_search': config_all_methods["replicates"]}
+            # Initialize config files with number of iterations
+            config[method]["max_iter"] = {'grid_search': [config_all_methods["max_iter"]]}
             # Launch task to write suffix and replicate files
             config_tmp = dict(config[method])
             config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
@@ -109,8 +111,8 @@ class iFinalCurves(vGeneral):
                 else:
                     self.i_init = 1
 
-                if ('Gong' in method or 'nested' in method):
-                    self.i_init = 1
+                # if ('Gong' in method or 'nested' in method):
+                #     self.i_init = 1 # 0 will take last value as first...
 
                 # Initialize variables
                 suffixes = []
@@ -382,8 +384,8 @@ class iFinalCurves(vGeneral):
                                 #'''
                             else:
                                 print(method,color_dict[method])
-                                # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,30).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,30).astype(int)],'-o',linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
-                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:],'-o',linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
+                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,5).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,5).astype(int)],'-o',linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
+                                # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:],'-o',linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
                                 # unnested
                                 plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'D',markersize=10, mfc='none',color=color_dict[method][other_dim_idx],label='_nolegend_')
                                 plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],marker='D',markersize=9,color='white',label='_nolegend_')
@@ -433,8 +435,8 @@ class iFinalCurves(vGeneral):
 
                     if (method == method_list[-1]):
                         if (quantitative_tradeoff): # AR
-                            # if ROI == ROI_list[-2]: # if legend is needed only in one ROI
-                            ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
+                            if ROI == ROI_list[-2]: # if legend is needed only in one ROI
+                                ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
                         else: # SSIM
                             ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
 
