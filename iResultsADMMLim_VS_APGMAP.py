@@ -234,6 +234,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
 
         for IR_common in [11,13,23,30]:
             IR_min = np.inf
+            SSIM_min = np.inf
             i_min = self.total_nb_iter
             
             # Show image with IR = 30%
@@ -247,19 +248,11 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                     # Compute IR metric for first replicate
                     self.compute_IR_bkg(self.PETImage_shape,self.f_p,i-i_init,self.IR_bkg_recon,self.phantom)
                     IR = self.IR_bkg_recon[i-i_init]
-
-                    print("i",i)
-                    print("IR = ",IR)
-                    '''
-                    print(IR < IR_common/100)
-                    print(IR_common)
-                    if (IR_common == 23):
-                        raise ValueError("IR_commons")
-                    '''
+                    # Check if IR is the minimum observed for now
                     if (IR < IR_min):
                         IR_min = IR
                         i_min = i
-
+                        SSIM_min = structural_similarity(np.squeeze(self.image_gt*self.phantom_ROI), np.squeeze(self.f_p*self.phantom_ROI), data_range=(self.f_p*self.phantom_ROI).max() - (self.f_p*self.phantom_ROI).min())
                     
                     if (IR < IR_common/100):
                         print("IR = ",IR)
@@ -271,11 +264,13 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                         self.compute_IR_bkg(self.PETImage_shape,self.f_p,i-i_init,self.IR_bkg_recon,self.phantom)
                         IR = self.IR_bkg_recon[i-i_init]
                         i = i_min
+                        # Compute SSIM
+                        SSIM_min = structural_similarity(np.squeeze(self.image_gt*self.phantom_ROI), np.squeeze(self.f_p*self.phantom_ROI), data_range=(self.f_p*self.phantom_ROI).max() - (self.f_p*self.phantom_ROI).min())
                         break
 
             # Save images 
-            self.write_image_tensorboard(self.writer,self.f_p,self.method + " at IR=" + str(int(round(IR,2)*100)) + "%, for replicate 1, it=" + str(i),self.suffix,self.image_gt,0) # image at IR=30% in tensorboard
-            self.write_image_tensorboard(self.writer,self.f_p,self.method + " at IR=" + str(int(round(IR,2)*100)) + ", for replicate 1, it=" + str(i) + " (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # image at IR=30% in tensorboard
+            self.write_image_tensorboard(self.writer,self.f_p,self.method + " at IR=" + str(int(round(IR,2)*100)) + "%, for replicate 1, it=" + str(i) + ", SSIM=" + str(round(SSIM_min,3)),self.suffix,self.image_gt,0) # image at IR=30% in tensorboard
+            self.write_image_tensorboard(self.writer,self.f_p,self.method + " at IR=" + str(int(round(IR,2)*100)) + ", for replicate 1, it=" + str(i) + ", SSIM=" + str(round(SSIM_min,3)) + " (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # image at IR=30% in tensorboard
  
     def compareImages(self,suffix):
         if (self.tensorboard):
