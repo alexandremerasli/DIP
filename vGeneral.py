@@ -762,9 +762,14 @@ class vGeneral(abc.ABC):
         Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
         #system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
         from textwrap import wrap
-        import matplotlib.pyplot as plt
-        plt.tight_layout()
-        plt.rcParams['figure.figsize'] = 10, 10
+        MIC_show = False
+        if (MIC_show):
+            import matplotlib.pyplot as plt
+            plt.tight_layout()
+            plt.rcParams['figure.figsize'] = 10, 10
+        else:
+            colorbar()
+            axis('off')
         savefig(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
 
         # added line for small title of interest

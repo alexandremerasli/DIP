@@ -108,9 +108,15 @@ class iResults(vDenoising):
                 self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d')
             #self.image_corrupt = self.fijii_np("/home/meraslia/workspace_reco/nested_admm/data/Algo/image4_0/replicate_10/nested/Block2/config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=14_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=1_mlem_=False_A_AML=-100/x_label/24/" + "-1_x_labelconfig_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=14_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=1_mlem_=False_A_AML=-100.img",shape=(self.PETImage_shape))
 
-        PSNR_corrupt = peak_signal_noise_ratio(self.image_gt, self.image_corrupt, data_range=np.amax(self.image_corrupt) - np.amin(self.image_corrupt)) # PSNR with true values
-        SSIM_corrupt = structural_similarity(np.squeeze(self.image_gt), np.squeeze(self.image_corrupt), data_range=(self.image_corrupt).max() - (self.image_corrupt).min())
-
+        self.image_gt = self.image_gt / np.max(self.image_gt) * 255
+        self.image_gt = self.image_gt.astype(np.int8)
+        self.image_corrupt = self.image_corrupt / np.max(self.image_corrupt) * 255
+        self.image_corrupt = self.image_corrupt.astype(np.int8)
+        
+        # PSNR_corrupt = peak_signal_noise_ratio(self.image_gt, self.image_corrupt, data_range=np.amax(self.image_corrupt) - np.amin(self.image_corrupt)) # PSNR with true values
+        # SSIM_corrupt = structural_similarity(np.squeeze(self.image_gt), np.squeeze(self.image_corrupt), data_range=(self.image_corrupt).max() - (self.image_corrupt).min())
+        # from utils.mssim import ssimc
+        # SSIM_corrupt = ssimc(np.squeeze(self.image_gt), np.squeeze(self.image_corrupt),1, 1, 1)
         if ('Gong' in config["method"] or 'nested' in config["method"]):
             self.i_init = 0
 
@@ -432,7 +438,7 @@ class iResults(vDenoising):
         #print('PSNR calculation', PSNR_norm_recon[i],' , must be as high as possible')
 
         # MSE calculation
-        MSE_recon[i] = np.mean((image_gt - image_recon)**2)
+            
         """
         if (i >=80):
             plt.figure()
@@ -446,7 +452,13 @@ class iResults(vDenoising):
         #print('MSE phantom gt', MSE_recon[i],' , must be as small as possible')
         
         # SSIM calculation
+        '''
+        To match the implementation of Wang et al. [1]_, set `gaussian_weights`
+        to True, `sigma` to 1.5, `use_sample_covariance` to False, and
+        specify the `data_range` argument.
+        '''
         SSIM_recon[i] = structural_similarity(np.squeeze(image_gt_cropped), np.squeeze(image_recon_cropped), data_range=(image_recon_cropped).max() - (image_recon_cropped).min())
+        SSIM_recon[i] = structural_similarity(np.squeeze(image_gt_cropped), np.squeeze(image_recon_cropped), data_range=(image_recon_cropped).max() - (image_recon_cropped).min(), sigma=1.5, gaussian_weights=True, use_sample_covariance=False)
         #print('SSIM calculation', SSIM_recon[i],' , must be close to 1')
 
         # Contrast Recovery Coefficient calculation    
