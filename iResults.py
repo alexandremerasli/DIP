@@ -110,8 +110,9 @@ class iResults(vDenoising):
 
         self.image_gt = self.image_gt / np.max(self.image_gt) * 255
         self.image_gt = self.image_gt.astype(np.int8)
-        self.image_corrupt = self.image_corrupt / np.max(self.image_corrupt) * 255
-        self.image_corrupt = self.image_corrupt.astype(np.int8)
+        if (hasattr(self,'image_corrupt')):
+            self.image_corrupt = self.image_corrupt / np.max(self.image_corrupt) * 255
+            self.image_corrupt = self.image_corrupt.astype(np.int8)
         
         # PSNR_corrupt = peak_signal_noise_ratio(self.image_gt, self.image_corrupt, data_range=np.amax(self.image_corrupt) - np.amin(self.image_corrupt)) # PSNR with true values
         # SSIM_corrupt = structural_similarity(np.squeeze(self.image_gt), np.squeeze(self.image_corrupt), data_range=(self.image_corrupt).max() - (self.image_corrupt).min())
@@ -164,11 +165,13 @@ class iResults(vDenoising):
             self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
         else:
             # self.writeBeginningImages(self.suffix) # Write GT
-            if (not hasattr(self,"image_net_input")):
-                self.input = config["input"]
-                self.override_input = False
-                self.image_net_input = self.load_input(self.net,self.PETImage_shape,self.subroot_data) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
-            self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
+            if ('nested' in config["method"] or  'Gong' in config["method"]):
+                if (not hasattr(self,"image_net_input")):
+                    self.input = config["input"]
+                    self.override_input = False
+                    self.image_net_input = self.load_input(self.net,self.PETImage_shape,self.subroot_data) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
+                    self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
+            
 
         if (self.FLTNB == 'float'):
             type_im = '<f'
