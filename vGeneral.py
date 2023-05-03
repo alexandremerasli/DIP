@@ -6,7 +6,7 @@ from os import getcwd, makedirs
 from os.path import exists
 from functools import partial
 from ray import tune
-from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, mean, std, sum
+from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, mean, std, sum, array
 from numpy import max as max_np
 from numpy import min as min_np
 from matplotlib.pyplot import imshow, figure, colorbar, savefig, title, gcf, axis
@@ -747,6 +747,10 @@ class vGeneral(abc.ABC):
             print('image is ' + str(len(image.shape)) + 'D, plotting only 2D slice')
             image = image[int(image.shape[0] / 2.),:,:]
             #image = image[:,:,int(image.shape[0] / 2.)]
+        MIC_show = True
+        if (MIC_show):
+            nb_crop = 10
+            image = array(image[nb_crop:len(image) - nb_crop,nb_crop:len(image) - nb_crop])
         if (full_contrast):
             imshow(image, cmap='gray_r',vmin=min_np(image),vmax=max_np(image)) # Showing each image with maximum contrast and white is zero (gray_r) 
         else:
@@ -762,7 +766,6 @@ class vGeneral(abc.ABC):
         Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
         #system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
         from textwrap import wrap
-        MIC_show = False
         if (MIC_show):
             import matplotlib.pyplot as plt
             plt.tight_layout()

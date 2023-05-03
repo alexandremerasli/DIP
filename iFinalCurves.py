@@ -29,6 +29,8 @@ class iFinalCurves(vGeneral):
 
         # Plot APGMAP vs ADMMLim (True)
         APGMAP_vs_ADMMLim = False
+        # Rename my settings (MIC)
+        rename_settings = True
 
         # Convert Gong to DIPRecon
         DIPRecon = False
@@ -61,11 +63,11 @@ class iFinalCurves(vGeneral):
             config_tmp = dict(config[method])
             config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
             config_tmp["ray"] = True # Activate ray
-            os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + method + '.txt')
-            os.system("rm -rf " + root + '/data/Algo/' + 'replicates_for_last_run_' + method + '.txt')
+            # os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + method + '.txt')
+            # os.system("rm -rf " + root + '/data/Algo/' + 'replicates_for_last_run_' + method + '.txt')
             classTask = iResultsAlreadyComputed(config[method])
             task = 'show_metrics_results_already_computed'
-            classTask.runRayTune(config_tmp,root,task,only_suffix_replicate_file=True) # Only to write suffix and replicate files
+            # classTask.runRayTune(config_tmp,root,task,only_suffix_replicate_file=True) # Only to write suffix and replicate files
 
             # Remove keyword "grid search" in config
             config[method] = dict(config[method])
@@ -87,7 +89,7 @@ class iFinalCurves(vGeneral):
         if (self.phantom == "image2_0"):
             ROI_list = ['cold','hot','phantom']
         elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
-            ROI_list = ['cold','hot_TEP','hot_TEP_match_square_recon','hot_perfect_match_recon','phantom']
+            ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom']
 
         for ROI in ROI_list:
             # Plot tradeoff with SSIM (set quantitative_tradeoff is False) or AR (set quantitative_tradeoff to True)
@@ -384,8 +386,8 @@ class iFinalCurves(vGeneral):
                                 #'''
                             else:
                                 print(method,color_dict[method])
-                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,5).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,5).astype(int)],'-o',linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
-                                # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:],'-o',linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
+                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],marker='o'*('CT' in method) + '*'*('random' in method) + 'o'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
+                                # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:],marker='o'*('CT' in method) + '*'*('random' in method) + '+'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
                                 # unnested
                                 plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'D',markersize=10, mfc='none',color=color_dict[method][other_dim_idx],label='_nolegend_')
                                 plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],marker='D',markersize=9,color='white',label='_nolegend_')
@@ -422,21 +424,28 @@ class iFinalCurves(vGeneral):
                                     replicates_legend[fig_nb].append('nested')
                                 elif ("DIPRecon_BSREM_stand" in method):
                                     replicates_legend[fig_nb].append('DIPRecon')
+                            if (rename_settings):
+                                if ("random" in method):
+                                    replicates_legend[fig_nb].append("random input, " + str(config[method]["skip_connections"]) + " SC")
+                                elif ("CT" in method):
+                                    replicates_legend[fig_nb].append("anatomical input, " + str(config[method]["skip_connections"]) + " SC")
                                 else:
-                                    replicates_legend[fig_nb].append(method)
+                                    replicates_legend[fig_nb].append("intermediate setting, " + str(config[method]["skip_connections"]) + " SC")
                         ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)')
                         if 'cold' in ROI:
                             ax[fig_nb].set_ylabel('Bias ')
-                        else:
+                        elif 'hot' in ROI:
                             ax[fig_nb].set_ylabel('Activity Recovery (AR) (%) ')
+                        else:
+                            ax[fig_nb].set_ylabel('SSIM')
                         #ax[fig_nb].set_ylabel(('Bias '))
                         #ax[fig_nb].set_title(('AR ') + 'in ' + ROI + ' region vs IR in background (at convergence)')
                     #'''
 
                     if (method == method_list[-1]):
                         if (quantitative_tradeoff): # AR
-                            if ROI == ROI_list[-2]: # if legend is needed only in one ROI
-                                ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
+                            if ROI == ROI_list[2] or ROI == ROI_list[-1]: # if legend is needed only in one ROI
+                                ax[fig_nb].legend(replicates_legend[fig_nb], prop={'size': 12})
                         else: # SSIM
                             ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
 
@@ -705,8 +714,8 @@ class iFinalCurves(vGeneral):
                 #"nested_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
                 #"nested_APPGML_subsets" : ['darkgreen','lime','gold','darkseagreen'],
                 "nested_APPGML" : ['darkgreen','lime','gold','darkseagreen'],
-                "nested_CT_skip" : ['red','saddlebrown','lightsalmon','peru','black','yellow','grey','lime'],
-                "nested_random_skip" : ['fuchsia','orange','darkgreen','lime'],
+                "nested_CT_skip" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "nested_random_skip" : ['fuchsia','orange','darkgreen','lightsalmon'],
                 "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "BSREM" : ['grey'],
                 "OSEM" : ['orange'],
@@ -715,7 +724,7 @@ class iFinalCurves(vGeneral):
             }
             color_dict_add_tests = {
                 "nested" : ['black'], # 3 it
-                "nested_skip1_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][3]],
+                "nested_skip1_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][1]],
                 "nested_skip2_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][2]],
                 "nested_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["nested_ADMMLim"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_30" : [color_dict_after_MIC["nested_ADMMLim"][1]],
@@ -773,7 +782,9 @@ class iFinalCurves(vGeneral):
                 "APPGML_it" : [':'],
                 "APPGML_subsets" : ['-'],
                 "ADMMLim" : ['--'],
-                "skip" : ['dashdot'],
+                "CT" : ['dashdot'],
+                "random" : ['dashdot'],
+                "intermediate" : ['-'],
                 "APGMAP" : ['-','-'],
                 "BSREM" : ['-'],
                 "OSEM" : ['-'],
@@ -781,9 +792,9 @@ class iFinalCurves(vGeneral):
             }
             marker_dict_supp = {
                 "nested" : [marker_dict["ADMMLim"][0]], # 3 it
-                "nested_skip1_3_my_settings" : [marker_dict["ADMMLim"][0]],
-                "nested_skip2_3_my_settings" : [marker_dict["ADMMLim"][0]],
-                "nested_ADMMLim_more_ADMMLim_it_10" : [marker_dict["ADMMLim"][0]],
+                "nested_skip1_3_my_settings" : [marker_dict["intermediate"][0]],
+                "nested_skip2_3_my_settings" : [marker_dict["intermediate"][0]],
+                "nested_ADMMLim_more_ADMMLim_it_10" : [marker_dict["intermediate"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_30" : [marker_dict["ADMMLim"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_80" : [marker_dict["ADMMLim"][0]],
                 "nested_ADMMLim_u_v" : [marker_dict["ADMMLim"][0]],
@@ -795,18 +806,18 @@ class iFinalCurves(vGeneral):
                 "nested_APPGML_4it" : [marker_dict["APPGML_it"][0]],
                 "nested_APPGML_14it" : [marker_dict["APPGML_it"][0]],
                 "nested_APPGML_28it" : [marker_dict["APPGML_it"][0]],
-                "nested_CT_2_skip_3it" : [marker_dict["skip"][0]],
-                "nested_CT_3_skip_3it" : [marker_dict["skip"][0]],
-                "nested_CT_2_skip_10it" : [marker_dict["skip"][0]],
-                "nested_CT_3_skip_10it" : [marker_dict["skip"][0]],
-                "nested_CT_0_skip_3it" : [marker_dict["skip"][0]],
-                "nested_CT_1_skip_3it" : [marker_dict["skip"][0]],
-                "nested_CT_0_skip_10it" : [marker_dict["skip"][0]],
-                "nested_CT_1_skip_10it" : [marker_dict["skip"][0]],
-                "nested_random_3_skip_10it" : [marker_dict["skip"][0]],
-                "nested_random_2_skip_10it" : [marker_dict["skip"][0]],
-                "nested_random_1_skip_10it" : [marker_dict["skip"][0]],
-                "nested_random_0_skip_10it" : [marker_dict["skip"][0]],
+                "nested_CT_2_skip_3it" : [marker_dict["CT"][0]],
+                "nested_CT_3_skip_3it" : [marker_dict["CT"][0]],
+                "nested_CT_2_skip_10it" : [marker_dict["CT"][0]],
+                "nested_CT_3_skip_10it" : [marker_dict["CT"][0]],
+                "nested_CT_0_skip_3it" : [marker_dict["CT"][0]],
+                "nested_CT_1_skip_3it" : [marker_dict["CT"][0]],
+                "nested_CT_0_skip_10it" : [marker_dict["CT"][0]],
+                "nested_CT_1_skip_10it" : [marker_dict["CT"][0]],
+                "nested_random_3_skip_10it" : [marker_dict["random"][0]],
+                "nested_random_2_skip_10it" : [marker_dict["random"][0]],
+                "nested_random_1_skip_10it" : [marker_dict["random"][0]],
+                "nested_random_0_skip_10it" : [marker_dict["random"][0]],
                 "DIPRecon_BSREM_stand" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_CT_3_skip" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_CT_2_skip" : [marker_dict["DIPRecon"][0]],

@@ -240,7 +240,11 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             # Show image with IR = 30%
             for i in range(self.total_nb_iter,i_init-1,-1):
                 IR = 0
-                p = 1
+                # if config["method"] == "nested_skip1_3_my_settings":
+                #     p = 4
+                # else:
+                #     p = 1
+                p = 4
                 if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
                     # Read image into array according to method
                     if(self.read_image_method(config,beta_string,i_init,p,i)): # ES found
