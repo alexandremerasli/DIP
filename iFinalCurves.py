@@ -67,7 +67,7 @@ class iFinalCurves(vGeneral):
             # os.system("rm -rf " + root + '/data/Algo/' + 'replicates_for_last_run_' + method + '.txt')
             classTask = iResultsAlreadyComputed(config[method])
             task = 'show_metrics_results_already_computed'
-            # classTask.runRayTune(config_tmp,root,task,only_suffix_replicate_file=True) # Only to write suffix and replicate files
+            classTask.runRayTune(config_tmp,root,task,only_suffix_replicate_file=True) # Only to write suffix and replicate files
 
             # Remove keyword "grid search" in config
             config[method] = dict(config[method])
@@ -724,6 +724,7 @@ class iFinalCurves(vGeneral):
             }
             color_dict_add_tests = {
                 "nested" : ['black'], # 3 it
+                "nested_skip0_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][3]],
                 "nested_skip1_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][1]],
                 "nested_skip2_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][2]],
                 "nested_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["nested_ADMMLim"][0]],
@@ -792,6 +793,7 @@ class iFinalCurves(vGeneral):
             }
             marker_dict_supp = {
                 "nested" : [marker_dict["ADMMLim"][0]], # 3 it
+                "nested_skip0_3_my_settings" : [marker_dict["intermediate"][0]],
                 "nested_skip1_3_my_settings" : [marker_dict["intermediate"][0]],
                 "nested_skip2_3_my_settings" : [marker_dict["intermediate"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_10" : [marker_dict["intermediate"][0]],
