@@ -15,7 +15,7 @@ def config_func_MIC():
         "tensorboard" : True, # Tensorboard mode = show results in tensorboard
         "all_images_DIP" : tune.grid_search(['Last']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
         "experiment" : tune.grid_search([24]),
-        "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
+        "replicates" : tune.grid_search(list(range(1,40+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
         #"replicates" : tune.grid_search([2,19,24,30,32,39,43,51,53,56,61,66,77]), # List of desired replicates. list(range(1,n+1)) means n replicates
         #"replicates" : tune.grid_search([2,3,5,7,10,11,12,13,14,16,17,18,19,20,21,23,24,26,27,28,29,33,35,37,38,39,40]), # List of desired replicates. list(range(1,n+1)) means n replicates
         #"replicates" : tune.grid_search([10,20]), # List of desired replicates. list(range(1,n+1)) means n replicates
