@@ -16,20 +16,16 @@ from ray import tune
 
 # Configuration dictionnary for general settings parameters (not hyperparameters)
 settings_config = {
-    "image" : tune.grid_search(['image4_0']), # Image from database
+    "image" : tune.grid_search(['image40_0']), # Image from database
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['nested_ADMMLim_more_ADMMLim_it_10', 'nested_ADMMLim_more_ADMMLim_it_30', 'nested_ADMMLim_more_ADMMLim_it_80', 'nested_APPGML_1subset', 'nested_APPGML_4subsets', 'nested_APPGML_14subsets', 'nested_APPGML_28subsets','nested_APPGML_1it','nested_APPGML_4it','nested_APPGML_14it','nested_APPGML_28it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    "method" : tune.grid_search(['nested_ADMMLim_more_ADMMLim_it_10', 'nested_ADMMLim_more_ADMMLim_it_30', 'nested_APPGML_4it','nested_APPGML_14it','nested_APPGML_28it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    "method" : tune.grid_search(['nested_ADMMLim_more_ADMMLim_it_10', 'nested_ADMMLim_more_ADMMLim_it_30', 'nested_APPGML_4it', 'nested_APPGML_14it','nested_APPGML_28it','nested_CT_2_skip_3it','nested_CT_2_skip_10it', 'nested_CT_3_skip_3it', 'nested_CT_3_skip_10it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    "method" : tune.grid_search(['nested_ADMMLim_more_ADMMLim_it_10', 'APGMAP', 'BSREM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    "method" : tune.grid_search(['nested_ADMMLim_more_ADMMLim_it_10']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    #"method" : tune.grid_search(['nested_APPGML_1subset', 'nested_APPGML_4subsets', 'nested_APPGML_14subsets', 'nested_APPGML_28subsets']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    #"method" : tune.grid_search(['nested', 'nested_ADMMLim_more_ADMMLim_it_10', 'nested_ADMMLim_more_ADMMLim_it_30', 'nested_ADMMLim_more_ADMMLim_it_80']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    #"method" : tune.grid_search(['nested_CT_2_skip_3it','nested_CT_2_skip_10it', 'nested_CT_3_skip_3it', 'nested_CT_3_skip_10it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    #"method" : tune.grid_search(['nested_APPGML_1it','nested_APPGML_4it','nested_APPGML_14it','nested_APPGML_28it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    #"method" : tune.grid_search(['nested_APPGML_1it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    #"method" : tune.grid_search(['nested_APPGML_28subsets','nested_ADMMLim_more_ADMMLim_it_30','nested_ADMMLim_more_ADMMLim_it_10']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    #"method" : tune.grid_search(['nested_ADMMLim_stand']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested_CT_0_skip_10it','nested_CT_1_skip_10it','nested_CT_2_skip_10it','nested_CT_3_skip_10it', 'nested_ADMMLim_more_ADMMLim_it_10', 'nested_random_0_skip_10it', 'nested_random_1_skip_10it', 'nested_random_2_skip_10it', 'nested_random_3_skip_10it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested_CT_2_skip_10it','nested_CT_3_skip_10it', 'nested_ADMMLim_more_ADMMLim_it_10', 'nested_random_0_skip_10it', 'nested_random_1_skip_10it', 'nested_random_2_skip_10it', 'nested_random_3_skip_10it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested_CT_2_skip_10it','nested_CT_3_skip_10it', 'nested_skip1_3_my_settings', 'nested_skip2_3_my_settings', 'nested_ADMMLim_more_ADMMLim_it_10', 'nested_random_0_skip_10it', 'nested_random_1_skip_10it', 'nested_random_2_skip_10it', 'nested_random_3_skip_10it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    # "method" : tune.grid_search(['nested_CT_0_skip_10it','nested_CT_1_skip_10it','nested_CT_2_skip_10it', 'nested_ADMMLim_more_ADMMLim_it_10', 'nested_random_1_skip_10it', 'nested_random_2_skip_10it', 'nested_random_3_skip_10it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    # "method" : tune.grid_search(['nested_ADMMLim_more_ADMMLim_it_10','nested_CT_3_skip_10it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    # "method" : tune.grid_search(['nested_skip1_3_my_settings', 'nested_skip2_3_my_settings']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested_CT_0_skip_10it','nested_CT_1_skip_10it','nested_CT_2_skip_10it','nested_CT_3_skip_10it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested_skip0_3_my_settings','nested_skip1_3_my_settings','nested_skip2_3_my_settings','nested_ADMMLim_more_ADMMLim_it_10']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
@@ -38,7 +34,7 @@ settings_config = {
     "tensorboard" : True, # Tensorboard mode = show results in tensorboard
     "all_images_DIP" : tune.grid_search(['Last']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
-    "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
+    "replicates" : tune.grid_search(list(range(1,40+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
     #"replicates" : tune.grid_search(list(range(1,50+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
     #"replicates" : tune.grid_search([29, 39, 92, 98]), # List of desired replicates. list(range(1,n+1)) means n replicates
     "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
@@ -118,17 +114,6 @@ os.system("rm -rf " + os.getcwd() +"/seed.txt")
 file_seed = open(os.getcwd() + "/seed.txt","w+")
 file_seed.write(str(settings_config["random_seed"]["grid_search"][0]))
 file_seed.close()
-
-# Local files to import, AFTER CONFIG TO SET RANDOM SEED OR NOT
-from iNestedADMM import iNestedADMM
-from iComparison import iComparison
-from iPostReconstruction import iPostReconstruction
-from iResults import iResults
-from iMeritsADMMLim import iMeritsADMMLim
-from iMeritsNested import iMeritsNested
-from iResultsAlreadyComputed import iResultsAlreadyComputed
-from iResultsADMMLim_VS_APGMAP import iResultsADMMLim_VS_APGMAP
-from iFinalCurves import iFinalCurves
 
 for method in config["method"]['grid_search']:
 
@@ -221,25 +206,35 @@ for method in config["method"]['grid_search']:
     #task = 'show_metrics_nested'
     #task = 'compare_2_methods'
 
+    # Local files to import, AFTER CONFIG TO SET RANDOM SEED OR NOT
     if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
+        from iNestedADMM import iNestedADMM
         classTask = iNestedADMM(hyperparameters_config)
     elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
+        from iComparison import iComparison
         classTask = iComparison(config)
     elif (task == 'post_reco'): # Run network denoising after a given reconstructed image im_corrupt
+        from iPostReconstruction import iPostReconstruction
         classTask = iPostReconstruction(config)
     elif (task == 'show_results'): # Show already computed results over iterations
+        from iResults import iResults
         classTask = iResults(config)
     elif (task == 'show_results_post_reco'): # Show already computed results over iterations of post reconstruction mode
-        config["task"] = "show_results_post_reco"
+        from iResults import iResults
         classTask = iResults(config)
     elif (task == 'show_metrics_ADMMLim'): # Show ADMMLim FOMs over iterations
+        config["task"] = "show_results_post_reco"
+        from iMeritsADMMLim import iMeritsADMMLim
         classTask = iMeritsADMMLim(config)
     elif (task == 'show_metrics_nested'): # Show nested or Gong FOMs over iterations
+        from iMeritsNested import iMeritsNested
         classTask = iMeritsNested(config)
-    elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
-        classTask = iResultsAlreadyComputed(config)
+    # elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
+    #     from iResultsAlreadyComputed import iResultsAlreadyComputed
+    #     classTask = iResultsAlreadyComputed(config)
     elif (task == 'compare_2_methods'): # Show already computed results averaging over replicates
         config["average_replicates"] = tune.grid_search([True])
+        from iResultsADMMLim_VS_APGMAP import iResultsADMMLim_VS_APGMAP
         classTask = iResultsADMMLim_VS_APGMAP(config)
 
     # Incompatible parameters (should be written in vGeneral I think)
@@ -263,7 +258,8 @@ for method in config["method"]['grid_search']:
     os.system("rm -rf " + root + '/data/Algo/' + 'replicates_for_last_run_' + method + '.txt')
 
     # Launch task
-    classTask.runRayTune(config_tmp,root,task)
+    if(task != "show_metrics_results_already_computed"):
+        classTask.runRayTune(config_tmp,root,task)
     #'''
 
 if (task != "post_reco"):
@@ -283,6 +279,7 @@ if (task != "post_reco"):
                     if key != 'A_AML' and key != 'post_smoothing' and key != 'lr':
                         config_without_grid_search[key] = config_without_grid_search[key][0]
 
+    from iFinalCurves import iFinalCurves
     classTask = iFinalCurves(config_without_grid_search)
     config_without_grid_search["ray"] = False
     classTask.config_with_grid_search = config
