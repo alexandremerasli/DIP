@@ -26,6 +26,18 @@ class vDenoising(vGeneral):
     def __init__(self,config, *args, **kwargs):
         print('__init__')
 
+    def points_in_circle_edge(self,center_y,center_x,radius,PETImage_shape,inner_circle=True): # x and y are inverted in an array compared to coordinates
+        liste = [] 
+
+        center_x += int(PETImage_shape[0]/2)
+        center_y += int(PETImage_shape[1]/2)
+        for x in range(0,PETImage_shape[0]):
+            for y in range(0,PETImage_shape[1]):
+                if (x+0.5-center_x)**2 + (y+0.5-center_y)**2 <= radius**2 and (x+0.5-center_x)**2 + (y+0.5-center_y)**2 > (radius - 2)**2:
+                    liste.append((x,y))
+
+        return liste
+
     def initializeSpecific(self,config,root, *args, **kwargs):
         # Set random seed if asked (for random input here)
         if (os.path.isfile(os.getcwd() + "/seed.txt")):
@@ -65,6 +77,25 @@ class vDenoising(vGeneral):
 
             # Loading DIP input (we do not have CT-map, so random image created in block 1)
             self.image_net_input = self.load_input(self.net,self.PETImage_shape,self.subroot_data) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
+            
+            
+            
+            
+            # modify input with line on the edge of the phantom
+            # phantom_ROI = self.points_in_circle_edge(0/4,0/4,150/4,self.PETImage_shape)
+            # for couple in phantom_ROI:
+            #     edge_value = config["rho"]
+            #     self.image_net_input[couple] = edge_value
+
+            # import matplotlib.pyplot as plt
+            # plt.imshow(self.image_net_input,vmin=np.min(self.image_net_input),vmax=np.max(self.image_net_input),cmap='gray')
+            # # plt.show()
+            
+            
+            
+            
+            
+            
             image_net_input_scale = self.rescale_imag(self.image_net_input,self.scaling_input)[0] # Rescale of network input
             # DIP input image, numpy --> torch
             self.image_net_input_torch = torch.Tensor(image_net_input_scale)
