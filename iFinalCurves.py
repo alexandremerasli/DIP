@@ -63,8 +63,8 @@ class iFinalCurves(vGeneral):
             config_tmp = dict(config[method])
             config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
             config_tmp["ray"] = True # Activate ray
-            # os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + method + '.txt')
-            # os.system("rm -rf " + root + '/data/Algo/' + 'replicates_for_last_run_' + method + '.txt')
+            os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + method + '.txt')
+            os.system("rm -rf " + root + '/data/Algo/' + 'replicates_for_last_run_' + method + '.txt')
             classTask = iResultsAlreadyComputed(config[method])
             task = 'show_metrics_results_already_computed'
             classTask.runRayTune(config_tmp,root,task,only_suffix_replicate_file=True) # Only to write suffix and replicate files

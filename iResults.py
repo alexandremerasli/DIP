@@ -64,7 +64,7 @@ class iResults(vDenoising):
         # Defining ROIs
         self.phantom_ROI = self.get_phantom_ROI(self.phantom)
         if ("3D" not in self.phantom):
-            self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            # self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
                 self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                 self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
@@ -108,11 +108,11 @@ class iResults(vDenoising):
                 self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d')
             #self.image_corrupt = self.fijii_np("/home/meraslia/workspace_reco/nested_admm/data/Algo/image4_0/replicate_10/nested/Block2/config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=14_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=1_mlem_=False_A_AML=-100/x_label/24/" + "-1_x_labelconfig_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=14_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=1_mlem_=False_A_AML=-100.img",shape=(self.PETImage_shape))
 
-        self.image_gt = self.image_gt / np.max(self.image_gt) * 255
-        self.image_gt = self.image_gt.astype(np.int8)
-        if (hasattr(self,'image_corrupt')):
-            self.image_corrupt = self.image_corrupt / np.max(self.image_corrupt) * 255
-            self.image_corrupt = self.image_corrupt.astype(np.int8)
+        # self.image_gt = self.image_gt / np.max(self.image_gt) * 255
+        # self.image_gt = self.image_gt.astype(np.int8)
+        # if (hasattr(self,'image_corrupt')):
+        #     self.image_corrupt = self.image_corrupt / np.max(self.image_corrupt) * 255
+        #     self.image_corrupt = self.image_corrupt.astype(np.int8)
         
         # PSNR_corrupt = peak_signal_noise_ratio(self.image_gt, self.image_corrupt, data_range=np.amax(self.image_corrupt) - np.amin(self.image_corrupt)) # PSNR with true values
         # SSIM_corrupt = structural_similarity(np.squeeze(self.image_gt), np.squeeze(self.image_corrupt), data_range=(self.image_corrupt).max() - (self.image_corrupt).min())
@@ -216,7 +216,8 @@ class iResults(vDenoising):
 
         # 2.2 plot window moving variance
         plt.figure(1)
-        var_x = np.arange(self.windowSize-1, self.windowSize + len(self.VAR_recon)-1)  # define x axis of WMV
+        if (config["EMV_or_WMV"] == "WMV"):
+            var_x = np.arange(self.windowSize-1, self.windowSize + len(self.VAR_recon)-1)  # define x axis of WMV
         plt.plot(var_x, self.VAR_recon, 'r')
         plt.title('Window Moving Variance,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
         plt.axvline(self.epochStar, c='g')  # plot a vertical line at self.epochStar(detection point)
@@ -228,7 +229,8 @@ class iResults(vDenoising):
         # Save WMV in tensorboard
         #print("WMV saved in tensorboard")
         for i in range(len(self.VAR_recon)):
-            var_x = np.arange(self.windowSize-1, self.windowSize + len(self.VAR_recon)-1)  # define x axis of WMV
+            if (config["EMV_or_WMV"] == "WMV"):
+                var_x = np.arange(self.windowSize-1, self.windowSize + len(self.VAR_recon)-1)  # define x axis of WMV
             self.writer.add_scalar('WMV in the phantom (should follow MSE trend to find peak)', self.VAR_recon[i], var_x[i])
 
         # 2.3 plot MSE
@@ -292,7 +294,8 @@ class iResults(vDenoising):
         ax1.tick_params(axis='x', **tkw)
         ax1.legend(handles=[p1, p3, p2, p4])
         ax1.axvline(self.epochStar, c='g', linewidth=1, ls='--')
-        ax1.axvline(self.windowSize-1, c='g', linewidth=1, ls=':')
+        if (config["EMV_or_WMV"] == "WMV"):
+            ax1.axvline(self.windowSize-1, c='g', linewidth=1, ls=':')
         ax1.axvline(self.epochStar+self.patienceNumber, c='g', lw=1, ls=':')
         if self.epochStar+self.patienceNumber > self.epochStar:
             plt.xticks([self.epochStar, self.windowSize-1, self.epochStar+self.patienceNumber], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize), '+' + str(self.patienceNumber)], color='green')
