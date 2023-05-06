@@ -187,7 +187,7 @@ class DIP_2D(LightningModule):
 
         # Decoder
         out = self.up1(out)
-        if (self.skip >= 1):
+        if (self.skip >= 1): # or self.override_input):
             out_skip1 = out3 + out
             out = self.deep5(out_skip1)
         else:
@@ -206,6 +206,7 @@ class DIP_2D(LightningModule):
             out = self.deep7(out)
 
         if (self.method == 'Gong'):
+            self.write_current_img_task(out,inside=True)
             out = self.positivity(out)
 
         return out
@@ -268,14 +269,17 @@ class DIP_2D(LightningModule):
             if (self.current_epoch == self.sub_iter_DIP - 1):
                 self.write_current_img_task(out)
 
-    def write_current_img_task(self,out):
+    def write_current_img_task(self,out,inside=False):
         try:
             out_np = out.detach().numpy()[0,0,:,:]
         except:
             out_np = out.cpu().detach().numpy()[0,0,:,:]
 
         print("self.current_epoch",self.current_epoch)
-        self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+        if (inside):
+            self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/beforeReLU_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+        else:
+            self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
         config_copy = dict(config)

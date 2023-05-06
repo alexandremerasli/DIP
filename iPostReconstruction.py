@@ -137,7 +137,8 @@ class iPostReconstruction(vDenoising):
         ## Variables for WMV ##
         if (model.DIP_early_stopping):
             self.epochStar = model.epochStar
-            self.windowSize = model.windowSize
+            if (config["EMV_or_WMV"] == "WMV"):
+                classResults.windowSize = self.windowSize
             self.patienceNumber = model.patienceNumber
             self.VAR_recon = model.VAR_recon
             self.MSE_WMV = model.MSE_WMV
@@ -205,7 +206,8 @@ class iPostReconstruction(vDenoising):
             classResults.MSE_WMV = self.MSE_WMV
             classResults.PSNR_WMV = self.PSNR_WMV
             classResults.SSIM_WMV = self.SSIM_WMV
-            classResults.windowSize = self.windowSize
+            if (config["EMV_or_WMV"] == "WMV"):
+                classResults.windowSize = self.windowSize
             classResults.patienceNumber = self.patienceNumber
             classResults.SUCCESS = self.SUCCESS
 
