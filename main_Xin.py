@@ -67,11 +67,16 @@ def main_computation(config,root):
     # name = 'my_model'
 
     logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path)#version=format(experiment), name=name)
+    # # Loss computation callback
+    # from ray.tune.integration.pytorch_lightning import TuneReportCallback
+    # tuning_callback = TuneReportCallback({"loss": "val_loss"}, on="validation_end")
     # Early stopping callback
     from pytorch_lightning.callbacks.early_stopping import EarlyStopping
     early_stopping_callback = EarlyStopping(monitor="SUCCESS", mode="max",stopping_threshold=0.9,patience=np.inf) # SUCCESS will be 1 when ES if found, which is greater than stopping_threshold = 0.9
-    trainer = pl.Trainer(max_epochs=config["sub_iter_DIP"],log_every_n_steps=1, logger=logger, callbacks=[early_stopping_callback])    
-    # trainer = pl.Trainer(max_epochs=config["sub_iter_DIP"],log_every_n_steps=1,logger=logger)#, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple")
+    # # Checkpoint callback
+    # checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=root + "/test_ckpt_Xin", save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0)
+    trainer = pl.Trainer(max_epochs=config["sub_iter_DIP"],log_every_n_steps=1, logger=logger, callbacks=[early_stopping_callback])#, callbacks=[tuning_callback, early_stopping_callback])    
+    # trainer = pl.Trainer(max_epochs=config["sub_iter_DIP"],log_every_n_steps=1, logger=logger, callbacks=[tuning_callback, early_stopping_callback, checkpoint_callback])
 
     # 训练模型
     trainer.fit(model, train_dataloader)
@@ -88,5 +93,5 @@ def main_computation(config,root):
 
 root = os.getcwd()
 
-# tune.run(partial(main_computation,root=root), config=config_tune,local_dir = os.getcwd() + '/lightning_logs')
-main_computation(config,root)
+tune.run(partial(main_computation,root=root), config=config_tune,local_dir = os.getcwd() + '/lightning_logs')
+# main_computation(config,root)
