@@ -125,90 +125,72 @@ class vGeneral(abc.ABC):
         config["task"] = {'grid_search': [task]}
 
         if (self.ray): # Launch raytune
-            # config_combination = 1
-            # for i in range(len(config)): # List of hyperparameters keys is still in config dictionary
-            #     config_combination *= len(list(list(config.values())[i].values())[0])
-            #     config_combination *= len(list(list(config.values())[i].values())[0])
-
-            # self.processing_unit = config["processing_unit"]
-            # resources_per_trial = {"cpu": 1, "gpu": 0}
-            # if self.processing_unit == 'CPU':
-            #     resources_per_trial = {"cpu": 1, "gpu": 0}
-            # elif self.processing_unit == 'GPU':
-            #     resources_per_trial = {"cpu": 1, "gpu": 0}
-            #     #resources_per_trial = {"cpu": 0, "gpu": 0.1} # "gpu": 1 / config_combination
-            #     #resources_per_trial = {"cpu": 0, "gpu": 1} # "gpu": 1 / config_combination
-            # elif self.processing_unit == 'both':
-            #     resources_per_trial = {"cpu": 10, "gpu": 1} # not efficient
-
-            #reporter = CLIReporter(
-            #    parameter_columns=['lr'],
-            #    metric_columns=['mse'])
-
-            # Start tuning of hyperparameters = start each admm computation in parallel
-            #try: # resume previous run (if it exists)
-            #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = getcwd() + '/runs', name=suffix_func(config) + str(config["max_iter"]), resources_per_trial = resources_per_trial, resume = "ERRORED_ONLY")#, progress_reporter = reporter)
-            #except: # do not resume previous run because there is no previous one
-            #    anaysis_raytune = tune.run(partial(self.do_everything,root=root), config=config,local_dir = getcwd() + '/runs', name=suffix_func(config) + "_max_iter=" + str(config["max_iter"], resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
-
-            #init(log_to_driver=False) # Remove logs stored by raytune, but also from terminal...
-            #tune.run(partial(self.do_everything,root=root,suffix_replicate_file = True), config=config,local_dir = getcwd() + '/runs', resources_per_trial = resources_per_trial)#, progress_reporter = reporter)
-            reporter = ExperimentTerminationReporter()
-            
-            self.subroot_data = root + '/data/Algo/' # Directory root
-            try:
-                self.phantom = "image40_0"
-                # self.phantom = config["image"]
-            except:
-                self.phantom = "image40_0"
-            # Define PET input dimensions according to input data dimensions
-            self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
-            self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
-
-            
-            self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-            self.phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-            
-            
-            tune.run(partial(self.do_everything,root=root,only_suffix_replicate_file = only_suffix_replicate_file), config=config,local_dir = getcwd() + '/runs', progress_reporter = reporter)
+            # Initialize ROIs before ray
+            self.initializeBeforeRay(root)
+            # Launch computation
+            tune.run(partial(self.do_everything,root=root,only_suffix_replicate_file = only_suffix_replicate_file), config=config,local_dir = getcwd() + '/runs', progress_reporter = ExperimentTerminationReporter())
         else: # Without raytune
             # Remove grid search if not using ray and choose first element of each config key.
-            if (task != "show_metrics_results_already_computed_following_step"):
-                for key, value in config.items():
-                    if key != "hyperparameters" and key != "fixed_hyperparameters":
-                        if (len(value["grid_search"]) == 1 or self.debug):
-                            config[key] = value["grid_search"][0]
-                        else:
-                            raise ValueError("Please put one value for " + key + " in config variable in main.py if ray is deactivated.")
-                        
-                        if (self.debug):
-                            # Set every iteration values to 1 to be quicker
-                            if key in ["max_iter","nb_subsets","sub_iter_DIP","nb_inner_iteration","nb_outer_iteration"]:
-                                config[key] = 1
-                            elif key == "mlem_sequence":
-                                config["mlem_sequence"] = False
-            else:
-                config["task"] = task
-            
-            self.subroot_data = root + '/data/Algo/' # Directory root
-            try:
-                self.phantom = config["image"]
-            except:
-                self.phantom = "image40_0"
-            # Define PET input dimensions according to input data dimensions
-            self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
-            self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
-
-            
-            self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-            self.phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-            
-            
-            
+            config = self.removeGridSearch(config,task)            
+            # Initialize ROIs
+            self.initializeBeforeRay(root)            
             # Launch computation
             self.do_everything(config,root,only_suffix_replicate_file = only_suffix_replicate_file)
 
+    def removeGridSearch(self,config,task):
+        if (task != "show_metrics_results_already_computed_following_step"):
+            for key, value in config.items():
+                if key != "hyperparameters" and key != "fixed_hyperparameters":
+                    if (len(value["grid_search"]) == 1 or self.debug):
+                        config[key] = value["grid_search"][0]
+                    else:
+                        raise ValueError("Please put one value for " + key + " in config variable in main.py if ray is deactivated.")
+                    
+                    if (self.debug):
+                        # Set every iteration values to 1 to be quicker
+                        if key in ["max_iter","nb_subsets","sub_iter_DIP","nb_inner_iteration","nb_outer_iteration"]:
+                            config[key] = 1
+                        elif key == "mlem_sequence":
+                            config["mlem_sequence"] = False
+        else:
+            config["task"] = task
 
+    def initializeBeforeRay(self,root):
+        self.subroot_data = root + '/data/Algo/' # Directory root
+        try:
+            self.phantom = "image40_0"
+            # self.phantom = config["image"]
+        except:
+            self.phantom = "image40_0"
+        # Define PET input dimensions according to input data dimensions
+        self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+        self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
+
+        
+        # self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        # self.phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+
+
+        # Defining ROIs
+        self.phantom_ROI = self.get_phantom_ROI(self.phantom)
+        if ("3D" not in self.phantom):
+            self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
+                self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                # This ROIs has already been defined, but is computed for the sake of simplicity
+                self.hot_ROI = self.hot_TEP_ROI
+            else:
+                self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                # These ROIs do not exist, so put them equal to hot ROI for the sake of simplicity
+                self.hot_TEP_ROI = array(self.hot_ROI)
+                self.hot_TEP_match_square_ROI = array(self.hot_ROI)
+                self.hot_perfect_match_ROI = array(self.hot_ROI)
+            self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+
+
+        
     def parametersIncompatibility(self,config,task):
         # Additional variables needing every values in config
         # Number of replicates         
