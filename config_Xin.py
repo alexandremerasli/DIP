@@ -16,15 +16,16 @@ settings_config = {
 
 # Configuration dictionnary for previous hyperparameters, but fixed to simplify
 fixed_config = {
-    "DIP_early_stopping" : False, # Use DIP early stopping with WMV strategy
-    "windowSize" : 50, # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "patienceNumber" : 100, # Network to use (DIP,DD,DD_AE,DIP_VAE)
+    "DIP_early_stopping" : True, # Use DIP early stopping with WMV strategy
+    "EMV_or_WMV" : "WMV", # Use DIP early stopping with WMV or EMV strategy
+    "windowSize" : 2, # Network to use (DIP,DD,DD_AE,DIP_VAE)
+    "patienceNumber" : 3, # Network to use (DIP,DD,DD_AE,DIP_VAE)
 }
 import numpy as np
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
-    "lr" : tune.grid_search(list(np.linspace(1e-4,1e-1,40))), # Learning rate in network optimization
-    # "lr" : 0.01, # Learning rate in network optimization
+    # "lr" : tune.grid_search(list(np.linspace(1e-4,1e-1,40))), # Learning rate in network optimization
+    "lr" : 0.01, # Learning rate in network optimization
     "sub_iter_DIP" : 100, # Number of epochs in network optimization
     "opti_DIP" : 'Adam', # Optimization algorithm in neural network training (Adam, LBFGS)
     "skip_connections" : 3, # Number of skip connections in DIP architecture (0, 1, 2, 3)

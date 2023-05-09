@@ -35,13 +35,16 @@ class iWMV(vGeneral):
         #self.queueQ = array((self.windowSize,self.PETImage_shape))
 
         #Loading Ground Truth image to compute metrics
-        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')
+        # self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')
+        self.PETImage_shape = (112,112,1)
+        self.image_gt = self.fijii_np('/home/meraslia/workspace_reco/nested_admm/data/Algo/Data/database_v2/image40_0/image40_0.raw',shape=(self.PETImage_shape),type_im='<f')
         if config["FLTNB"] == "double":
             self.image_gt = self.image_gt.astype(float64)
 
         # Load phantom ROI
         if (self.PETImage_shape[2] == 1): # 2D
-            self.phantom_ROI = self.get_phantom_ROI(self.phantom)
+            # self.phantom_ROI = self.get_phantom_ROI(self.phantom)
+            self.phantom_ROI = self.fijii_np('/home/meraslia/workspace_reco/nested_admm/data/Algo/Data/database_v2/image40_0/phantom_mask40_0.raw',shape=(self.PETImage_shape),type_im='<f')
         else: # 3D
             self.phantom_ROI = ones(self.PETImage_shape)
 
@@ -119,7 +122,8 @@ class iWMV(vGeneral):
         #'''
         if SUCCESS:
             # Open output corresponding to epoch star
-            net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
+            # net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
+            net_outputs_path = "/home/meraslia/workspace_reco/output_images0.01/output_" + format(self.epochStar) + ".img"
             out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f')
             
             # Descale like at the beginning
@@ -127,7 +131,8 @@ class iWMV(vGeneral):
             #out = self.descale_imag(from_numpy(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
 
             # Saving ES point image
-            net_outputs_path = self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/ES_out_' + self.net +  str(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
+            # net_outputs_path = self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/ES_out_' + self.net +  str(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
+            net_outputs_path = "/home/meraslia/workspace_reco/output_images0.01/ES_output_" + format(self.epochStar) + ".img"
             self.save_img(out, net_outputs_path)
             print("#### WMV ########################################################")
             print("                 ES point found, epoch* =", self.epochStar)
