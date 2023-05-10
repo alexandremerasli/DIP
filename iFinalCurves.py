@@ -136,6 +136,7 @@ class iFinalCurves(vGeneral):
                     rho_name = "smoothing"
                     other_dim_name = ""
                 elif ("nested" in method or "DIPRecon" in method):
+                    rho_name = "rho"
                     config_other_dim[method] = config[method]["lr"]
                     other_dim_name = "lr"
                 else:
@@ -368,8 +369,12 @@ class iFinalCurves(vGeneral):
                         
                     #'''
                     if (fig_nb == 2):
-                        for other_dim_idx in range(nb_other_dim[method]):
-                            if ("nested" not in method and "DIPRecon" not in method):
+                        if ("nested" not in method and "DIPRecon" not in method):
+                            # if ("APGMAP" in method):
+                            #     for other_dim_idx in range(nb_other_dim[method]):
+                            # else:
+                            #     for rho_idx in range(nb_rho[method]):
+                            for other_dim_idx in range(nb_other_dim[method]):
                                 cases = np.arange(0,nb_other_dim[method]*nb_rho[method],nb_other_dim[method]) + other_dim_idx
                                 
                                 if ((not APGMAP_vs_ADMMLim and (method == "APGMAP" and other_dim_idx == 1) or (method != "APGMAP" and other_dim_idx == 0)) or APGMAP_vs_ADMMLim):
@@ -384,12 +389,13 @@ class iFinalCurves(vGeneral):
                                     plt.plot(100*avg_IR[(cases[idx],len_mini[idx]-1)],avg_metrics[(cases[idx],len_mini[idx]-1)],'X', color='white', label='_nolegend_')
                                     plt.plot(100*avg_IR[(cases[idx],len_mini[idx]-1)],avg_metrics[(cases[idx],len_mini[idx]-1)],marker='X',markersize=10, color='black', label='_nolegend_')
                                 #'''
-                            else:
+                        else:
+                            for rho_idx in range(nb_rho[method]):
                                 print(method,color_dict[method])
-                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],marker='o'*('CT' in method) + '*'*('random' in method) + 'o'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
+                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],marker='o'*('CT' in method) + '*'*('random' in method) + 'o'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method][rho_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
                                 # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:],marker='o'*('CT' in method) + '*'*('random' in method) + '+'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
                                 # unnested
-                                plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'D',markersize=10, mfc='none',color=color_dict[method][other_dim_idx],label='_nolegend_')
+                                plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'D',markersize=10, mfc='none',color=color_dict[method][rho_idx],label='_nolegend_')
                                 plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],marker='D',markersize=9,color='white',label='_nolegend_')
                                 # nested it 100 white circle
                                 #'''
@@ -432,7 +438,8 @@ class iFinalCurves(vGeneral):
                                 elif ("DD" in method):
                                     replicates_legend[fig_nb].append("random input, DD")
                                 else:
-                                    replicates_legend[fig_nb].append("intermediate setting, " + str(config[method]["skip_connections"]) + " SC")
+                                    for rho_idx in range(nb_rho[method]):
+                                        replicates_legend[fig_nb].append("intermediate setting, " + str(config[method]["skip_connections"]) + " SC" + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]))
                         ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)')
                         if 'cold' in ROI:
                             ax[fig_nb].set_ylabel('Bias ')
@@ -656,7 +663,7 @@ class iFinalCurves(vGeneral):
         #     method_name = "nested"
 
         # nested reconstruction
-        if ('nested_random' or 'nested_CT' or 'nested_DD' in method):
+        if ('nested_random' in method or 'nested_CT' in method or 'nested_DD' in method):
             # from all_config.nested_random_3_skip_10it import config_func_MIC
             # import_str = "from all_config." + method + " import config_func_MIC"
             # exec(import_str,globals())
@@ -700,6 +707,7 @@ class iFinalCurves(vGeneral):
                 method_name = "nested"
             config[method] = config_MIC
         config[method]["method"] = method_name
+
         return config[method]
 
     def marker_color_dict_method(self):
@@ -743,7 +751,8 @@ class iFinalCurves(vGeneral):
                 "nested_skip0_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][3]],
                 "nested_skip1_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][1]],
                 "nested_skip2_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][2]],
-                "nested_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["nested_ADMMLim"][0]],
+                "nested_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["nested_ADMMLim"][0],color_dict_after_MIC["nested_ADMMLim"][3]],
+                # "nested_ADMMLim_more_ADMMLim_it_10_003" : [color_dict_after_MIC["nested_ADMMLim"][3]],
                 "nested_ADMMLim_more_ADMMLim_it_30" : [color_dict_after_MIC["nested_ADMMLim"][1]],
                 "nested_ADMMLim_more_ADMMLim_it_80" : [color_dict_after_MIC["nested_ADMMLim"][2]],
                 "nested_ADMMLim_u_v" : [color_dict_after_MIC["nested_ADMMLim"][3]],
@@ -773,9 +782,9 @@ class iFinalCurves(vGeneral):
                 "DIPRecon_CT_2_skip" : [color_dict_after_MIC["DIPRecon"][2]],
                 "DIPRecon_CT_1_skip" : [color_dict_after_MIC["DIPRecon"][3]],
                 "DIPRecon_skip3_3_my_settings" : [color_dict_after_MIC["DIPRecon"][1]],
-                "DIPRecon_random_3_skip" : [color_dict_after_MIC["DIPRecon"][1]],
-                "DIPRecon_random_2_skip" : [color_dict_after_MIC["DIPRecon"][2]],
-                "DIPRecon_random_1_skip" : [color_dict_after_MIC["DIPRecon"][3]],
+                "DIPRecon_random_3_skip" : [color_dict_after_MIC["DIPRecon"][4]],
+                "DIPRecon_random_2_skip" : [color_dict_after_MIC["DIPRecon"][5]],
+                "DIPRecon_random_1_skip" : [color_dict_after_MIC["DIPRecon"][6]],
             }
 
             color_dict = {**color_dict_after_MIC, **color_dict_add_tests} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
@@ -818,6 +827,7 @@ class iFinalCurves(vGeneral):
                 "nested_skip1_3_my_settings" : [marker_dict["intermediate"][0]],
                 "nested_skip2_3_my_settings" : [marker_dict["intermediate"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_10" : [marker_dict["intermediate"][0]],
+                "nested_ADMMLim_more_ADMMLim_it_10_003" : [marker_dict["intermediate"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_30" : [marker_dict["ADMMLim"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_80" : [marker_dict["ADMMLim"][0]],
                 "nested_ADMMLim_u_v" : [marker_dict["ADMMLim"][0]],

@@ -730,7 +730,7 @@ class vGeneral(abc.ABC):
             print('image is ' + str(len(image.shape)) + 'D, plotting only 2D slice')
             image = image[int(image.shape[0] / 2.),:,:]
             #image = image[:,:,int(image.shape[0] / 2.)]
-        MIC_show = True
+        MIC_show = False
         if (MIC_show):
             nb_crop = 10
             image = array(image[nb_crop:len(image) - nb_crop,nb_crop:len(image) - nb_crop])

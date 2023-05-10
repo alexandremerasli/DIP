@@ -24,6 +24,10 @@ class iResults(vDenoising):
         # Initialize general variables
         self.initializeGeneralVariables(config,root)
         self.config = config
+        # Specific hyperparameters for reconstruction module (Do it here to have raytune config hyperparameters selection)
+        if (config["net"] == "DD" or config["net"] == "DD_AE"):
+            self.d_DD = config["d_DD"]
+            self.k_DD = config["k_DD"]
         #vDenoising.initializeSpecific(self,config,root)
 
         if ('ADMMLim' in config["method"]):
@@ -466,7 +470,7 @@ class iResults(vDenoising):
         specify the `data_range` argument.
         '''
         SSIM_recon[i] = structural_similarity(np.squeeze(image_gt_cropped), np.squeeze(image_recon_cropped), data_range=(image_recon_cropped).max() - (image_recon_cropped).min())
-        SSIM_recon[i] = structural_similarity(np.squeeze(image_gt_cropped), np.squeeze(image_recon_cropped), data_range=(image_recon_cropped).max() - (image_recon_cropped).min(), sigma=1.5, gaussian_weights=True, use_sample_covariance=False)
+        # SSIM_recon[i] = structural_similarity(np.squeeze(image_gt_cropped), np.squeeze(image_recon_cropped), data_range=(image_recon_cropped).max() - (image_recon_cropped).min(), sigma=1.5, gaussian_weights=True, use_sample_covariance=False)
         #print('SSIM calculation', SSIM_recon[i],' , must be close to 1')
 
         # Contrast Recovery Coefficient calculation    
