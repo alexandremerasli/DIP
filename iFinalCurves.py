@@ -487,7 +487,7 @@ class iFinalCurves(vGeneral):
 
     def choose_good_config_file(self,method,config,csv_before_MIC,DIPRecon):
         # Gong reconstruction
-        if ('DIPRecon' in method):
+        if (csv_before_MIC and 'DIPRecon' in method):
             #config[method] = np.load(root + 'config_DIP.npy',allow_pickle='TRUE').item()
             from all_config.Gong_configuration import config_func_MIC
             #config[method] = config_func()
@@ -677,12 +677,21 @@ class iFinalCurves(vGeneral):
             from all_config.Gong_CT_3_skip import config_func_MIC
             method_name = "Gong"
 
+        # DIPRecon reconstruction
+        if ('DIPRecon_' in method):
+            # from all_config.nested_random_3_skip_10it import config_func_MIC
+            # import_str = "from all_config." + method + " import config_func_MIC"
+            # exec(import_str,globals())
+            import importlib
+            globals().update(importlib.import_module('all_config.' + 'Gong' + method[8:]).__dict__) 
+            method_name = "Gong"
+
         try:
             config[method] = config_func_MIC()
         except:
             import importlib
-            globals().update(importlib.import_module('all_config.' + method).__dict__) 
-            method_name = "nested"
+            globals().update(importlib.import_module('all_config.' + 'Gong' + method[8:]).__dict__) 
+            method_name = "Gong"
             config[method] = config_MIC
         config[method]["method"] = method_name
         return config[method]
@@ -716,7 +725,8 @@ class iFinalCurves(vGeneral):
                 "nested_APPGML" : ['darkgreen','lime','gold','darkseagreen'],
                 "nested_CT_skip" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
                 "nested_random_skip" : ['fuchsia','orange','darkgreen','lightsalmon'],
-                "DIPRecon" : ['cyan','blue','teal','blueviolet'],
+                # "DIPRecon" : ['cyan','blue','teal','blueviolet'],
+                "DIPRecon" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
                 "BSREM" : ['grey'],
                 "OSEM" : ['orange'],
                 #"APGMAP" : ['darkgreen','lime','gold'],
@@ -755,6 +765,10 @@ class iFinalCurves(vGeneral):
                 "DIPRecon_CT_3_skip" : [color_dict_after_MIC["DIPRecon"][1]],
                 "DIPRecon_CT_2_skip" : [color_dict_after_MIC["DIPRecon"][2]],
                 "DIPRecon_CT_1_skip" : [color_dict_after_MIC["DIPRecon"][3]],
+                "DIPRecon_skip3_3_my_settings" : [color_dict_after_MIC["DIPRecon"][1]],
+                "DIPRecon_random_3_skip" : [color_dict_after_MIC["DIPRecon"][1]],
+                "DIPRecon_random_2_skip" : [color_dict_after_MIC["DIPRecon"][2]],
+                "DIPRecon_random_1_skip" : [color_dict_after_MIC["DIPRecon"][3]],
             }
 
             color_dict = {**color_dict_after_MIC, **color_dict_add_tests} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
@@ -824,6 +838,10 @@ class iFinalCurves(vGeneral):
                 "DIPRecon_CT_3_skip" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_CT_2_skip" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_CT_1_skip" : [marker_dict["DIPRecon"][0]],
+                "DIPRecon_skip3_3_my_settings" : [marker_dict["DIPRecon"][0]],
+                "DIPRecon_random_3_skip" : [marker_dict["DIPRecon"][0]],
+                "DIPRecon_random_2_skip" : [marker_dict["DIPRecon"][0]],
+                "DIPRecon_random_1_skip" : [marker_dict["DIPRecon"][0]],
             }
             marker_dict = {**marker_dict, **marker_dict_supp}
 
