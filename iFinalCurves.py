@@ -429,6 +429,8 @@ class iFinalCurves(vGeneral):
                                     replicates_legend[fig_nb].append("random input, " + str(config[method]["skip_connections"]) + " SC")
                                 elif ("CT" in method):
                                     replicates_legend[fig_nb].append("anatomical input, " + str(config[method]["skip_connections"]) + " SC")
+                                elif ("DD" in method):
+                                    replicates_legend[fig_nb].append("random input, DD")
                                 else:
                                     replicates_legend[fig_nb].append("intermediate setting, " + str(config[method]["skip_connections"]) + " SC")
                         ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)')
@@ -613,48 +615,48 @@ class iFinalCurves(vGeneral):
             from all_config.nested_APPGML_28it_configuration import config_func_MIC
             method_name = "nested"
 
-        # nested reconstruction
-        if (method == 'nested_CT_0_skip_3it'):
-            from all_config.nested_CT_0_skip_3it import config_func_MIC
-            method_name = "nested"
+        # # nested reconstruction
+        # if (method == 'nested_CT_0_skip_3it'):
+        #     from all_config.nested_CT_0_skip_3it import config_func_MIC
+        #     method_name = "nested"
+
+        # # nested reconstruction
+        # if (method == 'nested_CT_1_skip_3it'):
+        #     from all_config.nested_CT_1_skip_3it import config_func_MIC
+        #     method_name = "nested"
+
+        # # nested reconstruction
+        # if (method == 'nested_CT_2_skip_3it'):
+        #     from all_config.nested_CT_2_skip_3it import config_func_MIC
+        #     method_name = "nested"
+
+        # # nested reconstruction
+        # if (method == 'nested_CT_3_skip_3it'):
+        #     from all_config.nested_CT_3_skip_3it import config_func_MIC
+        #     method_name = "nested"
+
+        # # nested reconstruction
+        # if (method == 'nested_CT_0_skip_10it'):
+        #     from all_config.nested_CT_0_skip_10it import config_func_MIC
+        #     method_name = "nested"
+
+        # # nested reconstruction
+        # if (method == 'nested_CT_1_skip_10it'):
+        #     from all_config.nested_CT_1_skip_10it import config_func_MIC
+        #     method_name = "nested"
+
+        # # nested reconstruction
+        # if (method == 'nested_CT_2_skip_10it'):
+        #     from all_config.nested_CT_2_skip_10it import config_func_MIC
+        #     method_name = "nested"
+
+        # # nested reconstruction
+        # if (method == 'nested_CT_3_skip_10it'):
+        #     from all_config.nested_CT_3_skip_10it import config_func_MIC
+        #     method_name = "nested"
 
         # nested reconstruction
-        if (method == 'nested_CT_1_skip_3it'):
-            from all_config.nested_CT_1_skip_3it import config_func_MIC
-            method_name = "nested"
-
-        # nested reconstruction
-        if (method == 'nested_CT_2_skip_3it'):
-            from all_config.nested_CT_2_skip_3it import config_func_MIC
-            method_name = "nested"
-
-        # nested reconstruction
-        if (method == 'nested_CT_3_skip_3it'):
-            from all_config.nested_CT_3_skip_3it import config_func_MIC
-            method_name = "nested"
-
-        # nested reconstruction
-        if (method == 'nested_CT_0_skip_10it'):
-            from all_config.nested_CT_0_skip_10it import config_func_MIC
-            method_name = "nested"
-
-        # nested reconstruction
-        if (method == 'nested_CT_1_skip_10it'):
-            from all_config.nested_CT_1_skip_10it import config_func_MIC
-            method_name = "nested"
-
-        # nested reconstruction
-        if (method == 'nested_CT_2_skip_10it'):
-            from all_config.nested_CT_2_skip_10it import config_func_MIC
-            method_name = "nested"
-
-        # nested reconstruction
-        if (method == 'nested_CT_3_skip_10it'):
-            from all_config.nested_CT_3_skip_10it import config_func_MIC
-            method_name = "nested"
-
-        # nested reconstruction
-        if ('nested_random' in method):
+        if ('nested_random' or 'nested_CT' or 'nested_DD' in method):
             # from all_config.nested_random_3_skip_10it import config_func_MIC
             # import_str = "from all_config." + method + " import config_func_MIC"
             # exec(import_str,globals())
@@ -662,20 +664,20 @@ class iFinalCurves(vGeneral):
             globals().update(importlib.import_module('all_config.' + method).__dict__) 
             method_name = "nested"
 
-        # Gong reconstruction
-        if (method == 'DIPRecon_CT_1_skip'):
-            from all_config.Gong_CT_1_skip import config_func_MIC
-            method_name = "Gong"
+        # # Gong reconstruction
+        # if (method == 'DIPRecon_CT_1_skip'):
+        #     from all_config.Gong_CT_1_skip import config_func_MIC
+        #     method_name = "Gong"
 
-        # Gong reconstruction
-        if (method == 'DIPRecon_CT_2_skip'):
-            from all_config.Gong_CT_2_skip import config_func_MIC
-            method_name = "Gong"
+        # # Gong reconstruction
+        # if (method == 'DIPRecon_CT_2_skip'):
+        #     from all_config.Gong_CT_2_skip import config_func_MIC
+        #     method_name = "Gong"
 
-        # Gong reconstruction
-        if (method == 'DIPRecon_CT_3_skip'):
-            from all_config.Gong_CT_3_skip import config_func_MIC
-            method_name = "Gong"
+        # # Gong reconstruction
+        # if (method == 'DIPRecon_CT_3_skip'):
+        #     from all_config.Gong_CT_3_skip import config_func_MIC
+        #     method_name = "Gong"
 
         # DIPRecon reconstruction
         if ('DIPRecon_' in method):
@@ -690,8 +692,12 @@ class iFinalCurves(vGeneral):
             config[method] = config_func_MIC()
         except:
             import importlib
-            globals().update(importlib.import_module('all_config.' + 'Gong' + method[8:]).__dict__) 
-            method_name = "Gong"
+            if 'Gong' in method:
+                globals().update(importlib.import_module('all_config.' + 'Gong' + method[8:]).__dict__)
+                method_name = "Gong"
+            elif 'nested' in method:
+                globals().update(importlib.import_module('all_config.' + method).__dict__)
+                method_name = "nested"
             config[method] = config_MIC
         config[method]["method"] = method_name
         return config[method]
@@ -724,7 +730,7 @@ class iFinalCurves(vGeneral):
                 #"nested_APPGML_subsets" : ['darkgreen','lime','gold','darkseagreen'],
                 "nested_APPGML" : ['darkgreen','lime','gold','darkseagreen'],
                 "nested_CT_skip" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
-                "nested_random_skip" : ['fuchsia','orange','darkgreen','lightsalmon'],
+                "nested_random_skip" : ['fuchsia','orange','darkgreen','lightsalmon','black'],
                 # "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "DIPRecon" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
                 "BSREM" : ['grey'],
@@ -761,6 +767,7 @@ class iFinalCurves(vGeneral):
                 "nested_random_2_skip_10it" : [color_dict_after_MIC["nested_random_skip"][1]],
                 "nested_random_1_skip_10it" : [color_dict_after_MIC["nested_random_skip"][2]],
                 "nested_random_0_skip_10it" : [color_dict_after_MIC["nested_random_skip"][3]],
+                "nested_DD" : [color_dict_after_MIC["nested_random_skip"][4]],
                 "DIPRecon_BSREM_stand" : [color_dict_after_MIC["DIPRecon"][0]],
                 "DIPRecon_CT_3_skip" : [color_dict_after_MIC["DIPRecon"][1]],
                 "DIPRecon_CT_2_skip" : [color_dict_after_MIC["DIPRecon"][2]],
@@ -834,6 +841,7 @@ class iFinalCurves(vGeneral):
                 "nested_random_2_skip_10it" : [marker_dict["random"][0]],
                 "nested_random_1_skip_10it" : [marker_dict["random"][0]],
                 "nested_random_0_skip_10it" : [marker_dict["random"][0]],
+                "nested_DD" : [marker_dict["random"][0]],
                 "DIPRecon_BSREM_stand" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_CT_3_skip" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_CT_2_skip" : [marker_dict["DIPRecon"][0]],

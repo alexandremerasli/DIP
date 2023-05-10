@@ -199,7 +199,10 @@ class iNestedADMM(vReconstruction):
                 # Initialize vDenoising object
                 classDenoising = vDenoising(config,self.global_it)
                 # Put CT as input
-                classDenoising.override_input = True
+                if (self.net == "DIP"):
+                    classDenoising.override_input = True
+                else:
+                    classDenoising.override_input = False
                 # Initialize other variables
                 classDenoising.fixed_hyperparameters_list = self.fixed_hyperparameters_list
                 classDenoising.hyperparameters_list = self.hyperparameters_list
@@ -213,8 +216,8 @@ class iNestedADMM(vReconstruction):
         if (self.global_it == i_init + 1 and ((i_init == -1 and not config["unnested_1st_global_iter"]) or (i_init == 0 and config["unnested_1st_global_iter"]))): # TESTCT_random , put back random input
             config["DIP_early_stopping"] = False
             config["all_images_DIP"] = "Last" # Only save last image to save space
-            # Put back original input
-            classDenoising.override_input = False
+            # # Put back original input
+            # classDenoising.override_input = False
 
         return classDenoising
 
