@@ -61,23 +61,24 @@ class iResults(vDenoising):
         plt.savefig(self.subroot_data + 'Data/database_v2/' + 'image_gt.png')
         '''
 
-        # # Defining ROIs
-        # self.phantom_ROI = self.get_phantom_ROI(self.phantom)
-        # if ("3D" not in self.phantom):
-        #     # self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-        #     if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
-        #         self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-        #         self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-        #         self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-        #         # This ROIs has already been defined, but is computed for the sake of simplicity
-        #         self.hot_ROI = self.hot_TEP_ROI
-        #     else:
-        #         self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-        #         # These ROIs do not exist, so put them equal to hot ROI for the sake of simplicity
-        #         self.hot_TEP_ROI = np.array(self.hot_ROI)
-        #         self.hot_TEP_match_square_ROI = np.array(self.hot_ROI)
-        #         self.hot_perfect_match_ROI = np.array(self.hot_ROI)
-        #     self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        # Defining ROIs
+        if (not hasattr(self,"phantom_ROI")):
+            if ("3D" not in self.phantom):
+                self.phantom_ROI = self.get_phantom_ROI(self.phantom)
+                # self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
+                    self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                    self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                    self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                    # This ROIs has already been defined, but is computed for the sake of simplicity
+                    self.hot_ROI = self.hot_TEP_ROI
+                else:
+                    self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                    # These ROIs do not exist, so put them equal to hot ROI for the sake of simplicity
+                    self.hot_TEP_ROI = np.array(self.hot_ROI)
+                    self.hot_TEP_match_square_ROI = np.array(self.hot_ROI)
+                    self.hot_perfect_match_ROI = np.array(self.hot_ROI)
+                self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
         
         if ("3D" not in self.phantom):
             # Metrics arrays

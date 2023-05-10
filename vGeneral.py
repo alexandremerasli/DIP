@@ -154,6 +154,7 @@ class vGeneral(abc.ABC):
                             config["mlem_sequence"] = False
         else:
             config["task"] = task
+        return config
 
     def initializeBeforeRay(self,root):
         self.subroot_data = root + '/data/Algo/' # Directory root
