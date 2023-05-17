@@ -47,6 +47,18 @@ class iPostReconstruction(vDenoising):
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'OPTITR_2it.img',shape=(self.PETImage_shape),type_im='<d') # ADMMLim for nested
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + 'image2_3D/image2_3D.img',shape=(self.PETImage_shape),type_im='<f') # ADMMLim for nested
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + 'image0/image0.img',shape=(self.PETImage_shape),type_im='<f') # ADMMLim for nested
+        
+        
+        # modify input with line on the edge of the phantom
+        addon = "remove_cold" # mu_DIP = 5
+        if (addon == "remove_cold"):
+            self.image_corrupt[35:59,35:59] = 30
+        # import matplotlib.pyplot as plt
+        # plt.imshow(self.image_corrupt,vmin=np.min(self.image_corrupt),vmax=np.max(self.image_corrupt),cmap='gray')
+        # plt.show()
+        
+        
+        
         self.net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_epoch=' + format(0) + '.img'
         self.checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         self.name_run = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -69,6 +81,15 @@ class iPostReconstruction(vDenoising):
             classResults.nb_replicates = self.nb_replicates
             classResults.debug = self.debug
             classResults.hyperparameters_list = self.hyperparameters_list
+
+            if ("3D" not in self.phantom):
+                classResults.bkg_ROI = self.bkg_ROI
+                classResults.hot_TEP_ROI = self.hot_TEP_ROI
+                classResults.hot_TEP_match_square_ROI = self.hot_TEP_match_square_ROI
+                classResults.hot_perfect_match_ROI = self.hot_perfect_match_ROI
+                classResults.hot_ROI = self.hot_ROI
+                classResults.cold_ROI = self.cold_ROI
+
             classResults.initializeSpecific(config,root)
 
 
@@ -210,5 +231,5 @@ class iPostReconstruction(vDenoising):
                 classResults.windowSize = self.windowSize
             classResults.patienceNumber = self.patienceNumber
             classResults.SUCCESS = self.SUCCESS
-
-            classResults.WMV_plot(config)
+            if (config["EMV_or_WMV"] == "WMV"):
+                classResults.WMV_plot(config)

@@ -176,6 +176,24 @@ class iResults(vDenoising):
                     self.input = config["input"]
                     self.override_input = False
                     self.image_net_input = self.load_input(self.net,self.PETImage_shape,self.subroot_data) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
+
+                    # modify input with line on the edge of the phantom
+                    addon = "line_edge" # mu_DIP = 10
+                    addon = "high_pixel" # mu_DIP = 2
+                    # addon = "reduce_cold_value_MR" # mu_DIP = 3
+                    addon = "remove_cold" # mu_DIP = 4
+                    if (addon == "line_edge"):
+                        phantom_ROI = self.points_in_circle_edge(0/4,0/4,150/4,self.PETImage_shape)
+                        for couple in phantom_ROI:
+                            edge_value = config["rho"]
+                            self.image_net_input[couple] = edge_value
+                    elif (addon == "high_pixel"):
+                        edge_value = config["rho"]
+                        self.image_net_input[10,10] = edge_value
+                    elif (addon == "reduce_cold_value_MR"):
+                        self.image_net_input[self.cold_ROI == 1] = config["rho"]
+                    elif (addon == "remove_cold"):
+                        self.image_net_input[35:59,35:59] = 30
                     self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
             
 
