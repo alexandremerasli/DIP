@@ -244,7 +244,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                 #     p = 4
                 # else:
                 #     p = 1
-                p = 4
+                p = 1
                 if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
                     # Read image into array according to method
                     if(self.read_image_method(config,beta_string,i_init,p,i)): # ES found
@@ -273,8 +273,8 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                         break
 
             # Save images 
-            self.write_image_tensorboard(self.writer,self.f_p,self.method + " at IR=" + str(int(round(IR,2)*100)) + "%, for replicate 1, it=" + str(i) + ", SSIM=" + str(round(SSIM_min,3)),self.suffix,self.image_gt,0) # image at IR=30% in tensorboard
-            self.write_image_tensorboard(self.writer,self.f_p,self.method + " at IR=" + str(int(round(IR,2)*100)) + ", for replicate 1, it=" + str(i) + ", SSIM=" + str(round(SSIM_min,3)) + " (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # image at IR=30% in tensorboard
+            self.write_image_tensorboard(self.writer,self.f_p,self.method + " at IR=" + str(int(round(IR,2)*100)) + "%, for replicate " + str(p) + ", it=" + str(i) + ", SSIM=" + str(round(SSIM_min,3)),self.suffix,self.image_gt,0) # image at IR=30% in tensorboard
+            self.write_image_tensorboard(self.writer,self.f_p,self.method + " at IR=" + str(int(round(IR,2)*100)) + ", for replicate" + str(p) + ", it=" + str(i) + ", SSIM=" + str(round(SSIM_min,3)) + " (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # image at IR=30% in tensorboard
  
     def compareImages(self,suffix):
         if (self.tensorboard):
