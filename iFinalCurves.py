@@ -733,7 +733,7 @@ class iFinalCurves(vGeneral):
 
         elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
             color_dict_after_MIC = {
-                "nested_ADMMLim" : ['cyan','blue','teal','blueviolet'],
+                "nested_ADMMLim" : ['cyan','blue','teal','blueviolet','black'],
                 #"nested_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
                 #"nested_APPGML_subsets" : ['darkgreen','lime','gold','darkseagreen'],
                 "nested_APPGML" : ['darkgreen','lime','gold','darkseagreen'],
@@ -751,7 +751,7 @@ class iFinalCurves(vGeneral):
                 "nested_skip0_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][3]],
                 "nested_skip1_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][1]],
                 "nested_skip2_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][2]],
-                "nested_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["nested_ADMMLim"][0],color_dict_after_MIC["nested_ADMMLim"][3]],
+                "nested_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["nested_ADMMLim"][0],color_dict_after_MIC["nested_ADMMLim"][1],color_dict_after_MIC["nested_ADMMLim"][2],color_dict_after_MIC["nested_ADMMLim"][3],color_dict_after_MIC["nested_ADMMLim"][4]],
                 # "nested_ADMMLim_more_ADMMLim_it_10_003" : [color_dict_after_MIC["nested_ADMMLim"][3]],
                 "nested_ADMMLim_more_ADMMLim_it_30" : [color_dict_after_MIC["nested_ADMMLim"][1]],
                 "nested_ADMMLim_more_ADMMLim_it_80" : [color_dict_after_MIC["nested_ADMMLim"][2]],
