@@ -216,8 +216,9 @@ class iNestedADMM(vReconstruction):
         if (self.global_it == i_init + 1 and ((i_init == -1 and not config["unnested_1st_global_iter"]) or (i_init == 0 and config["unnested_1st_global_iter"]))): # TESTCT_random , put back random input
             config["DIP_early_stopping"] = False
             config["all_images_DIP"] = "Last" # Only save last image to save space
-            # # Put back original input
-            # classDenoising.override_input = False
+            # Put back original input
+            if (self.net == "DIP"):
+                classDenoising.override_input = False
 
         return classDenoising
 
