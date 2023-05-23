@@ -107,6 +107,13 @@ class iNestedADMM(vReconstruction):
             classDenoising.initializeSpecific(config,root)
             classDenoising.runComputation(config,root)
 
+            # Copy last checkpoint to file "last.ckpt"
+            import shutil
+            for file in os.listdir(classDenoising.checkpoint_simple_path_exp):
+                if ("epoch" in file):
+                    shutil.copy(os.path.join(classDenoising.checkpoint_simple_path_exp,file),os.path.join(classDenoising.checkpoint_simple_path_exp,"last.ckpt"))
+                    os.remove(os.path.join(classDenoising.checkpoint_simple_path_exp,file))
+
             if (self.global_it == i_init):
 
                 classResults.writeBeginningImages(self.suffix,classDenoising.image_net_input) # Write GT and DIP input
