@@ -1,14 +1,17 @@
 ## Python libraries
 
 # Pytorch
-import torch
-import pytorch_lightning as pl
+from torch import Tensor, save
+from torch.utils.data import DataLoader, TensorDataset
+from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.loggers import TensorBoardLogger
 
 # Useful
-import numpy as np
+from numpy import inf, array, arange, ones
+from numpy.random import seed, uniform
 import os
 from pathlib import Path
-import re
 os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 
 # Local files to import
@@ -44,7 +47,7 @@ class vDenoising(vGeneral):
             with open(os.getcwd() + "/seed.txt", 'r') as file:
                 random_seed = file.read().rstrip()
             if (eval(random_seed)):
-                np.random.seed(1)
+                seed(1)
 
         self.all_images_DIP = config["all_images_DIP"]
 
@@ -82,14 +85,26 @@ class vDenoising(vGeneral):
             
             
             # modify input with line on the edge of the phantom
-            # phantom_ROI = self.points_in_circle_edge(0/4,0/4,150/4,self.PETImage_shape)
-            # for couple in phantom_ROI:
-            #     edge_value = config["rho"]
-            #     self.image_net_input[couple] = edge_value
-
+            addon = "line_edge" # mu_DIP = 10
+            addon = "high_pixel" # mu_DIP = 20
+            # addon = "reduce_cold_value_MR" # mu_DIP = 3
+            addon = "remove_cold" # mu_DIP = 4
+            addon = "nothing"
+            if (addon == "line_edge"):
+                phantom_ROI = self.points_in_circle_edge(0/4,0/4,150/4,self.PETImage_shape)
+                for couple in phantom_ROI:
+                    edge_value = config["rho"]
+                    self.image_net_input[couple] = edge_value
+            elif (addon == "high_pixel"):
+                edge_value = config["rho"]
+                self.image_net_input[10,10] = edge_value
+            elif (addon == "reduce_cold_value_MR"):
+                self.image_net_input[self.cold_ROI == 1] = config["rho"]
+            elif (addon == "remove_cold"):
+                self.image_net_input[35:59,35:59] = 30
             # import matplotlib.pyplot as plt
             # plt.imshow(self.image_net_input,vmin=np.min(self.image_net_input),vmax=np.max(self.image_net_input),cmap='gray')
-            # # plt.show()
+            # plt.show()
             
             
             
@@ -98,7 +113,7 @@ class vDenoising(vGeneral):
             
             image_net_input_scale = self.rescale_imag(self.image_net_input,self.scaling_input)[0] # Rescale of network input
             # DIP input image, numpy --> torch
-            self.image_net_input_torch = torch.Tensor(image_net_input_scale)
+            self.image_net_input_torch = Tensor(image_net_input_scale)
             # Adding dimensions to fit network architecture
             if (self.net == 'DIP' or self.net == 'DIP_VAE' or self.net == 'DD_AE'): # For autoencoders structure
                 if (self.PETImage_shape[2] == 1): # if 3D but with dim3 = 1 -> 2D
@@ -109,13 +124,13 @@ class vDenoising(vGeneral):
             elif (self.net == 'DD'):
                     input_size_DD = int(self.PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
                     self.image_net_input_torch = self.image_net_input_torch.view(1,config["k_DD"],input_size_DD,input_size_DD) # For Deep Decoder, if original Deep Decoder (i.e. only with decoder part)
-            torch.save(self.image_net_input_torch,self.subroot_data + 'Data/initialization/pytorch/replicate_' + str(self.replicate) + '/image_' + self.net + '_input_torch.pt')
+            save(self.image_net_input_torch,self.subroot_data + 'Data/initialization/pytorch/replicate_' + str(self.replicate) + '/image_' + self.net + '_input_torch.pt')
 
     def train_process(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, suffix, config, finetuning, processing_unit, sub_iter_DIP, method, global_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, experiment, checkpoint_simple_path, name_run, subroot, all_images_DIP, last_iter=-1):
         # Implements Dataset
-        train_dataset = torch.utils.data.TensorDataset(image_net_input_torch, image_corrupt_torch)
-        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1, num_workers=0) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
-        #train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=1, num_workers=1, persistent_workers=True) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
+        train_dataset = TensorDataset(image_net_input_torch, image_corrupt_torch)
+        train_dataloader = DataLoader(train_dataset, batch_size=1, num_workers=0) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
+        #train_dataloader = DataLoader(train_dataset, batch_size=1, num_workers=1, persistent_workers=True) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
         # Choose network architecture as model
         model, model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, last_iter, self.override_input)
         checkpoint_simple_path_previous_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment)
@@ -170,7 +185,7 @@ class vDenoising(vGeneral):
 
         # Early stopping callback
         from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-        early_stopping_callback = EarlyStopping(monitor="SUCCESS", mode="max",stopping_threshold=0.9,patience=np.inf) # SUCCESS will be 1 when ES if found, which is greater than stopping_threshold = 0.9
+        early_stopping_callback = EarlyStopping(monitor="SUCCESS", mode="max",stopping_threshold=0.9,patience=inf) # SUCCESS will be 1 when ES if found, which is greater than stopping_threshold = 0.9
 
         print("global_it",global_it)
         if (global_it == -1 or global_it == self.max_iter - 1): # Number of initial and final iterations are overrided here
@@ -178,21 +193,24 @@ class vDenoising(vGeneral):
             self.sub_iter_DIP = self.sub_iter_DIP_initial_and_final
             sub_iter_DIP = self.sub_iter_DIP
         if (finetuning == 'False'): # Do not save and use checkpoints (still save hparams and event files for now ...)
-            logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
-            #checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=0, save_weights_only=True) # Do not save any checkpoint (save_top_k = 0)
-            checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0). We do not use it a priori, except in post reconstruction to initialize
-            trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple", progress_bar_refresh_rate=0, weights_summary=None)
+            logger = TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
+            #checkpoint_callback = ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=0, save_weights_only=True) # Do not save any checkpoint (save_top_k = 0)
+            checkpoint_callback = ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0). We do not use it a priori, except in post reconstruction to initialize
+            trainer = Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple", progress_bar_refresh_rate=0, weights_summary=None)
         else:
             if (finetuning == 'last'): # last model saved in checkpoint
                 # Checkpoints pl variables
-                logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
-                checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0)
-                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all", progress_bar_refresh_rate=0, weights_summary=None, profiler="simple") # Prepare trainer model with callback to save checkpoint        
+                logger = TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
+                checkpoint_callback = ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0)
+                # checkpoint_callback = ModelCheckpoint(dirpath=checkpoint_simple_path_exp) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0)
+                # trainer = Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all", progress_bar_refresh_rate=0, weights_summary=None, profiler="simple") # Prepare trainer model with callback to save checkpoint        
+                trainer = Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1,logger=logger, callbacks=[checkpoint_callback,early_stopping_callback])#, , early_stopping_callback])#, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple")
+                trainer = Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1,logger=logger, callbacks=[checkpoint_callback])#, , early_stopping_callback])#, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple")
             if (finetuning == 'best'): # best model saved in checkpoint
                 # Checkpoints pl variables
-                logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
-                checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, filename = 'best_loss', monitor='loss_monitor', save_top_k=1) # Save best checkpoint (save_top_k = 1) (according to minimum loss (monitor)) as best_loss.ckpt
-                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator, profiler="simple", progress_bar_refresh_rate=0, weights_summary=None) # Prepare trainer model with callback to save checkpoint
+                logger = TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
+                checkpoint_callback = ModelCheckpoint(dirpath=checkpoint_simple_path_exp, filename = 'best_loss', monitor='loss_monitor', save_top_k=1) # Save best checkpoint (save_top_k = 1) (according to minimum loss (monitor)) as best_loss.ckpt
+                trainer = Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator, profiler="simple", progress_bar_refresh_rate=0, weights_summary=None) # Prepare trainer model with callback to save checkpoint
             if (finetuning == 'ES'): # best model saved in checkpoint
                 # Delete previous checkpoints from previous runs
                 if (global_it > -1): # Beginning nested or Gong in block2. For first epoch, change number of epochs to sub_iter_DIP_initial_and_final for Gong
@@ -201,9 +219,9 @@ class vDenoising(vGeneral):
                         #if (int(re.search(r'\d+', f).group()) != self.epochStar):
                         
                 # Checkpoints pl variables
-                logger = pl.loggers.TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
-                checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=-1) # Save checkpoint at each epoch (save_top_k = -1) to use the one corresponding to ES point
-                trainer = pl.Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all", progress_bar_refresh_rate=0, weights_summary=None) # Prepare trainer model with callback to save checkpoint        
+                logger = TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
+                checkpoint_callback = ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=-1) # Save checkpoint at each epoch (save_top_k = -1) to use the one corresponding to ES point
+                trainer = Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all", progress_bar_refresh_rate=0, weights_summary=None) # Prepare trainer model with callback to save checkpoint        
         return trainer
 
     def create_input(self,net,PETImage_shape,config,subroot): #CT map for high-count data, but not CT yet...
@@ -230,9 +248,9 @@ class vDenoising(vGeneral):
                 type_im = 'float64'
             if (net == 'DIP' or net == 'DIP_VAE'):
                 if config["input"] == "random":
-                    im_input = np.random.uniform(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type_im) # initializing input image with random image (for DIP)
+                    im_input = uniform(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type_im) # initializing input image with random image (for DIP)
                 elif config["input"] == "uniform":
-                    im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type_im) # initializing input image with random image (for DIP)
+                    im_input = constant_uniform*ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type_im) # initializing input image with random image (for DIP)
                 else:
                     return "CT input, do not need to create input"
                 im_input = im_input.reshape(PETImage_shape) # reshaping (for DIP)
@@ -240,18 +258,18 @@ class vDenoising(vGeneral):
                 if (net == 'DD'):
                     input_size_DD = int(PETImage_shape[0] / (2**config["d_DD"])) # if original Deep Decoder (i.e. only with decoder part)
                     if config["input"] == "random":
-                        im_input = np.random.uniform(0,1,config["k_DD"]*input_size_DD*input_size_DD).astype(type_im) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+                        im_input = uniform(0,1,config["k_DD"]*input_size_DD*input_size_DD).astype(type_im) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
                     elif config["input"] == "uniform":
-                        im_input = constant_uniform*np.ones((config["k_DD"],input_size_DD,input_size_DD)).astype(type_im) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
+                        im_input = constant_uniform*ones((config["k_DD"],input_size_DD,input_size_DD)).astype(type_im) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
                     else:
                         return "CT input, do not need to create input"
                     im_input = im_input.reshape(config["k_DD"],input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
                     
                 elif (net == 'DD_AE'):
                     if config["input"] == "random":
-                        im_input = np.random.uniform(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type_im) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+                        im_input = uniform(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type_im) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
                     elif config["input"] == "uniform":
-                        im_input = constant_uniform*np.ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type_im) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
+                        im_input = constant_uniform*ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type_im) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
                     else:
                         return "CT input, do not need to create input"
                     im_input = im_input.reshape(PETImage_shape[0],PETImage_shape[1],PETImage_shape[2]) # reshaping (for Deep Decoder) # if auto encoder based on Deep Decoder
@@ -324,9 +342,9 @@ class vDenoising(vGeneral):
 
     def runComputation(self,config,root):
         # Scaling of x_label image
-        image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image
+        image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image        
         # Corrupted image x_label, numpy --> torch float32
-        self.image_corrupt_torch = torch.Tensor(image_corrupt_input_scale)
+        self.image_corrupt_torch = Tensor(image_corrupt_input_scale)
         # Adding dimensions to fit network architecture
         if (self.PETImage_shape[2] == 1): # if 3D but with dim3 = 1 -> 2D
             self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
@@ -365,12 +383,12 @@ class vDenoising(vGeneral):
 
         # Write descaled images in files
         if (self.all_images_DIP == "True"):
-            epoch_values = np.arange(0,self.sub_iter_DIP)
+            epoch_values = arange(0,self.sub_iter_DIP)
         elif (self.all_images_DIP == "False"):
             #epoch_values = np.arange(0,self.sub_iter_DIP,max(self.sub_iter_DIP//10,1))
-            epoch_values = np.arange(self.sub_iter_DIP//10,self.sub_iter_DIP+self.sub_iter_DIP//10,max(self.sub_iter_DIP//10,1)) - 1
+            epoch_values = arange(self.sub_iter_DIP//10,self.sub_iter_DIP+self.sub_iter_DIP//10,max(self.sub_iter_DIP//10,1)) - 1
         elif (self.all_images_DIP == "Last"):
-            epoch_values = np.array([self.sub_iter_DIP-1])
+            epoch_values = array([self.sub_iter_DIP-1])
 
         for epoch in epoch_values:
             if (self.finetuning == "ES"):
@@ -418,7 +436,7 @@ class vDenoising(vGeneral):
             model_class = VAE_DIP_2D
         elif (net == 'DD'): # Loading Deep Decoder architecture
                 #model = DD_2D(config,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, last_iter=last_iter)
-                model = DD_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, last_iter, override_input)
+                model = DD_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, last_iter)
                 model_class = DD_2D
         elif (net == 'DD_AE'): # Loading Deep Decoder based autoencoder architecture
             model = DD_AE_2D(config) 

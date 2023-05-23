@@ -37,6 +37,7 @@ class iPostReconstruction(vDenoising):
         
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'F16_GT_' + str(self.PETImage_shape[0]) + '.img',shape=(self.PETImage_shape),type_im='<f')
         self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d')
+        # self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/corrupt_400.raw',shape=(self.PETImage_shape),type_im='<d')
         #self.image_corrupt = self.fijii_np("/home/meraslia/workspace_reco/nested_admm/data/Algo/image4_0/replicate_10/nested/Block2/config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=14_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=1_mlem_=False_A_AML=-100/x_label/24/" + "-1_x_labelconfig_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=14_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=1_mlem_=False_A_AML=-100.img",shape=(self.PETImage_shape))
         
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'random_1.img',shape=(self.PETImage_shape),type_im='<d')
@@ -51,13 +52,16 @@ class iPostReconstruction(vDenoising):
         
         # modify input with line on the edge of the phantom
         addon = "remove_cold" # mu_DIP = 5
+        addon = "remove_cold_already_in_corrupt" # mu_DIP = 5
         if (addon == "remove_cold"):
-            self.image_corrupt[35:59,35:59] = 30
+            self.image_corrupt[35:59,35:59] = config["mu_DIP"]
+            from pathlib import Path
+            Path("/home/meraslia/workspace_reco/nested_admm/data/Algo/image40_0/replicate_1/" + str(config["mu_DIP"])).mkdir(parents=True, exist_ok=True)
+            self.save_img(self.image_corrupt,"/home/meraslia/workspace_reco/nested_admm/data/Algo/image40_0/replicate_1/" + str(config["mu_DIP"]) + "/corrupt.raw")
+        
         # import matplotlib.pyplot as plt
         # plt.imshow(self.image_corrupt,vmin=np.min(self.image_corrupt),vmax=np.max(self.image_corrupt),cmap='gray')
         # plt.show()
-        
-        
         
         self.net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_epoch=' + format(0) + '.img'
         self.checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
