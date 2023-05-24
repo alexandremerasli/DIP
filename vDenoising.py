@@ -64,13 +64,12 @@ class vDenoising(vGeneral):
             # Creating random image input for DIP while we do not have CT, but need to be removed after
             self.create_input(self.net,self.PETImage_shape,config,self.subroot_data) # to be removed when CT will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
 
-
             # Create random image to fit by DIP (test for ML reading group)
+            '''
             if (self.FLTNB == 'float'):
                 type_im = 'float32'
             elif (self.FLTNB == 'double'):
                 type_im = 'float64'
-            '''
             file_path = (self.subroot_data+'Data/initialization/random_1.img')
             im_input = np.random.uniform(0,1,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).astype(type_im) # initializing input image with random image (for DIP)
             im_input = im_input.reshape(self.PETImage_shape) # reshaping (for DIP)
@@ -80,38 +79,10 @@ class vDenoising(vGeneral):
 
             # Loading DIP input (we do not have CT-map, so random image created in block 1)
             self.image_net_input = self.load_input(self.net,self.PETImage_shape,self.subroot_data) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
-            
-            
-            
-            
-            # modify input with line on the edge of the phantom
-            addon = "line_edge" # mu_DIP = 10
-            addon = "high_pixel" # mu_DIP = 20
-            # addon = "reduce_cold_value_MR" # mu_DIP = 3
-            addon = "remove_cold" # mu_DIP = 4
-            addon = "nothing"
-            if (addon == "line_edge"):
-                phantom_ROI = self.points_in_circle_edge(0/4,0/4,150/4,self.PETImage_shape)
-                for couple in phantom_ROI:
-                    edge_value = config["rho"]
-                    self.image_net_input[couple] = edge_value
-            elif (addon == "high_pixel"):
-                edge_value = config["rho"]
-                self.image_net_input[10,10] = edge_value
-            elif (addon == "reduce_cold_value_MR"):
-                self.image_net_input[self.cold_ROI == 1] = config["rho"]
-            elif (addon == "remove_cold"):
-                self.image_net_input[35:59,35:59] = 30
-            # import matplotlib.pyplot as plt
-            # plt.imshow(self.image_net_input,vmin=np.min(self.image_net_input),vmax=np.max(self.image_net_input),cmap='gray')
-            # plt.show()
-            
-            
-            
-            
-            
-            
-            image_net_input_scale = self.rescale_imag(self.image_net_input,self.scaling_input)[0] # Rescale of network input
+            # modify input with line on the edge of the phantom, or to remove a region (DIP input tests)
+            # self.modify_input_line_edge(config)     
+            # Rescale network input
+            image_net_input_scale = self.rescale_imag(self.image_net_input,self.scaling_input)[0]
             # DIP input image, numpy --> torch
             self.image_net_input_torch = Tensor(image_net_input_scale)
             # Adding dimensions to fit network architecture
@@ -204,7 +175,6 @@ class vDenoising(vGeneral):
                 checkpoint_callback = ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0)
                 checkpoint_callback = ModelCheckpoint(dirpath=checkpoint_simple_path_exp) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0)
                 # trainer = Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all", progress_bar_refresh_rate=0, weights_summary=None, profiler="simple") # Prepare trainer model with callback to save checkpoint        
-                trainer = Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1,logger=logger, callbacks=[checkpoint_callback,early_stopping_callback])#, , early_stopping_callback])#, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple")
                 trainer = Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1,logger=logger, callbacks=[checkpoint_callback,early_stopping_callback])#, , early_stopping_callback])#, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple")
             if (finetuning == 'best'): # best model saved in checkpoint
                 # Checkpoints pl variables

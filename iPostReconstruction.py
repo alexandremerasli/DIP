@@ -50,18 +50,8 @@ class iPostReconstruction(vDenoising):
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + 'image0/image0.img',shape=(self.PETImage_shape),type_im='<f') # ADMMLim for nested
         
         
-        # modify input with line on the edge of the phantom
-        addon = "remove_cold" # mu_DIP = 5
-        addon = "remove_cold_already_in_corrupt" # mu_DIP = 5
-        if (addon == "remove_cold"):
-            self.image_corrupt[35:59,35:59] = config["mu_DIP"]
-            from pathlib import Path
-            Path("/home/meraslia/workspace_reco/nested_admm/data/Algo/image40_0/replicate_1/" + str(config["mu_DIP"])).mkdir(parents=True, exist_ok=True)
-            self.save_img(self.image_corrupt,"/home/meraslia/workspace_reco/nested_admm/data/Algo/image40_0/replicate_1/" + str(config["mu_DIP"]) + "/corrupt.raw")
-        
-        # import matplotlib.pyplot as plt
-        # plt.imshow(self.image_corrupt,vmin=np.min(self.image_corrupt),vmax=np.max(self.image_corrupt),cmap='gray')
-        # plt.show()
+        # modify input with line on the edge of the phantom (DIP input tests)
+        # self.remove_cold_corrupted(config)
         
         self.net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_epoch=' + format(0) + '.img'
         self.checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
@@ -77,6 +67,19 @@ class iPostReconstruction(vDenoising):
         self.VAR_recon = []
         '''
 
+    def remove_cold_corrupted(self,config):
+        addon = "remove_cold" # mu_DIP = 5
+        addon = "remove_cold_already_in_corrupt" # mu_DIP = 5
+        if (addon == "remove_cold"):
+            self.image_corrupt[35:59,35:59] = config["mu_DIP"]
+            from pathlib import Path
+            Path("/home/meraslia/workspace_reco/nested_admm/data/Algo/image40_0/replicate_1/" + str(config["mu_DIP"])).mkdir(parents=True, exist_ok=True)
+            self.save_img(self.image_corrupt,"/home/meraslia/workspace_reco/nested_admm/data/Algo/image40_0/replicate_1/" + str(config["mu_DIP"]) + "/corrupt.raw")
+        
+        # import matplotlib.pyplot as plt
+        # plt.imshow(self.image_corrupt,vmin=np.min(self.image_corrupt),vmax=np.max(self.image_corrupt),cmap='gray')
+        # plt.show()
+        
     def runComputation(self,config,root):
         # Initializing results class
         if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):

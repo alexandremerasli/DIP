@@ -986,3 +986,29 @@ class vGeneral(abc.ABC):
             if (config["method"] == 'BSREM' or 'nested' in config["method"] or 'Gong' in config["method"] or 'DIPRecon' in config["method"] or 'APGMAP' in config["method"]):
                 self.rho = config["rho"]
                 self.beta = self.rho
+
+    def modify_input_line_edge(self,config):
+        addon = "line_edge" # mu_DIP = 10
+        addon = "high_pixel" # mu_DIP = 20
+        # addon = "reduce_cold_value_MR" # mu_DIP = 3
+        addon = "remove_cold" # mu_DIP = 4
+        addon = "nothing"
+        # addon = "remove_ellipse_MR"
+        if (addon == "line_edge"):
+            phantom_ROI = self.points_in_circle_edge(0/4,0/4,150/4,self.PETImage_shape)
+            for couple in phantom_ROI:
+                edge_value = config["rho"]
+                self.image_net_input[couple] = edge_value
+        elif (addon == "high_pixel"):
+            edge_value = config["rho"]
+            self.image_net_input[10,10] = edge_value
+        elif (addon == "reduce_cold_value_MR"):
+            self.image_net_input[self.cold_ROI == 1] = config["rho"]
+        elif (addon == "remove_cold"):
+            self.image_net_input[35:59,35:59] = 30
+        elif (addon == "remove_ellipse_MR"):
+            self.image_net_input[23:49,60:73] = 30
+        # import matplotlib.pyplot as plt
+        # import numpy as np
+        # plt.imshow(self.image_net_input,vmin=np.min(self.image_net_input),vmax=np.max(self.image_net_input),cmap='gray')
+        # plt.show()
