@@ -678,6 +678,12 @@ class vGeneral(abc.ABC):
         self.save_img(bkg_mask, subroot+'Data/database_v2/' + "image2_3D" + '/' + "background_mask2_3D" + '.raw')
 
     def define_ROI_new_phantom(self,PETImage_shape,subroot):
+
+        # Define external radius to not take into account in ROI definition
+        remove_external_radius = 1 # MIC abstract 2022, 2023
+        # remove_external_radius = 3 # ROIs further away from true edges
+
+        # Define ROIs
         phantom_ROI = self.points_in_circle(0/4,0/4,150/4,PETImage_shape)
         cold_ROI = self.points_in_circle(-40/4,-40/4,40/4-1,PETImage_shape)
         hot_TEP_ROI = self.points_in_circle(50/4,10/4,20/4-1,PETImage_shape)
@@ -771,10 +777,11 @@ class vGeneral(abc.ABC):
 
     def castor_common_command_line(self, subroot, PETImage_shape_str, phantom, replicates, post_smoothing=0):
         executable = 'castor-recon'
-        if (self.nb_replicates == 1):
-            header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '/data' + phantom[5:] + '.cdh' # PET data path
-        else:
-            header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data path
+        # if (self.nb_replicates == 1):
+        #     header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '/data' + phantom[5:] + '.cdh' # PET data path
+        # else:
+        #     header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data path
+        header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data pat
         dim = ' -dim ' + PETImage_shape_str
         vox = ' -vox 4,4,4'
         vb = ' -vb 3'

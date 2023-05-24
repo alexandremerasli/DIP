@@ -205,8 +205,8 @@ class iNestedADMM(vReconstruction):
             if (self.global_it != self.max_iter - 1):
                 # Initialize vDenoising object
                 classDenoising = vDenoising(config,self.global_it)
-                # Put CT as input
-                if (self.net == "DIP"):
+                # Put CT as input (mu_DIP = 200 is for random only)
+                if (self.net == "DIP" and config["mu_DIP"] != 200):
                     classDenoising.override_input = True
                 else:
                     classDenoising.override_input = False
