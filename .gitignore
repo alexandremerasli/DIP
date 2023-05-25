@@ -15,7 +15,10 @@ data/Algo/Data/ADMMLim_*
 
 data/Algo/Data/database_v2/
 data/Algo/Data/im_corrupt_beginning.img
+data/Algo/Data/cylinder_MLEM_it2.img
+data/Algo/Data/patient2_MLEM_it2*
 data/Algo/metrics
+data/Algo/Data/initialization before MIC/
 
 data/Algo/image*
 diff_all.py
