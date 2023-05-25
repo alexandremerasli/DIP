@@ -31,7 +31,7 @@ settings_config = {
     "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
     "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
-    "tensorboard" : True, # Tensorboard mode = show results in tensorboard
+    "tensorboard" : False, # Tensorboard mode = show results in tensorboard
     "all_images_DIP" : tune.grid_search(['False']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
     # "replicates" : tune.grid_search([args.replicate]), # List of desired replicates. list(range(1,n+1)) means n replicates
@@ -63,7 +63,7 @@ hyperparameters_config = {
     "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
     "rho" : tune.grid_search([0.003,8e-4,0.008,0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     "rho" : tune.grid_search([0.3,0.03,0.003,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "rho" : tune.grid_search([0.3,0.03,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     #"rho" : tune.grid_search([0.0003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     "adaptive_parameters_DIP" : tune.grid_search(["nothing"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
     "mu_DIP" : tune.grid_search([10]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
