@@ -146,6 +146,9 @@ class iFinalCurves(vGeneral):
                 nb_other_dim[method] = len(config_other_dim[method])
                 nb_replicates[method] = int(len(replicates[0]) / (nb_rho[method] * nb_other_dim[method]))
 
+                # Affect color and marker according to method and settings
+                marker_dict, color_dict = self.marker_color_dict_method()
+
                 # Sort rho and other dim like suffix
                 config[method]["rho"] = sorted(config[method]["rho"])
                 config_other_dim[method] = sorted(config_other_dim[method])
@@ -154,8 +157,6 @@ class iFinalCurves(vGeneral):
                 variance_plot = False
                 plot_all_replicates_curves = False
                 
-                marker_dict, color_dict = self.marker_color_dict_method()
-
                 if plot_all_replicates_curves:
                     color_avg = 'black'
                     for key in color_dict.keys():
@@ -392,10 +393,12 @@ class iFinalCurves(vGeneral):
                         else:
                             for rho_idx in range(nb_rho[method]):
                                 print(method,color_dict[method])
-                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],marker='o'*('CT' in method) + '*'*('random' in method) + 'o'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method][rho_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
+                                idx_good_rho_color = config_tmp["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
+                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],marker='o'*('CT' in method) + '*'*('random' in method) + 'o'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method][idx_good_rho_color],ls=marker_dict[method][other_dim_idx])#'-o',)
                                 # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:],marker='o'*('CT' in method) + '*'*('random' in method) + '+'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
                                 # unnested
-                                plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'D',markersize=10, mfc='none',color=color_dict[method][rho_idx],label='_nolegend_')
+                                idx_good_rho_color = config_tmp["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
+                                plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'D',markersize=10, mfc='none',color=color_dict[method][idx_good_rho_color],label='_nolegend_')
                                 plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],marker='D',markersize=9,color='white',label='_nolegend_')
                                 # nested it 100 white circle
                                 #'''
