@@ -12,13 +12,13 @@ def mssim(img1, img2, alpha, beta, gamma):
     """
     img1 = img1.astype(np.float64)
     img2 = img2.astype(np.float64)
-    size = 11
     sigma = 1.5
+    # size = 11
     # window = ndimage.filters.gaussian_filter(np.ones((size, size)), sigma) # Not gaussian filter
     # window = np.ones((size, size))
-    window = np.ones((11,11))
+    # window = np.ones((11,11))
     # Normalize uniform filter so that sum is 1
-    window /= np.size(window)
+    # window /= np.size(window)
 
     K1 = 0.01
     K2 = 0.03
@@ -33,6 +33,9 @@ def mssim(img1, img2, alpha, beta, gamma):
     win_size = 7   # backwards compatibility
     mu1 = uniform_filter(img1,size=win_size)
     mu2 = uniform_filter(img2,size=win_size)
+    filter_args = {'sigma': sigma, 'truncate': 3.5} # 3.5 is the number of sigmas to match Wang et al. to have filter size=11
+    mu1 = gaussian_filter(img1,**filter_args)
+    mu2 = gaussian_filter(img2,**filter_args)
         
     
     mu1_sq = mu1*mu1
@@ -45,6 +48,9 @@ def mssim(img1, img2, alpha, beta, gamma):
     sigma1_sq = uniform_filter(img1*img1,size=win_size) - mu1_sq
     sigma2_sq = uniform_filter(img2*img2,size=win_size) - mu2_sq
     sigma12 = uniform_filter(img1*img2,size=win_size) - mu1_mu2
+    sigma1_sq = gaussian_filter(img1*img1,**filter_args) - mu1_sq
+    sigma2_sq = gaussian_filter(img2*img2,**filter_args) - mu2_sq
+    sigma12 = gaussian_filter(img1*img2,**filter_args) - mu1_mu2
     
     # if (np.isnan(np.sum(np.sqrt(sigma1_sq)))):
     #     raise ValueError("NaNs detected in image")
