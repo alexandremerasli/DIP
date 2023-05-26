@@ -198,13 +198,20 @@ def structural_similarity(im1, im2,
     vy = cov_norm * (uyy - uy * uy)
     vxy = cov_norm * (uxy - ux * uy)
 
+    print("                ")
 
-    print("vx",np.mean(uxx))
+    print("ssim_python")
     print("ux",np.mean(ux))
-    print("vx",np.mean(ux*ux))
-    print("vx",np.mean(vx))
-    print("vxy",np.mean(vxy))
+    print("ux * uy",np.mean(ux*uy))
+    print("ux ** 2",np.mean(ux**2))
+    print("uy ** 2",np.mean(uy**2))
+    print("             ")
 
+    print("vx",np.min(vx))
+    print("vx",np.mean(vx))
+    print("vx",np.max(vx))
+    print("vy",np.mean(vy))
+    print("vxy",np.mean(vxy))
 
     R = data_range
     C1 = (K1 * R) ** 2
@@ -216,6 +223,22 @@ def structural_similarity(im1, im2,
                        vx + vy + C2))
     D = B1 * B2
     S = (A1 * A2) / D
+
+    print("C1",np.mean(C1))
+    print("K1",np.mean(K1))
+    print("R",np.mean(R))
+    print("A1",np.mean(A1))
+    print("B1",np.mean(B1))
+    print("luminance",np.mean(A1/B1))
+
+
+    print("A2",np.min(A2))
+    print("B2",np.min(B2))
+    print("A2",np.mean(A2))
+    print("B2",np.mean(B2))
+    print("A2",np.max(A2))
+    print("B2",np.max(B2))
+    print("term1",np.mean(A2/B2))
 
     # to avoid edge effects will ignore filter radius strip around edges
     pad = (win_size - 1) // 2

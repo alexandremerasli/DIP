@@ -22,27 +22,29 @@ def mssim(img1, img2, alpha, beta, gamma):
 
     K1 = 0.01
     K2 = 0.03
-    L = 255 #bitdepth of image
-    L = np.mean(img2) - np.min(img2)
+    # L = 255 #bitdepth of image
+    L = np.max(img2) - np.min(img2)
     C1 = (K1*L)**2
     C2 = (K2*L)**2
     
     # mu1 = signal.fftconvolve(window, img1, mode='same')
     # mu2 = signal.fftconvolve(window, img2, mode='same')
-    mu1 = uniform_filter(img1)
-    mu2 = uniform_filter(img2)
+    
+    win_size = 7   # backwards compatibility
+    mu1 = uniform_filter(img1,size=win_size)
+    mu2 = uniform_filter(img2,size=win_size)
         
     
     mu1_sq = mu1*mu1
-    mu1_sq = np.multiply(mu1,mu1)
+    # mu1_sq = np.multiply(mu1,mu1)
     mu2_sq = mu2*mu2
     mu1_mu2 = mu1*mu2
     # sigma1_sq = signal.fftconvolve(window, img1*img1, mode='same') - mu1_sq
     # sigma2_sq = signal.fftconvolve(window, img2*img2, mode='same') - mu2_sq
     # sigma12 = signal.fftconvolve(window, img1*img2, mode='same') - mu1_mu2
-    sigma1_sq = uniform_filter(img1*img1) - mu1_sq
-    sigma2_sq = uniform_filter(img2*img2) - mu2_sq
-    sigma12 = uniform_filter(img1*img2) - mu1_mu2
+    sigma1_sq = uniform_filter(img1*img1,size=win_size) - mu1_sq
+    sigma2_sq = uniform_filter(img2*img2,size=win_size) - mu2_sq
+    sigma12 = uniform_filter(img1*img2,size=win_size) - mu1_mu2
     
     # if (np.isnan(np.sum(np.sqrt(sigma1_sq)))):
     #     raise ValueError("NaNs detected in image")
@@ -53,6 +55,39 @@ def mssim(img1, img2, alpha, beta, gamma):
     structure=((2*sigma12 + C2)/(2*np.sqrt(sigma1_sq*sigma2_sq) + C2))**gamma
     
     term1=(2*sigma12 + C2)/(sigma1_sq + sigma2_sq + C2)
+
+    print("                      ")
+    print("ssim_younes")
+    print("mu1",np.mean(mu1))
+
+    print("mu1_mu2 jsp",np.mean(uniform_filter(img1*img1)))
+    print("mu1_mu2",np.mean(mu1_mu2))
+    print("mu1_sq",np.mean(mu1_sq))
+    print("mu2_sq",np.mean(mu2_sq))
+
+    print("sigma1_sq",np.min(sigma1_sq))
+    print("sigma1_sq",np.mean(sigma1_sq))
+    print("sigma1_sq",np.max(sigma1_sq))
+    print("sigma2_sq",np.mean(sigma2_sq))
+    print("sigma12",np.mean(sigma12))
+
+    print("C1",np.mean(C1))
+    print("K1",np.mean(K1))
+    print("L",np.mean(L))
+    print("A1",np.mean((2*mu1_mu2 + C1)))
+    print("B1",np.mean((mu1_sq + mu2_sq + C1)))
+    print("luminance",np.mean(luminance))
+    print("             ")
+
+    print("(2*sigma12 + C2)",np.min((2*sigma12 + C2)))
+    print("(sigma1_sq + sigma2_sq + C2)",np.min((sigma1_sq + sigma2_sq + C2)))
+    print("(2*sigma12 + C2)",np.mean((2*sigma12 + C2)))
+    print("(sigma1_sq + sigma2_sq + C2)",np.mean((sigma1_sq + sigma2_sq + C2)))
+    print("(2*sigma12 + C2)",np.max((2*sigma12 + C2)))
+    print("(sigma1_sq + sigma2_sq + C2)",np.max((sigma1_sq + sigma2_sq + C2)))
+    print("term1",np.mean(term1))
+
+
 
     # SSIM=np.mean(luminance*contrast*structure)
     SSIM = np.mean(term1*luminance)
