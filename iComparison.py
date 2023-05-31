@@ -117,6 +117,14 @@ class iComparison(vReconstruction):
             classResults.debug = self.debug
             classResults.rho = self.rho
             classResults.hyperparameters_list = self.hyperparameters_list
+            classResults.phantom_ROI = self.phantom_ROI
+            if ("3D" not in self.phantom):
+                classResults.bkg_ROI = self.bkg_ROI
+                classResults.hot_TEP_ROI = self.hot_TEP_ROI
+                classResults.hot_TEP_match_square_ROI = self.hot_TEP_match_square_ROI
+                classResults.hot_perfect_match_ROI = self.hot_perfect_match_ROI
+                classResults.hot_ROI = self.hot_ROI
+                classResults.cold_ROI = self.cold_ROI
             classResults.initializeSpecific(config,root)
             classResults.runComputation(config,root)
 
