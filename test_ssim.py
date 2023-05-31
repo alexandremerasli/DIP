@@ -57,11 +57,13 @@ image_corrupted = fijii_np("/home/meraslia/workspace_reco/nested_admm/data/Algo/
 # image_gt = 3*np.ones((20,20))
 # image_corrupted = 2*np.ones((20,20))
 
-print(mssim(image_gt,image_corrupted,1,1,1))
-
 # Uniform filter
 # print(structural_similarity(np.squeeze(image_gt), np.squeeze(image_corrupted), data_range=(image_corrupted).max() - (image_corrupted).min(), use_sample_covariance=False))
 # Gaussian filter (Wang et al. 2004)
 print(structural_similarity(np.squeeze(image_gt), np.squeeze(image_corrupted), data_range=(image_corrupted).max() - (image_corrupted).min(), sigma=1.5, gaussian_weights=True, use_sample_covariance=False))
 # Case in previous nested computation
 # print(structural_similarity(np.squeeze(image_gt), np.squeeze(image_corrupted), data_range=(image_corrupted).max() - (image_corrupted).min(), use_sample_covariance=True)) # If use_sample_covariance True, normalize covariances by N-1 rather than N
+
+# Implemented MSSIM
+print("Implemented MSSIM")
+print(mssim(image_gt,image_corrupted,1,1,1))
