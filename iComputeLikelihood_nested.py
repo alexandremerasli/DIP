@@ -84,11 +84,13 @@ class iComputeLikelihood_nested(vGeneral):
 
         if 'nested' in config["method"] or 'Gong' in config["method"]:
             i_init = 0
+            i_last = self.max_iter
         else:
             i_init = 1
+            i_last = self.max_iter+1
         # i_init = 10 # remove some iterations
 
-        for i in range(i_init,self.max_iter+1):
+        for i in range(i_init,i_last):
             if 'nested' in config["method"] or 'Gong' in config["method"]:
                 output_path = ' -fout ' + folder_sub_path + '/' + config["method"] + "_" + str(i-1) # Output path for CASTOR framework
                 initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr'
@@ -130,6 +132,7 @@ class iComputeLikelihood_nested(vGeneral):
         plt.xlabel("iterations")
         plt.ylabel("log-likelihood")
         plt.show()
+        print("end")
         
         # # Initializing results class
         # if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):
