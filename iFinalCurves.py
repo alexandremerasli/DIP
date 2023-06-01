@@ -465,7 +465,10 @@ class iFinalCurves(vGeneral):
 
 
     def set_axes_labels(self,ax,fig_nb,ROI):
-        ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)')
+        if (fig_nb == 1):
+            ax[fig_nb].set_xlabel('Iterations')
+        else:
+            ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)')
         if 'cold' in ROI:
             ax[fig_nb].set_ylabel('Bias ')
         elif 'hot' in ROI:
