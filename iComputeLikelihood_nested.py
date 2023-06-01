@@ -70,7 +70,10 @@ class iComputeLikelihood_nested(vGeneral):
             self.post_smoothing = 0
 
     
-        folder_sub_path = self.subroot + 'Block2/' + self.suffix
+        if 'nested' in config["method"] or 'Gong' in config["method"]:
+            folder_sub_path = self.subroot + 'Block2/' + self.suffix
+        else:
+            folder_sub_path = self.subroot + '/' + self.suffix
         Path(folder_sub_path).mkdir(parents=True, exist_ok=True) # CASToR path
         
         config["castor_foms"] = True
@@ -79,8 +82,12 @@ class iComputeLikelihood_nested(vGeneral):
         
         likelihoods = []
         for i in range(self.max_iter):
-            output_path = ' -fout ' + folder_sub_path + '/' + config["method"] + "_" + str(i-1) # Output path for CASTOR framework
-            initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr'
+            if 'nested' in config["method"] or 'Gong' in config["method"]:
+                output_path = ' -fout ' + folder_sub_path + '/' + config["method"] + "_" + str(i-1) # Output path for CASTOR framework
+                initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr'
+            else:
+                output_path = ' -fout ' + folder_sub_path + '/' + config["method"] + "_" + str(i) # Output path for CASTOR framework
+                initialimage = ' -img ' + self.subroot + '/' + self.suffix + '/' + config["method"] + '_it' + str(i) + '.hdr'
             it = ' -it 1:1'
         
             print("CASToR command line : ")
@@ -91,7 +98,10 @@ class iComputeLikelihood_nested(vGeneral):
             os.system(castor_command_line)
             
 
-            logfile_name = config["method"] + '_' + str(i-1) + '.log'
+            if 'nested' in config["method"] or 'Gong' in config["method"]:
+               logfile_name = config["method"] + '_' + str(i-1) + '.log'
+            else:
+                logfile_name = config["method"] + '_' + str(i) + '.log'
             path_log = folder_sub_path + '/' + logfile_name
             theLog = read_table(path_log)
 
@@ -105,7 +115,12 @@ class iComputeLikelihood_nested(vGeneral):
                 # likelihoods_alpha.append(likelihood)
                 likelihoods.append(likelihood)
 
-        plt.plot(np.arange(-1,self.max_iter-1),likelihoods)
+        if 'nested' in config["method"] or 'Gong' in config["method"]:
+            plt.plot(np.arange(-1,self.max_iter-1),likelihoods)
+        else:
+            plt.plot(np.arange(0,self.max_iter-1),likelihoods)
+        plt.xlabel("iterations")
+        plt.ylabel("log-likelihood")
         plt.show()
         
         # # Initializing results class
