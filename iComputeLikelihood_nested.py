@@ -125,30 +125,19 @@ class iComputeLikelihood_nested(vGeneral):
                 # likelihoods_alpha.append(likelihood)
                 likelihoods.append(likelihood)
 
-        if 'nested' in config["method"] or 'Gong' in config["method"]:
-            plt.plot(np.arange(-1+i_init,self.max_iter-1),likelihoods)
-        else:
-            plt.plot(np.arange(i_init,self.max_iter+1),likelihoods)
-        plt.xlabel("iterations")
-        plt.ylabel("log-likelihood")
-        plt.show()
+        # if 'nested' in config["method"] or 'Gong' in config["method"]:
+        #     plt.plot(np.arange(-1+i_init,self.max_iter-1),likelihoods)
+        # else:
+        #     plt.plot(np.arange(i_init,self.max_iter+1),likelihoods)
+        # plt.xlabel("iterations")
+        # plt.ylabel("log-likelihood")
+        # plt.show()
+
+        # Save metrics in csv
+        from csv import writer as writer_csv
+        Path(self.subroot_metrics + config["method"] + '/' + self.suffix_metrics).mkdir(parents=True, exist_ok=True) # CASToR path
+        with open(self.subroot_metrics + config["method"] + '/' + self.suffix_metrics + '/metrics.csv', 'a') as myfile:
+            wr = writer_csv(myfile,delimiter=';')
+            wr.writerow(likelihoods)
+
         print("end")
-        
-        # # Initializing results class
-        # if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):
-        #     from iResults import iResults
-        #     classResults = iResults(config)
-        #     classResults.nb_replicates = self.nb_replicates
-        #     classResults.debug = self.debug
-        #     classResults.rho = self.rho
-        #     classResults.hyperparameters_list = self.hyperparameters_list
-        #     classResults.phantom_ROI = self.phantom_ROI
-        #     if ("3D" not in self.phantom):
-        #         classResults.bkg_ROI = self.bkg_ROI
-        #         classResults.hot_TEP_ROI = self.hot_TEP_ROI
-        #         classResults.hot_TEP_match_square_ROI = self.hot_TEP_match_square_ROI
-        #         classResults.hot_perfect_match_ROI = self.hot_perfect_match_ROI
-        #         classResults.hot_ROI = self.hot_ROI
-        #         classResults.cold_ROI = self.cold_ROI
-        #     classResults.initializeSpecific(config,root)
-        #     classResults.runComputation(config,root)
