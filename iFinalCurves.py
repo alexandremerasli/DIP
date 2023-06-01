@@ -90,10 +90,12 @@ class iFinalCurves(vGeneral):
             ROI_list = ['cold','hot','phantom']
         elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
             ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom']
+            ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom','whole']
+            ROI_list = ['whole']
 
         for ROI in ROI_list:
             # Plot tradeoff with SSIM (set quantitative_tradeoff is False) or AR (set quantitative_tradeoff to True)
-            if ROI == 'phantom':
+            if ROI == 'phantom' or ROI == 'whole':
                 quantitative_tradeoff = False
             else:
                 quantitative_tradeoff = True
@@ -335,16 +337,18 @@ class iFinalCurves(vGeneral):
                                 #ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg) # if 1 out of i_init iterations was saved
                                 ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg)
                                 # Plot dashed line for target value, according to ROI
-                                if (quantitative_tradeoff):
-                                    target_value = 100
-                                else:
-                                    target_value = 1
-                                if ROI == ROI_list[-1]:
-                                    #ax[fig_nb].hlines(100,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1)*self.i_init,color='grey',linestyle='dashed',label='_nolegend_') # if 1 out of i_init iterations was saved
-                                    ax[fig_nb].hlines(target_value,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1),color='grey',linestyle='dashed',label='_nolegend_')
-                                else:
-                                    #ax[fig_nb].hlines(100,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1)*self.i_init,color='grey',linestyle='dashed',label='_nolegend_') # if 1 out of i_init iterations was saved
-                                    ax[fig_nb].hlines(target_value,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1),color='grey',linestyle='dashed',label='_nolegend_')
+                                if (ROI != "whole"):
+                                    if (quantitative_tradeoff):
+                                        target_value = 100
+                                    else:
+                                        target_value = 1
+                                    if ROI == ROI_list[-1]:
+                                        #ax[fig_nb].hlines(100,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1)*self.i_init,color='grey',linestyle='dashed',label='_nolegend_') # if 1 out of i_init iterations was saved
+                                        ax[fig_nb].hlines(target_value,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1),color='grey',linestyle='dashed',label='_nolegend_')
+                                    else:
+                                        #ax[fig_nb].hlines(100,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1)*self.i_init,color='grey',linestyle='dashed',label='_nolegend_') # if 1 out of i_init iterations was saved
+                                        ax[fig_nb].hlines(target_value,xmin=0,xmax=(len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])-1),color='grey',linestyle='dashed',label='_nolegend_')
+                                # Show variance shadow over average line if asked for
                                 if (variance_plot):
                                     #ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx]))*self.i_init, avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_') # if 1 out of i_init iterations was saved
                                     ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])), avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_')
@@ -451,10 +455,10 @@ class iFinalCurves(vGeneral):
                             ax[fig_nb].set_ylabel('Bias ')
                         elif 'hot' in ROI:
                             ax[fig_nb].set_ylabel('Activity Recovery (AR) (%) ')
+                        elif ROI == "whole":
+                            ax[fig_nb].set_ylabel('likelihood')
                         else:
                             ax[fig_nb].set_ylabel('SSIM')
-                        #ax[fig_nb].set_ylabel(('Bias '))
-                        #ax[fig_nb].set_title(('AR ') + 'in ' + ROI + ' region vs IR in background (at convergence)')
                     #'''
 
                     if (method == method_list[-1]):
@@ -477,7 +481,10 @@ class iFinalCurves(vGeneral):
                     else:
                         metric_AR_or_SSIM = 'AR'
                 else:
-                    metric_AR_or_SSIM = 'SSIM'
+                    if (ROI == "whole"):
+                        metric_AR_or_SSIM = 'likelihood'
+                    else:
+                        metric_AR_or_SSIM = 'SSIM'
                 if (fig_nb == 0):
                     title = pretitle + ' : ' + metric_AR_or_SSIM + ' ' + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
                 elif (fig_nb == 1):
@@ -886,6 +893,7 @@ class iFinalCurves(vGeneral):
         AR_bkg_recon = []
         IR_bkg_recon = []
         IR_whole_recon = []
+        likelihoods = []
 
         IR_final = []
         metrics_final = []
@@ -931,25 +939,18 @@ class iFinalCurves(vGeneral):
                         AR_hot_perfect_match_recon.append(np.array(rows_csv[8]) / 400 * 100)
                         AR_bkg_recon.append(np.array(rows_csv[9]))
                         IR_bkg_recon.append(np.array(rows_csv[10]))
-                        if (not quantitative_tradeoff):
-                            IR_whole_recon.append(np.array(rows_csv[13]))
+                        IR_whole_recon.append(np.array(rows_csv[13]))
+                        if (ROI == "whole"):
+                            likelihoods.append(np.array(rows_csv[14]))
                     else:        
                         AR_bkg_recon.append(np.array(rows_csv[6]))
                         IR_bkg_recon.append(np.array(rows_csv[7]))
-                
-                    try:
-                        MA_cold = np.array(rows_csv[8])
-                    except:
-                        MA_cold = np.array(rows_csv[6])
-                    try:
-                        AR_hot = np.array(rows_csv[9])
-                    except:
-                        AR_hot = np.array(rows_csv[7])
 
             except:
                 print("No such file : " + metrics_file)
 
         # Select metrics to plot according to ROI
+
         if (quantitative_tradeoff):
             if ROI == 'hot_TEP':
                 metrics = AR_hot_TEP_recon
@@ -964,7 +965,10 @@ class iFinalCurves(vGeneral):
                 #metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
                 metrics = MA_cold_recon
         else:
-            metrics = SSIM_recon
+            if (ROI == "whole"):
+                metrics = likelihoods
+            else:
+                metrics = SSIM_recon
         # Keep useful information to plot from metrics                
         IR_final = IR_bkg_recon
         metrics_final = metrics
