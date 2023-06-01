@@ -128,13 +128,14 @@ class iComputeLikelihood_nested(vGeneral):
             #     self.likelihoods.append(likelihood)
 
         # Show likelihood across iterations
-        # if 'nested' in config["method"] or 'Gong' in config["method"]:
-        #     plt.plot(np.arange(-1+i_init,self.max_iter-1),self.likelihoods)
-        # else:
-        #     plt.plot(np.arange(i_init,self.max_iter+1),self.likelihoods)
-        # plt.xlabel("iterations")
-        # plt.ylabel("log-likelihood")
-        # plt.show()
+        if (not config["ray"]):
+            if 'nested' in config["method"] or 'Gong' in config["method"]:
+                plt.plot(np.arange(-1+i_init,self.max_iter-1),self.likelihoods)
+            else:
+                plt.plot(np.arange(i_init,self.max_iter+1),self.likelihoods)
+            plt.xlabel("iterations")
+            plt.ylabel("log-likelihood")
+            plt.show()
 
         # Save metrics in csv
         from csv import writer as writer_csv

@@ -119,7 +119,7 @@ class vGeneral(abc.ABC):
         self.hyperparameters_list = config["hyperparameters"]
         config.pop("hyperparameters", None)
         config.pop("debug",None)
-        config.pop("ray",None)
+        # config.pop("ray",None)
         # Convert tensorboard to ray
         config["tensorboard"] = tune.grid_search([config["tensorboard"]])
 
@@ -141,7 +141,7 @@ class vGeneral(abc.ABC):
     def removeGridSearch(self,config,task):
         if (task != "show_metrics_results_already_computed_following_step"):
             for key, value in config.items():
-                if key != "hyperparameters" and key != "fixed_hyperparameters":
+                if key != "hyperparameters" and key != "fixed_hyperparameters" and key != "ray":
                     if (len(value["grid_search"]) == 1 or self.debug):
                         config[key] = value["grid_search"][0]
                     else:
