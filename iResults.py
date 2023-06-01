@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from skimage.metrics import peak_signal_noise_ratio
 from skimage.metrics import structural_similarity
+from os.path import isfile
 
 # Local files to import
 #from vGeneral import vGeneral
@@ -103,6 +104,8 @@ class iResults(vDenoising):
             self.IR_bkg_recon = np.zeros(int(self.total_nb_iter ) + 1)
             self.IR_whole_recon = np.empty(int(self.total_nb_iter ) + 1)
             self.IR_whole_recon[:] = 0 #np.nan
+
+            self.likelihoods = [] # Will be appended
 
         if ( 'nested' in self.method or  'Gong' in self.method):
             #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type_im='<d')
@@ -442,27 +445,13 @@ class iResults(vDenoising):
         image_gt_cropped = image_gt * self.phantom_ROI
         image_gt_norm = self.norm_imag(image_gt_cropped)[0]
 
-        #print('Dif for PSNR calculation',np.amax(image_recon_cropped) - np.amin(image_recon_cropped),' , must be as small as possible')
-
         # PSNR calculation
         PSNR_whole = peak_signal_noise_ratio(image_gt, image_recon, data_range=np.amax(image_recon_cropped) - np.amin(image_recon_cropped)) # PSNR with true values
         PSNR_recon[i] = peak_signal_noise_ratio(image_gt_cropped, image_recon_cropped, data_range=np.amax(image_recon_cropped) - np.amin(image_recon_cropped)) # PSNR with true values
         PSNR_norm_recon[i] = peak_signal_noise_ratio(image_gt_norm,image_recon_norm) # PSNR with scaled values [0-1]
-        #print('PSNR calculation', PSNR_norm_recon[i],' , must be as high as possible')
 
         # MSE calculation
-            
-        """
-        if (i >=80):
-            plt.figure()
-            plt.imshow(image_gt_cropped,cmap='gray')
-            plt.figure()
-            plt.imshow(image_recon_cropped,cmap='gray')
-            plt.show()
-        """
-        #print('MSE gt', MSE_recon[i],' , must be as small as possible')
         MSE_recon[i] = np.mean((image_gt_cropped - image_recon_cropped)**2)
-        #print('MSE phantom gt', MSE_recon[i],' , must be as small as possible')
         
         # SSIM calculation
         '''
@@ -472,29 +461,18 @@ class iResults(vDenoising):
         '''
         SSIM_recon[i] = structural_similarity(np.squeeze(image_gt_cropped), np.squeeze(image_recon_cropped), data_range=(image_recon_cropped).max() - (image_recon_cropped).min())
         # SSIM_recon[i] = structural_similarity(np.squeeze(image_gt_cropped), np.squeeze(image_recon_cropped), data_range=(image_recon_cropped).max() - (image_recon_cropped).min(), sigma=1.5, gaussian_weights=True, use_sample_covariance=False)
-        #print('SSIM calculation', SSIM_recon[i],' , must be close to 1')
 
         # Contrast Recovery Coefficient calculation    
         # Mean activity in cold cylinder calculation (-c -40. -40. 0. 40. 4. 0.)
-        #cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "cold_mask" + image[5:] + '.raw', shape=(PETImage_shape),type_im='<f')
         cold_ROI_act = image_recon[self.cold_ROI==1]
         MA_cold_recon[i] = np.mean(cold_ROI_act)
         if ( 'nested' in self.method or  'Gong' in self.method):
             loss_DIP_recon[i] = np.mean((self.image_corrupt * self.phantom_ROI - image_recon_cropped)**2)
-            #loss_DIP_recon[i] = np.sqrt(np.mean((self.image_corrupt * self.phantom_ROI - image_recon_cropped)**2)) / np.max(self.image_corrupt)
-
-        #IR_cold_recon[i] = np.std(cold_ROI_act) / MA_cold_recon[i]
-        #print('Mean activity in cold cylinder', MA_cold_recon[i],' , must be close to 0')
-        #print('Image roughness in the cold cylinder', IR_cold_recon[i])
 
         # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
-        #hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "tumor_mask" + image[5:] + '.raw', shape=(PETImage_shape),type_im='<f')
         hot_ROI_act = image_recon[self.hot_ROI==1]
         AR_hot_recon[i] = np.mean(hot_ROI_act)
         CRC_hot_recon[i] = np.mean(hot_ROI_act)
-        #IR_hot_recon[i] = np.std(hot_ROI_act) / np.mean(hot_ROI_act)
-        #print('Mean Activity Recovery in hot cylinder', AR_hot_recon[i],' , must be close to 1')
-        #print('Image roughness in the hot cylinder', IR_hot_recon[i])
         
         ### Only useful for new phantom with 3 hot ROIs, but compute it for every phantom for the sake of simplicity ###
         # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
@@ -510,15 +488,21 @@ class iResults(vDenoising):
         AR_hot_perfect_match_recon[i] = np.mean(hot_perfect_match_ROI_act)
 
         # Mean Activity Recovery (ARmean) in background calculation (-c 0. 0. 0. 150. 4. 100)
-        #m0_bkg = (np.sum(coord_to_value_array(bkg_ROI,image_recon_cropped)) - np.sum([coord_to_value_array(cold_ROI,image_recon_cropped),coord_to_value_array(hot_ROI,image_recon_cropped)])) / (len(bkg_ROI) - (len(cold_ROI) + len(hot_ROI)))
-        #AR_bkg_recon[i] = m0_bkg / 100.
-        #         
-        #bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(PETImage_shape),type_im='<f')
         bkg_ROI_act = image_recon[self.bkg_ROI==1]
         AR_bkg_recon[i] = np.mean(bkg_ROI_act) / 100.
-        #IR_bkg_recon[i] = np.std(bkg_ROI_act) / np.mean(bkg_ROI_act)
-        #print('Mean Activity Recovery in background', AR_bkg_recon[i],' , must be close to 1')
-        #print('Image roughness in the background', IR_bkg_recon[i],' , must be as small as possible')
+        
+        # Likelihood from fake CASToR reconstruction just to compute likelihood of initialization image        
+        if 'nested' in self.config["method"] or 'Gong' in self.config["method"]:
+            folder_sub_path = self.subroot + 'Block2/' + self.suffix
+        else:
+            folder_sub_path = self.subroot + '/' + self.suffix
+        if 'nested' in self.config["method"] or 'Gong' in self.config["method"]:
+            logfile_name = self.config["method"] + '_' + str(i-1) + '.log'
+        else:
+            logfile_name = self.config["method"] + '_' + str(i+1) + '.log'
+        path_log = folder_sub_path + '/' + logfile_name
+        if (isfile(path_log)):
+            self.extract_likelihood_from_log(path_log)
 
         del image_recon_cropped
         del image_gt_cropped
@@ -542,6 +526,8 @@ class iResults(vDenoising):
             wr.writerow(loss_DIP_recon)
             wr.writerow(CRC_hot_recon)
             wr.writerow(IR_whole_recon)
+            if ("results" in self.config["task"]):
+                wr.writerow(self.likelihoods)
 
         '''
         print(PSNR_recon)

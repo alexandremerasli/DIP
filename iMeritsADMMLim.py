@@ -64,27 +64,17 @@ class iMeritsADMMLim(vGeneral):
             fp = open(self.subroot + self.suffix + '/adaptiveProcess' + str(duplicate) + '.log', mode='w+')
             fp = open(self.subroot + self.suffix + '/adaptiveProcess' + str(duplicate) + '.log', mode='w+')
 
-        likelihoods_alpha = []
+        self.likelihoods_alpha = []
 
         if self.tuners_tag == 'alphas':
-            likelihoods = []
-
+            # Extract likelihood from CASToR log file
+            self.likelihoods = []
             if self.nb_inner_iteration == 1:
                 logfile_name = '0.log'
             path_log = self.subroot + self.suffix + '/' + logfile_name
-            theLog = pd.read_table(path_log)
+            self.extract_likelihood_from_log(path_log)
 
-            fileRows = np.column_stack([theLog[col].str.contains("Log-likelihood", na=False) for col in theLog])
-            likelihoodRows = np.array(theLog.loc[fileRows == 1])
-            for rows in likelihoodRows:
-                theLikelihoodRowString = rows[0][22:44]
-                if theLikelihoodRowString[0] == '-':
-                    theLikelihoodRowString = '0'
-                likelihood = float(theLikelihoodRowString)
-                likelihoods_alpha.append(likelihood)
-                likelihoods.append(likelihood)
-
-            self.PLOT(outer_iters, likelihoods, tuners, nbTuners, figNum=6,
+            self.PLOT(outer_iters, self.likelihoods, tuners, nbTuners, figNum=6,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='Likelihood(same scale)',
@@ -93,7 +83,7 @@ class iMeritsADMMLim(vGeneral):
                 imagePath=self.fomSavingPath)
             plt.ylim([2.904e6, 2.919e6])
 
-            self.PLOT(outer_iters, likelihoods, tuners, nbTuners, figNum=1,
+            self.PLOT(outer_iters, self.likelihoods, tuners, nbTuners, figNum=1,
                 Xlabel='Outer iteration',
                 Ylabel='The legend shows different alpha',
                 Title='Likelihood',
@@ -386,9 +376,9 @@ class iMeritsADMMLim(vGeneral):
             fp.close()
 
         '''
-        elif self.tuners_tag == 'alphas' and len(self.alpha)==len(likelihoods_alpha):
+        elif self.tuners_tag == 'alphas' and len(self.alpha)==len(self.likelihoods_alpha):
             plt.figure()
-            plt.plot(self.alpha, likelihoods_alpha, '-x')
+            plt.plot(self.alpha, self.likelihoods_alpha, '-x')
             plt.xlabel('alpha')
             plt.title('likelihood')
 

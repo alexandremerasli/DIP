@@ -2,7 +2,7 @@
 from pathlib import Path
 import os
 import numpy as np
-from pandas import read_table
+from csv import reader as reader_csv
 import matplotlib.pyplot as plt
 
 # Local files to import
@@ -80,7 +80,7 @@ class iComputeLikelihood_nested(vGeneral):
         # config["method"] = "MLEM"
         self.method = "MLEM"
         
-        likelihoods = []
+        self.likelihoods = []
 
         if 'nested' in config["method"] or 'Gong' in config["method"]:
             i_init = 0
@@ -113,22 +113,25 @@ class iComputeLikelihood_nested(vGeneral):
                 print(castor_command_line)
                 os.system(castor_command_line) 
             
-            theLog = read_table(path_log)
+            # Extract likelihood from CASToR log file and add it to self.likelihoods
+            self.extract_likelihood_from_log(path_log)
+            # theLog = read_table(path_log)
 
-            fileRows = np.column_stack([theLog[col].str.contains("Log-likelihood", na=False) for col in theLog])
-            likelihoodRows = np.array(theLog.loc[fileRows == 1])
-            for rows in likelihoodRows:
-                theLikelihoodRowString = rows[0][22:44]
-                if theLikelihoodRowString[0] == '-':
-                    theLikelihoodRowString = '0'
-                likelihood = float(theLikelihoodRowString)
-                # likelihoods_alpha.append(likelihood)
-                likelihoods.append(likelihood)
+            # fileRows = np.column_stack([theLog[col].str.contains("Log-likelihood", na=False) for col in theLog])
+            # likelihoodRows = np.array(theLog.loc[fileRows == 1])
+            # for rows in likelihoodRows:
+            #     theLikelihoodRowString = rows[0][22:44]
+            #     if theLikelihoodRowString[0] == '-':
+            #         theLikelihoodRowString = '0'
+            #     likelihood = float(theLikelihoodRowString)
+            #     # likelihoods_alpha.append(likelihood)
+            #     self.likelihoods.append(likelihood)
 
+        # Show likelihood across iterations
         # if 'nested' in config["method"] or 'Gong' in config["method"]:
-        #     plt.plot(np.arange(-1+i_init,self.max_iter-1),likelihoods)
+        #     plt.plot(np.arange(-1+i_init,self.max_iter-1),self.likelihoods)
         # else:
-        #     plt.plot(np.arange(i_init,self.max_iter+1),likelihoods)
+        #     plt.plot(np.arange(i_init,self.max_iter+1),self.likelihoods)
         # plt.xlabel("iterations")
         # plt.ylabel("log-likelihood")
         # plt.show()
@@ -136,8 +139,12 @@ class iComputeLikelihood_nested(vGeneral):
         # Save metrics in csv
         from csv import writer as writer_csv
         Path(self.subroot_metrics + config["method"] + '/' + self.suffix_metrics).mkdir(parents=True, exist_ok=True) # CASToR path
-        with open(self.subroot_metrics + config["method"] + '/' + self.suffix_metrics + '/metrics.csv', 'a') as myfile:
-            wr = writer_csv(myfile,delimiter=';')
-            wr.writerow(likelihoods)
+        with open(self.subroot_metrics + config["method"] + '/' + self.suffix_metrics + '/metrics.csv', 'r') as myfile:
+            spamreader = reader_csv(myfile,delimiter=';')
+            # Write likelihood in csv if it has not already been done
+            if (len(list(spamreader)) == 14):
+                with open(self.subroot_metrics + config["method"] + '/' + self.suffix_metrics + '/metrics.csv', 'a') as myfile:
+                    wr = writer_csv(myfile,delimiter=';')
+                    wr.writerow(self.likelihoods)
 
         print("end")

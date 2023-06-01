@@ -6,9 +6,10 @@ from os import getcwd, makedirs
 from os.path import exists
 from functools import partial
 from ray import tune
-from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, mean, std, sum, array
+from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, mean, std, sum, array, column_stack
 from numpy import max as max_np
 from numpy import min as min_np
+from pandas import read_table
 from matplotlib.pyplot import imshow, figure, colorbar, savefig, title, gcf, axis
 from re import split, findall, compile
 
@@ -1012,3 +1013,16 @@ class vGeneral(abc.ABC):
         # import numpy as np
         # plt.imshow(self.image_net_input,vmin=np.min(self.image_net_input),vmax=np.max(self.image_net_input),cmap='gray')
         # plt.show()
+
+    def extract_likelihood_from_log(self,path_log):
+        theLog = read_table(path_log)
+        fileRows = column_stack([theLog[col].str.contains("Log-likelihood", na=False) for col in theLog])
+        likelihoodRows = array(theLog.loc[fileRows == 1])
+        for rows in likelihoodRows:
+            theLikelihoodRowString = rows[0][22:44]
+            if theLikelihoodRowString[0] == '-':
+                theLikelihoodRowString = '0'
+            likelihood = float(theLikelihoodRowString)
+            if (hasattr(self,"likelihoods_alpha")):
+                self.likelihoods_alpha.append(likelihood)
+            self.likelihoods.append(likelihood)
