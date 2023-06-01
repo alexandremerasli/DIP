@@ -81,7 +81,14 @@ class iComputeLikelihood_nested(vGeneral):
         self.method = "MLEM"
         
         likelihoods = []
-        for i in range(self.max_iter):
+
+        if 'nested' in config["method"] or 'Gong' in config["method"]:
+            i_init = 0
+        else:
+            i_init = 1
+        # i_init = 10 # remove some iterations
+
+        for i in range(i_init,self.max_iter+1):
             if 'nested' in config["method"] or 'Gong' in config["method"]:
                 output_path = ' -fout ' + folder_sub_path + '/' + config["method"] + "_" + str(i-1) # Output path for CASTOR framework
                 initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr'
@@ -90,19 +97,20 @@ class iComputeLikelihood_nested(vGeneral):
                 initialimage = ' -img ' + self.subroot + '/' + self.suffix + '/' + config["method"] + '_it' + str(i) + '.hdr'
             it = ' -it 1:1'
         
-            print("CASToR command line : ")
-            castor_command_line = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage
-            # Do not save images, only log file to retrieve likelihood
-            castor_command_line += " -oit 10:10"
-            print(castor_command_line)
-            os.system(castor_command_line)
-            
-
             if 'nested' in config["method"] or 'Gong' in config["method"]:
-               logfile_name = config["method"] + '_' + str(i-1) + '.log'
+                logfile_name = config["method"] + '_' + str(i-1) + '.log'
             else:
                 logfile_name = config["method"] + '_' + str(i) + '.log'
             path_log = folder_sub_path + '/' + logfile_name
+
+            if (not os.path.isfile(path_log)):
+                print("CASToR command line : ")
+                castor_command_line = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage
+                # Do not save images, only log file to retrieve likelihood
+                castor_command_line += " -oit 10:10"
+                print(castor_command_line)
+                os.system(castor_command_line) 
+            
             theLog = read_table(path_log)
 
             fileRows = np.column_stack([theLog[col].str.contains("Log-likelihood", na=False) for col in theLog])
@@ -116,9 +124,9 @@ class iComputeLikelihood_nested(vGeneral):
                 likelihoods.append(likelihood)
 
         if 'nested' in config["method"] or 'Gong' in config["method"]:
-            plt.plot(np.arange(-1,self.max_iter-1),likelihoods)
+            plt.plot(np.arange(-1+i_init,self.max_iter-1),likelihoods)
         else:
-            plt.plot(np.arange(0,self.max_iter-1),likelihoods)
+            plt.plot(np.arange(i_init,self.max_iter+1),likelihoods)
         plt.xlabel("iterations")
         plt.ylabel("log-likelihood")
         plt.show()
