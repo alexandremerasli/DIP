@@ -96,8 +96,9 @@ class iFinalCurves(vGeneral):
             ROI_list = ['cold','hot','phantom']
         elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
             ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom']
-            ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom','whole']
-            ROI_list = ['whole']
+            # ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom','whole']
+            # ROI_list = ['whole']
+            ROI_list = ['cold','cold_inside','cold_edge']
 
         for ROI in ROI_list:
             # Plot tradeoff with SSIM (set quantitative_tradeoff is False) or AR (set quantitative_tradeoff to True)
@@ -162,8 +163,8 @@ class iFinalCurves(vGeneral):
                 config_other_dim[method] = sorted(config_other_dim[method])
 
                 # Settings in following curves
-                variance_plot = False
-                plot_all_replicates_curves = False
+                variance_plot = True
+                plot_all_replicates_curves = True
                 
                 if plot_all_replicates_curves:
                     color_avg = 'black'
@@ -196,7 +197,7 @@ class iFinalCurves(vGeneral):
                 
                 # Sort suffixes from file by rho and other dim values 
                 sorted_suffixes = list(suffixes[0])
-                if (method != "ADMMLim" and "nested" not in method and "APGMAP" not in method):
+                if (method != "ADMMLim" and "nested" not in method and "APGMAP" not in method and method != "BSREM"):
                     sorted_suffixes.sort(key=self.natural_keys)
                 else:
                     sorted_suffixes.sort(key=self.natural_keys_ADMMLim)
@@ -348,7 +349,10 @@ class iFinalCurves(vGeneral):
                                 # Plot dashed line for target value, according to ROI
                                 if (ROI != "whole"):
                                     if (quantitative_tradeoff):
-                                        target_value = 100
+                                        if ("cold" in ROI):
+                                            target_value = 0
+                                        else:
+                                            target_value = 100
                                     else:
                                         target_value = 1
                                     if ROI == ROI_list[-1]:
@@ -773,7 +777,7 @@ class iFinalCurves(vGeneral):
                 "nested_random_skip" : ['fuchsia','orange','darkgreen','pink','black'],
                 # "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "DIPRecon" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
-                "BSREM" : ['grey','cyan','blue','teal','blueviolet'],
+                "BSREM" : 5*['grey','cyan','blue','teal','blueviolet'],
                 # "BSREM" : ['grey'],
                 "OSEM" : ['orange'],
                 #"APGMAP" : ['darkgreen','lime','gold'],
@@ -914,6 +918,8 @@ class iFinalCurves(vGeneral):
         IR_bkg_recon = []
         IR_whole_recon = []
         likelihoods = []
+        MA_cold_inside_recon = []
+        MA_cold_edge_recon = []
 
         IR_final = []
         metrics_final = []
@@ -922,14 +928,15 @@ class iFinalCurves(vGeneral):
             i_replicate = idx_wanted[i] # Loop over rhos and replicates, for each sorted rho, take sorted replicate
             suffix = sorted_suffixes[i].rstrip("\n")
             replicate = "replicate_" + str(i_replicate + 1)
-            metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + config[method]["method"] + '/' + suffix + '/' + 'metrics.csv'
+
             
             try:
                 self.subroot = self.subroot_data + 'debug/'*self.debug + self.phantom + '/'+ str(replicate) + '/' + config[method]["method"] + '/' # Directory root
                 self.suffix = suffix[:-12] # Remove NNEPPS from suffix
                 self.max_iter = config[method]["max_iter"]
                 self.defineTotalNbIter_beta_rho(method,config[method],task)
-
+                
+                metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + config[method]["method"] + '/' + suffix + '/' + 'metrics.csv'
                 with open(metrics_file, 'r') as myfile:
                     spamreader = reader_csv(myfile,delimiter=';')
                     rows_csv = list(spamreader)
@@ -967,7 +974,18 @@ class iFinalCurves(vGeneral):
                     else:        
                         AR_bkg_recon.append(np.array(rows_csv[6]))
                         IR_bkg_recon.append(np.array(rows_csv[7]))
-
+                
+                if ("cold_" in ROI):
+                    metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + config[method]["method"] + '/' + suffix + '/' + 'metrics_cold.csv'
+                    with open(metrics_file, 'r') as myfile:
+                        spamreader = reader_csv(myfile,delimiter=';')
+                        rows_csv = list(spamreader)
+                        rows_csv[0] = [float(rows_csv[0][i]) for i in range(int(self.i_init) - 1,min(len(rows_csv[0]),self.total_nb_iter))]
+                        rows_csv[1] = [float(rows_csv[1][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[1]),self.total_nb_iter))]
+                        rows_csv[2] = [float(rows_csv[2][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[2]),self.total_nb_iter))]
+                        MA_cold_recon.append(np.array(np.array(rows_csv[0]) - 10) / 10 * 100)
+                        MA_cold_inside_recon.append(np.array(np.array(rows_csv[1]) - 10) / 10 * 100)
+                        MA_cold_edge_recon.append(np.array(np.array(rows_csv[2]) - 10) / 10 * 100)
             except:
                 print("No such file : " + metrics_file)
 
@@ -986,6 +1004,12 @@ class iFinalCurves(vGeneral):
             elif ROI == 'cold':
                 #metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
                 metrics = MA_cold_recon
+            elif ROI == 'cold_inside':
+                #metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
+                metrics = MA_cold_inside_recon
+            elif ROI == 'cold_edge':
+                #metrics = [abs(cold) for cold in MA_cold_recon] # Take absolute value of MA cold for tradeoff curves
+                metrics = MA_cold_edge_recon
         else:
             if (ROI == "whole"):
                 metrics = likelihoods

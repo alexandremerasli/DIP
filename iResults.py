@@ -84,6 +84,8 @@ class iResults(vDenoising):
                     self.hot_TEP_match_square_ROI = np.array(self.hot_ROI)
                     self.hot_perfect_match_ROI = np.array(self.hot_ROI)
                 self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                self.cold_inside_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_inside_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                self.cold_edge_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_edge_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
         
         if ("3D" not in self.phantom):
             # Metrics arrays
@@ -106,6 +108,9 @@ class iResults(vDenoising):
             self.IR_whole_recon[:] = 0 #np.nan
 
             self.likelihoods = [] # Will be appended
+
+            self.MA_cold_inside = np.zeros(int(self.total_nb_iter ) + 1)
+            self.MA_cold_edge = np.zeros(int(self.total_nb_iter ) + 1)
 
         if ( 'nested' in self.method or  'Gong' in self.method):
             #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type_im='<d')
@@ -466,6 +471,12 @@ class iResults(vDenoising):
         # Mean activity in cold cylinder calculation (-c -40. -40. 0. 40. 4. 0.)
         cold_ROI_act = image_recon[self.cold_ROI==1]
         MA_cold_recon[i] = np.mean(cold_ROI_act)
+        cold_inside_ROI_act = image_recon[self.cold_inside_ROI==1]
+        self.MA_cold_inside[i] = np.mean(cold_inside_ROI_act)
+        cold_edge_ROI_act = image_recon[self.cold_edge_ROI==1]
+        self.MA_cold_edge[i] = np.mean(cold_edge_ROI_act)
+
+        # DIP loss function
         if ( 'nested' in self.method or  'Gong' in self.method):
             loss_DIP_recon[i] = np.mean((self.image_corrupt * self.phantom_ROI - image_recon_cropped)**2)
 
@@ -529,26 +540,16 @@ class iResults(vDenoising):
             if ("results" in self.config["task"]):
                 wr.writerow(self.likelihoods)
 
-        '''
-        print(PSNR_recon)
-        print(PSNR_norm_recon)
-        print(MSE_recon)
-        print(SSIM_recon)
-        print(MA_cold_recon)
-        print(AR_hot_recon)
-        print(AR_bkg_recon)
-        print(IR_bkg_recon)
-        '''
+        # Save cold inside and edge
+        with open(self.subroot_metrics + self.method + '/' + self.suffix_metrics + '/metrics_cold.csv', 'w', newline='') as myfile:
+            wr = writer_csv(myfile,delimiter=';')
+            wr.writerow(MA_cold_recon)
+            wr.writerow(self.MA_cold_inside)
+            wr.writerow(self.MA_cold_edge)
         
+        # Show metrics in tensorboard
         if (self.tensorboard):
             print("Metrics saved in tensorboard")
-            '''
-            writer.add_scalars('MSE gt (best : 0)', {'MSE':  MSE_recon[i], 'best': 0,}, i)
-            writer.add_scalars('Mean activity in cold cylinder (best : 0)', {'mean_cold':  MA_cold_recon[i], 'best': 0,}, i)
-            writer.add_scalars('Mean Concentration Recovery coefficient in hot cylinder (best : 1)', {'AR_hot':  AR_hot_recon[i], 'best': 1,}, i)
-            writer.add_scalars('Mean Concentration Recovery coefficient in background (best : 1)', {'MA_bkg':  AR_bkg_recon[i], 'best': 1,}, i)
-            #writer.add_scalars('Image roughness in the background (best : 0)', {'IR':  IR_bkg_recon[i], 'best': 0,}, i)
-            '''
             writer.add_scalar('PSNR gt (best : inf)', PSNR_recon[i], i)
             writer.add_scalar('MSE gt (best : 0)', MSE_recon[i], i)
             writer.add_scalar('SSIM gt (best : 0)', SSIM_recon[i], i)
