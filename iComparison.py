@@ -118,6 +118,7 @@ class iComparison(vReconstruction):
             classResults.rho = self.rho
             classResults.hyperparameters_list = self.hyperparameters_list
             classResults.phantom_ROI = self.phantom_ROI
+            classResults.scanner = self.scanner
             if ("3D" not in self.phantom):
                 classResults.bkg_ROI = self.bkg_ROI
                 classResults.hot_TEP_ROI = self.hot_TEP_ROI

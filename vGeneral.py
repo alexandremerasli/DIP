@@ -127,14 +127,14 @@ class vGeneral(abc.ABC):
 
         if (self.ray): # Launch raytune
             # Initialize ROIs before ray
-            self.initializeBeforeRay(root)
+            self.initializeBeforeRay(config,root)
             # Launch computation
             tune.run(partial(self.do_everything,root=root,only_suffix_replicate_file = only_suffix_replicate_file), config=config,local_dir = getcwd() + '/runs', progress_reporter = ExperimentTerminationReporter())
         else: # Without raytune
             # Remove grid search if not using ray and choose first element of each config key.
             config = self.removeGridSearch(config,task)            
             # Initialize ROIs
-            self.initializeBeforeRay(root)            
+            self.initializeBeforeRay(config,root)            
             # Launch computation
             self.do_everything(config,root,only_suffix_replicate_file = only_suffix_replicate_file)
 
@@ -157,21 +157,27 @@ class vGeneral(abc.ABC):
             config["task"] = task
         return config
 
-    def initializeBeforeRay(self,root):
+    def initializeBeforeRay(self,config,root):
         self.subroot_data = root + '/data/Algo/' # Directory root
-        try:
-            self.phantom = "image40_0"
-            # self.phantom = config["image"]
-        except:
-            self.phantom = "image40_0"
+        if (config["ray"]):
+            self.phantom = config["image"]["grid_search"][0]
+        else:
+            self.phantom = config["image"]
+
+        # Define scanner
+        if (self.phantom == "image010_3D"):
+            self.scanner = "mMR_3D"
+        elif (self.phantom == "image012_3D" or self.phantom == "image013_3D"):
+            self.scanner = "mCT_3D"
+        else:
+            self.scanner = "mMR_2D"
+
         # Define PET input dimensions according to input data dimensions
         self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
         self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
-        
-        # self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-        # self.phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-
+        # # Loading Ground Truth image to compute metrics
+        # self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')            
 
         # Defining ROIs
         self.phantom_ROI = self.get_phantom_ROI(self.phantom)
@@ -404,17 +410,21 @@ class vGeneral(abc.ABC):
 
     def read_input_dim(self,file_path):
         # Read CASToR header file to retrieve image dimension """
-        with open(file_path) as f:
-            for line in f:
-                if 'matrix size [1]' in line.strip():
-                    dim1 = [int(s) for s in line.split() if s.isdigit()][-1]
-                if 'matrix size [2]' in line.strip():
-                    dim2 = [int(s) for s in line.split() if s.isdigit()][-1]
-                if 'matrix size [3]' in line.strip():
-                    dim3 = [int(s) for s in line.split() if s.isdigit()][-1]
-
+        try:
+            with open(file_path) as f:
+                for line in f:
+                    if 'matrix size [1]' in line.strip():
+                        dim1 = [int(s) for s in line.split() if s.isdigit()][-1]
+                    if 'matrix size [2]' in line.strip():
+                        dim2 = [int(s) for s in line.split() if s.isdigit()][-1]
+                    if 'matrix size [3]' in line.strip():
+                        dim3 = [int(s) for s in line.split() if s.isdigit()][-1]
+        except:
+            raise ValueError("Please put the header file from CASToR with name of phantom")
         # Create variables to store dimensions
         PETImage_shape = (dim1,dim2,dim3)
+        if (self.scanner == "mMR_3D"):
+            PETImage_shape = (int(dim1/2),int(dim2/2),dim3)
         PETImage_shape_str = str(dim1) + ','+ str(dim2) + ',' + str(dim3)
         print('image shape :', PETImage_shape)
         return PETImage_shape_str
@@ -782,7 +792,11 @@ class vGeneral(abc.ABC):
         #     header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data path
         header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data pat
         dim = ' -dim ' + PETImage_shape_str
-        vox = ' -vox 4,4,4'
+        if (self.scanner != "mMR_3D"):
+            vox = ' -vox 4,4,4'
+        else:
+            vox = ' -vox 1.04313,1.04313,2.03125'
+            vox = ' -vox 2.08626,2.08626,2.03125'
         vb = ' -vb 3'
         th = ' -th ' + str(self.nb_threads) # must be set to 1 for ADMMLim, as multithreading does not work for now with ADMMLim optimizer
         proj = ' -proj incrementalSiddon'
@@ -892,7 +906,12 @@ class vGeneral(abc.ABC):
             phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(self.PETImage_shape),type_im='<f')
         else:
             print("No phantom file for this phantom")
-            phantom_ROI = ones_like(self.image_gt)
+            # Loading Ground Truth image to compute metrics
+            try:
+                image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')
+            except:
+                raise ValueError("Please put the header file from CASToR with name of phantom")
+            phantom_ROI = ones_like(image_gt)
             #raise ValueError("No phantom file for this phantom")
             #phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             

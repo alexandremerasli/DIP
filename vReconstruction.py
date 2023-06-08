@@ -80,6 +80,10 @@ class vReconstruction(vGeneral):
 
         #'''
         # Launch short MLEM reconstruction
+        self.launch_quick_mlem(config)
+        #'''
+    
+    def launch_quick_mlem(self,config):
         path_mlem_init = self.subroot_data + 'Data/MLEM_reco_for_init_hdr/' + self.phantom
         my_file = Path(path_mlem_init + '/' + self.phantom + '_it1.img')
         if (not my_file.is_file()):
@@ -100,8 +104,8 @@ class vReconstruction(vGeneral):
             th = ' -th ' + str(self.nb_threads) # must be set to 1 for ADMMLim, as multithreading does not work for now with ADMMLim optimizer
             print(executable + dim + vox + output_path + header_file + vb + it + opti + th)
             os.system(executable + dim + vox + output_path + header_file + vb + it + opti + th) # + ' -fov-out 95')
-        #'''
-    
+
+
     def castor_reconstruction(self,writer, i, i_init, subroot, nb_outer_iteration, experiment, config, method, phantom, replicate, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, alpha, image_init_path_without_extension):
         start_time_block1 = time.time()
         mlem_sequence = config['mlem_sequence']

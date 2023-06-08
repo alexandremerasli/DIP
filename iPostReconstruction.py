@@ -88,7 +88,7 @@ class iPostReconstruction(vDenoising):
             classResults.nb_replicates = self.nb_replicates
             classResults.debug = self.debug
             classResults.hyperparameters_list = self.hyperparameters_list
-
+            classResults.scanner = self.scanner
             if ("3D" not in self.phantom):
                 classResults.bkg_ROI = self.bkg_ROI
                 classResults.hot_TEP_ROI = self.hot_TEP_ROI

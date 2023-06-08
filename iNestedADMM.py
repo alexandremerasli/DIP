@@ -30,8 +30,7 @@ class iNestedADMM(vReconstruction):
             classResults.rho = self.rho
             classResults.debug = self.debug
             classResults.hyperparameters_list = self.hyperparameters_list
-            # classResults.bkg_ROI = self.bkg_ROI
-            # classResults.phantom_ROI = self.phantom_ROI
+            classResults.scanner = self.scanner
             classResults.phantom_ROI = self.phantom_ROI
             if ("3D" not in self.phantom):
                 classResults.bkg_ROI = self.bkg_ROI
