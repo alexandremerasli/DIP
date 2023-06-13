@@ -16,11 +16,7 @@ def config_func_MIC():
         "all_images_DIP" : tune.grid_search(['Last']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
         "experiment" : tune.grid_search([24]),
         "replicates" : tune.grid_search(list(range(1,40+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
-        #"replicates" : tune.grid_search([2,19,24,30,32,39,43,51,53,56,61,66,77]), # List of desired replicates. list(range(1,n+1)) means n replicates
-        #"replicates" : tune.grid_search([2,3,5,7,10,11,12,13,14,16,17,18,19,20,21,23,24,26,27,28,29,33,35,37,38,39,40]), # List of desired replicates. list(range(1,n+1)) means n replicates
-        #"replicates" : tune.grid_search([10,20]), # List of desired replicates. list(range(1,n+1)) means n replicates
-        #"replicates" : tune.grid_search([1,3,4,13,22,24,28,30,33,39,43]), # List of desired replicates. list(range(1,n+1)) means n replicates
-        #"replicates" : tune.grid_search([19,24,28,30,32,39,43,51,53,56,61,66,77,78,86]), # List of desired replicates. list(range(1,n+1)) means n replicates
+        "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
         "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
         "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMLim)
     }
@@ -47,10 +43,13 @@ def config_func_MIC():
         "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
         "rho" : tune.grid_search([0.003,8e-4,0.008,0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "rho" : tune.grid_search([0.003,0.3,0.03,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+        "rho" : tune.grid_search([1]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+        # "rho" : tune.grid_search([0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+        # "rho" : tune.grid_search([0.3,0.03,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         # "rho" : tune.grid_search([0.3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        "adaptive_parameters_DIP" : tune.grid_search(["nothing"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
+        "adaptive_parameters_DIP" : tune.grid_search(["rho_decay"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
         "mu_DIP" : tune.grid_search([10]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
-        "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
+        "tau_DIP" : tune.grid_search([0.95,0.9,0.8]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
         ## network hyperparameters
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
         "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization

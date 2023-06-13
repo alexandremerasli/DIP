@@ -97,8 +97,8 @@ class iFinalCurves(vGeneral):
         elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
             ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom']
             # ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom','whole']
-            # ROI_list = ['whole']
-            ROI_list = ['cold','cold_inside','cold_edge']
+            ROI_list = ['whole']
+            # ROI_list = ['cold','cold_inside','cold_edge']
 
         for ROI in ROI_list:
             # Plot tradeoff with SSIM (set quantitative_tradeoff is False) or AR (set quantitative_tradeoff to True)
@@ -146,8 +146,10 @@ class iFinalCurves(vGeneral):
                     other_dim_name = ""
                 elif ("nested" in method or "DIPRecon" in method):
                     rho_name = "rho"
-                    config_other_dim[method] = config[method]["lr"]
-                    other_dim_name = "lr"
+                    # config_other_dim[method] = config[method]["lr"]
+                    # other_dim_name = "lr"
+                    config_other_dim[method] = config_tmp["tau_DIP"]["grid_search"]
+                    other_dim_name = "tau_DIP"
                 else:
                     config_other_dim[method] = [""]
                     other_dim_name = ""
@@ -164,7 +166,7 @@ class iFinalCurves(vGeneral):
 
                 # Settings in following curves
                 variance_plot = True
-                plot_all_replicates_curves = True
+                plot_all_replicates_curves = False
                 
                 if plot_all_replicates_curves:
                     color_avg = 'black'
@@ -327,7 +329,7 @@ class iFinalCurves(vGeneral):
 
                             if (fig_nb == 0):
                                 # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_avg)
-                                if ('nested' in method or 'DIPRecon' in method or nb_rho[method] > 1):
+                                if ((('nested' in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1):
                                     idx_good_rho_color = config_tmp["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                 else:
                                     idx_good_rho_color = other_dim_idx
@@ -341,7 +343,7 @@ class iFinalCurves(vGeneral):
                                 # Plot average and std of bias curves with iterations
                                 #ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg) # if 1 out of i_init iterations was saved
                                 # ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg)
-                                if ('nested' in method or 'DIPRecon' in method or nb_rho[method] > 1):
+                                if ((('nested' in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1):
                                     idx_good_rho_color = config_tmp["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                 else:
                                     idx_good_rho_color = other_dim_idx
@@ -396,40 +398,44 @@ class iFinalCurves(vGeneral):
                                 #'''
                         else:
                             for rho_idx in range(nb_rho[method]):
-                                print(method,color_dict[method_without_configuration])
-                                idx_good_rho_color = config_tmp["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
-                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],marker='o'*('CT' in method) + '*'*('random' in method) + 'o'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][other_dim_idx])#'-o',)
-                                # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:],marker='o'*('CT' in method) + '*'*('random' in method) + '+'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
-                                # unnested
-                                idx_good_rho_color = config_tmp["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
-                                plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'D',markersize=10, mfc='none',color=color_dict[method_without_configuration][idx_good_rho_color],label='_nolegend_')
-                                plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],marker='D',markersize=9,color='white',label='_nolegend_')
-                                # nested it 100 white circle
-                                #'''
-                                if ('nested_BSREM_stand' in method):
-                                    idx = 100
-                                elif ('nested_ADMMLim_stand' in method):
-                                    idx = 75
-                                else:
-                                    idx = 75
-                                if ('nested_BSREM_stand' in method or "DIPRecon_BSREM_stand" in method):
-                                    #plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,idx],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,idx],'o', color='white', label='_nolegend_')
-                                    plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,idx],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,idx],marker='X',markersize=10,color='black', label='_nolegend_')                                   
-                                #'''
-                                #if 'cold' in ROI:
-                                #    plt.xlim([12,57])
-                                #else:
-                                #    plt.xlim([12,57])
-                                if (variance_plot):
-                                    # ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
-                                    ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1])), alpha = 0.4, label='_nolegend_')
+                                for other_dim_idx in range(nb_other_dim[method]):
+                                    print(method,color_dict[method_without_configuration])
+                                    if (nb_other_dim[method] == 1):
+                                        idx_good_rho_color = config_tmp["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
+                                    else:
+                                        idx_good_rho_color = other_dim_idx
+                                    ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],marker='o'*('CT' in method) + '*'*('random' in method) + 'o'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][other_dim_idx])#'-o',)
+                                    # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:],marker='o'*('CT' in method) + '*'*('random' in method) + '+'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
+                                    # unnested
+                                    idx_good_rho_color = config_tmp["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
+                                    plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'D',markersize=10, mfc='none',color=color_dict[method_without_configuration][idx_good_rho_color],label='_nolegend_')
+                                    plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],marker='D',markersize=9,color='white',label='_nolegend_')
+                                    # nested it 100 white circle
+                                    #'''
+                                    if ('nested_BSREM_stand' in method):
+                                        idx = 100
+                                    elif ('nested_ADMMLim_stand' in method):
+                                        idx = 75
+                                    else:
+                                        idx = 75
+                                    if ('nested_BSREM_stand' in method or "DIPRecon_BSREM_stand" in method):
+                                        #plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,idx],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,idx],'o', color='white', label='_nolegend_')
+                                        plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,idx],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,idx],marker='X',markersize=10,color='black', label='_nolegend_')                                   
+                                    #'''
+                                    #if 'cold' in ROI:
+                                    #    plt.xlim([12,57])
+                                    #else:
+                                    #    plt.xlim([12,57])
+                                    if (variance_plot):
+                                        # ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
+                                        ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1])), alpha = 0.4, label='_nolegend_')
                     #'''
                     # Set labels for x and y axes
                     self.set_axes_labels(ax,fig_nb,ROI)
                     # Add label for each curve
                     for rho_idx in range(nb_rho[method]):
                         for other_dim_idx in range(nb_other_dim[method]):
-                            self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings)
+                            self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings)
                     if (method == method_list[-1]):
                         if (quantitative_tradeoff): # AR
                             if ROI == ROI_list[2] or ROI == ROI_list[-1]: # if legend is needed only in one ROI
@@ -489,7 +495,7 @@ class iFinalCurves(vGeneral):
         else:
             ax[fig_nb].set_ylabel('SSIM')
 
-    def label_method_plot(self,replicates_legend,fig_nb,method,rho_name,nb_rho,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings):
+    def label_method_plot(self,replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings):
         if (self.phantom == "image2_0"):
             replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
         elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
@@ -524,7 +530,13 @@ class iFinalCurves(vGeneral):
                         replicates_legend[fig_nb].append("random input, DD")
                     else:
                         for rho_idx in range(nb_rho[method]):
-                            replicates_legend[fig_nb].append("intermediate setting, " + str(config[method]["skip_connections"]) + " SC" + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]))
+                            for other_dim_idx in range(nb_other_dim[method]):
+                                label_name = "intermediate setting, " + str(config[method]["skip_connections"]) + " SC"
+                                if (nb_other_dim[method] > 1): # Remove rho from label if other dim
+                                    label_name += " : " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx])
+                                else:
+                                    label_name += " : " + rho_name + " = " + str(config[method]["rho"][rho_idx])
+                                replicates_legend[fig_nb].append(label_name)
         
 
     def choose_good_config_file(self,method,config,csv_before_MIC,DIPRecon):
@@ -863,7 +875,7 @@ class iFinalCurves(vGeneral):
                 "nested_skip0_3_my_settings" : [marker_dict["intermediate"][0]],
                 "nested_skip1_3_my_settings" : [marker_dict["intermediate"][0]],
                 "nested_skip2_3_my_settings" : [marker_dict["intermediate"][0]],
-                "nested_ADMMLim_more_ADMMLim_it_10" : [marker_dict["intermediate"][0]],
+                "nested_ADMMLim_more_ADMMLim_it_10" : [marker_dict["intermediate"][0],marker_dict["intermediate"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_10_003" : [marker_dict["intermediate"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_30" : [marker_dict["ADMMLim"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_80" : [marker_dict["ADMMLim"][0]],
@@ -953,7 +965,11 @@ class iFinalCurves(vGeneral):
                         rows_csv[9] = [float(rows_csv[9][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[9]),self.total_nb_iter))]
                         rows_csv[10] = [float(rows_csv[10][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[10]),self.total_nb_iter))]
                         rows_csv[13] = [float(rows_csv[13][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[13]),self.total_nb_iter))]
-                        rows_csv[14] = [float(rows_csv[14][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[14]),self.total_nb_iter))]
+                        if (ROI == "whole"):
+                            if (len(rows_csv) > 14):
+                                rows_csv[14] = [float(rows_csv[14][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[14]),self.total_nb_iter))]
+                            else:
+                                raise ValueError("likelihood is not in csv")
 
                     PSNR_recon.append(np.array(rows_csv[0]))
                     PSNR_norm_recon.append(np.array(rows_csv[1]))
