@@ -50,6 +50,7 @@ class DIP_2D(LightningModule):
         '''
         self.DIP_early_stopping = config["DIP_early_stopping"]
         self.override_input = override_input
+        self.scanner = scanner
         
         # Initialize early stopping method if asked for
         if(self.DIP_early_stopping):
@@ -236,7 +237,7 @@ class DIP_2D(LightningModule):
         self.logger.experiment.add_scalar('loss', loss,self.current_epoch)        
 
         # WMV
-        self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root)
+        self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.scanner)
         return loss
 
     def configure_optimizers(self):
@@ -312,7 +313,7 @@ class DIP_2D(LightningModule):
         # Initialize variables
         self.classWMV.do_everything(config,root)
 
-    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root):
+    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner):
         if (self.DIP_early_stopping):
             self.SUCCESS = self.classWMV.SUCCESS
             self.log("SUCCESS", int(self.classWMV.SUCCESS))
@@ -333,7 +334,7 @@ class DIP_2D(LightningModule):
 
             if self.SUCCESS:
                 print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
-                self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root)
+                self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner)
         
         else:
             self.log("SUCCESS", int(False))
