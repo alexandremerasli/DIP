@@ -39,6 +39,8 @@ class iNestedADMM(vReconstruction):
                 classResults.hot_perfect_match_ROI = self.hot_perfect_match_ROI
                 classResults.hot_ROI = self.hot_ROI
                 classResults.cold_ROI = self.cold_ROI
+                classResults.cold_inside_ROI = self.cold_inside_ROI
+                classResults.cold_edge_ROI = self.cold_edge_ROI
             classResults.initializeSpecific(config,root)
         
         if (config["unnested_1st_global_iter"]):
@@ -216,6 +218,7 @@ class iNestedADMM(vReconstruction):
                 classDenoising.config = self.config
                 classDenoising.root = self.root
                 classDenoising.method = self.method
+                classDenoising.scanner = self.scanner
                 classDenoising.initializeGeneralVariables(config,root)
         
         # During iterations, do not do WMV
@@ -255,6 +258,12 @@ class iNestedADMM(vReconstruction):
 
             # Do the same scaling for mu
             coeff_rho = self.rho / previous_rho
+            self.mu /= coeff_rho
+
+        if (config["adaptive_parameters_DIP"] == "rho_decay"):
+            self.rho *= self.tau_DIP
+            # Do the same scaling for mu
+            coeff_rho = self.tau_DIP
             self.mu /= coeff_rho
     
     def writeAdaptiveRhoFile(self):

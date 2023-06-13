@@ -96,6 +96,8 @@ class iPostReconstruction(vDenoising):
                 classResults.hot_perfect_match_ROI = self.hot_perfect_match_ROI
                 classResults.hot_ROI = self.hot_ROI
                 classResults.cold_ROI = self.cold_ROI
+                classResults.cold_inside_ROI = self.cold_inside_ROI
+                classResults.cold_edge_ROI = self.cold_edge_ROI
 
             classResults.initializeSpecific(config,root)
 
