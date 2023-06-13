@@ -113,7 +113,7 @@ class iPostReconstruction(vDenoising):
             #self.image_corrupt = np.transpose(self.image_corrupt,axes=(2,1,0)) #nope
             #self.image_corrupt = self.image_corrupt.reshape(self.image_corrupt.shape[::-1])
             
-            self.save_img(self.image_corrupt,"/disk/workspace_reco/nested_admm/data/Algo/image2_3D/replicate_1/nested/Block2/post_reco config_image=BSREM_3D_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2_lr=0.0001_sub_i=10_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=3_alpha=1_adapt=tau_mu_ad=2_tau=100_mlem_=False/out_cnn/24/corrupt.raw")
+            # self.save_img(self.image_corrupt,"/disk/workspace_reco/nested_admm/data/Algo/image2_3D/replicate_1/nested/Block2/post_reco config_image=BSREM_3D_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2_lr=0.0001_sub_i=10_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=3_alpha=1_adapt=tau_mu_ad=2_tau=100_mlem_=False/out_cnn/24/corrupt.raw")
 
             print("ok")
 
@@ -159,20 +159,25 @@ class iPostReconstruction(vDenoising):
         if (nb_iter_train > 0):
             model = self.train_process(self.param1_scale_im_corrupt, self.param2_scale_im_corrupt, self.scaling_input, self.suffix,config, self.finetuning, self.processing_unit, nb_iter_train, self.method, self.global_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, all_images_DIP = self.all_images_DIP, last_iter=last_iter)
         else:
-            raise ValueError("need to select a higher number of iterations, because the " + str(self.total_nb_iter) + " first iterations were already computed")
+            if(self.PETImage_shape[2] == 1): # 2D 
+                raise ValueError("need to select a higher number of iterations, because the " + str(self.total_nb_iter) + " first iterations were already computed")
+            else:
+                last_iter = -1
+                model = self.train_process(self.param1_scale_im_corrupt, self.param2_scale_im_corrupt, self.scaling_input, self.suffix,config, self.finetuning, self.processing_unit, nb_iter_train, self.method, self.global_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, all_images_DIP = self.all_images_DIP, last_iter=last_iter)
+
 
 
         ## Variables for WMV ##
         if (model.DIP_early_stopping):
-            self.epochStar = model.epochStar
+            self.epochStar = model.classWMV.epochStar
             if (config["EMV_or_WMV"] == "WMV"):
                 classResults.windowSize = self.windowSize
-            self.patienceNumber = model.patienceNumber
-            self.VAR_recon = model.VAR_recon
-            self.MSE_WMV = model.MSE_WMV
-            self.PSNR_WMV = model.PSNR_WMV
-            self.SSIM_WMV = model.SSIM_WMV
-            self.SUCCESS = model.SUCCESS
+            self.patienceNumber = model.classWMV.patienceNumber
+            self.VAR_recon = model.classWMV.VAR_recon
+            self.MSE_WMV = model.classWMV.MSE_WMV
+            self.PSNR_WMV = model.classWMV.PSNR_WMV
+            self.SSIM_WMV = model.classWMV.SSIM_WMV
+            self.SUCCESS = model.classWMV.SUCCESS
             if (self.SUCCESS): # ES point is reached
                 self.total_nb_iter = self.epochStar + self.patienceNumber + 1
                 self.total_nb_iter = self.epochStar + 1
@@ -205,17 +210,45 @@ class iPostReconstruction(vDenoising):
                 net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
             
             out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f')
+
+
+
+            # WMV
+            # self.log("SUCCESS", int(model.classWMV.SUCCESS))
+            if (model.DIP_early_stopping):
+                model.classWMV.SUCCESS,model.classWMV.VAR_min,model.classWMV.stagnate = model.classWMV.WMV(out,model.current_epoch,model.classWMV.queueQ,model.classWMV.SUCCESS,model.classWMV.VAR_min,model.classWMV.stagnate)
+                self.VAR_recon = model.classWMV.VAR_recon
+                self.MSE_WMV = model.classWMV.MSE_WMV
+                self.PSNR_WMV = model.classWMV.PSNR_WMV
+                self.SSIM_WMV = model.classWMV.SSIM_WMV
+                self.epochStar = model.classWMV.epochStar
+                '''
+                if self.EMV_or_WMV == "EMV":
+                    self.alpha_EMV = model.classWMV.alpha_EMV
+                else:
+                    self.windowSize = model.classWMV.windowSize
+                '''
+                self.patienceNumber = model.classWMV.patienceNumber
+                self.SUCCESS = model.classWMV.SUCCESS
+                print(self.VAR_recon)
+                if self.SUCCESS:
+                    print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
+
+            out_descale = out
+
+
+
             #out_torch = torch.from_numpy(out)
             # Descale like at the beginning
-            out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
-            #'''
-            # Saving image output
-            net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
-            self.save_img(out_descale, net_outputs_path)
-            # Squeeze image by loading it
-            out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
-            # Saving (now DESCALED) image output
-            self.save_img(out_descale, net_outputs_path)
+            # out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
+            # #'''
+            # # Saving image output
+            # net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
+            # self.save_img(out_descale, net_outputs_path)
+            # # Squeeze image by loading it
+            # out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+            # # Saving (now DESCALED) image output
+            # self.save_img(out_descale, net_outputs_path)
 
             if ("3D" not in self.phantom):
                 # Compute IR metric (different from others with several replicates)

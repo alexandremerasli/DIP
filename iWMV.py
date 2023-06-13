@@ -57,9 +57,17 @@ class iWMV(vGeneral):
             out = out[:,:,newaxis]
         else: # 3D
             out = out.reshape(out.shape[::-1])
+            image_gt_reversed = self.image_gt.reshape(self.image_gt.shape[::-1])
+            print("reshape ?")
 
-        out_cropped = out * self.phantom_ROI
-        image_gt_cropped = self.image_gt * self.phantom_ROI
+        
+        # Crop image to inside phantom if 2D simulations
+        if (self.PETImage_shape[2] == 1): # 2D    
+            out_cropped = out * self.phantom_ROI
+            image_gt_cropped = self.image_gt * self.phantom_ROI
+        else:
+            out_cropped = out
+            image_gt_cropped = image_gt_reversed
 
         from skimage.metrics import peak_signal_noise_ratio
         from skimage.metrics import structural_similarity

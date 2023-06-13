@@ -166,8 +166,8 @@ class vDenoising(vGeneral):
         if (finetuning == 'False'): # Do not save and use checkpoints (still save hparams and event files for now ...)
             logger = TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
             #checkpoint_callback = ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=0, save_weights_only=True) # Do not save any checkpoint (save_top_k = 0)
-            checkpoint_callback = ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0). We do not use it a priori, except in post reconstruction to initialize
-            trainer = Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple", progress_bar_refresh_rate=0, weights_summary=None)
+            # checkpoint_callback = ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0). We do not use it a priori, except in post reconstruction to initialize
+            trainer = Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, callbacks=[tuning_callback, early_stopping_callback], logger=logger,gpus=gpus, accelerator=accelerator, profiler="simple", progress_bar_refresh_rate=0, weights_summary=None)
         else:
             if (finetuning == 'last'): # last model saved in checkpoint
                 # Checkpoints pl variables
@@ -210,7 +210,7 @@ class vDenoising(vGeneral):
             name += '_3D_'
 
         file_path = (subroot+'Data/initialization/' + name + net + '_' + str(self.PETImage_shape[0]) + '.img')
-        if (not os.path.isfile(file_path) and not config["random_seed"]):
+        if ((os.path.isfile(file_path) and not config["random_seed"]) or (not os.path.isfile(file_path))):
             constant_uniform = 1
             if (self.FLTNB == 'float'):
                 type_im = 'float32'
@@ -255,7 +255,7 @@ class vDenoising(vGeneral):
             if (PETImage_shape[2] == 1):
                 file_path = (subroot+'Data/initialization/random_input_2D_' + net + '_' + str(self.PETImage_shape[0]) + '.img')
             else:
-                file_path = (subroot+'Data/initialization/random_input_3D_' + net + '.img')
+                file_path = (subroot+'Data/initialization/random_input_3D_' + net + '_' + str(self.PETImage_shape[0]) + '.img')
         elif self.input == "CT":
             if (self.phantom != "image4_0" and self.phantom != "image400_0" and self.phantom != "image40_0"):
                 file_path = (subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw') #CT map, but not CT yet, attenuation for now...
@@ -399,7 +399,7 @@ class vDenoising(vGeneral):
                 model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, last_iter, override_input)
                 model_class = DIP_2D
             else: # 3D
-                model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix)
+                model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, self.scanner)
                 model_class = DIP_3D
         elif (net == 'DIP_VAE'): # Loading DIP VAE architecture
             model = VAE_DIP_2D(config)

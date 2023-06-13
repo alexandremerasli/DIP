@@ -11,7 +11,7 @@ from iWMV import iWMV
 
 class DIP_3D(pl.LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, scanner ):
         super().__init__()
 
         #'''
@@ -56,6 +56,7 @@ class DIP_3D(pl.LightningModule):
             self.classWMV.scaling_input = scaling_input
             self.classWMV.suffix = suffix
             self.classWMV.global_it = global_it
+            self.classWMV.scanner = scanner
             # Initialize variables
             self.classWMV.do_everything(config,root)
 
