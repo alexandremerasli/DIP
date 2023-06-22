@@ -16,6 +16,7 @@ from os.path import isfile
 # Local files to import
 #from vGeneral import vGeneral
 from vDenoising import vDenoising
+from iWMV import iWMV
 
 class iResults(vDenoising):
     def __init__(self,config, *args, **kwargs):
@@ -29,7 +30,17 @@ class iResults(vDenoising):
         if (config["net"] == "DD" or config["net"] == "DD_AE"):
             self.d_DD = config["d_DD"]
             self.k_DD = config["k_DD"]
+        # if ("nested" in config["method"] or "Gong" in config["method"]):
+        #     self.DIP_early_stopping = config["DIP_early_stopping"]
         #vDenoising.initializeSpecific(self,config,root)
+        # Initialize early stopping method if asked for
+        if ("nested" in config["method"] or "Gong" in config["method"]):
+            if (config["DIP_early_stopping"]):
+                self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d')
+                image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,config["scaling"]) # Scaling of x_label image
+            self.global_it = -100
+            self.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,root,self.scanner)
+                
 
         if ('ADMMLim' in config["method"]):
             self.i_init = 30 # Remove first iterations
@@ -209,8 +220,8 @@ class iResults(vDenoising):
             self.IR = 0
             self.IR_whole = 0
             if (self.loop_on_replicates(config,i)):
-                break
-                    
+                break    
+
             if ("3D" not in self.phantom):
                 self.IR_bkg_recon[int((i-self.i_init))] = self.IR
                 self.IR_whole_recon[int((i-self.i_init))] = self.IR_whole
@@ -222,6 +233,8 @@ class iResults(vDenoising):
             # Show images and metrics in tensorboard (averaged images if asked in config)
             print('Metrics for iteration',int((i-self.i_init)))
             self.writeEndImagesAndMetrics(int((i-self.i_init)),self.total_nb_iter,self.PETImage_shape,self.f,self.suffix,self.phantom,self.net,self.pet_algo,self.iteration_name)
+
+        print("loop over")
 
         #self.WMV_plot(config)
 
@@ -414,6 +427,11 @@ class iResults(vDenoising):
                 elif (config["average_replicates"] == False and p == self.replicate):
                     self.f = f_p
             
+                # WMV
+                if ("nested" in config["method"] or "Gong" in config["method"]):
+                    if(config["DIP_early_stopping"]):# WMV
+                        self.run_WMV(f_p,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,i)
+
                 del f_p
 
 
@@ -561,3 +579,43 @@ class iResults(vDenoising):
             writer.add_scalar('Mean Concentration Recovery coefficient in background (best : 1)', AR_bkg_recon[i], i)
             writer.add_scalar('DIP loss', loss_DIP_recon[i], i)
             #writer.add_scalar('Image roughness in the background (best : 0)', IR_bkg_recon[i], i)
+
+
+    def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner):
+        self.classWMV = iWMV(config)            
+        self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
+        self.classWMV.hyperparameters_list = hyperparameters_list
+        self.classWMV.debug = debug
+        self.classWMV.param1_scale_im_corrupt = param1_scale_im_corrupt
+        self.classWMV.param2_scale_im_corrupt = param2_scale_im_corrupt
+        self.classWMV.scaling_input = scaling_input
+        self.classWMV.suffix = suffix
+        self.classWMV.global_it = global_it
+        self.classWMV.scanner = scanner
+        # Initialize variables
+        self.classWMV.do_everything(config,root)
+
+    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner,i):
+        if (config["DIP_early_stopping"]):
+            self.SUCCESS = self.classWMV.SUCCESS
+
+            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out,i,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
+            self.VAR_recon = self.classWMV.VAR_recon
+            self.MSE_WMV = self.classWMV.MSE_WMV
+            self.PSNR_WMV = self.classWMV.PSNR_WMV
+            self.SSIM_WMV = self.classWMV.SSIM_WMV
+            self.epochStar = self.classWMV.epochStar
+            '''
+            if self.EMV_or_WMV == "EMV":
+                self.alpha_EMV = self.classWMV.alpha_EMV
+            else:
+                self.windowSize = self.classWMV.windowSize
+            '''
+            self.patienceNumber = self.classWMV.patienceNumber
+
+            # if self.SUCCESS:
+            #     print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
+            #     self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner)
+        
+        else:
+            self.log("SUCCESS", int(False))

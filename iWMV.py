@@ -43,7 +43,10 @@ class iWMV(vGeneral):
         if (self.PETImage_shape[2] == 1): # 2D
             self.phantom_ROI = self.get_phantom_ROI(self.phantom)
         else: # 3D
-            self.phantom_ROI = ones(self.PETImage_shape)
+            if (self.phantom == "image010_3D"): # ROI was defined by thresholding PET BSREM
+                self.phantom_ROI = self.get_phantom_ROI(self.phantom)
+            else:
+                self.phantom_ROI = ones(self.PETImage_shape)
 
     def runComputation(self,config,root):
         pass
@@ -58,14 +61,19 @@ class iWMV(vGeneral):
         else: # 3D
             out = out.reshape(out.shape[::-1])
             image_gt_reversed = self.image_gt.reshape(self.image_gt.shape[::-1])
-            print("reshape ?")
-
         
         # Crop image to inside phantom if 2D simulations
         if (self.PETImage_shape[2] == 1): # 2D    
             out_cropped = out * self.phantom_ROI
             image_gt_cropped = self.image_gt * self.phantom_ROI
         else:
+            # Taking only slice from 3D data
+            out = out[:,:,int(out.shape[2]/2)+20]
+            image_gt_reversed = image_gt_reversed[:,:,int(image_gt_reversed.shape[2]/2)+20]
+            if (len(self.EMA.shape) == 3):
+                self.EMA = self.EMA[:,:,int(self.EMA.shape[2]/2)+20]
+
+
             out_cropped = out
             image_gt_cropped = image_gt_reversed
 
