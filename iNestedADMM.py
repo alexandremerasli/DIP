@@ -22,6 +22,10 @@ class iNestedADMM(vReconstruction):
         # Initialize f at step before
         self.f_before = self.f
 
+        # Initialize moving averages of norms of relative residuals
+        self.ema_primal = np.zeros(self.max_iter)
+        self.ema_dual = np.zeros(self.max_iter)
+
         # Initializing results class
         if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):
             from iResults import iResults
@@ -264,10 +268,19 @@ class iNestedADMM(vReconstruction):
             self.mu /= coeff_rho
 
         if (config["adaptive_parameters_DIP"] == "rho_decay"):
-            self.rho *= self.tau_DIP
-            # Do the same scaling for mu
-            coeff_rho = self.tau_DIP
-            self.mu /= coeff_rho
+        
+            # Compute moving averages of norms of relative residuals
+            alpha_EMA = 0.1
+            self.ema_primal[self.global_it] = (1-alpha_EMA) * self.ema_primal[self.global_it - 1] + alpha_EMA * self.primal_residual_norm
+            self.ema_dual[self.global_it] = (1-alpha_EMA) * self.ema_dual[self.global_it - 1] + alpha_EMA * self.dual_residual_norm
+
+            if ((self.global_it == i_init + 1) or (self.ema_primal[self.global_it] < self.ema_primal[self.global_it - 1]) and (self.ema_dual[self.global_it] < self.ema_dual[self.global_it - 1])):
+                self.rho *= self.tau_DIP
+                # Do the same scaling for mu
+                coeff_rho = self.tau_DIP
+                self.mu /= coeff_rho
+            else:
+                raise ValueError("EMA relative residuals increasing")
     
     def writeAdaptiveRhoFile(self):
         text_file = open(self.subroot + 'Block2/' + self.suffix + '/adaptive_it' + str(self.global_it) + '.log', "w")

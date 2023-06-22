@@ -84,7 +84,8 @@ class iFinalCurves(vGeneral):
                         config[method][key] = value['grid_search']
                         if key != 'rho' and key != 'replicates' and key != 'method':
                             if key != 'A_AML' and key != 'post_smoothing' and key != 'lr':
-                                config[method][key] = config[method][key][0]
+                                if key != 'tau_DIP':
+                                    config[method][key] = config[method][key][0]
 
         # Show figures for each ROI, with all asked methods
         import matplotlib
@@ -95,10 +96,10 @@ class iFinalCurves(vGeneral):
         if (self.phantom == "image2_0"):
             ROI_list = ['cold','hot','phantom']
         elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
-            ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom']
+            # ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom']
             # ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom','whole']
-            ROI_list = ['whole']
-            # ROI_list = ['cold','cold_inside','cold_edge']
+            # ROI_list = ['whole']
+            ROI_list = ['cold','cold_inside','cold_edge']
 
         for ROI in ROI_list:
             # Plot tradeoff with SSIM (set quantitative_tradeoff is False) or AR (set quantitative_tradeoff to True)
@@ -329,10 +330,10 @@ class iFinalCurves(vGeneral):
 
                             if (fig_nb == 0):
                                 # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_avg)
-                                if ((('nested' in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1):
+                                if ((('nested' in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1 or config_other_dim[method] == [""]):
                                     idx_good_rho_color = config_tmp["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                 else:
-                                    idx_good_rho_color = other_dim_idx
+                                    idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
                                 ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][other_dim_idx])
                                 if (variance_plot):
                                     # ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
@@ -343,10 +344,10 @@ class iFinalCurves(vGeneral):
                                 # Plot average and std of bias curves with iterations
                                 #ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg) # if 1 out of i_init iterations was saved
                                 # ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg)
-                                if ((('nested' in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1):
+                                if ((('nested' in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1 or config_other_dim[method] == [""]):
                                     idx_good_rho_color = config_tmp["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                 else:
-                                    idx_good_rho_color = other_dim_idx
+                                    idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
                                 ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][other_dim_idx])
                                 # Plot dashed line for target value, according to ROI
                                 if (ROI != "whole"):
@@ -403,7 +404,7 @@ class iFinalCurves(vGeneral):
                                     if (nb_other_dim[method] == 1):
                                         idx_good_rho_color = config_tmp["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                     else:
-                                        idx_good_rho_color = other_dim_idx
+                                        idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
                                     ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],marker='o'*('CT' in method) + '*'*('random' in method) + 'o'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][other_dim_idx])#'-o',)
                                     # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:],marker='o'*('CT' in method) + '*'*('random' in method) + '+'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
                                     # unnested
@@ -421,6 +422,7 @@ class iFinalCurves(vGeneral):
                                     if ('nested_BSREM_stand' in method or "DIPRecon_BSREM_stand" in method):
                                         #plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,idx],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,idx],'o', color='white', label='_nolegend_')
                                         plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,idx],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,idx],marker='X',markersize=10,color='black', label='_nolegend_')                                   
+                                    # plt.ylim([3.42e6,3.43e6])
                                     #'''
                                     #if 'cold' in ROI:
                                     #    plt.xlim([12,57])
@@ -801,7 +803,6 @@ class iFinalCurves(vGeneral):
                 "nested_skip1_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][1]],
                 "nested_skip2_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][2]],
                 "nested_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["nested_ADMMLim"][0],color_dict_after_MIC["nested_ADMMLim"][1],color_dict_after_MIC["nested_ADMMLim"][2],color_dict_after_MIC["nested_ADMMLim"][3],color_dict_after_MIC["nested_ADMMLim"][4]],
-                # "nested_ADMMLim_more_ADMMLim_it_10_003" : [color_dict_after_MIC["nested_ADMMLim"][3]],
                 "nested_ADMMLim_more_ADMMLim_it_30" : [color_dict_after_MIC["nested_ADMMLim"][1]],
                 "nested_ADMMLim_more_ADMMLim_it_80" : [color_dict_after_MIC["nested_ADMMLim"][2]],
                 "nested_ADMMLim_u_v" : [color_dict_after_MIC["nested_ADMMLim"][3]],
@@ -875,8 +876,7 @@ class iFinalCurves(vGeneral):
                 "nested_skip0_3_my_settings" : [marker_dict["intermediate"][0]],
                 "nested_skip1_3_my_settings" : [marker_dict["intermediate"][0]],
                 "nested_skip2_3_my_settings" : [marker_dict["intermediate"][0]],
-                "nested_ADMMLim_more_ADMMLim_it_10" : [marker_dict["intermediate"][0],marker_dict["intermediate"][0]],
-                "nested_ADMMLim_more_ADMMLim_it_10_003" : [marker_dict["intermediate"][0]],
+                "nested_ADMMLim_more_ADMMLim_it_10" : [marker_dict["intermediate"][0],marker_dict["intermediate"][0],marker_dict["intermediate"][0],marker_dict["intermediate"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_30" : [marker_dict["ADMMLim"][0]],
                 "nested_ADMMLim_more_ADMMLim_it_80" : [marker_dict["ADMMLim"][0]],
                 "nested_ADMMLim_u_v" : [marker_dict["ADMMLim"][0]],
@@ -942,68 +942,66 @@ class iFinalCurves(vGeneral):
             replicate = "replicate_" + str(i_replicate + 1)
 
             
-            try:
-                self.subroot = self.subroot_data + 'debug/'*self.debug + self.phantom + '/'+ str(replicate) + '/' + config[method]["method"] + '/' # Directory root
-                self.suffix = suffix[:-12] # Remove NNEPPS from suffix
-                self.max_iter = config[method]["max_iter"]
-                self.defineTotalNbIter_beta_rho(method,config[method],task)
-                
-                metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + config[method]["method"] + '/' + suffix + '/' + 'metrics.csv'
+            self.subroot = self.subroot_data + 'debug/'*self.debug + self.phantom + '/'+ str(replicate) + '/' + config[method]["method"] + '/' # Directory root
+            self.suffix = suffix[:-12] # Remove NNEPPS from suffix
+            self.max_iter = config[method]["max_iter"]
+            self.defineTotalNbIter_beta_rho(method,config[method],task)
+            
+            metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + config[method]["method"] + '/' + suffix + '/' + 'metrics.csv'
+            with open(metrics_file, 'r') as myfile:
+                spamreader = reader_csv(myfile,delimiter=';')
+                rows_csv = list(spamreader)
+                rows_csv[0] = [float(rows_csv[0][i]) for i in range(int(self.i_init) - 1,min(len(rows_csv[0]),self.total_nb_iter))]
+                rows_csv[1] = [float(rows_csv[1][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[1]),self.total_nb_iter))]
+                rows_csv[2] = [float(rows_csv[2][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[2]),self.total_nb_iter))]
+                rows_csv[3] = [float(rows_csv[3][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[3]),self.total_nb_iter))]
+                rows_csv[4] = [float(rows_csv[4][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[4]),self.total_nb_iter))]
+                rows_csv[5] = [float(rows_csv[5][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[5]),self.total_nb_iter))]
+                rows_csv[6] = [float(rows_csv[6][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[6]),self.total_nb_iter))]
+                rows_csv[7] = [float(rows_csv[7][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[7]),self.total_nb_iter))]
+                if (not csv_before_MIC):
+                    rows_csv[8] = [float(rows_csv[8][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[8]),self.total_nb_iter))]
+                    rows_csv[9] = [float(rows_csv[9][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[9]),self.total_nb_iter))]
+                    rows_csv[10] = [float(rows_csv[10][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[10]),self.total_nb_iter))]
+                    rows_csv[13] = [float(rows_csv[13][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[13]),self.total_nb_iter))]
+                    if (ROI == "whole"):
+                        if (len(rows_csv) > 14):
+                            rows_csv[14] = [float(rows_csv[14][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[14]),self.total_nb_iter))]
+                        else:
+                            raise ValueError("likelihood is not in csv")
+
+                PSNR_recon.append(np.array(rows_csv[0]))
+                PSNR_norm_recon.append(np.array(rows_csv[1]))
+                MSE_recon.append(np.array(rows_csv[2]))
+                SSIM_recon.append(np.array(rows_csv[3]))
+                MA_cold_recon.append(np.array(np.array(rows_csv[4]) - 10) / 10 * 100)
+                AR_hot_recon.append(np.array(rows_csv[5]) / 400 * 100)
+
+                if (not csv_before_MIC):
+                    AR_hot_TEP_recon.append(np.array(rows_csv[6]) / 400 * 100)
+                    AR_hot_TEP_match_square_recon.append(np.array(rows_csv[7]) / 400 * 100)
+                    AR_hot_perfect_match_recon.append(np.array(rows_csv[8]) / 400 * 100)
+                    AR_bkg_recon.append(np.array(rows_csv[9]))
+                    IR_bkg_recon.append(np.array(rows_csv[10]))
+                    IR_whole_recon.append(np.array(rows_csv[13]))
+                    if (ROI == "whole"):
+                        likelihoods.append(np.array(rows_csv[14]))
+                else:        
+                    AR_bkg_recon.append(np.array(rows_csv[6]))
+                    IR_bkg_recon.append(np.array(rows_csv[7]))
+            
+            if ("cold_" in ROI):
+                metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + config[method]["method"] + '/' + suffix + '/' + 'metrics_cold.csv'
                 with open(metrics_file, 'r') as myfile:
                     spamreader = reader_csv(myfile,delimiter=';')
                     rows_csv = list(spamreader)
                     rows_csv[0] = [float(rows_csv[0][i]) for i in range(int(self.i_init) - 1,min(len(rows_csv[0]),self.total_nb_iter))]
                     rows_csv[1] = [float(rows_csv[1][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[1]),self.total_nb_iter))]
                     rows_csv[2] = [float(rows_csv[2][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[2]),self.total_nb_iter))]
-                    rows_csv[3] = [float(rows_csv[3][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[3]),self.total_nb_iter))]
-                    rows_csv[4] = [float(rows_csv[4][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[4]),self.total_nb_iter))]
-                    rows_csv[5] = [float(rows_csv[5][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[5]),self.total_nb_iter))]
-                    rows_csv[6] = [float(rows_csv[6][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[6]),self.total_nb_iter))]
-                    rows_csv[7] = [float(rows_csv[7][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[7]),self.total_nb_iter))]
-                    if (not csv_before_MIC):
-                        rows_csv[8] = [float(rows_csv[8][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[8]),self.total_nb_iter))]
-                        rows_csv[9] = [float(rows_csv[9][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[9]),self.total_nb_iter))]
-                        rows_csv[10] = [float(rows_csv[10][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[10]),self.total_nb_iter))]
-                        rows_csv[13] = [float(rows_csv[13][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[13]),self.total_nb_iter))]
-                        if (ROI == "whole"):
-                            if (len(rows_csv) > 14):
-                                rows_csv[14] = [float(rows_csv[14][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[14]),self.total_nb_iter))]
-                            else:
-                                raise ValueError("likelihood is not in csv")
-
-                    PSNR_recon.append(np.array(rows_csv[0]))
-                    PSNR_norm_recon.append(np.array(rows_csv[1]))
-                    MSE_recon.append(np.array(rows_csv[2]))
-                    SSIM_recon.append(np.array(rows_csv[3]))
-                    MA_cold_recon.append(np.array(np.array(rows_csv[4]) - 10) / 10 * 100)
-                    AR_hot_recon.append(np.array(rows_csv[5]) / 400 * 100)
-
-                    if (not csv_before_MIC):
-                        AR_hot_TEP_recon.append(np.array(rows_csv[6]) / 400 * 100)
-                        AR_hot_TEP_match_square_recon.append(np.array(rows_csv[7]) / 400 * 100)
-                        AR_hot_perfect_match_recon.append(np.array(rows_csv[8]) / 400 * 100)
-                        AR_bkg_recon.append(np.array(rows_csv[9]))
-                        IR_bkg_recon.append(np.array(rows_csv[10]))
-                        IR_whole_recon.append(np.array(rows_csv[13]))
-                        if (ROI == "whole"):
-                            likelihoods.append(np.array(rows_csv[14]))
-                    else:        
-                        AR_bkg_recon.append(np.array(rows_csv[6]))
-                        IR_bkg_recon.append(np.array(rows_csv[7]))
-                
-                if ("cold_" in ROI):
-                    metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + config[method]["method"] + '/' + suffix + '/' + 'metrics_cold.csv'
-                    with open(metrics_file, 'r') as myfile:
-                        spamreader = reader_csv(myfile,delimiter=';')
-                        rows_csv = list(spamreader)
-                        rows_csv[0] = [float(rows_csv[0][i]) for i in range(int(self.i_init) - 1,min(len(rows_csv[0]),self.total_nb_iter))]
-                        rows_csv[1] = [float(rows_csv[1][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[1]),self.total_nb_iter))]
-                        rows_csv[2] = [float(rows_csv[2][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[2]),self.total_nb_iter))]
-                        MA_cold_recon.append(np.array(np.array(rows_csv[0]) - 10) / 10 * 100)
-                        MA_cold_inside_recon.append(np.array(np.array(rows_csv[1]) - 10) / 10 * 100)
-                        MA_cold_edge_recon.append(np.array(np.array(rows_csv[2]) - 10) / 10 * 100)
-            except:
-                print("No such file : " + metrics_file)
+                    MA_cold_recon.append(np.array(np.array(rows_csv[0]) - 10) / 10 * 100)
+                    MA_cold_inside_recon.append(np.array(np.array(rows_csv[1]) - 10) / 10 * 100)
+                    MA_cold_edge_recon.append(np.array(np.array(rows_csv[2]) - 10) / 10 * 100)
+                # print("No such file : " + metrics_file)
 
         # Select metrics to plot according to ROI
 
