@@ -370,6 +370,22 @@ class iResults(vDenoising):
                     if ('post_reco' in config["task"]):
                         try:
                             f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(-100) + '_epoch=' + format(i-self.i_init) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+
+
+
+                            out = f_p
+                            # Descale like at the beginning
+                            out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"])
+                            #'''
+                            # Saving image output
+                            net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(i) + '.img'
+                            self.save_img(out_descale, net_outputs_path)
+                            # Squeeze image by loading it
+                            out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                            # Saving (now DESCALED) image output
+                            self.save_img(out_descale, net_outputs_path)
+
+
                         except:
                             print("!!!!! failed to read image")
                             break

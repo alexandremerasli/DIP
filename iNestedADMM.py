@@ -17,7 +17,7 @@ class iNestedADMM(vReconstruction):
         print("Nested ADMM reconstruction")
 
         # Initialize f but is not used in first global iteration because rho=0, only to define f_mu_for_penalty
-        self.f = np.ones((self.PETImage_shape))
+        self.f = np.NaN * np.ones((self.PETImage_shape))
         self.f = self.f.reshape(self.PETImage_shape[::-1])
         # Initialize f at step before
         self.f_before = self.f
@@ -207,8 +207,11 @@ class iNestedADMM(vReconstruction):
                 # Initialize vDenoising object
                 classDenoising = vDenoising(config,self.global_it)
                 # Put CT as input (mu_DIP = 200 is for random only)
-                if (self.net == "DIP" and config["mu_DIP"] != 200):
-                    classDenoising.override_input = True
+                if (not (i_init == 0 and config["unnested_1st_global_iter"])):
+                    if (self.net == "DIP" and config["mu_DIP"] != 200):
+                        classDenoising.override_input = True
+                    else:
+                        classDenoising.override_input = False
                 else:
                     classDenoising.override_input = False
                 # Initialize other variables

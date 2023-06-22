@@ -115,8 +115,10 @@ class vReconstruction(vGeneral):
         if (i == i_init and i_init > 0 and config["unnested_1st_global_iter"]):   # choose initial image for CASToR reconstruction
             f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + '_FINAL.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
             mu = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(i-1) + self.suffix + '.img',shape=(self.PETImage_shape)) # loading mu
+        elif (i == 0 and config["unnested_1st_global_iter"]):
+            subroot_output_path = (subroot + 'Block1/' + suffix)
+            f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + '_FINAL.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
 
-        subroot_output_path = (subroot + 'Block1/' + suffix)
         path_before_eq_22 = (subroot_output_path + '/before_eq22/')
         self.save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
         self.write_hdr(self.subroot_data,[i],'before_eq22',phantom,'f_mu',subroot_output_path)
@@ -124,7 +126,7 @@ class vReconstruction(vGeneral):
         subdir = 'during_eq22'
 
         # If rho is 0, remove f_mu_for_penalty
-        if ((self.rho == 0) or (i==0 and self.unnested_1st_global_iter) or (i==-1 and not self.unnested_1st_global_iter)): # For first iteration, put rho to zero
+        if ((self.rho == 0) or (i==-1 and not self.unnested_1st_global_iter)): # For first iteration, put rho to zero
             f_mu_for_penalty_path = ''
         # Write f_mu path in config
         text_file = open(self.subroot + 'Block1/' + self.suffix  + '/' + 'QUAD.conf', "w")
@@ -394,7 +396,8 @@ class vReconstruction(vGeneral):
                 #initialimage = ''
             elif (i == 0 and config["unnested_1st_global_iter"]):
                 #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-                initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
+                # initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
+                initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # Gong initializes to DIP output at pre iteratio
             else: # Last image for next global iteration
                 if (i == 1 and ((i_init == -1 and not config["unnested_1st_global_iter"]) or (i_init == 0 and config["unnested_1st_global_iter"])) and config["unnested_1st_global_iter"]):
                     initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'

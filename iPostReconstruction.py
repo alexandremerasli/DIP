@@ -240,17 +240,17 @@ class iPostReconstruction(vDenoising):
 
 
 
-            #out_torch = torch.from_numpy(out)
+            out_torch = torch.from_numpy(out)
             # Descale like at the beginning
-            # out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
-            # #'''
-            # # Saving image output
-            # net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
-            # self.save_img(out_descale, net_outputs_path)
-            # # Squeeze image by loading it
-            # out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
-            # # Saving (now DESCALED) image output
-            # self.save_img(out_descale, net_outputs_path)
+            out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
+            #'''
+            # Saving image output
+            net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
+            self.save_img(out_descale, net_outputs_path)
+            # Squeeze image by loading it
+            out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+            # Saving (now DESCALED) image output
+            self.save_img(out_descale, net_outputs_path)
 
             if ("3D" not in self.phantom):
                 # Compute IR metric (different from others with several replicates)
