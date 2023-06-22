@@ -300,7 +300,10 @@ class vReconstruction(vGeneral):
         # Compute x,u,v
         #os.system(x_reconstruction_command_line + ' -oit 90:' + str(int(self.config["nb_outer_iteration"]*3)))
         if ('nested' in method): # we only need output at last iteration
-            os.system(x_reconstruction_command_line + ' -oit -1')
+            if (self.PETImage_shape[2] == 1): # 2D
+                os.system(x_reconstruction_command_line + ' -oit -1')
+            else:
+                os.system(x_reconstruction_command_line)
         else: # ADMMLim, save output at all iterations
             os.system(x_reconstruction_command_line)
         # Change iteration name for header if stopping criterion reached

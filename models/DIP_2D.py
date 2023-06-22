@@ -318,7 +318,12 @@ class DIP_2D(LightningModule):
             self.SUCCESS = self.classWMV.SUCCESS
             self.log("SUCCESS", int(self.classWMV.SUCCESS))
 
-            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out.detach().numpy(),self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
+            try:
+                out_np = out.detach().numpy()[0,0,:,:]
+            except:
+                out_np = out.cpu().detach().numpy()[0,0,:,:]
+
+            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out_np,self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
             self.VAR_recon = self.classWMV.VAR_recon
             self.MSE_WMV = self.classWMV.MSE_WMV
             self.PSNR_WMV = self.classWMV.PSNR_WMV

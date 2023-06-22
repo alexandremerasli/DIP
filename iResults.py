@@ -35,11 +35,11 @@ class iResults(vDenoising):
         #vDenoising.initializeSpecific(self,config,root)
         # Initialize early stopping method if asked for
         if ("nested" in config["method"] or "Gong" in config["method"]):
-            if (config["DIP_early_stopping"]):
+            if (config["DIP_early_stopping"] and "show_results_post_reco" in config["task"]):
                 self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d')
                 image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,config["scaling"]) # Scaling of x_label image
-            self.global_it = -100
-            self.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,root,self.scanner)
+                self.global_it = -100
+                self.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,root,self.scanner)
                 
 
         if ('ADMMLim' in config["method"]):

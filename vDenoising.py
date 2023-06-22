@@ -399,7 +399,7 @@ class vDenoising(vGeneral):
                 model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, last_iter, override_input, self.scanner)
                 model_class = DIP_2D
             else: # 3D
-                model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, self.scanner)
+                model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, last_iter, override_input, self.scanner)
                 model_class = DIP_3D
         elif (net == 'DIP_VAE'): # Loading DIP VAE architecture
             model = VAE_DIP_2D(config)
