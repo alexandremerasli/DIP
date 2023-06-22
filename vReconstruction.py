@@ -116,9 +116,9 @@ class vReconstruction(vGeneral):
             f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + '_FINAL.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
             mu = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(i-1) + self.suffix + '.img',shape=(self.PETImage_shape)) # loading mu
         elif (i == 0 and config["unnested_1st_global_iter"]):
-            subroot_output_path = (subroot + 'Block1/' + suffix)
             f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + '_FINAL.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
-
+        
+        subroot_output_path = (subroot + 'Block1/' + suffix)
         path_before_eq_22 = (subroot_output_path + '/before_eq22/')
         self.save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
         self.write_hdr(self.subroot_data,[i],'before_eq22',phantom,'f_mu',subroot_output_path)
