@@ -423,8 +423,8 @@ class vGeneral(abc.ABC):
             raise ValueError("Please put the header file from CASToR with name of phantom")
         # Create variables to store dimensions
         PETImage_shape = (dim1,dim2,dim3)
-        if (self.scanner == "mMR_3D"):
-            PETImage_shape = (int(dim1/2),int(dim2/2),dim3)
+        # if (self.scanner == "mMR_3D"):
+        #     PETImage_shape = (int(dim1/2),int(dim2/2),dim3)
         PETImage_shape_str = str(dim1) + ','+ str(dim2) + ',' + str(dim3)
         print('image shape :', PETImage_shape)
         return PETImage_shape_str
@@ -803,7 +803,10 @@ class vGeneral(abc.ABC):
         if ("1" in PETImage_shape_str.split(',')): # 2D
             psf = ' -conv gaussian,4,1,3.5::psf'
         else: # 3D
-            psf = ' -conv gaussian,4,4,3.5::psf' # isotropic psf in simulated phantoms
+            if (self.scanner == "mMR_3D"):
+                psf = ' -conv gaussian,4.5,4.5,3.5::psf' # isotropic psf in simulated phantoms
+            else:
+                psf = ' -conv gaussian,4,4,3.5::psf' # isotropic psf in simulated phantoms
 
         if (post_smoothing != 0):
             if ("1" in PETImage_shape_str.split(',')): # 2D

@@ -179,11 +179,20 @@ class DIP_3D(pl.LightningModule):
 
     def forward(self, x):
 
+        # Pad if x-y dimensions not divisible by 2^3
+        original_x_y_dim = x.shape[-1]
+        if (x.shape[-1] % 8 > 0):
+            unpad_x_y_half_size = int((8 - original_x_y_dim % 8) / 2)
+            x = nn.ReplicationPad3d((unpad_x_y_half_size,8 - original_x_y_dim % 8 - unpad_x_y_half_size,unpad_x_y_half_size,8 - original_x_y_dim % 8 - unpad_x_y_half_size,0,0))(x)
+        else:
+            unpad_x_y_half_size = 0
         # Pad if 3D dimension not divisible by 2^3
-        original_x_dim = x.shape[2]
+        original_3D_dim = x.shape[2]
         if (x.shape[2] % 8 > 0):
-            unpad_half_size = int((8 - original_x_dim % 8) / 2)
-            x = nn.ReplicationPad3d((0,0,0,0,unpad_half_size,8 - original_x_dim % 8 - unpad_half_size))(x)
+            unpad_3D_half_size = int((8 - original_3D_dim % 8) / 2)
+            x = nn.ReplicationPad3d((0,0,0,0,unpad_3D_half_size,8 - original_3D_dim % 8 - unpad_3D_half_size))(x)
+        else:
+            unpad_3D_half_size = 0
         # Encoder
         out1 = self.deep1(x)
         out = self.down1(out1)
@@ -214,8 +223,7 @@ class DIP_3D(pl.LightningModule):
             out = self.deep7(out)
 
         # Unpad if original 3D dimension was not divisible by 2^3
-        if (original_x_dim % 8 > 0):
-            out = out[:,:,unpad_half_size:original_x_dim + unpad_half_size,:,:]
+        out = out[:,:,unpad_3D_half_size:original_3D_dim + unpad_3D_half_size,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size]
 
         if (self.method == 'Gong'):
             out = self.positivity(out)

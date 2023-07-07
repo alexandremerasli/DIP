@@ -203,10 +203,11 @@ class iNestedADMM(vReconstruction):
 
     def initializeSettingsForCurrentIteration(self,config,i_init,root,classDenoising):
         # If pre or last iteration, do WMV and initialize vDenoising object if pre iteration
-        if ((self.global_it == i_init and ((i_init == -1 and not config["unnested_1st_global_iter"])) or (i_init == 0 and config["unnested_1st_global_iter"])) or (self.global_it == self.max_iter - 1)): # TESTCT_random
+        if ((self.global_it == i_init and ((i_init == -1 and not config["unnested_1st_global_iter"])) or (config["unnested_1st_global_iter"])) or (self.global_it == self.max_iter - 1)): # TESTCT_random
             config["DIP_early_stopping"] = True # WMV for pre and last iteration, instead of 300 iterations of Gong
             config["all_images_DIP"] = "True"
             # Pre iteration : put CT as input and initialize vDenoising object
+            # if (self.global_it != self.max_iter - 1 or config["unnested_1st_global_iter"]):
             if (self.global_it != self.max_iter - 1):
                 # Initialize vDenoising object
                 classDenoising = vDenoising(config,self.global_it)
@@ -232,6 +233,7 @@ class iNestedADMM(vReconstruction):
         if (self.global_it == i_init + 1 and ((i_init == -1 and not config["unnested_1st_global_iter"]) or (i_init == 0 and config["unnested_1st_global_iter"]))): # TESTCT_random , put back random input
             config["DIP_early_stopping"] = False
             config["all_images_DIP"] = "Last" # Only save last image to save space
+            config["all_images_DIP"] = "True" # Only save last image to save space
             # Put back original input
             if (self.net == "DIP"):
                 classDenoising.override_input = False

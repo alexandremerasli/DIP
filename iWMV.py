@@ -67,6 +67,11 @@ class iWMV(vGeneral):
             out_cropped = out * self.phantom_ROI
             image_gt_cropped = self.image_gt * self.phantom_ROI
         else:
+
+            # Crop image to inside phantom
+            out = out * self.phantom_ROI.reshape(self.phantom_ROI.shape[::-1])
+            image_gt_reversed = image_gt_reversed * self.phantom_ROI.reshape(self.phantom_ROI.shape[::-1])
+
             # Taking only slice from 3D data
             out = out[:,:,int(out.shape[2]/2)+20]
             image_gt_reversed = image_gt_reversed[:,:,int(image_gt_reversed.shape[2]/2)+20]

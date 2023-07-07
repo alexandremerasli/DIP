@@ -97,7 +97,11 @@ class vReconstruction(vGeneral):
             optimizer = 'MLEM'
             output_path = ' -dout ' + path_mlem_init # Output path for CASTOR framework
             dim = ' -dim ' + self.PETImage_shape_str
-            vox = ' -vox 4,4,4'
+            if (self.scanner != "mMR_3D"):
+                vox = ' -vox 4,4,4'
+            else:
+                vox = ' -vox 1.04313,1.04313,2.03125'
+                vox = ' -vox 2.08626,2.08626,2.03125'
             vb = ' -vb 3'
             it = ' -it 1:1'
             opti = ' -opti ' + optimizer
