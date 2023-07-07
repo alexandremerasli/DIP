@@ -132,13 +132,13 @@ class vDenoising(vGeneral):
         
         # Start training
         print('Starting optimization, iteration',global_it)
-        trainer = self.create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, global_it, net, checkpoint_simple_path, experiment, self.checkpoint_simple_path_exp, checkpoint_simple_path_previous_exp,name=name_run)
+        trainer = self.create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, global_it, net, checkpoint_simple_path, experiment, self.checkpoint_simple_path_exp, checkpoint_simple_path_previous_exp, config,name=name_run)
 
         trainer.fit(model, train_dataloader)
 
         return model
 
-    def create_pl_trainer(self,finetuning, processing_unit, sub_iter_DIP, global_it, net, checkpoint_simple_path, experiment, checkpoint_simple_path_exp, checkpoint_simple_path_previous_exp, name=''):
+    def create_pl_trainer(self,finetuning, processing_unit, sub_iter_DIP, global_it, net, checkpoint_simple_path, experiment, checkpoint_simple_path_exp, checkpoint_simple_path_previous_exp, config, name=''):
         
         from ray.tune.integration.pytorch_lightning import TuneReportCallback, \
         TuneReportCheckpointCallback
@@ -157,6 +157,11 @@ class vDenoising(vGeneral):
         # Early stopping callback
         from pytorch_lightning.callbacks.early_stopping import EarlyStopping
         early_stopping_callback = EarlyStopping(monitor="SUCCESS", mode="max",stopping_threshold=0.9,patience=inf) # SUCCESS will be 1 when ES if found, which is greater than stopping_threshold = 0.9
+
+        if (hasattr(config,"override_it_DIP_with_EMV_it")):
+            if (config["override_it_DIP_with_EMV_it"]):
+                self.sub_iter_DIP = self.sub_iter_DIP_initial_and_final
+                sub_iter_DIP = self.sub_iter_DIP
 
         print("global_it",global_it)
         if (global_it == -1 or global_it == self.max_iter - 1): # Number of initial and final iterations are overrided here
@@ -378,6 +383,7 @@ class vDenoising(vGeneral):
             #'''
             # Saving image output
             net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
+            os.system("mv " + net_outputs_path + " " + self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch)  + 'scaled.img')
             self.save_img(out_descale, net_outputs_path)
             # Squeeze image by loading it
             out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
