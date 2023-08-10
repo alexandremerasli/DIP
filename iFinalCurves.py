@@ -99,7 +99,8 @@ class iFinalCurves(vGeneral):
             # ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom']
             # ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom','whole']
             # ROI_list = ['whole']
-            ROI_list = ['cold','cold_inside','cold_edge']
+            # ROI_list = ['cold','cold_inside','cold_edge']
+            ROI_list = ['cold']
 
         for ROI in ROI_list:
             # Plot tradeoff with SSIM (set quantitative_tradeoff is False) or AR (set quantitative_tradeoff to True)
@@ -166,7 +167,7 @@ class iFinalCurves(vGeneral):
                 config_other_dim[method] = sorted(config_other_dim[method])
 
                 # Settings in following curves
-                variance_plot = True
+                variance_plot = False
                 plot_all_replicates_curves = False
                 
                 if plot_all_replicates_curves:
@@ -210,7 +211,7 @@ class iFinalCurves(vGeneral):
                 
                 if (method == "MLEM" or method == "OSEM"):
                     nb_rho[method], nb_other_dim[method] = nb_other_dim[method], nb_rho[method]
-                    config[method]["rho"], config_other_dim[method] = config_other_dim[method], config[method]["rho"]
+                    config[method]["rho"], config_tmp["rho"], config_other_dim[method] = config_other_dim[method], config_tmp["post_smoothing"], config[method]["rho"]
 
 
 
@@ -319,7 +320,8 @@ class iFinalCurves(vGeneral):
 
                             # Compute average of tradeoff and bias curves with iterations
                             # Remove NaNs from computation
-                            nb_usable_replicates = np.count_nonzero(~np.isnan(metrics_final_final_array[rho_idx,other_dim_idx,:,len_mini[rho_idx] - 5]))
+                            # nb_usable_replicates = np.count_nonzero(~np.isnan(metrics_final_final_array[rho_idx,other_dim_idx,:,len_mini[rho_idx] - 5]))
+                            nb_usable_replicates = np.count_nonzero(~np.isnan(metrics_final_final_array[rho_idx,other_dim_idx,:,len_mini[rho_idx] - 1]))
 
                             avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.nansum(metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_usable_replicates
                             avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.nansum(IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_usable_replicates
@@ -439,8 +441,14 @@ class iFinalCurves(vGeneral):
                         for other_dim_idx in range(nb_other_dim[method]):
                             self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings)
                     if (method == method_list[-1]):
+                        legend_this_ROI = False
                         if (quantitative_tradeoff): # AR
-                            if ROI == ROI_list[2] or ROI == ROI_list[-1]: # if legend is needed only in one ROI
+                            if (len(ROI_list) > 2):
+                                if ROI == ROI_list[2] or ROI == ROI_list[-1]: # if legend is needed only in one ROI
+                                    legend_this_ROI = True
+                            else:
+                                legend_this_ROI = True
+                            if (legend_this_ROI):
                                 ax[fig_nb].legend(replicates_legend[fig_nb], prop={'size': 12})
                         else: # SSIM
                             ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
@@ -480,7 +488,7 @@ class iFinalCurves(vGeneral):
                 # Swap rho and post smoothing because MLEM and OSEM do not have rho parameter
                 if (method == "MLEM" or method == "OSEM"):
                     nb_rho[method], nb_other_dim[method] = nb_other_dim[method], nb_rho[method]
-                    config[method]["rho"], config_other_dim[method] = config_other_dim[method], config[method]["rho"]
+                    config[method]["rho"], config_tmp["rho"], config_other_dim[method] = config_other_dim[method], config_tmp["post_smoothing"], config[method]["rho"]
 
 
     def set_axes_labels(self,ax,fig_nb,ROI):
@@ -744,6 +752,9 @@ class iFinalCurves(vGeneral):
 
         try:
             config[method] = config_func_MIC()
+            method_name = method
+            if ("OSEM" in method):
+                method_name = "MLEM"
         except:
             import importlib
             if 'Gong' in method:
@@ -837,7 +848,16 @@ class iFinalCurves(vGeneral):
                 "DIPRecon_random_1_skip" : [color_dict_after_MIC["DIPRecon"][6]],
             }
 
-            color_dict = {**color_dict_after_MIC, **color_dict_add_tests} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
+            color_dict_TMI_DNA = {
+                "nested" : ['red','pink'],
+                "DIPRecon" : ['cyan','blue','teal','blueviolet'],
+                "APGMAP" : ['darkgreen','lime','gold'],
+                "ADMMLim" : ['fuchsia'],
+                "OSEM" : ['darkorange'] + ['cyan','blue','teal','blueviolet'],
+                "BSREM" : ['grey']
+            }
+
+            color_dict = {**color_dict_after_MIC, **color_dict_add_tests, **color_dict_TMI_DNA} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
 
         if (self.phantom == "image2_0"):                    
             marker_dict = {
