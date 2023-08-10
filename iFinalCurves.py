@@ -861,7 +861,7 @@ class iFinalCurves(vGeneral):
                 "nested" : ['red','pink'],
                 "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "APGMAP" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
-                "ADMMLim" : ['fuchsia'] + ['cyan','blue','teal','blueviolet'],
+                "ADMMLim" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
                 "OSEM" : ['darkorange'] + ['cyan','blue','teal','blueviolet'],
                 "BSREM" : ['grey'] + ['cyan','blue','teal','blueviolet']
             }
