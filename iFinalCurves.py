@@ -44,6 +44,7 @@ class iFinalCurves(vGeneral):
         nb_rho = dict.fromkeys(method_list)
         nb_other_dim = dict.fromkeys(method_list)
         config_other_dim = dict.fromkeys(method_list)
+        config_tmp = dict.fromkeys(method_list)
         nb_replicates = dict.fromkeys(method_list)
 
         for method in method_list: # Loop over methods
@@ -63,17 +64,17 @@ class iFinalCurves(vGeneral):
             config[method]["image"] = {'grid_search': [config_all_methods["image"]]}
             # Initialize config files with good replicates
             config[method]["replicates"] = {'grid_search': config_all_methods["replicates"]}
-            # Initialize config files with number of iterations
-            config[method]["max_iter"] = {'grid_search': [config_all_methods["max_iter"]]}
+            # # Initialize config files with number of iterations
+            # config[method]["max_iter"] = {'grid_search': [config_all_methods["max_iter"]]}
             # Launch task to write suffix and replicate files
-            config_tmp = dict(config[method])
-            config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
-            config_tmp["ray"] = True # Activate ray
+            config_tmp[method] = dict(config[method])
+            config_tmp[method]["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
+            config_tmp[method]["ray"] = True # Activate ray
             os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + method + '.txt')
             os.system("rm -rf " + root + '/data/Algo/' + 'replicates_for_last_run_' + method + '.txt')
             classTask = iResultsAlreadyComputed(config[method])
             task = 'show_metrics_results_already_computed'
-            classTask.runRayTune(config_tmp,root,task,only_suffix_replicate_file=True) # Only to write suffix and replicate files
+            classTask.runRayTune(config_tmp[method],root,task,only_suffix_replicate_file=True) # Only to write suffix and replicate files
 
             # Remove keyword "grid search" in config
             config[method] = dict(config[method])
@@ -117,6 +118,12 @@ class iFinalCurves(vGeneral):
             replicates_legend = [[],[],[]]
 
             for method in method_list: # Compute 
+
+                if (method.endswith("_configuration")):
+                    method_without_configuration = method[:-14]
+                else:
+                    method_without_configuration = method
+
                 if (method == 'ADMMLim' or 'DIPRecon' in method):
                     self.i_init = 30 # Remove first iterations
                     self.i_init = 20 # Remove first iterations
@@ -150,7 +157,7 @@ class iFinalCurves(vGeneral):
                     rho_name = "rho"
                     # config_other_dim[method] = config[method]["lr"]
                     # other_dim_name = "lr"
-                    config_other_dim[method] = config_tmp["tau_DIP"]["grid_search"]
+                    config_other_dim[method] = config_tmp[method]["tau_DIP"]["grid_search"]
                     other_dim_name = "tau_DIP"
                 else:
                     config_other_dim[method] = [""]
@@ -211,7 +218,7 @@ class iFinalCurves(vGeneral):
                 
                 if (method == "MLEM" or method == "OSEM"):
                     nb_rho[method], nb_other_dim[method] = nb_other_dim[method], nb_rho[method]
-                    config[method]["rho"], config_tmp["rho"], config_other_dim[method] = config_other_dim[method], config_tmp["post_smoothing"], config[method]["rho"]
+                    config[method]["rho"], config_tmp[method]["rho"], config_other_dim[method] = config_other_dim[method], config_tmp[method]["post_smoothing"], config[method]["rho"]
 
 
 
@@ -333,7 +340,7 @@ class iFinalCurves(vGeneral):
                             if (fig_nb == 0):
                                 # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_avg)
                                 if ((('nested' in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1 or config_other_dim[method] == [""]):
-                                    idx_good_rho_color = config_tmp["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
+                                    idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                 else:
                                     idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
                                 ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][other_dim_idx])
@@ -347,7 +354,7 @@ class iFinalCurves(vGeneral):
                                 #ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg) # if 1 out of i_init iterations was saved
                                 # ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg)
                                 if ((('nested' in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1 or config_other_dim[method] == [""]):
-                                    idx_good_rho_color = config_tmp["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
+                                    idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                 else:
                                     idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
                                 ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][other_dim_idx])
@@ -402,15 +409,14 @@ class iFinalCurves(vGeneral):
                         else:
                             for rho_idx in range(nb_rho[method]):
                                 for other_dim_idx in range(nb_other_dim[method]):
-                                    print(method,color_dict[method_without_configuration])
                                     if (nb_other_dim[method] == 1):
-                                        idx_good_rho_color = config_tmp["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
+                                        idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                     else:
                                         idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
                                     ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],marker='o'*('CT' in method) + '*'*('random' in method) + 'o'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][other_dim_idx])#'-o',)
                                     # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:],marker='o'*('CT' in method) + '*'*('random' in method) + '+'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
                                     # unnested
-                                    idx_good_rho_color = config_tmp["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
+                                    idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                     plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'D',markersize=10, mfc='none',color=color_dict[method_without_configuration][idx_good_rho_color],label='_nolegend_')
                                     plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],marker='D',markersize=9,color='white',label='_nolegend_')
                                     # nested it 100 white circle
@@ -437,9 +443,12 @@ class iFinalCurves(vGeneral):
                     # Set labels for x and y axes
                     self.set_axes_labels(ax,fig_nb,ROI)
                     # Add label for each curve
-                    for rho_idx in range(nb_rho[method]):
-                        for other_dim_idx in range(nb_other_dim[method]):
-                            self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings)
+                    if (fig_nb != 2): 
+                        for rho_idx in range(nb_rho[method]):
+                            for other_dim_idx in range(nb_other_dim[method]):
+                                self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings)
+                    else: # Do not loop on rho because here is at convergence
+                        self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings)
                     if (method == method_list[-1]):
                         legend_this_ROI = False
                         if (quantitative_tradeoff): # AR
@@ -488,7 +497,7 @@ class iFinalCurves(vGeneral):
                 # Swap rho and post smoothing because MLEM and OSEM do not have rho parameter
                 if (method == "MLEM" or method == "OSEM"):
                     nb_rho[method], nb_other_dim[method] = nb_other_dim[method], nb_rho[method]
-                    config[method]["rho"], config_tmp["rho"], config_other_dim[method] = config_other_dim[method], config_tmp["post_smoothing"], config[method]["rho"]
+                    config[method]["rho"], config_tmp[method]["rho"], config_other_dim[method] = config_other_dim[method], config_tmp[method]["post_smoothing"], config[method]["rho"]
 
 
     def set_axes_labels(self,ax,fig_nb,ROI):
@@ -851,10 +860,10 @@ class iFinalCurves(vGeneral):
             color_dict_TMI_DNA = {
                 "nested" : ['red','pink'],
                 "DIPRecon" : ['cyan','blue','teal','blueviolet'],
-                "APGMAP" : ['darkgreen','lime','gold'],
-                "ADMMLim" : ['fuchsia'],
+                "APGMAP" : ['darkgreen','lime','gold'] + ['cyan','blue','teal','blueviolet'],
+                "ADMMLim" : ['fuchsia'] + ['cyan','blue','teal','blueviolet'],
                 "OSEM" : ['darkorange'] + ['cyan','blue','teal','blueviolet'],
-                "BSREM" : ['grey']
+                "BSREM" : ['grey'] + ['cyan','blue','teal','blueviolet']
             }
 
             color_dict = {**color_dict_after_MIC, **color_dict_add_tests, **color_dict_TMI_DNA} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
