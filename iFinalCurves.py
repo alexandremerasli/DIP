@@ -506,7 +506,7 @@ class iFinalCurves(vGeneral):
         else:
             ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)')
         if 'cold' in ROI:
-            ax[fig_nb].set_ylabel('Bias ')
+            ax[fig_nb].set_ylabel('Bias (%)')
         elif 'hot' in ROI:
             ax[fig_nb].set_ylabel('Activity Recovery (AR) (%) ')
         elif ROI == "whole":
@@ -860,7 +860,7 @@ class iFinalCurves(vGeneral):
             color_dict_TMI_DNA = {
                 "nested" : ['red','pink'],
                 "DIPRecon" : ['cyan','blue','teal','blueviolet'],
-                "APGMAP" : ['darkgreen','lime','gold'] + ['cyan','blue','teal','blueviolet'],
+                "APGMAP" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "ADMMLim" : ['fuchsia'] + ['cyan','blue','teal','blueviolet'],
                 "OSEM" : ['darkorange'] + ['cyan','blue','teal','blueviolet'],
                 "BSREM" : ['grey'] + ['cyan','blue','teal','blueviolet']
@@ -992,7 +992,7 @@ class iFinalCurves(vGeneral):
                     rows_csv[8] = [float(rows_csv[8][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[8]),self.total_nb_iter))]
                     rows_csv[9] = [float(rows_csv[9][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[9]),self.total_nb_iter))]
                     rows_csv[10] = [float(rows_csv[10][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[10]),self.total_nb_iter))]
-                    rows_csv[13] = [float(rows_csv[13][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[13]),self.total_nb_iter))]
+                    # rows_csv[13] = [float(rows_csv[13][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[13]),self.total_nb_iter))] # IR whole recon is useless
                     if (ROI == "whole"):
                         if (len(rows_csv) > 14):
                             rows_csv[14] = [float(rows_csv[14][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[14]),self.total_nb_iter))]
@@ -1003,7 +1003,8 @@ class iFinalCurves(vGeneral):
                 PSNR_norm_recon.append(np.array(rows_csv[1]))
                 MSE_recon.append(np.array(rows_csv[2]))
                 SSIM_recon.append(np.array(rows_csv[3]))
-                MA_cold_recon.append(np.array(np.array(rows_csv[4]) - 10) / 10 * 100)
+                MA_cold_recon.append(np.array(np.array(rows_csv[4]) - 10) / 10 * 100) # relative bias
+                # MA_cold_recon.append(np.array(np.array(rows_csv[4]) - 10) * 100) # bias
                 AR_hot_recon.append(np.array(rows_csv[5]) / 400 * 100)
 
                 if (not csv_before_MIC):
@@ -1012,7 +1013,7 @@ class iFinalCurves(vGeneral):
                     AR_hot_perfect_match_recon.append(np.array(rows_csv[8]) / 400 * 100)
                     AR_bkg_recon.append(np.array(rows_csv[9]))
                     IR_bkg_recon.append(np.array(rows_csv[10]))
-                    IR_whole_recon.append(np.array(rows_csv[13]))
+                    # IR_whole_recon.append(np.array(rows_csv[13])) # IR whole recon is useless
                     if (ROI == "whole"):
                         likelihoods.append(np.array(rows_csv[14]))
                 else:        
@@ -1027,9 +1028,12 @@ class iFinalCurves(vGeneral):
                     rows_csv[0] = [float(rows_csv[0][i]) for i in range(int(self.i_init) - 1,min(len(rows_csv[0]),self.total_nb_iter))]
                     rows_csv[1] = [float(rows_csv[1][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[1]),self.total_nb_iter))]
                     rows_csv[2] = [float(rows_csv[2][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[2]),self.total_nb_iter))]
-                    MA_cold_recon.append(np.array(np.array(rows_csv[0]) - 10) / 10 * 100)
-                    MA_cold_inside_recon.append(np.array(np.array(rows_csv[1]) - 10) / 10 * 100)
-                    MA_cold_edge_recon.append(np.array(np.array(rows_csv[2]) - 10) / 10 * 100)
+                    MA_cold_recon.append(np.array(np.array(rows_csv[0]) - 10) / 10 * 100) # relative bias
+                    MA_cold_inside_recon.append(np.array(np.array(rows_csv[1]) - 10) / 10 * 100) # relative bias
+                    MA_cold_edge_recon.append(np.array(np.array(rows_csv[2]) - 10) / 10 * 100) # relative bias
+                    # MA_cold_recon.append(np.array(np.array(rows_csv[0]) - 10) * 100) # bias
+                    # MA_cold_inside_recon.append(np.array(np.array(rows_csv[1]) - 10) * 100) # bias
+                    # MA_cold_edge_recon.append(np.array(np.array(rows_csv[2]) - 10) * 100) # bias
                 # print("No such file : " + metrics_file)
 
         # Select metrics to plot according to ROI
