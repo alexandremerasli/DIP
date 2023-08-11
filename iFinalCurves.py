@@ -761,12 +761,18 @@ class iFinalCurves(vGeneral):
 
         try:
             config[method] = config_func_MIC()
-            method_name = method
-            if ("OSEM" in method):
+            if 'DIPRecon' in method:
+                globals().update(importlib.import_module('all_config.' + 'Gong' + method[8:]).__dict__)
+                method_name = "Gong"
+            elif 'nested' in method:
+                method_name = "nested"
+            elif ("OSEM" in method):
                 method_name = "MLEM"
+            else:
+                method_name = method
         except:
             import importlib
-            if 'Gong' in method:
+            if 'DIPRecon' in method:
                 globals().update(importlib.import_module('all_config.' + 'Gong' + method[8:]).__dict__)
                 method_name = "Gong"
             elif 'nested' in method:

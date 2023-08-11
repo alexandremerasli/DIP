@@ -30,9 +30,10 @@ settings_config = {
     "method" : tune.grid_search(['nested_CT_0_skip_10it','nested_CT_1_skip_10it','nested_CT_2_skip_10it','nested_CT_3_skip_10it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "method" : tune.grid_search(['nested_skip0_3_my_settings','nested_skip1_3_my_settings','nested_skip2_3_my_settings','nested_ADMMLim_more_ADMMLim_it_10']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "method" : tune.grid_search(['nested_DD','nested_random_3_skip_10it','nested_random_2_skip_10it', 'nested_random_1_skip_10it', 'nested_random_0_skip_10it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    "method" : tune.grid_search(['nested_ADMMLim_more_ADMMLim_it_10','Gong','ADMMLim','APGMAP','BSREM','OSEM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested_ADMMLim_more_ADMMLim_it_10','Gong_skip3_3_my_settings','ADMMLim','APGMAP','BSREM','OSEM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     
-    "method" : tune.grid_search(['APGMAP','OSEM','BSREM','ADMMLim']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    # "method" : tune.grid_search(['APGMAP','OSEM','BSREM','ADMMLim']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    # "method" : tune.grid_search(['nested_ADMMLim_more_ADMMLim_it_10','Gong_skip3_3_my_settings']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     # "method" : tune.grid_search(['APGMAP']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     # "method" : tune.grid_search(['ADMMLim']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
@@ -43,7 +44,7 @@ settings_config = {
     "tensorboard" : True, # Tensorboard mode = show results in tensorboard
     "all_images_DIP" : tune.grid_search(['Last']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
-    "replicates" : tune.grid_search(list(range(1,40+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
+    "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
     "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
     "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMLim)
 }
