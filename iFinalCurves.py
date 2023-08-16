@@ -394,7 +394,7 @@ class iFinalCurves(vGeneral):
                             for other_dim_idx in range(nb_other_dim[method]):
                                 cases = np.arange(0,nb_other_dim[method]*nb_rho[method],nb_other_dim[method]) + other_dim_idx
                                 
-                                if ((not APGMAP_vs_ADMMLim and (method == "APGMAP" and other_dim_idx == 1) or (method != "APGMAP" and other_dim_idx == 0)) or APGMAP_vs_ADMMLim):
+                                if ((not APGMAP_vs_ADMMLim and (method == "APGMAP" and config_other_dim[method][other_dim_idx] == -100) or (method != "APGMAP" and other_dim_idx == 0)) or APGMAP_vs_ADMMLim):
                                 #    nb_other_dim["APGMAP"] = 1
                                     ax[fig_nb].plot(100*avg_IR[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)],'-o',linewidth=3,color=color_dict[method_without_configuration][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
                                 if (variance_plot):
