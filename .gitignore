@@ -36,6 +36,7 @@ all_config/__pycache__/
 
 runs (copy)/
 runs/
+old_runs/
 simu_mmr/
 simu_biograph/
 .vscode/
