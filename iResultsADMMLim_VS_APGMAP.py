@@ -232,6 +232,11 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         IR_common = 23 # in %
         IR_common = 11 # in %
 
+        if ("nested" in self.method or "Gong" in self.method or "ADMMLim" in self.method):
+            print("ok")
+        else:
+            i_init = self.total_nb_iter
+
         for IR_common in [11,13,23,30]:
             IR_min = np.inf
             SSIM_min = np.inf

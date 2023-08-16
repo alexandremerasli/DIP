@@ -30,7 +30,7 @@ class iFinalCurves(vGeneral):
         # Plot APGMAP vs ADMMLim (True)
         APGMAP_vs_ADMMLim = False
         # Rename my settings (MIC)
-        rename_settings = True
+        rename_settings = "TMI"
 
         # Convert Gong to DIPRecon
         DIPRecon = False
@@ -96,12 +96,12 @@ class iFinalCurves(vGeneral):
 
         if (self.phantom == "image2_0"):
             ROI_list = ['cold','hot','phantom']
-        elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
-            # ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom']
+        elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
+            ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom']
             # ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom','whole']
             # ROI_list = ['whole']
             # ROI_list = ['cold','cold_inside','cold_edge']
-            ROI_list = ['cold']
+            # ROI_list = ['cold']
 
         for ROI in ROI_list:
             # Plot tradeoff with SSIM (set quantitative_tradeoff is False) or AR (set quantitative_tradeoff to True)
@@ -184,7 +184,7 @@ class iFinalCurves(vGeneral):
                         color_dict[key] = len(color_dict[key]) * ['black']
                 else:
                     color_avg = None
-                    if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
+                    if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
                         color_avg = color_dict[method_without_configuration][0]    
                     
 
@@ -517,7 +517,7 @@ class iFinalCurves(vGeneral):
     def label_method_plot(self,replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings):
         if (self.phantom == "image2_0"):
             replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
-        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
+        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
             if ("nested" not in method and "DIPRecon" not in method):
                 if (fig_nb != 2):
                     replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
@@ -540,7 +540,7 @@ class iFinalCurves(vGeneral):
                         replicates_legend[fig_nb].append('nested')
                     elif ("DIPRecon_BSREM_stand" in method):
                         replicates_legend[fig_nb].append('DIPRecon')
-                if (rename_settings):
+                if (rename_settings == "MIC"):
                     if ("random" in method):
                         replicates_legend[fig_nb].append("random input, " + str(config[method]["skip_connections"]) + " SC")
                     elif ("CT" in method):
@@ -556,7 +556,11 @@ class iFinalCurves(vGeneral):
                                 else:
                                     label_name += " : " + rho_name + " = " + str(config[method]["rho"][rho_idx])
                                 replicates_legend[fig_nb].append(label_name)
-        
+                if (rename_settings == "TMI"):
+                    if ("nested" in method):
+                        replicates_legend[fig_nb].append('nested')
+                    elif ("DIPRecon" in method):
+                        replicates_legend[fig_nb].append('DIPRecon')
 
     def choose_good_config_file(self,method,config,csv_before_MIC,DIPRecon):
         # Gong reconstruction
@@ -770,6 +774,14 @@ class iFinalCurves(vGeneral):
                 method_name = "MLEM"
             else:
                 method_name = method
+        # try:
+        #     config[method] = config_func_MIC()
+        #     method_name = method
+        #     if ("OSEM" in method):
+        #         method_name = "MLEM"
+        # except:
+        #     import importlib
+        #     if 'Gong' in method:
         except:
             import importlib
             if 'DIPRecon' in method:
@@ -807,7 +819,7 @@ class iFinalCurves(vGeneral):
 
             color_dict = {**color_dict, **color_dict_supp} # Comparison between reconstruction methods
 
-        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
+        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
             color_dict_after_MIC = {
                 "nested_ADMMLim" : ['cyan','blue','teal','blueviolet','black'],
                 #"nested_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
@@ -869,7 +881,7 @@ class iFinalCurves(vGeneral):
                 "APGMAP" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "ADMMLim" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
                 "OSEM" : ['darkorange'] + ['cyan','blue','teal','blueviolet'],
-                "BSREM" : ['grey'] + ['cyan','blue','teal','blueviolet']
+                "BSREM" : ['grey'] + 5*['cyan','blue','teal','blueviolet']
             }
 
             color_dict = {**color_dict_after_MIC, **color_dict_add_tests, **color_dict_TMI_DNA} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
@@ -893,7 +905,7 @@ class iFinalCurves(vGeneral):
             }
 
             marker_dict = {**marker_dict, **marker_dict_supp}
-        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
+        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
             marker_dict = {
                 "APPGML_it" : [':'],
                 "APPGML_subsets" : ['-'],
