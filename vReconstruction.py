@@ -98,7 +98,10 @@ class vReconstruction(vGeneral):
             output_path = ' -dout ' + path_mlem_init # Output path for CASTOR framework
             dim = ' -dim ' + self.PETImage_shape_str
             if (self.scanner != "mMR_3D"):
-                vox = ' -vox 4,4,4'
+                if (self.phantom != "image50_0"):
+                    vox = ' -vox 4,4,4'
+                else:
+                    vox = ' -vox 2,2,2'
             else:
                 vox = ' -vox 1.04313,1.04313,2.03125'
                 vox = ' -vox 2.08626,2.08626,2.03125'
@@ -310,6 +313,7 @@ class vReconstruction(vGeneral):
                 os.system(x_reconstruction_command_line + ' -oit -1')
             else:
                 os.system(x_reconstruction_command_line)
+                os.system(x_reconstruction_command_line + ' -oit -1')
         else: # ADMMLim, save output at all iterations
             os.system(x_reconstruction_command_line)
         # Change iteration name for header if stopping criterion reached
@@ -337,6 +341,7 @@ class vReconstruction(vGeneral):
         else:
             folder_sub_path = os.path.join(self.subroot,self.suffix)
         sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if (os.path.splitext(filename)[1] == '.hdr' and "u" not in filename and "v" not in filename)]
+        # sorted_files = [] # To not continue previous computation, restart from scratch
         #''' Continue previous computation if ADMMLim have already been launched with these settings
         if ("ADMMLim" in self.method):
             if (len(sorted_files) > 0):
