@@ -30,7 +30,7 @@ insert = "cold"
 # insert = "hot"
 
 MRI = "keep_colors"
-MRI = "reverse_colors"
+# MRI = "reverse_colors"
 
 if (insert == "cold" and MRI == "keep_colors"):
     case = 1
@@ -40,6 +40,10 @@ elif (insert == "hot" and MRI == "keep_colors"):
     case = 3
 elif (insert == "hot" and MRI == "reverse_colors"):
     case = 4
+
+higher_values = True
+if (insert == "cold" and MRI == "keep_colors" and higher_values):
+    case = 5
 
 center_x_big = int(PETImage_shape[0]/2)
 center_y_big = int(PETImage_shape[1]/2)
@@ -60,6 +64,9 @@ for x in range(0,PETImage_shape[0]):
             MR_phantom[x,y] = PET_phantom[x,y] * (MRI == "keep_colors") + (1 * (insert=="cold") + 0.025 * (insert=="hot")) * (MRI == "reverse_colors")
             cold_hot_ROI_phantom[x,y] = 1
 
+if (higher_values):
+    PET_phantom = PET_phantom * 100
+    MR_phantom = MR_phantom * 100
 
 plt.imshow(PET_phantom,cmap='gray_r')
 # plt.colorbar()

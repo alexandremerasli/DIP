@@ -82,7 +82,7 @@ class iResults(vDenoising):
             if ("3D" not in self.phantom):
                 self.phantom_ROI = self.get_phantom_ROI(self.phantom)
                 # self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0"):
+                if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
                     self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
@@ -127,10 +127,14 @@ class iResults(vDenoising):
             #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type_im='<d')
             #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'random_1.img',shape=(self.PETImage_shape),type_im='<d')
             #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'F16_GT_' + str(self.PETImage_shape[0]) + '.img',shape=(self.PETImage_shape),type_im='<f')
-            try:
-                self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<f')
-            except:
-                self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d')
+            if ("3_" not in self.phantom):
+                try:
+                    self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<f')
+                except:
+                    self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d')
+            else:
+                self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<d')
+            
             #self.image_corrupt = self.fijii_np("/home/meraslia/workspace_reco/nested_admm/data/Algo/image4_0/replicate_10/nested/Block2/config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=14_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=1_mlem_=False_A_AML=-100/x_label/24/" + "-1_x_labelconfig_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=14_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=1_mlem_=False_A_AML=-100.img",shape=(self.PETImage_shape))
 
         # self.image_gt = self.image_gt / np.max(self.image_gt) * 255
@@ -150,8 +154,8 @@ class iResults(vDenoising):
         if (self.tensorboard):
             self.write_image_tensorboard(self.writer,self.image_gt,"Ground Truth (emission map)",suffix,self.image_gt,0,full_contrast=True) # Ground truth in tensorboard
             if (image_net_input is not None):
-                image_net_input_reversed = np.max(image_net_input) - image_net_input
-                # image_net_input_reversed = image_net_input
+                # image_net_input_reversed = np.max(image_net_input) - image_net_input
+                image_net_input_reversed = image_net_input # only colorbar will be reversed in write_image_tensorboard()
                 self.write_image_tensorboard(self.writer,image_net_input_reversed,"DIP input (FULL CONTRAST)",suffix,image_net_input_reversed,0,full_contrast=True) # DIP input in tensorboard
 
     def writeCorruptedImage(self,i,max_iter,x_label,suffix,pet_algo,iteration_name='iterations'):
@@ -208,13 +212,14 @@ class iResults(vDenoising):
         f_p = np.zeros(self.PETImage_shape,dtype=type_im)
 
         # Nested ADMM stopping criterion
-        if ('nested' in config["method"]):
-            # Compute IR for BSREM initialization image
-            im_BSREM = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d') # loading BSREM initialization image
-            self.IR_ref = [np.NaN]
-            self.compute_IR_whole(self.PETImage_shape,im_BSREM,0,self.IR_ref,self.phantom)
-            # Add 1 to number of iterations before stopping criterion
-            self.total_nb_iter += 1
+        if ("3_" not in self.phantom):
+            if ('nested' in config["method"]):
+                # Compute IR for BSREM initialization image
+                im_BSREM = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d') # loading BSREM initialization image
+                self.IR_ref = [np.NaN]
+                self.compute_IR_whole(self.PETImage_shape,im_BSREM,0,self.IR_ref,self.phantom)
+                # Add 1 to number of iterations before stopping criterion
+                self.total_nb_iter += 1
 
         for i in range(self.i_init,self.total_nb_iter+self.i_init):
             self.IR = 0
@@ -498,7 +503,10 @@ class iResults(vDenoising):
         to True, `sigma` to 1.5, `use_sample_covariance` to False, and
         specify the `data_range` argument.
         '''
-        SSIM_recon[i] = structural_similarity(np.squeeze(image_gt_cropped), np.squeeze(image_recon_cropped), data_range=(image_recon_cropped).max() - (image_recon_cropped).min())
+        if (PETImage_shape[0] < 11): # SSIM cannot be calculated with this window size for a small image
+            SSIM_recon[i] = np.NaN
+        else:
+            SSIM_recon[i] = structural_similarity(np.squeeze(image_gt_cropped), np.squeeze(image_recon_cropped), data_range=(image_recon_cropped).max() - (image_recon_cropped).min())
         # SSIM_recon[i] = structural_similarity(np.squeeze(image_gt_cropped), np.squeeze(image_recon_cropped), data_range=(image_recon_cropped).max() - (image_recon_cropped).min(), sigma=1.5, gaussian_weights=True, use_sample_covariance=False)
 
         # Contrast Recovery Coefficient calculation    
