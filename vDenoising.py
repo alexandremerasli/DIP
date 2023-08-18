@@ -263,9 +263,10 @@ class vDenoising(vGeneral):
                 file_path = (subroot+'Data/initialization/random_input_3D_' + net + '_' + str(self.PETImage_shape[0]) + '.img')
         elif self.input == "CT":
             if (self.phantom != "image4_0" and self.phantom != "image400_0" and self.phantom != "image40_0"):
-                file_path = (subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw') #CT map, but not CT yet, attenuation for now...
-            else:
-                file_path = (subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw') # MR simulated image
+                if (os.path.isfile(subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw')): # If MR exists
+                    file_path = subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw'
+                else:
+                    file_path = (subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw') #CT map, but not CT yet, attenuation for now...
         elif self.input == "BSREM":
             file_path = (subroot+'Data/initialization/BSREM_it30_REF_cropped.img') #
         elif self.input == "uniform":
