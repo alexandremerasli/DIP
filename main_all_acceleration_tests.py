@@ -16,7 +16,7 @@ from ray import tune
 
 # Configuration dictionnary for general settings parameters (not hyperparameters)
 settings_config = {
-    "image" : tune.grid_search(['image40_0']), # Image from database
+    "image" : tune.grid_search(['image40_1']), # Image from database
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
     "method" : tune.grid_search(['nested_CT_0_skip_10it','nested_CT_1_skip_10it','nested_CT_2_skip_10it','nested_CT_3_skip_10it', 'nested_ADMMLim_more_ADMMLim_it_10', 'nested_random_0_skip_10it', 'nested_random_1_skip_10it', 'nested_random_2_skip_10it', 'nested_random_3_skip_10it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "method" : tune.grid_search(['nested_CT_2_skip_10it','nested_CT_3_skip_10it', 'nested_ADMMLim_more_ADMMLim_it_10', 'nested_random_0_skip_10it', 'nested_random_1_skip_10it', 'nested_random_2_skip_10it', 'nested_random_3_skip_10it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
@@ -31,6 +31,12 @@ settings_config = {
     "method" : tune.grid_search(['nested_skip0_3_my_settings','nested_skip1_3_my_settings','nested_skip2_3_my_settings','nested_ADMMLim_more_ADMMLim_it_10']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "method" : tune.grid_search(['nested_DD','nested_random_3_skip_10it','nested_random_2_skip_10it', 'nested_random_1_skip_10it', 'nested_random_0_skip_10it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "method" : tune.grid_search(['nested_ADMMLim_more_ADMMLim_it_10','Gong_skip3_3_my_settings','ADMMLim','APGMAP','BSREM','OSEM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    
+    # "method" : tune.grid_search(['nested_ADMMLim_more_ADMMLim_it_10','BSREM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    # "method" : tune.grid_search(['nested_ADMMLim_more_ADMMLim_it_10']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    # "method" : tune.grid_search(['Gong_skip3_3_my_settings']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['ADMMLim']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    # "method" : tune.grid_search(['OSEM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     
     # "method" : tune.grid_search(['APGMAP','OSEM','BSREM','ADMMLim']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     # "method" : tune.grid_search(['nested_ADMMLim_more_ADMMLim_it_10','Gong_skip3_3_my_settings']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))

@@ -124,9 +124,11 @@ class iFinalCurves(vGeneral):
                 else:
                     method_without_configuration = method
 
-                if (method == 'ADMMLim' or 'DIPRecon' in method):
+                if (method == 'ADMMLim'):
                     self.i_init = 30 # Remove first iterations
                     self.i_init = 20 # Remove first iterations
+                    # self.i_init = 1
+                elif ('DIPRecon' in method):
                     self.i_init = 1
                 else:
                     self.i_init = 1
@@ -487,10 +489,10 @@ class iFinalCurves(vGeneral):
                     title = pretitle + ' : ' + metric_AR_or_SSIM + ' ' + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
                 
                 try:
-                    fig[fig_nb].savefig(self.subroot_data + 'metrics/' + self.phantom + '/' + title)
+                    fig[fig_nb].savefig(self.subroot_data + 'metrics/' + self.phantom + '/' + title, bbox_inches='tight')
                 except OSError:
                     print("File name too long, setting a shorter one")
-                    fig[fig_nb].savefig(self.subroot_data + 'metrics/' + self.phantom + '/' + title[-250:])
+                    fig[fig_nb].savefig(self.subroot_data + 'metrics/' + self.phantom + '/' + title[-250:], bbox_inches='tight')
 
 
             for method in method_list: # Loop over methods
@@ -507,6 +509,7 @@ class iFinalCurves(vGeneral):
             ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)')
         if 'cold' in ROI:
             ax[fig_nb].set_ylabel('Bias (%)')
+            # ax[fig_nb].autoscale()
         elif 'hot' in ROI:
             ax[fig_nb].set_ylabel('Activity Recovery (AR) (%) ')
         elif ROI == "whole":
@@ -880,7 +883,7 @@ class iFinalCurves(vGeneral):
                 "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "APGMAP" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "ADMMLim" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
-                "OSEM" : ['darkorange'] + ['cyan','blue','teal','blueviolet'],
+                "OSEM" : ['darkorange'] + 5*['cyan','blue','teal','blueviolet'],
                 "BSREM" : ['grey'] + 5*['cyan','blue','teal','blueviolet']
             }
 

@@ -63,7 +63,7 @@ def config_func_MIC():
         # AML/APGMAP hyperparameters
         "A_AML" : tune.grid_search([-100]), # AML lower bound A
         # Post smoothing by CASToR after reconstruction
-        "post_smoothing" : tune.grid_search([6,9,12,15]), # Post smoothing by CASToR after reconstruction
+        "post_smoothing" : tune.grid_search([0,3,4,5,6,9,12,15]), # Post smoothing by CASToR after reconstruction
         # NNEPPS post processing
         "NNEPPS" : tune.grid_search([False]), # NNEPPS post-processing. True or False
     }

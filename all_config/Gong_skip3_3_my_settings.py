@@ -33,6 +33,8 @@ def config_func_MIC():
         "xi_DIP" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in Gong and nested
         "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
         "DIP_early_stopping" : tune.grid_search([False]), # Use DIP early stopping with WMV strategy
+        "EMV_or_WMV" : tune.grid_search(["EMV"]), # Use DIP early stopping with WMV or EMV
+        "alpha_EMV" : tune.grid_search([0.1]), # EMV forgetting factor alpha
         "windowSize" : tune.grid_search([50]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
         "patienceNumber" : tune.grid_search([100]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     }
