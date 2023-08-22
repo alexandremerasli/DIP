@@ -517,6 +517,13 @@ class vGeneral(abc.ABC):
         else:
             return img, min_np(img), max_np(img)
 
+    def norm_2_imag(self,img,param1,param2):
+        print("nooooooooorm with other image")
+        if (param1-param2) != 0:
+            return (img - param1) / (param2 - param1), param1, param2
+        else:
+            return img, param1, param2
+
     def denorm_imag(self,image, mini, maxi):
         """ Denormalization of input - output [0..1] and the normalization value for each slide"""
         image_np = image.detach().numpy()
@@ -568,12 +575,14 @@ class vGeneral(abc.ABC):
         image_np = image.detach().numpy()
         return self.destand_numpy_imag(image_np, mean_im, std_im)
 
-    def rescale_imag(self,image_corrupt, scaling):
+    def rescale_imag(self,image_corrupt, scaling,param1=1e+40,param2=1e+40):
         """ Scaling of input """
         if (scaling == 'standardization'):
             return self.stand_imag(image_corrupt)
         elif (scaling == 'normalization'):
             return self.norm_imag(image_corrupt)
+        elif (scaling == 'normalization_2'):
+            return self.norm_2_imag(image_corrupt,param1,param2)
         elif (scaling == 'positive_normalization'):
             return self.norm_positive_imag(image_corrupt)
         else: # No scaling required
@@ -588,6 +597,8 @@ class vGeneral(abc.ABC):
         if (scaling == 'standardization'):
             return self.destand_numpy_imag(image_np, param_scale1, param_scale2)
         elif (scaling == 'normalization'):
+            return self.denorm_numpy_imag(image_np, param_scale1, param_scale2)
+        elif (scaling == 'normalization_2'):
             return self.denorm_numpy_imag(image_np, param_scale1, param_scale2)
         elif (scaling == 'positive_normalization'):
             return self.denorm_numpy_positive_imag(image_np, param_scale1, param_scale2)

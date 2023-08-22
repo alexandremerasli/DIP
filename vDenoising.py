@@ -318,7 +318,10 @@ class vDenoising(vGeneral):
 
     def runComputation(self,config,root):
         # Scaling of x_label image
-        image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image        
+        image_corrupt_input_scale_not_used,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt_init,self.scaling_input) # Scaling of first x_label image        
+        image_corrupt_input_scale,param1_scale_im_corrupt_avant,param2_scale_im_corrupt_avant = self.rescale_imag(self.image_corrupt,self.scaling_input + "_2",param1=self.param1_scale_im_corrupt,param2=self.param2_scale_im_corrupt) # Scaling of current x_label image
+        # image_corrupt_input_scale_normal,self.param1_scale_im_corrupt_normal,self.param2_scale_im_corrupt_normal = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of current x_label image
+
         # Corrupted image x_label, numpy --> torch float32
         self.image_corrupt_torch = Tensor(image_corrupt_input_scale)
         # Adding dimensions to fit network architecture

@@ -100,6 +100,7 @@ class iNestedADMM(vReconstruction):
             classDenoising = self.initializeSettingsForCurrentIteration(config,i_init,root,classDenoising)
             # Loading DIP x_label (corrupted image) from block1
             classDenoising.image_corrupt = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(self.global_it) +'_x_label' + self.suffix + '.img',shape=(self.PETImage_shape))
+            classDenoising.image_corrupt_init = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(-1) +'_x_label' + self.suffix + '.img',shape=(self.PETImage_shape))
             classDenoising.net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + '' + format(self.global_it) + self.suffix + '.img'
             classDenoising.checkpoint_simple_path = self.subroot+'Block2/' + self.suffix + '/checkpoint/'
             classDenoising.name_run = ""
@@ -206,6 +207,7 @@ class iNestedADMM(vReconstruction):
         # If pre or last iteration, do WMV and initialize vDenoising object if pre iteration
         if ((self.global_it == i_init and ((i_init == -1 and not config["unnested_1st_global_iter"])) or (config["unnested_1st_global_iter"])) or (self.global_it == self.max_iter - 1)): # TESTCT_random
             if (self.scanner != "mMR_3D"):
+                # if (self.phantom != "image50_0"):
                 config["DIP_early_stopping"] = True # WMV for pre and last iteration, instead of 300 iterations of Gong
             config["all_images_DIP"] = "True"
             # Pre iteration : put CT as input and initialize vDenoising object
