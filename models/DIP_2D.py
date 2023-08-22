@@ -1,7 +1,13 @@
-from torch import max, abs, optim, load
+from torch import max, abs, optim, load, mean
 from torch.nn import ReplicationPad2d, Conv2d, BatchNorm2d, LeakyReLU, Conv2d, BatchNorm2d, LeakyReLU, Sequential, Upsample, ReLU, MSELoss
 from pytorch_lightning import LightningModule, seed_everything
+from numpy import min as min_np
+from numpy import max as max_np
+from numpy import mean as mean_np
+from numpy import std as std_np
+from numpy import ones_like, dtype, fromfile, sign
 
+from pathlib import Path
 from os.path import isfile
 
 # Local files to import
@@ -63,6 +69,10 @@ class DIP_2D(LightningModule):
         self.suffix = suffix
         
         self.last_iter = last_iter + 1
+
+        # Monitor lr
+        self.mean_inside_list = []
+        self.ema_lr = [0, 0]
 
         '''
         if (config['mlem_sequence'] is None):
@@ -222,6 +232,47 @@ class DIP_2D(LightningModule):
         if (self.write_current_img_mode):
             self.write_current_img(out)
 
+
+        # Monitor learning rate across iterations
+        self.config["monitor_lr"] = True
+        if (self.config["monitor_lr"]):
+            out_descale_np = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
+            # try:
+            #     # out_descale_np = out_descale.detach().numpy()[0,0,:,:]
+            #     out_descale_np = out_descale
+            #     image_corrupt_np = image_corrupt_torch.detach().numpy()[0,0,:,:]
+            # except:
+            #     # out_descale_np = out_descale.cpu().detach().numpy()[0,0,:,:]
+            #     image_corrupt_np = image_corrupt_torch.cpu().detach().numpy()[0,0,:,:]
+            
+            image_corrupt_np = self.descale_imag(image_corrupt_torch,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
+
+            self.subroot_data = self.root + '/data/Algo/' # Directory root
+            self.phantom = self.config["image"]
+
+            self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+            self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
+
+            self.phantom_ROI = self.get_phantom_ROI(self.phantom)
+
+
+            mean_inside = mean_np(out_descale_np * self.phantom_ROI) / mean_np(image_corrupt_np * self.phantom_ROI)
+            self.mean_inside_list.append(mean_inside)
+
+            if (self.current_epoch >= 2):
+                alpha_ema_lr = 0.1
+                self.ema_lr.append((1-alpha_ema_lr) * self.ema_lr[self.current_epoch-1] + alpha_ema_lr * self.mean_inside_list[self.current_epoch])
+
+                print(self.ema_lr[self.current_epoch])
+
+                if (sign(self.ema_lr[self.current_epoch] - self.ema_lr[self.current_epoch - 1]) != sign(self.ema_lr[self.current_epoch - 1] - self.ema_lr[self.current_epoch - 2])):
+                    # if (self.lr > 1e-5): # Minimum lr value to 1e-5, does not need to better stability
+                    self.lr /= 2
+                    print(self.lr)
+                    print("chaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaange lrrrrrrrrrrrrrrrrrrrrrrrrrrr")
+
+
+
         loss = self.DIP_loss(out, image_corrupt_torch)
 
         '''
@@ -343,3 +394,205 @@ class DIP_2D(LightningModule):
         
         else:
             self.log("SUCCESS", int(False))
+
+
+    def norm_imag(self,img):
+        print("nooooooooorm")
+        """ Normalization of input - output [0..1] and the normalization value for each slide"""
+        if (max_np(img) - min_np(img)) != 0:
+            return (img - min_np(img)) / (max_np(img) - min_np(img)), min_np(img), max_np(img)
+        else:
+            return img, min_np(img), max_np(img)
+
+    def denorm_imag(self,image, mini, maxi):
+        """ Denormalization of input - output [0..1] and the normalization value for each slide"""
+        image_np = image.detach().numpy()
+        return self.denorm_numpy_imag(image_np, mini, maxi)
+
+    def denorm_numpy_imag(self,img, mini, maxi):
+        if (maxi - mini) != 0:
+            return img * (maxi - mini) + mini
+        else:
+            return img
+
+
+    def norm_positive_imag(self,img):
+        """ Positive normalization of input - output [0..1] and the normalization value for each slide"""
+        if (max_np(img) - min_np(img)) != 0:
+            print(max_np(img))
+            print(min_np(img))
+            return img / max_np(img), 0, max_np(img)
+        else:
+            return img, 0, max_np(img)
+
+    def denorm_positive_imag(self,image, mini, maxi):
+        """ Positive normalization of input - output [0..1] and the normalization value for each slide"""
+        image_np = image.detach().numpy()
+        return self.denorm_numpy_imag(image_np, mini, maxi)
+
+    def denorm_numpy_positive_imag(self, img, mini, maxi):
+        if (maxi - mini) != 0:
+            return img * maxi 
+        else:
+            return img
+
+    def stand_imag(self,image_corrupt):
+        print("staaaaaaaaaaand")
+        """ Standardization of input - output with mean 0 and std 1 for each slide"""
+        mean_im=mean_np(image_corrupt)
+        std_im=std_np(image_corrupt)
+        image_center = image_corrupt - mean_im
+        if (std_im == 0.):
+            raise ValueError("std 0")
+        image_corrupt_std = image_center / std_im
+        return image_corrupt_std,mean_im,std_im
+
+    def destand_numpy_imag(self,image, mean_im, std_im):
+        """ Destandardization of input - output with mean 0 and std 1 for each slide"""
+        return image * std_im + mean_im
+
+    def destand_imag(self,image, mean_im, std_im):
+        image_np = image.detach().numpy()
+        return self.destand_numpy_imag(image_np, mean_im, std_im)
+
+    def rescale_imag(self,image_corrupt, scaling):
+        """ Scaling of input """
+        if (scaling == 'standardization'):
+            return self.stand_imag(image_corrupt)
+        elif (scaling == 'normalization'):
+            return self.norm_imag(image_corrupt)
+        elif (scaling == 'positive_normalization'):
+            return self.norm_positive_imag(image_corrupt)
+        else: # No scaling required
+            return image_corrupt, 0, 0
+
+    def descale_imag(self,image, param_scale1, param_scale2, scaling='standardization'):
+        """ Descaling of input """
+        try:
+            image_np = image.detach().numpy()
+        except:
+            image_np = image.cpu().detach().numpy()
+        if (scaling == 'standardization'):
+            return self.destand_numpy_imag(image_np, param_scale1, param_scale2)
+        elif (scaling == 'normalization'):
+            return self.denorm_numpy_imag(image_np, param_scale1, param_scale2)
+        elif (scaling == 'positive_normalization'):
+            return self.denorm_numpy_positive_imag(image_np, param_scale1, param_scale2)
+        else: # No scaling required
+            return image_np
+
+    def get_phantom_ROI(self,image='image0'):
+        # Select only phantom ROI, not whole reconstructed image
+        path_phantom_ROI = self.subroot_data+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[5:]) + '.raw'
+        my_file = Path(path_phantom_ROI)
+        if (my_file.is_file()):
+            phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(self.PETImage_shape),type_im='<f')
+        else:
+            print("No phantom file for this phantom")
+            # Loading Ground Truth image to compute metrics
+            try:
+                image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')
+            except:
+                raise ValueError("Please put the header file from CASToR with name of phantom")
+            phantom_ROI = ones_like(image_gt)
+            #raise ValueError("No phantom file for this phantom")
+            #phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            
+        return phantom_ROI
+    
+    def fijii_np(self,path,shape,type_im=None):
+        """"Transforming raw data to numpy array"""
+        if (type_im is None):
+            if (self.FLTNB == 'float'):
+                type_im = '<f'
+            elif (self.FLTNB == 'double'):
+                type_im = '<d'
+
+        attempts = 0
+
+        while attempts < 1000:
+            attempts += 1
+            try:
+                type_im = ('<f')*(type_im=='<f') + ('<d')*(type_im=='<d')
+                file_path=(path)
+                dtype_np = dtype(type_im)
+                with open(file_path, 'rb') as fid:
+                    data = fromfile(fid,dtype_np)
+                    if (1 in shape): # 2D
+                        #shape = (shape[0],shape[1])
+                        image = data.reshape(shape)
+                    else: # 3D
+                        image = data.reshape(shape[::-1])
+                attempts = 1000
+                break
+            except:
+                # fid.close()
+                type_im = ('<f')*(type_im=='<d') + ('<d')*(type_im=='<f')
+                file_path=(path)
+                dtype_np = dtype(type_im)
+                with open(file_path, 'rb') as fid:
+                    data = fromfile(fid,dtype_np)
+                    if (1 in shape): # 2D
+                        #shape = (shape[0],shape[1])
+                        try:
+                            image = data.reshape(shape)
+                        except Exception as e:
+                            # print(data.shape)
+                            # print(type_im)
+                            # print(dtype_np)
+                            # print(fid)
+                            # '''
+                            # import numpy as np
+                            # data = fromfile(fid,dtype('<f'))
+                            # np.save('data' + str(self.replicate) + '_' + str(attempts) + '_f.npy', data)
+                            # '''
+                            # print('Failed: '+ str(e) + '_' + str(attempts))
+                            pass
+                    else: # 3D
+                        image = data.reshape(shape[::-1])
+                
+                fid.close()
+            '''
+            image = data.reshape(shape)
+            #image = transpose(image,axes=(1,2,0)) # imshow ok
+            #image = transpose(image,axes=(1,0,2)) # imshow ok
+            #image = transpose(image,axes=(0,1,2)) # imshow ok
+            #image = transpose(image,axes=(0,2,1)) # imshow ok
+            #image = transpose(image,axes=(2,0,1)) # imshow ok
+            #image = transpose(image,axes=(2,1,0)) # imshow ok
+            '''
+            
+        #'''
+        #image = data.reshape(shape)
+        '''
+        try:
+            print(image[0,0])
+        except Exception as e:
+            print('exception image: '+ str(e))
+        '''
+        # print("read from ", path)
+        return image
+
+    def read_input_dim(self,file_path):
+        # Read CASToR header file to retrieve image dimension """
+        try:
+            with open(file_path) as f:
+                for line in f:
+                    if 'matrix size [1]' in line.strip():
+                        dim1 = [int(s) for s in line.split() if s.isdigit()][-1]
+                    if 'matrix size [2]' in line.strip():
+                        dim2 = [int(s) for s in line.split() if s.isdigit()][-1]
+                    if 'matrix size [3]' in line.strip():
+                        dim3 = [int(s) for s in line.split() if s.isdigit()][-1]
+        except:
+            raise ValueError("Please put the header file from CASToR with name of phantom")
+        # Create variables to store dimensions
+        PETImage_shape = (dim1,dim2,dim3)
+        # if (self.scanner == "mMR_3D"):
+        #     PETImage_shape = (int(dim1/2),int(dim2/2),dim3)
+        PETImage_shape_str = str(dim1) + ','+ str(dim2) + ',' + str(dim3)
+        print('image shape :', PETImage_shape)
+        return PETImage_shape_str
+
+    def input_dim_str_to_list(self,PETImage_shape_str):
+        return [int(e.strip()) for e in PETImage_shape_str.split(',')]#[:-1]

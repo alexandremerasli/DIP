@@ -16,18 +16,18 @@ from ray import tune
 
 # Configuration dictionnary for general settings parameters (not hyperparameters)
 settings_config = {
-    "image" : tune.grid_search(['image40_0']), # Image from database
+    "image" : tune.grid_search(['image40_1']), # Image from database
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['Gong']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
+    "method" : tune.grid_search(['nested']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "processing_unit" : tune.grid_search(['GPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
     "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
-    "tensorboard" : False, # Tensorboard mode = show results in tensorboard
-    "all_images_DIP" : tune.grid_search(['Last']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
+    "tensorboard" : True, # Tensorboard mode = show results in tensorboard
+    "all_images_DIP" : tune.grid_search(['True']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
-    "replicates" : tune.grid_search(list(range(1,40+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
+    "replicates" : tune.grid_search(list(range(13,13+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
     #"replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
     "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
     "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMLim)
@@ -57,16 +57,21 @@ hyperparameters_config = {
     "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
     "adaptive_parameters_DIP" : tune.grid_search(["nothing"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
     "mu_DIP" : tune.grid_search([10]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
-    "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
+    "tau_DIP" : tune.grid_search([2.5]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
     ## network hyperparameters
-    "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
-    "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
+    "monitor_lr" : tune.grid_search([True]), # Monitor learning rate in network optimization
+    "lr" : tune.grid_search([0.00001,0.00005,0.0001,0.0005,0.001,0.005,0.01,0.05,0.1,0.5,1,5]), # Learning rate in network optimization
+    "lr" : tune.grid_search([1]), # Learning rate in network optimization
+    # "lr" : tune.grid_search([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]), # Learning rate in network optimization
+    # "lr" : tune.grid_search([0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09]), # Learning rate in network optimization
+    # "lr" : tune.grid_search([1,0.1,0.01]), # Learning rate in network optimization
+    # "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
+    "sub_iter_DIP" : tune.grid_search([5000]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
     "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
-    "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-    #"scaling" : tune.grid_search(['standardization','positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-    "input" : tune.grid_search(['random']), # Neural network input (random or CT)
-    #"input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)
+    "scaling" : tune.grid_search(['normalization']), # Pre pro<e_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
+    "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
+    # "input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMLim - OPTITR hyperparameters
@@ -202,8 +207,8 @@ for method in config["method"]['grid_search']:
 
     #task = 'full_reco_with_network' # Run Gong or nested ADMM
     #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
-    #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
-    #task = 'show_results_post_reco'
+    task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
+    # task = 'show_results_post_reco'
     #task = 'show_results'
     #task = 'show_metrics_results_already_computed'
     #task = 'show_metrics_ADMMLim'
@@ -240,7 +245,7 @@ for method in config["method"]['grid_search']:
         raise ValueError("Please set all_images_DIP to True to save all images for nested or Gong reconstruction if using WMV.")
     elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["rho"]["grid_search"][0] == 0 and task != "post_reco"):
         raise ValueError("Please set rho > 0 for nested or Gong reconstruction (or set task to post reconstruction).")
-    elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["DIP_early_stopping"]["grid_search"][0]):
+    elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["EMV_or_WMV"]["grid_search"][0] == "WMV"):
         raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
     elif (config["debug"] and config["ray"]):
         raise ValueError("Debug mode must is used without ray")

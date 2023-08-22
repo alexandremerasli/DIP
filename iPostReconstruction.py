@@ -264,18 +264,20 @@ class iPostReconstruction(vDenoising):
             self.save_img(out_descale, net_outputs_path)
 
             if ("3D" not in self.phantom):
-                # Compute IR metric (different from others with several replicates)
-                classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch,classResults.IR_bkg_recon,self.phantom)
-                classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[epoch], epoch+1)
-                # Compute IR in whole phantom (different from others with several replicates)
-                classResults.compute_IR_whole(self.PETImage_shape,out_descale,self.global_it,classResults.IR_whole_recon,self.phantom)
-                classResults.writer.add_scalar('Image roughness in the phantom', classResults.IR_whole_recon[self.global_it], self.global_it+1)
+                if ("post_reco" not in config["task"]):
+                    # Compute IR metric (different from others with several replicates)
+                    classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch,classResults.IR_bkg_recon,self.phantom)
+                    classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[epoch], epoch+1)
+                    # Compute IR in whole phantom (different from others with several replicates)
+                    classResults.compute_IR_whole(self.PETImage_shape,out_descale,self.global_it,classResults.IR_whole_recon,self.phantom)
+                    classResults.writer.add_scalar('Image roughness in the phantom', classResults.IR_whole_recon[self.global_it], self.global_it+1)
                 # Write images over epochs
             classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
             #classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
 
-            if (model.classWMV.SUCCESS):
-                break
+            if (config["DIP_early_stopping"]):
+                if (model.classWMV.SUCCESS):
+                    break
 
         if (model.DIP_early_stopping):
             classResults.epochStar = self.epochStar

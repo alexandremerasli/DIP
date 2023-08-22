@@ -118,6 +118,8 @@ class iResults(vDenoising):
             self.IR_whole_recon = np.empty(int(self.total_nb_iter ) + 1)
             self.IR_whole_recon[:] = 0 #np.nan
 
+            self.mean_inside_recon = np.zeros(int(self.total_nb_iter ) + 1)
+
             self.likelihoods = [] # Will be appended
 
             self.MA_cold_inside = np.zeros(int(self.total_nb_iter ) + 1)
@@ -171,7 +173,7 @@ class iResults(vDenoising):
     def writeEndImagesAndMetrics(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):       
         # Metrics for NN output
         if ("3D" not in phantom):
-            self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_hot_TEP_recon,self.AR_hot_TEP_match_square_recon,self.AR_hot_perfect_match_recon,self.loss_DIP_recon,self.CRC_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,self.IR_whole_recon,phantom,writer=self.writer)
+            self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_hot_TEP_recon,self.AR_hot_TEP_match_square_recon,self.AR_hot_perfect_match_recon,self.loss_DIP_recon,self.CRC_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,self.IR_whole_recon,self.mean_inside_recon,phantom,writer=self.writer)
 
         if (self.tensorboard):
             # Write image over ADMM iterations
@@ -482,7 +484,7 @@ class iResults(vDenoising):
         #print('Image roughness in the background', IR_whole_recon[i],' , must be as small as possible')
 
 
-    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,SSIM_recon,MA_cold_recon,AR_hot_recon,AR_hot_TEP_recon,AR_hot_TEP_match_square_recon,AR_hot_perfect_match_recon,loss_DIP_recon,CRC_hot_recon,AR_bkg_recon,IR_bkg_recon,IR_whole_recon,image,writer=None):
+    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,SSIM_recon,MA_cold_recon,AR_hot_recon,AR_hot_TEP_recon,AR_hot_TEP_match_square_recon,AR_hot_perfect_match_recon,loss_DIP_recon,CRC_hot_recon,AR_bkg_recon,IR_bkg_recon,IR_whole_recon,mean_inside_recon,image,writer=None):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
         image_recon_cropped = image_recon*self.phantom_ROI
         image_recon_norm = self.norm_imag(image_recon_cropped)[0] # normalizing DIP output
@@ -543,6 +545,10 @@ class iResults(vDenoising):
         # Mean Activity Recovery (ARmean) in background calculation (-c 0. 0. 0. 150. 4. 100)
         bkg_ROI_act = image_recon[self.bkg_ROI==1]
         AR_bkg_recon[i] = np.mean(bkg_ROI_act) / 100.
+
+        # Mean in whole denoised image
+        # mean_inside_recon[i] = np.mean(image_recon) / np.mean(image_gt)
+        mean_inside_recon[i] = np.mean(image_recon * self.phantom_ROI) / np.mean(self.image_corrupt * self.phantom_ROI)
         
         # Likelihood from fake CASToR reconstruction just to compute likelihood of initialization image        
         if 'nested' in self.config["method"] or 'Gong' in self.config["method"]:
@@ -576,7 +582,8 @@ class iResults(vDenoising):
             wr.writerow(AR_hot_perfect_match_recon)
             wr.writerow(AR_bkg_recon)
             wr.writerow(IR_bkg_recon)
-            wr.writerow(loss_DIP_recon)
+            # wr.writerow(loss_DIP_recon)
+            wr.writerow(mean_inside_recon)
             wr.writerow(CRC_hot_recon)
             wr.writerow(IR_whole_recon)
             if ("results" in self.config["task"]):
@@ -602,6 +609,7 @@ class iResults(vDenoising):
             writer.add_scalar('Mean Concentration Recovery coefficient in hot (perfect match) cylinder (best : 1)', AR_hot_perfect_match_recon[i], i)
             writer.add_scalar('Mean Concentration Recovery coefficient in background (best : 1)', AR_bkg_recon[i], i)
             writer.add_scalar('DIP loss', loss_DIP_recon[i], i)
+            writer.add_scalar('Mean inside phantom', mean_inside_recon[i], i)
             #writer.add_scalar('Image roughness in the background (best : 0)', IR_bkg_recon[i], i)
 
 
