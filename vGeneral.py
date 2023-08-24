@@ -517,7 +517,7 @@ class vGeneral(abc.ABC):
         else:
             return img, min_np(img), max_np(img)
 
-    def norm_2_imag(self,img,param1,param2):
+    def norm_init_imag(self,img,param1,param2):
         print("nooooooooorm with other image")
         if (param1-param2) != 0:
             return (img - param1) / (param2 - param1), param1, param2
@@ -581,8 +581,8 @@ class vGeneral(abc.ABC):
             return self.stand_imag(image_corrupt)
         elif (scaling == 'normalization'):
             return self.norm_imag(image_corrupt)
-        elif (scaling == 'normalization_2'):
-            return self.norm_2_imag(image_corrupt,param1,param2)
+        elif (scaling == 'normalization_init'):
+            return self.norm_init_imag(image_corrupt,param1,param2)
         elif (scaling == 'positive_normalization'):
             return self.norm_positive_imag(image_corrupt)
         else: # No scaling required

@@ -216,7 +216,7 @@ class iFinalCurves(vGeneral):
                     sorted_suffixes.sort(key=self.natural_keys_ADMMLim)
 
                 # Load metrics from last runs to merge them in one figure
-                metrics_final, IR_final = self.load_metrics(sorted_suffixes, idx_wanted, root, config, method, task, csv_before_MIC, quantitative_tradeoff, ROI)
+                metrics_final, IR_final = self.load_metrics(sorted_suffixes, idx_wanted, root, config, method, task, csv_before_MIC, quantitative_tradeoff, ROI, rename_settings)
                 
                 if (method == "MLEM" or method == "OSEM"):
                     nb_rho[method], nb_other_dim[method] = nb_other_dim[method], nb_rho[method]
@@ -564,6 +564,10 @@ class iFinalCurves(vGeneral):
                         replicates_legend[fig_nb].append('nested')
                     elif ("DIPRecon" in method):
                         replicates_legend[fig_nb].append('DIPRecon')
+                    elif ("ADMMLim" in method):
+                        replicates_legend[fig_nb].append('ADMM-Reg')
+                    elif ("APGMAP" in method):
+                        replicates_legend[fig_nb].append('APPGML')
 
     def choose_good_config_file(self,method,config,csv_before_MIC,DIPRecon):
         # Gong reconstruction
@@ -965,7 +969,7 @@ class iFinalCurves(vGeneral):
         return marker_dict, color_dict
 
 
-    def load_metrics(self, sorted_suffixes, idx_wanted, root, config, method, task, csv_before_MIC, quantitative_tradeoff, ROI):
+    def load_metrics(self, sorted_suffixes, idx_wanted, root, config, method, task, csv_before_MIC, quantitative_tradeoff, ROI, rename_settings):
         # Initialize metrics arrays
         PSNR_recon = []
         PSNR_norm_recon = []
@@ -988,6 +992,13 @@ class iFinalCurves(vGeneral):
 
         for i in range(len(sorted_suffixes)):
             i_replicate = idx_wanted[i] # Loop over rhos and replicates, for each sorted rho, take sorted replicate
+            if (rename_settings == "TMI"): # Remove Gong failing replicates and replace them
+                if (self.phantom == "image40_1"):
+                    DIPRecon_failing_replicate_list = list(np.array([19,25,29,36])-1)
+                    replicates_replace_list = list(np.array([41,42,45,46])-1)
+                    if (i_replicate in DIPRecon_failing_replicate_list):
+                        i_replicate = replicates_replace_list[DIPRecon_failing_replicate_list.index(i_replicate)]
+
             suffix = sorted_suffixes[i].rstrip("\n")
             replicate = "replicate_" + str(i_replicate + 1)
 
