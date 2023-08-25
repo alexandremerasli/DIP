@@ -548,7 +548,8 @@ class iResults(vDenoising):
 
         # Mean in whole denoised image
         # mean_inside_recon[i] = np.mean(image_recon) / np.mean(image_gt)
-        mean_inside_recon[i] = np.mean(image_recon * self.phantom_ROI) / np.mean(self.image_corrupt * self.phantom_ROI)
+        if ("nested" in self.method or "Gong" in self.method):
+            mean_inside_recon[i] = np.mean(image_recon * self.phantom_ROI) / np.mean(self.image_corrupt * self.phantom_ROI)
         
         # Likelihood from fake CASToR reconstruction just to compute likelihood of initialization image        
         if 'nested' in self.config["method"] or 'Gong' in self.config["method"]:
