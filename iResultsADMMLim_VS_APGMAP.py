@@ -114,19 +114,36 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         else:
             i_init = 1
 
+        if ("scaling" in config):
+            self.scaling = config["scaling"]
+        else:
+            self.scaling = None
+
         #for i in range(i_init,self.total_nb_iter+1):
         for i in range(self.total_nb_iter,self.total_nb_iter+1):
             IR = 0
             nan_replicates = []
+            DIPRecon_failing_replicate_list = []
             for p in range(self.nb_replicates,0,-1):
                 p_for_file = p
                 if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
                     if (change_replicates == "TMI"): # Remove Gong failing replicates and replace them
                         if (self.phantom == "image40_1"):
-                            DIPRecon_failing_replicate_list = list(np.array([19,25,29,36]))
-                            replicates_replace_list = list(np.array([41,42,45,46]))
-                            if (p in DIPRecon_failing_replicate_list):
-                                p_for_file = replicates_replace_list[DIPRecon_failing_replicate_list.index(p)]
+                            if (self.scaling == "normalization"):
+                                DIPRecon_failing_replicate_list = list(np.array([19,25,29,36]))
+                                replicates_replace_list = list(np.array([41,42,45,46]))
+                            elif (self.scaling == "positive_normalization"):
+                                DIPRecon_failing_replicate_list = list(np.array([19]))
+                                replicates_replace_list = list(np.array([41]))
+                        if (self.phantom == "image4_0"):
+                            if (self.scaling == "positive_normalization"):
+                                # DIPRecon_failing_replicate_list = list(np.array([35]))
+                                # replicates_replace_list = list(np.array([41]))
+                                DIPRecon_failing_replicate_list = list(np.array([17]))
+                                replicates_replace_list = list(np.array([1]))
+                                print("final replicates to remove ?????????????????????,,,????")
+                    if (p in DIPRecon_failing_replicate_list):
+                        p_for_file = replicates_replace_list[DIPRecon_failing_replicate_list.index(p)]
                     self.subroot_p = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p_for_file) + '/' + self.method + '/' # Directory root
 
                     # Take NNEPPS images if NNEPPS is asked for this run

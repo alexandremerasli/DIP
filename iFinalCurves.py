@@ -120,10 +120,12 @@ class iFinalCurves(vGeneral):
             # Remove failing replicates if Gong in method for TMI paper
             idx_Gong = -1
             idx_Gong = next((i for i, string in enumerate(method_list) if "DIPRecon" in string), -1)
-            idx_Gong = next((i for i, string in enumerate(method_list) if "nested" in string), -1)
+            # idx_Gong = next((i for i, string in enumerate(method_list) if "nested" in string), -1)
             if (idx_Gong != -1):
                 if (rename_settings == "TMI"):
                     self.scaling = config[method_list[idx_Gong]]["scaling"]
+            else:
+                self.scaling = None
 
             for method in method_list: # Compute 
 
@@ -1018,8 +1020,9 @@ class iFinalCurves(vGeneral):
                     if (self.scaling == "positive_normalization"):
                         # DIPRecon_failing_replicate_list = list(np.array([35])-1)
                         # replicates_replace_list = list(np.array([41])-1)
-                        DIPRecon_failing_replicate_list = list(np.array([3,10])-1)
-                        replicates_replace_list = list(np.array([1,2])-1)
+                        # DIPRecon_failing_replicate_list = list(np.array([3,10,15,38])-1)
+                        # replicates_replace_list = list(np.array([1,2,4,5])-1)
+                        print("final replicates to remove ?????????????????????,,,????")
                 if (i_replicate in DIPRecon_failing_replicate_list):
                     i_replicate = replicates_replace_list[DIPRecon_failing_replicate_list.index(i_replicate)]
 

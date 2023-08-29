@@ -8,7 +8,7 @@ def config_func_MIC():
         "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
         "method" : tune.grid_search(['ADMMLim']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
         "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
-        "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
+        "nb_threads" : tune.grid_search([2]), # Number of desired threads. 0 means all the available threads
         "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
         "debug" : False, # Debug mode = run without raytune and with one iteration
         "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
@@ -42,9 +42,9 @@ def config_func_MIC():
         
         "rho" : tune.grid_search([3e-5,5e-5,7e-5,2e-4,4e-4,6e-4,8e-4,1e-3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "rho" : tune.grid_search([3e-5,5e-5,7e-5,2e-4,8e-4,1e-3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        #"rho" : tune.grid_search([5e-5,8e-4]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        #"rho" : tune.grid_search([3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        #"rho" : tune.grid_search([3e-3,4e-3,5e-3,6e-3,7e-3,8e-3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+        "rho" : tune.grid_search([5e-7,9e-7,4e-6]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+        # "rho" : tune.grid_search([8e-6]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+         "rho" : tune.grid_search([5e-7,9e-7,4e-6,8e-6,3e-5,5e-5,7e-5,2e-4,8e-4,1e-3]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         ## network hyperparameters
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
         "sub_iter_DIP" : tune.grid_search([1000]), # Number of epochs in network optimization
