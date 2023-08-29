@@ -52,8 +52,8 @@ def config_func_MIC():
         "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
         "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
         "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
-        # "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         "scaling" : tune.grid_search(['normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
+        # "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         "scaling_all_init" : tune.grid_search([True,False]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         "scaling_all_init" : tune.grid_search([True]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         #"scaling" : tune.grid_search(['standardization','positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)

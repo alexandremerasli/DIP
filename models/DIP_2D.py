@@ -234,7 +234,8 @@ class DIP_2D(LightningModule):
 
 
         # Monitor learning rate across iterations
-        self.config["monitor_lr"] = True
+        if (not hasattr(self.config,"monitor_lr")):
+            self.config["monitor_lr"] = False
         if (self.config["monitor_lr"]):
             out_descale_np = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
             # try:

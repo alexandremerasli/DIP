@@ -22,7 +22,7 @@ def config_func_MIC():
     }
     # Configuration dictionnary for previous hyperparameters, but fixed to simplify
     fixed_config = {
-        "max_iter" : tune.grid_search([100]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
+        "max_iter" : tune.grid_search([500]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
         "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
         "use_u_and_v_nested" : tune.grid_search([False]), # If sinogram u and v from previous global iteration are used to initialize current u and v
         "finetuning" : tune.grid_search(['last']),
@@ -61,8 +61,9 @@ def config_func_MIC():
         "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         "scaling" : tune.grid_search(['normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
+        "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         "scaling_all_init" : tune.grid_search([True,False]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-        "scaling_all_init" : tune.grid_search([True]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
+        "scaling_all_init" : tune.grid_search([False]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         "input" : tune.grid_search(['random']), # Neural network input (random or CT)
         # "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
         "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size

@@ -72,7 +72,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         
         config["average_replicates"] = True
 
-
+        change_replicates = "TMI"
 
 
         
@@ -119,8 +119,15 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             IR = 0
             nan_replicates = []
             for p in range(self.nb_replicates,0,-1):
+                p_for_file = p
                 if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
-                    self.subroot_p = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
+                    if (change_replicates == "TMI"): # Remove Gong failing replicates and replace them
+                        if (self.phantom == "image40_1"):
+                            DIPRecon_failing_replicate_list = list(np.array([19,25,29,36]))
+                            replicates_replace_list = list(np.array([41,42,45,46]))
+                            if (p in DIPRecon_failing_replicate_list):
+                                p_for_file = replicates_replace_list[DIPRecon_failing_replicate_list.index(p)]
+                    self.subroot_p = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p_for_file) + '/' + self.method + '/' # Directory root
 
                     # Take NNEPPS images if NNEPPS is asked for this run
                     if (config["NNEPPS"]):

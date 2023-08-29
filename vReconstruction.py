@@ -105,6 +105,7 @@ class vReconstruction(vGeneral):
             else:
                 vox = ' -vox 1.04313,1.04313,2.03125'
                 vox = ' -vox 2.08626,2.08626,2.03125'
+                # vox = ' -vox 1,1,2.03125'
             vb = ' -vb 3'
             it = ' -it 1:1'
             opti = ' -opti ' + optimizer

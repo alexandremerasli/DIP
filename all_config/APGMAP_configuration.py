@@ -37,9 +37,10 @@ def config_func_MIC():
     }
     # Configuration dictionnary for hyperparameters to tune
     hyperparameters_config = {
-        "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
+        # "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
         "rho" : tune.grid_search([0.01,0.02,0.03,0.04,0.05]), # NUYTS POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "rho" : tune.grid_search([3e-5,5e-5,7e-5,9e-5,2e-4,4e-4,6e-4,8e-4,1e-3]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+        # "rho" : tune.grid_search([1e-3]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         #"rho" : tune.grid_search([3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         #"rho" : tune.grid_search([0.02]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         ## network hyperparameters

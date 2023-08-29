@@ -820,6 +820,7 @@ class vGeneral(abc.ABC):
         else:
             vox = ' -vox 1.04313,1.04313,2.03125'
             vox = ' -vox 2.08626,2.08626,2.03125'
+            # vox = ' -vox 1,1,2.03125'
         vb = ' -vb 3'
         th = ' -th ' + str(self.nb_threads) # must be set to 1 for ADMMLim, as multithreading does not work for now with ADMMLim optimizer
         proj = ' -proj incrementalSiddon'

@@ -117,6 +117,14 @@ class iFinalCurves(vGeneral):
             replicates_legend = [None] * 3
             replicates_legend = [[],[],[]]
 
+            # Remove failing replicates if Gong in method for TMI paper
+            idx_Gong = -1
+            idx_Gong = next((i for i, string in enumerate(method_list) if "DIPRecon" in string), -1)
+            idx_Gong = next((i for i, string in enumerate(method_list) if "nested" in string), -1)
+            if (idx_Gong != -1):
+                if (rename_settings == "TMI"):
+                    self.scaling = config[method_list[idx_Gong]]["scaling"]
+
             for method in method_list: # Compute 
 
                 if (method.endswith("_configuration")):
@@ -525,7 +533,15 @@ class iFinalCurves(vGeneral):
                 if (fig_nb != 2):
                     replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                 else:
-                    replicates_legend[fig_nb].append(method)
+                    if (rename_settings == "TMI"):
+                        if ("ADMMLim" in method):
+                            replicates_legend[fig_nb].append('ADMM-Reg')
+                        elif ("APGMAP" in method):
+                            replicates_legend[fig_nb].append('APPGML')
+                        else:
+                            replicates_legend[fig_nb].append(method)
+                    else:
+                        replicates_legend[fig_nb].append(method)
             else:
                 # replicates_legend[fig_nb].append(method)
                 if (APGMAP_vs_ADMMLim):
@@ -561,13 +577,9 @@ class iFinalCurves(vGeneral):
                                 replicates_legend[fig_nb].append(label_name)
                 if (rename_settings == "TMI"):
                     if ("nested" in method):
-                        replicates_legend[fig_nb].append('nested')
+                        replicates_legend[fig_nb].append('DNA')
                     elif ("DIPRecon" in method):
                         replicates_legend[fig_nb].append('DIPRecon')
-                    elif ("ADMMLim" in method):
-                        replicates_legend[fig_nb].append('ADMM-Reg')
-                    elif ("APGMAP" in method):
-                        replicates_legend[fig_nb].append('APPGML')
 
     def choose_good_config_file(self,method,config,csv_before_MIC,DIPRecon):
         # Gong reconstruction
@@ -808,12 +820,12 @@ class iFinalCurves(vGeneral):
     def marker_color_dict_method(self):
         if (self.phantom == "image2_0"):
             color_dict = {
-                "nested" : ['red','pink'],
-                "DIPRecon" : ['cyan','blue','teal','blueviolet'],
-                "APGMAP" : ['darkgreen','lime','gold'],
-                "ADMMLim" : ['fuchsia'],
-                "OSEM" : ['darkorange'],
-                "BSREM" : ['grey']
+                "nested" : 100*['red','pink'],
+                "DIPRecon" : 100*['cyan','blue','teal','blueviolet'],
+                "APGMAP" : 100*['darkgreen','lime','gold'],
+                "ADMMLim" : 100*['fuchsia'],
+                "OSEM" : 100*['darkorange'],
+                "BSREM" : 100*['grey']
             }
             color_dict_supp = {
                 "nested_BSREM_stand" : [color_dict["nested"][0]],
@@ -990,14 +1002,26 @@ class iFinalCurves(vGeneral):
         IR_final = []
         metrics_final = []
 
+        DIPRecon_failing_replicate_list = []
+
         for i in range(len(sorted_suffixes)):
             i_replicate = idx_wanted[i] # Loop over rhos and replicates, for each sorted rho, take sorted replicate
             if (rename_settings == "TMI"): # Remove Gong failing replicates and replace them
                 if (self.phantom == "image40_1"):
-                    DIPRecon_failing_replicate_list = list(np.array([19,25,29,36])-1)
-                    replicates_replace_list = list(np.array([41,42,45,46])-1)
-                    if (i_replicate in DIPRecon_failing_replicate_list):
-                        i_replicate = replicates_replace_list[DIPRecon_failing_replicate_list.index(i_replicate)]
+                    if (self.scaling == "normalization"):
+                        DIPRecon_failing_replicate_list = list(np.array([19,25,29,36])-1)
+                        replicates_replace_list = list(np.array([41,42,45,46])-1)
+                    elif (self.scaling == "positive_normalization"):
+                        DIPRecon_failing_replicate_list = list(np.array([19])-1)
+                        replicates_replace_list = list(np.array([41])-1)
+                if (self.phantom == "image4_0"):
+                    if (self.scaling == "positive_normalization"):
+                        # DIPRecon_failing_replicate_list = list(np.array([35])-1)
+                        # replicates_replace_list = list(np.array([41])-1)
+                        DIPRecon_failing_replicate_list = list(np.array([3,10])-1)
+                        replicates_replace_list = list(np.array([1,2])-1)
+                if (i_replicate in DIPRecon_failing_replicate_list):
+                    i_replicate = replicates_replace_list[DIPRecon_failing_replicate_list.index(i_replicate)]
 
             suffix = sorted_suffixes[i].rstrip("\n")
             replicate = "replicate_" + str(i_replicate + 1)
