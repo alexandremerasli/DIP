@@ -86,24 +86,28 @@ def choose_task(config):
 config_files = ["Gong_CT_1_skip", "Gong_CT_2_skip"]#, "Gong_CT_3_skip"]
 config_files = ["Gong_CT_3_skip","Gong_CT_1_skip","Gong_CT_2_skip"]
 config_files = ["Gong_CT_1_skip","Gong_CT_2_skip"]
-config_files = ['ADMMLim_configuration']
 config_files = ['APGMAP_configuration']
-config_files = ['OSEM_configuration']
-# config_files = ['nested_ADMMLim_more_ADMMLim_it_10_configuration']
+# config_files = ['ADMMLim_configuration']
+config_files = ['nested_ADMMLim_more_ADMMLim_it_10_configuration']
+# config_files = ['nested_ADMMLim_more_ADMMLim_it_30_configuration']
+# config_files = ['OSEM_configuration']
 # config_files = ['Gong_skip3_3_my_settings']
 # config_files = ['BSREM_configuration']
 # config_files = [f[:-3] for f in os.listdir('all_config') if os.path.isfile(os.path.join('all_config', f))]
+
+# config_files = ['ADMMLim_configuration']
 
 for lib_string in config_files:
     # try:
     if (True):
         lib = importlib.import_module('all_config.' + lib_string)
         config = lib.config_func_MIC()
-        # config["image"] = tune.grid_search(['image40_0'])
         config["image"] = tune.grid_search(['image40_1'])
-        config["replicates"] = tune.grid_search(list(range(1,40+1)))
-        config["max_iter"] = tune.grid_search([2])
-        config["ray"] = True
+        # config["image"] = tune.grid_search(['image010_3D'])
+        # config["replicates"] = tune.grid_search(list(range(1,45+1)))
+        config["replicates"] = tune.grid_search([1])
+        config["max_iter"] = tune.grid_search([1])
+        config["ray"] = False
 
         root = os.getcwd()
 

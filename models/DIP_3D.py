@@ -241,6 +241,9 @@ class DIP_3D(pl.LightningModule):
         plt.colorbar()
         plt.show()
         '''
+        if (self.current_epoch == 0):
+            self.save_img(image_corrupt_torch.cpu().detach().numpy()[0,0,:,:,:],self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/label' + self.scaling_input + '.img')
+
         out = self.forward(image_net_input_torch)
         # Save image over epochs
         if (self.write_current_img_mode):

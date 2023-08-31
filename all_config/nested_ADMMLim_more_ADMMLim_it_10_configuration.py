@@ -7,13 +7,13 @@ def config_func_MIC():
         "image" : tune.grid_search(['image4_0']), # Image from database
         "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
         "method" : tune.grid_search(['nested']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-        "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
+        "processing_unit" : tune.grid_search(['GPU']), # CPU or GPU
         "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
         "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
         "debug" : False, # Debug mode = run without raytune and with one iteration
         "ray" : False, # Ray mode = run with raytune if True, to run several settings in parallel
         "tensorboard" : False, # Tensorboard mode = show results in tensorboard
-        "all_images_DIP" : tune.grid_search(['Last']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
+        "all_images_DIP" : tune.grid_search(['True']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
         "experiment" : tune.grid_search([24]),
         "replicates" : tune.grid_search(list(range(1,40+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
         "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
@@ -33,7 +33,7 @@ def config_func_MIC():
         "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMLim
         "xi_DIP" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in Gong and nested
         "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-        "DIP_early_stopping" : tune.grid_search([False]), # Use DIP early stopping with WMV strategy
+        "DIP_early_stopping" : tune.grid_search([True]), # Use DIP early stopping with WMV strategy
         "EMV_or_WMV" : tune.grid_search(["EMV"]), # Use DIP early stopping with WMV or EMV
         "alpha_EMV" : tune.grid_search([0.1]), # EMV forgetting factor alpha
         "windowSize" : tune.grid_search([50]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
@@ -53,11 +53,11 @@ def config_func_MIC():
         "adaptive_parameters_DIP" : tune.grid_search(["nothing"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
         "mu_DIP" : tune.grid_search([100]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
         "tau_DIP" : tune.grid_search([0.95,0.92,0.9,0.8]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
-        "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
+        "tau_DIP" : tune.grid_search([202]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
         ## network hyperparameters
         # "monitor_lr" : tune.grid_search([True]), # Learning rate in network optimization
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
-        "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
+        "sub_iter_DIP" : tune.grid_search([1000]), # Number of epochs in network optimization
         "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
         "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)

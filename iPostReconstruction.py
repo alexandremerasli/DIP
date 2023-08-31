@@ -40,7 +40,7 @@ class iPostReconstruction(vDenoising):
         
         
         
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d')
+        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<f')
         # self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/relu_exp_target_1_rois_50.img",shape=(self.PETImage_shape),type_im='<d')
         # self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<d')
         
@@ -133,12 +133,12 @@ class iPostReconstruction(vDenoising):
         image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of x_label image
 
 
-        '''
-        import matplotlib.pyplot as plt
-        plt.imshow(self.image_corrupt[30,:,:],cmap='gray')
-        plt.colorbar()
-        plt.show()
-        '''
+        # '''
+        # import matplotlib.pyplot as plt
+        # plt.imshow(image_corrupt_input_scale[30,:,:],cmap='gray')
+        # plt.colorbar()
+        # plt.show()
+        # '''
 
         # Corrupted image x_label, numpy --> torch float32
         self.image_corrupt_torch = torch.Tensor(image_corrupt_input_scale)
@@ -228,7 +228,7 @@ class iPostReconstruction(vDenoising):
             # WMV
             # self.log("SUCCESS", int(model.classWMV.SUCCESS))
             if (model.DIP_early_stopping):
-                model.classWMV.SUCCESS,model.classWMV.VAR_min,model.classWMV.stagnate = model.classWMV.WMV(out,model.current_epoch,model.classWMV.queueQ,model.classWMV.SUCCESS,model.classWMV.VAR_min,model.classWMV.stagnate)
+                model.classWMV.SUCCESS,model.classWMV.VAR_min,model.classWMV.stagnate = model.classWMV.WMV(np.copy(out),model.current_epoch,model.classWMV.queueQ,model.classWMV.SUCCESS,model.classWMV.VAR_min,model.classWMV.stagnate)
                 self.VAR_recon = model.classWMV.VAR_recon
                 self.MSE_WMV = model.classWMV.MSE_WMV
                 self.PSNR_WMV = model.classWMV.PSNR_WMV

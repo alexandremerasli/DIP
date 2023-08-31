@@ -5,7 +5,7 @@ from numpy import min as min_np
 from numpy import max as max_np
 from numpy import mean as mean_np
 from numpy import std as std_np
-from numpy import ones_like, dtype, fromfile, sign
+from numpy import ones_like, dtype, fromfile, sign, newaxis
 
 from pathlib import Path
 from os.path import isfile
@@ -227,11 +227,13 @@ class DIP_2D(LightningModule):
 
     def training_step(self, train_batch, batch_idx):
         image_net_input_torch, image_corrupt_torch = train_batch
+        if (self.current_epoch == 0):
+            self.save_img(image_corrupt_torch.cpu().detach().numpy()[0,0,:,:],self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/label' + self.scaling_input + '.img')
+        
         out = self.forward(image_net_input_torch)
         # Save image over epochs
         if (self.write_current_img_mode):
             self.write_current_img(out)
-
 
         # Monitor learning rate across iterations
         if (not hasattr(self.config,"monitor_lr")):
@@ -374,6 +376,9 @@ class DIP_2D(LightningModule):
                 out_np = out.detach().numpy()[0,0,:,:]
             except:
                 out_np = out.cpu().detach().numpy()[0,0,:,:]
+
+            # if (len(out_np.shape) == 2): # 2D
+            #     out_np = out_np[:,:,newaxis]
 
             self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out_np,self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
             self.VAR_recon = self.classWMV.VAR_recon
