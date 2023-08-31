@@ -37,7 +37,6 @@ def config_func_MIC():
     }
     # Configuration dictionnary for hyperparameters to tune
     hyperparameters_config = {
-        # "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
         "rho" : tune.grid_search([0.01,0.02,0.03,0.04,0.05]), # NUYTS POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "rho" : tune.grid_search([5e-7,9e-7,4e-6,8e-6,3e-5,5e-5,7e-5,9e-5,2e-4,4e-4,6e-4,8e-4,1e-3]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         # "rho" : tune.grid_search([5e-7,9e-7,4e-6,8e-6]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
@@ -68,10 +67,8 @@ def config_func_MIC():
         # Optimization transfer (OPTITR) hyperparameters
         "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False
         # AML/APGMAP hyperparameters
-        "A_AML" : tune.grid_search([-10,-100,-500,-1000,-10000]), # AML lower bound A
-        "A_AML" : tune.grid_search([-100,-10]), # AML lower bound A
-        "A_AML" : tune.grid_search([-100]), # AML lower bound A
-        #"A_AML" : tune.grid_search([-100]), # AML lower bound A
+        # "A_AML" : tune.grid_search([-10000,-1000,-100]), # AML lower bound A
+        "A_AML" : tune.grid_search([-1000]), # AML lower bound A
         # Post smoothing by CASToR after reconstruction
         "post_smoothing" : tune.grid_search([0]), # Post smoothing by CASToR after reconstruction
         #"post_smoothing" : tune.grid_search([6,9,12,15]), # Post smoothing by CASToR after reconstruction

@@ -42,9 +42,8 @@ def config_func_MIC():
         
         "rho" : tune.grid_search([3e-5,5e-5,7e-5,2e-4,4e-4,6e-4,8e-4,1e-3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "rho" : tune.grid_search([3e-5,5e-5,7e-5,2e-4,8e-4,1e-3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        "rho" : tune.grid_search([5e-7,9e-7,4e-6]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        # "rho" : tune.grid_search([8e-6]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-         "rho" : tune.grid_search([5e-7,9e-7,4e-6,8e-6,3e-5,5e-5,7e-5,2e-4,8e-4,1e-3]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+        "rho" : tune.grid_search([5e-7,9e-7,4e-6,8e-6,3e-5,5e-5,7e-5,2e-4,8e-4,1e-3]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+        # "rho" : tune.grid_search([5e-7,9e-7,4e-6,8e-6]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         ## network hyperparameters
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
         "sub_iter_DIP" : tune.grid_search([1000]), # Number of epochs in network optimization

@@ -29,6 +29,10 @@ class iFinalCurves(vGeneral):
 
         # Plot APGMAP vs ADMMLim (True)
         APGMAP_vs_ADMMLim = False
+        # A_shift_ref_APPGML = -100 # image2_0
+        A_shift_ref_APPGML = -1000 # image4_0, # image40_1
+        # Beta used to initialize DNA with BSREM with penalty strength beta
+        beta_BSREM_for_DNA = 0.01
         # Rename my settings (MIC)
         rename_settings = "TMI"
 
@@ -406,7 +410,7 @@ class iFinalCurves(vGeneral):
                             for other_dim_idx in range(nb_other_dim[method]):
                                 cases = np.arange(0,nb_other_dim[method]*nb_rho[method],nb_other_dim[method]) + other_dim_idx
                                 
-                                if ((not APGMAP_vs_ADMMLim and (method == "APGMAP" and config_other_dim[method][other_dim_idx] == -100) or (method != "APGMAP" and other_dim_idx == 0)) or APGMAP_vs_ADMMLim):
+                                if ((not APGMAP_vs_ADMMLim and (method == "APGMAP" and config_other_dim[method][other_dim_idx] == A_shift_ref_APPGML) or (method != "APGMAP" and other_dim_idx == 0)) or APGMAP_vs_ADMMLim):
                                 #    nb_other_dim["APGMAP"] = 1
                                     ax[fig_nb].plot(100*avg_IR[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)],'-o',linewidth=3,color=color_dict[method_without_configuration][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
                                 if (variance_plot):
@@ -415,6 +419,7 @@ class iFinalCurves(vGeneral):
                                 #'''
                                 if ('BSREM' in method):
                                     idx = 0
+                                    idx = sorted(config_tmp[method]["rho"]["grid_search"]).index(beta_BSREM_for_DNA)
                                     plt.plot(100*avg_IR[(cases[idx],len_mini[idx]-1)],avg_metrics[(cases[idx],len_mini[idx]-1)],'X', color='white', label='_nolegend_')
                                     plt.plot(100*avg_IR[(cases[idx],len_mini[idx]-1)],avg_metrics[(cases[idx],len_mini[idx]-1)],marker='X',markersize=10, color='black', label='_nolegend_')
                                 #'''
@@ -934,7 +939,7 @@ class iFinalCurves(vGeneral):
                 "CT" : ['dashdot'],
                 "random" : ['dashdot'],
                 "intermediate" : ['-'],
-                "APGMAP" : ['-','-'],
+                "APGMAP" : ['-','-','-'],
                 "BSREM" : ['-'],
                 "OSEM" : ['-'],
                 "DIPRecon" : ['-']
