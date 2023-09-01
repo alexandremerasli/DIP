@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 
-from numpy import inf
+from numpy import inf, copy
 
 import os
 
@@ -338,7 +338,7 @@ class DIP_3D(pl.LightningModule):
             except:
                 out_np = out.cpu().detach().numpy()[0,0,:,:]
 
-            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out_np,self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
+            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(copy(out_np),self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
             self.VAR_recon = self.classWMV.VAR_recon
             self.MSE_WMV = self.classWMV.MSE_WMV
             self.PSNR_WMV = self.classWMV.PSNR_WMV

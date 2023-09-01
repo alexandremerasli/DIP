@@ -56,7 +56,7 @@ class iWMV(vGeneral):
         # Descale, squeeze image and add 3D dimension to 1 (ok for 2D images)
         out = self.descale_imag(from_numpy(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
         out = squeeze(out)
-        if (len(out.shape) == 2): # 2D
+        if (len(out.shape) == 2): # 2D, check length because squeeze before
             out = out[:,:,newaxis]
         else: # 3D
             out = out.reshape(out.shape[::-1])

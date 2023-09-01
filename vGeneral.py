@@ -6,7 +6,7 @@ from os import getcwd, makedirs
 from os.path import exists, isfile
 from functools import partial
 from ray import tune
-from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, mean, std, sum, array, column_stack
+from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, mean, std, sum, array, column_stack, transpose
 from numpy import max as max_np
 from numpy import min as min_np
 from pandas import read_table
@@ -577,16 +577,34 @@ class vGeneral(abc.ABC):
 
     def rescale_imag(self,image_corrupt, scaling,param1=1e+40,param2=1e+40):
         """ Scaling of input """
-        if (scaling == 'standardization'):
-            return self.stand_imag(image_corrupt)
-        elif (scaling == 'normalization'):
-            return self.norm_imag(image_corrupt)
-        elif (scaling == 'normalization_init'):
-            return self.norm_init_imag(image_corrupt,param1,param2)
-        elif (scaling == 'positive_normalization'):
-            return self.norm_positive_imag(image_corrupt)
-        else: # No scaling required
-            return image_corrupt, 0, 0
+        if (1 in image_corrupt.shape): # 2D
+            nb_slices = 1
+        else: # 3D
+            image_corrupt = transpose(image_corrupt)
+            nb_slices = image_corrupt.shape[2]
+
+        image_corrupt_scaled = ones_like(image_corrupt)
+        param1 = zeros(nb_slices)
+        param2 = zeros(nb_slices)
+        
+        for slice in range(nb_slices):
+            print(slice)
+            if (scaling == 'standardization'):
+                image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = self.stand_imag(image_corrupt[:,:,slice])
+            elif (scaling == 'normalization'):
+                image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = self.norm_imag(image_corrupt[:,:,slice])
+            elif (scaling == 'normalization_init'):
+                image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = self.norm_init_imag(image_corrupt[:,:,slice],param1,param2)
+            elif (scaling == 'positive_normalization'):
+                image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = self.norm_positive_imag(image_corrupt[:,:,slice])
+            else: # No scaling required
+                image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = image_corrupt, 0, 0
+
+        
+        if (1 not in image_corrupt.shape): # 3D
+            image_corrupt_scaled = transpose(image_corrupt_scaled)
+
+        return image_corrupt_scaled, param1, param2 
 
     def descale_imag(self,image, param_scale1, param_scale2, scaling='standardization'):
         """ Descaling of input """
@@ -594,16 +612,27 @@ class vGeneral(abc.ABC):
             image_np = image.detach().numpy()
         except:
             image_np = image
-        if (scaling == 'standardization'):
-            return self.destand_numpy_imag(image_np, param_scale1, param_scale2)
-        elif (scaling == 'normalization'):
-            return self.denorm_numpy_imag(image_np, param_scale1, param_scale2)
-        elif (scaling == 'normalization_2'):
-            return self.denorm_numpy_imag(image_np, param_scale1, param_scale2)
-        elif (scaling == 'positive_normalization'):
-            return self.denorm_numpy_positive_imag(image_np, param_scale1, param_scale2)
-        else: # No scaling required
-            return image_np
+        import numpy as np
+        # image_np = image_np.astype(np.float64)
+        nb_slices = len(param_scale1)
+
+        for slice in range(nb_slices):
+            print(slice)
+            if (scaling == 'standardization'):
+                image_np[:,:,slice] = self.destand_numpy_imag(image_np[:,:,slice], param_scale1, param_scale2)
+            elif (scaling == 'normalization'):
+                image_np[:,:,slice] = self.denorm_numpy_imag(image_np[:,:,slice], param_scale1, param_scale2)
+            elif (scaling == 'normalization_2'):
+                image_np[:,:,slice] = self.denorm_numpy_imag(image_np[:,:,slice], param_scale1, param_scale2)
+            elif (scaling == 'positive_normalization'):
+                image_np[:,:,slice] = self.denorm_numpy_positive_imag(image_np[:,:,slice], param_scale1, param_scale2)
+            else: # No scaling required
+                print("no scaling required")
+
+        if (1 not in image_np.shape): # 3D
+            image_np = transpose(image_np)
+
+        return image_np
 
     def save_img(self,img,name):
         fp=open(name,'wb')

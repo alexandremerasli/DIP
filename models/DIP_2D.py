@@ -5,7 +5,7 @@ from numpy import min as min_np
 from numpy import max as max_np
 from numpy import mean as mean_np
 from numpy import std as std_np
-from numpy import ones_like, dtype, fromfile, sign, newaxis
+from numpy import ones_like, dtype, fromfile, sign, newaxis, copy
 
 from pathlib import Path
 from os.path import isfile
@@ -25,6 +25,10 @@ class DIP_2D(LightningModule):
                 random_seed = file.read().rstrip()
             if (eval(random_seed)):
                 seed_everything(1)
+                # import torch
+                # torch.manual_seed(1)
+                # torch.cuda.seed()
+                # torch.use_deterministic_algorithms(True)
 
         #'''
         
@@ -227,71 +231,21 @@ class DIP_2D(LightningModule):
 
     def training_step(self, train_batch, batch_idx):
         image_net_input_torch, image_corrupt_torch = train_batch
-        if (self.current_epoch == 0):
-            self.save_img(image_corrupt_torch.cpu().detach().numpy()[0,0,:,:],self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/label' + self.scaling_input + '.img')
-        
         out = self.forward(image_net_input_torch)
+        # logging using tensorboard logger
+        loss = self.DIP_loss(out, image_corrupt_torch)
+        self.logger.experiment.add_scalar('loss', loss,self.current_epoch)        
+        
         # Save image over epochs
         if (self.write_current_img_mode):
             self.write_current_img(out)
 
         # Monitor learning rate across iterations
-        if (not hasattr(self.config,"monitor_lr")):
-            self.config["monitor_lr"] = False
-        if (self.config["monitor_lr"]):
-            out_descale_np = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
-            # try:
-            #     # out_descale_np = out_descale.detach().numpy()[0,0,:,:]
-            #     out_descale_np = out_descale
-            #     image_corrupt_np = image_corrupt_torch.detach().numpy()[0,0,:,:]
-            # except:
-            #     # out_descale_np = out_descale.cpu().detach().numpy()[0,0,:,:]
-            #     image_corrupt_np = image_corrupt_torch.cpu().detach().numpy()[0,0,:,:]
-            
-            image_corrupt_np = self.descale_imag(image_corrupt_torch,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
-
-            self.subroot_data = self.root + '/data/Algo/' # Directory root
-            self.phantom = self.config["image"]
-
-            self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
-            self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
-
-            self.phantom_ROI = self.get_phantom_ROI(self.phantom)
-
-
-            mean_inside = mean_np(out_descale_np * self.phantom_ROI) / mean_np(image_corrupt_np * self.phantom_ROI)
-            self.mean_inside_list.append(mean_inside)
-
-            if (self.current_epoch >= 2):
-                alpha_ema_lr = 0.1
-                self.ema_lr.append((1-alpha_ema_lr) * self.ema_lr[self.current_epoch-1] + alpha_ema_lr * self.mean_inside_list[self.current_epoch])
-
-                print(self.ema_lr[self.current_epoch])
-
-                if (sign(self.ema_lr[self.current_epoch] - self.ema_lr[self.current_epoch - 1]) != sign(self.ema_lr[self.current_epoch - 1] - self.ema_lr[self.current_epoch - 2])):
-                    # if (self.lr > 1e-5): # Minimum lr value to 1e-5, does not need to better stability
-                    self.lr /= 2
-                    print(self.lr)
-                    print("chaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaange lrrrrrrrrrrrrrrrrrrrrrrrrrrr")
-
-
-
-        loss = self.DIP_loss(out, image_corrupt_torch)
-
-        '''
-        # print maximum difference between output and noisy image to see if DIP can fit noisy image
-        rel_max_diff = max(abs(out-image_corrupt_torch) / max(image_corrupt_torch)).item()
-        #print("max diff = ",rel_max_diff)
-        text_file = open(self.subroot+'Block2/' + self.suffix + '/max_diff.log','a')
-        text_file.write("epoch = " + str(self.current_epoch) + " : " + str(rel_max_diff) + "\n")
-        text_file.close()
-        '''
-       
-        # logging using tensorboard logger
-        self.logger.experiment.add_scalar('loss', loss,self.current_epoch)        
+        self.monitor_lr(out,image_corrupt_torch)
 
         # WMV
         self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.scanner)
+        
         return loss
 
     def configure_optimizers(self):
@@ -353,6 +307,45 @@ class DIP_2D(LightningModule):
         img.tofile(fp)
         print('Succesfully save in:', name)
 
+    def monitor_lr(self,out,image_corrupt_torch):
+        if (not hasattr(self.config,"monitor_lr")):
+            self.config["monitor_lr"] = False
+        if (self.config["monitor_lr"]):
+            out_descale_np = self.descale_imag(copy(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
+            # try:
+            #     # out_descale_np = out_descale.detach().numpy()[0,0,:,:]
+            #     out_descale_np = out_descale
+            #     image_corrupt_np = image_corrupt_torch.detach().numpy()[0,0,:,:]
+            # except:
+            #     # out_descale_np = out_descale.cpu().detach().numpy()[0,0,:,:]
+            #     image_corrupt_np = image_corrupt_torch.cpu().detach().numpy()[0,0,:,:]
+            
+            image_corrupt_np = self.descale_imag(image_corrupt_torch,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
+
+            self.subroot_data = self.root + '/data/Algo/' # Directory root
+            self.phantom = self.config["image"]
+
+            self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+            self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
+
+            self.phantom_ROI = self.get_phantom_ROI(self.phantom)
+
+
+            mean_inside = mean_np(out_descale_np * self.phantom_ROI) / mean_np(image_corrupt_np * self.phantom_ROI)
+            self.mean_inside_list.append(mean_inside)
+
+            if (self.current_epoch >= 2):
+                alpha_ema_lr = 0.1
+                self.ema_lr.append((1-alpha_ema_lr) * self.ema_lr[self.current_epoch-1] + alpha_ema_lr * self.mean_inside_list[self.current_epoch])
+
+                print(self.ema_lr[self.current_epoch])
+
+                if (sign(self.ema_lr[self.current_epoch] - self.ema_lr[self.current_epoch - 1]) != sign(self.ema_lr[self.current_epoch - 1] - self.ema_lr[self.current_epoch - 2])):
+                    # if (self.lr > 1e-5): # Minimum lr value to 1e-5, does not need to better stability
+                    self.lr /= 2
+                    print(self.lr)
+                    print("chaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaange lrrrrrrrrrrrrrrrrrrrrrrrrrrr")
+    
     def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner):
         self.classWMV = iWMV(config)            
         self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
@@ -377,10 +370,10 @@ class DIP_2D(LightningModule):
             except:
                 out_np = out.cpu().detach().numpy()[0,0,:,:]
 
-            # if (len(out_np.shape) == 2): # 2D
-            #     out_np = out_np[:,:,newaxis]
+            if (len(out_np.shape) == 2): # 2D
+                out_np = out_np[:,:,newaxis]
 
-            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out_np,self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
+            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(copy(out_np),self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
             self.VAR_recon = self.classWMV.VAR_recon
             self.MSE_WMV = self.classWMV.MSE_WMV
             self.PSNR_WMV = self.classWMV.PSNR_WMV
