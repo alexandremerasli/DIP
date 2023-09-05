@@ -71,8 +71,13 @@ class vGeneral(abc.ABC):
             self.suffix = self.suffix_func(config) # self.suffix to make difference between raytune runs (different hyperparameters)
             self.suffix_metrics = self.suffix_func(config,NNEPPS=True) # self.suffix with NNEPPS information
             if ("post_reco" in config["task"] and "post_reco" not in self.suffix):
-                self.suffix = "post_reco" + ' ' + self.suffix
-                self.suffix_metrics = config["task"] + ' ' + self.suffix_metrics
+                if ("post_reco_in_suffix" not in config):
+                    self.suffix = "post_reco" + ' ' + self.suffix
+                    self.suffix_metrics = config["task"][:10] + ' ' + self.suffix_metrics
+                else:
+                    if (config["post_reco_in_suffix"]):
+                        self.suffix = "post_reco" + ' ' + self.suffix
+                        self.suffix_metrics = config["task"][:10] + ' ' + self.suffix_metrics
 
 
             # Define PET input dimensions according to input data dimensions
@@ -397,7 +402,11 @@ class vGeneral(abc.ABC):
         if config["method"] == "ADMMLim":
             config_copy.pop('nb_outer_iteration',None)
         elif ("post_reco" in config_copy["task"]):
-            config_copy.pop("sub_iter_DIP", None)
+            if ("post_reco_in_suffix" not in config_copy):
+                config_copy.pop("sub_iter_DIP", None)
+            else:
+                if (config["post_reco_in_suffix"]):
+                    config_copy.pop("sub_iter_DIP", None)
         suffix = "config"
         if hyperparameters_list == False:
             for key, value in config_copy.items():
@@ -588,7 +597,6 @@ class vGeneral(abc.ABC):
         param2 = zeros(nb_slices)
         
         for slice in range(nb_slices):
-            print(slice)
             if (scaling == 'standardization'):
                 image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = self.stand_imag(image_corrupt[:,:,slice])
             elif (scaling == 'normalization'):
@@ -612,20 +620,25 @@ class vGeneral(abc.ABC):
             image_np = image.detach().numpy()
         except:
             image_np = image
-        import numpy as np
         # image_np = image_np.astype(np.float64)
+        
+        if (1 in image_np.shape): # 2D
+            nb_slices = 1
+        else: # 3D
+            image_np = transpose(image_np)
+            nb_slices = image_np.shape[2]
+        
         nb_slices = len(param_scale1)
 
         for slice in range(nb_slices):
-            print(slice)
             if (scaling == 'standardization'):
-                image_np[:,:,slice] = self.destand_numpy_imag(image_np[:,:,slice], param_scale1, param_scale2)
+                image_np[:,:,slice] = self.destand_numpy_imag(image_np[:,:,slice], param_scale1[slice], param_scale2[slice])
             elif (scaling == 'normalization'):
-                image_np[:,:,slice] = self.denorm_numpy_imag(image_np[:,:,slice], param_scale1, param_scale2)
+                image_np[:,:,slice] = self.denorm_numpy_imag(image_np[:,:,slice], param_scale1[slice], param_scale2[slice])
             elif (scaling == 'normalization_2'):
-                image_np[:,:,slice] = self.denorm_numpy_imag(image_np[:,:,slice], param_scale1, param_scale2)
+                image_np[:,:,slice] = self.denorm_numpy_imag(image_np[:,:,slice], param_scale1[slice], param_scale2[slice])
             elif (scaling == 'positive_normalization'):
-                image_np[:,:,slice] = self.denorm_numpy_positive_imag(image_np[:,:,slice], param_scale1, param_scale2)
+                image_np[:,:,slice] = self.denorm_numpy_positive_imag(image_np[:,:,slice], param_scale1[slice], param_scale2[slice])
             else: # No scaling required
                 print("no scaling required")
 
@@ -1038,7 +1051,13 @@ class vGeneral(abc.ABC):
             self.beta = config["alpha"]
         elif ('nested' in method or 'Gong' in method or 'DIPRecon' in method):
             if ('post_reco' in task):
-                self.total_nb_iter = config["sub_iter_DIP"]
+                if ("post_reco_in_suffix" not in config):
+                    self.total_nb_iter = config["sub_iter_DIP"]
+                else:
+                    if (config["post_reco_in_suffix"]):
+                        self.total_nb_iter = config["sub_iter_DIP"]
+                    else:
+                        self.total_nb_iter = config["sub_iter_DIP_initial_and_final"]
             else:
                 try:
                     if (stopping_criterion):

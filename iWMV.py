@@ -51,16 +51,20 @@ class iWMV(vGeneral):
     def runComputation(self,config,root):
         pass
 
-    def WMV(self,out,epoch,queueQ,SUCCESS,VAR_min,stagnate):
+    def WMV(self,out,epoch,queueQ,SUCCESS,VAR_min,stagnate,descale=True):
         
         # Descale, squeeze image and add 3D dimension to 1 (ok for 2D images)
-        out = self.descale_imag(from_numpy(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
+        if (descale):
+            out = self.descale_imag(from_numpy(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
         out = squeeze(out)
         if (len(out.shape) == 2): # 2D, check length because squeeze before
             out = out[:,:,newaxis]
         else: # 3D
-            out = out.reshape(out.shape[::-1])
-            image_gt_reversed = self.image_gt.reshape(self.image_gt.shape[::-1])
+            # out = out.reshape(out.shape[::-1])
+            import numpy as np
+            out = np.transpose(out,axes=(1,2,0))
+            image_gt_reversed = np.transpose(self.image_gt,axes=(1,2,0))
+            phantom_ROI_reversed = np.transpose(self.phantom_ROI,axes=(1,2,0))
         
         # Crop image to inside phantom if 2D simulations
         if (self.PETImage_shape[2] == 1): # 2D    
@@ -69,14 +73,19 @@ class iWMV(vGeneral):
         else:
 
             # Crop image to inside phantom
-            out = out * self.phantom_ROI.reshape(self.phantom_ROI.shape[::-1])
-            image_gt_reversed = image_gt_reversed * self.phantom_ROI.reshape(self.phantom_ROI.shape[::-1])
+            # out = out * self.phantom_ROI.reshape(self.phantom_ROI.shape[::-1])
+            out = out * phantom_ROI_reversed
+            # image_gt_reversed = image_gt_reversed * self.phantom_ROI.reshape(self.phantom_ROI.shape[::-1])
+            image_gt_reversed = image_gt_reversed * phantom_ROI_reversed
 
             # Taking only slice from 3D data
-            out = out[:,:,int(out.shape[2]/2)+20]
-            image_gt_reversed = image_gt_reversed[:,:,int(image_gt_reversed.shape[2]/2)+20]
+            # out = out[:,:,int(out.shape[2]/2)+20]
+            # image_gt_reversed = image_gt_reversed[:,:,int(image_gt_reversed.shape[2]/2)+20]
+            out = out[:,:,54]
+            image_gt_reversed = image_gt_reversed[:,:,54]
             if (len(self.EMA.shape) == 3):
-                self.EMA = self.EMA[:,:,int(self.EMA.shape[2]/2)+20]
+                # self.EMA = self.EMA[:,:,int(self.EMA.shape[2]/2)+20]
+                self.EMA = self.EMA[:,:,54]
 
 
             out_cropped = out
