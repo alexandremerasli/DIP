@@ -635,7 +635,7 @@ class vGeneral(abc.ABC):
                 image_np[:,:,slice] = self.destand_numpy_imag(image_np[:,:,slice], param_scale1[slice], param_scale2[slice])
             elif (scaling == 'normalization'):
                 image_np[:,:,slice] = self.denorm_numpy_imag(image_np[:,:,slice], param_scale1[slice], param_scale2[slice])
-            elif (scaling == 'normalization_2'):
+            elif (scaling == 'normalization_init'):
                 image_np[:,:,slice] = self.denorm_numpy_imag(image_np[:,:,slice], param_scale1[slice], param_scale2[slice])
             elif (scaling == 'positive_normalization'):
                 image_np[:,:,slice] = self.denorm_numpy_positive_imag(image_np[:,:,slice], param_scale1[slice], param_scale2[slice])

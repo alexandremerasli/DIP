@@ -101,7 +101,7 @@ class vDenoising(vGeneral):
         # Implements Dataset
         train_dataset = TensorDataset(image_net_input_torch, image_corrupt_torch)
         train_dataloader = DataLoader(train_dataset, batch_size=1, num_workers=0) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
-        #train_dataloader = DataLoader(train_dataset, batch_size=1, num_workers=1, persistent_workers=True) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
+        # train_dataloader = DataLoader(train_dataset, batch_size=1, num_workers=1, persistent_workers=True) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
         # Choose network architecture as model
         model, model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, last_iter, self.override_input)
         checkpoint_simple_path_previous_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment)
@@ -262,7 +262,7 @@ class vDenoising(vGeneral):
             else:
                 file_path = (subroot+'Data/initialization/random_input_3D_' + net + '_' + str(self.PETImage_shape[0]) + '.img')
         elif self.input == "CT":
-            if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
+            if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0"):
                 if (os.path.isfile(subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw')): # If MR exists
                     file_path = subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw'
             else:
@@ -318,10 +318,13 @@ class vDenoising(vGeneral):
 
     def runComputation(self,config,root):
         # Scaling of x_label image
-        if (config["scaling_all_init"]):
-            image_corrupt_input_scale_not_used,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt_init,self.scaling_input) # Scaling of first x_label image
-            image_corrupt_input_scale,param1_scale_im_corrupt_avant,param2_scale_im_corrupt_avant = self.rescale_imag(self.image_corrupt,self.scaling_input + "_init",param1=self.param1_scale_im_corrupt,param2=self.param2_scale_im_corrupt) # Scaling of current x_label image
-            # image_corrupt_input_scale_normal,self.param1_scale_im_corrupt_normal,self.param2_scale_im_corrupt_normal = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of current x_label image
+        if ("scaling_all_init" in config):
+            if (config["scaling_all_init"]):
+                image_corrupt_input_scale_not_used,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt_init,self.scaling_input) # Scaling of first x_label image
+                image_corrupt_input_scale,param1_scale_im_corrupt_avant,param2_scale_im_corrupt_avant = self.rescale_imag(self.image_corrupt,self.scaling_input + "_init",param1=self.param1_scale_im_corrupt,param2=self.param2_scale_im_corrupt) # Scaling of current x_label image
+                # image_corrupt_input_scale_normal,self.param1_scale_im_corrupt_normal,self.param2_scale_im_corrupt_normal = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of current x_label image
+            else:
+                image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of current x_label image
         else:
             image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of current x_label image
 
@@ -352,9 +355,9 @@ class vDenoising(vGeneral):
             self.SUCCESS = model.SUCCESS
             if (self.SUCCESS and self.epochStar!= self.sub_iter_DIP - self.patienceNumber): # ES point is reached
                 #if (self.all_images_DIP == "Last"):
-                self.sub_iter_DIP = self.epochStar + 1
+                # self.sub_iter_DIP = self.epochStar + 1
                 #else:
-                #    self.sub_iter_DIP = self.epochStar + self.patienceNumber + 1
+                self.sub_iter_DIP = self.epochStar + self.patienceNumber + 1
 
         '''
         # Descaling like at the beginning
