@@ -40,9 +40,9 @@ class iPostReconstruction(vDenoising):
         
         
         
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<f')
+        # self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<f')
         # self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/relu_exp_target_1_rois_50.img",shape=(self.PETImage_shape),type_im='<d')
-        # self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<d')
+        self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<d')
         
         
         

@@ -6,10 +6,16 @@ import argparse
 def fijii_np(path,shape,type_im='<f'):
     """"Transforming raw data to numpy array"""
     file_path=(path)
-    dtype = np.dtype(type_im)
-    fid = open(file_path, 'rb')
-    data = np.fromfile(fid,dtype)
-    image = data.reshape(shape)
+    try:
+        fid = open(file_path, 'rb')
+        dtype = np.dtype('<f')
+        data = np.fromfile(fid,dtype)
+        image = data.reshape(shape)
+    except:
+        fid = open(file_path, 'rb')
+        dtype = np.dtype('<d')
+        data = np.fromfile(fid,dtype)
+        image = data.reshape(shape)
     return image
 
 parser = argparse.ArgumentParser(description='Display absolute difference between 2 images')
@@ -20,7 +26,9 @@ args = parser.parse_args()
 
 root = '/home/meraslia/workspace_reco/nested_admm/data/Algo/'
 PETImage_shape = (112,112,1)
+same_scale_TMI = True # Save diff image with fixed scale to compare several difference images for TMI ReLU artifacts experiment
 
+image = fijii_np("/home/meraslia/workspace_reco/nested_admm/data/Algo/Data/database_v2/image3_3/image3_3.raw",PETImage_shape)
 img1_np = fijii_np(args.img1, shape=(PETImage_shape))
 print("min 1 = " ,np.min(img1_np))
 print("mean 1 = " ,np.mean(img1_np))
@@ -33,8 +41,15 @@ print("max 2 = " ,np.max(img2_np))
 
 plt.figure()
 #plt.imshow(np.abs(img1_np - img2_np), cmap='gray_r')
-plt.imshow(img1_np - img2_np, cmap='bwr')
+if (same_scale_TMI):
+    maxi=max(abs(np.min(img1_np - img2_np)),np.max(img1_np - img2_np))
+    maxi=0.2
+    mini=-maxi
+    plt.imshow(img1_np - img2_np, cmap='bwr',vmin=mini,vmax=maxi)
+else:
+    plt.imshow(img1_np - img2_np, cmap='bwr')
 plt.title('absolute difference between img1 and img2')
+plt.ylim
 plt.colorbar()
 plt.savefig(root+'diff_img.png')
 

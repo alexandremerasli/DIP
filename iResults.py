@@ -37,7 +37,13 @@ class iResults(vDenoising):
         #vDenoising.initializeSpecific(self,config,root)
         # Initialize early stopping method if asked for
         if ("nested" in config["method"] or "Gong" in config["method"]):
-            self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d')
+            if ("3_" not in self.phantom):
+                try:
+                    self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<f')
+                except:
+                    self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d')
+            else:
+                self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<d')
             image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,config["scaling"]) # Scaling of x_label image
             if ("post_reco_in_suffix" in config):
                 if (config["post_reco_in_suffix"]):

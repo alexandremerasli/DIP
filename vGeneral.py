@@ -609,6 +609,7 @@ class vGeneral(abc.ABC):
             elif (scaling == 'positive_normalization'):
                 image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = self.norm_positive_imag(image_corrupt[:,:,slice])
             else: # No scaling required
+                image_corrupt = squeeze(image_corrupt)
                 image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = image_corrupt, 0, 0
 
         
