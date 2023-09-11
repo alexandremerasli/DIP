@@ -62,6 +62,9 @@ class vGeneral(abc.ABC):
         self.castor_foms = config["castor_foms"]
         self.FLTNB = config["FLTNB"]
 
+        if ("read_only_MV_csv" not in config):
+            config["read_only_MV_csv"] = False
+
         self.subroot_data = root + '/data/Algo/' # Directory root
         
         if (config["task"] != "show_metrics_results_already_computed_following_step"):

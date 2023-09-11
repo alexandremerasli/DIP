@@ -58,6 +58,11 @@ class iResults(vDenoising):
 
         self.defineTotalNbIter_beta_rho(config["method"], config, config["task"],stopping_criterion=False) # Compute metrics for every iterations, stopping_criterion will be used in final curves
 
+        # Define variables for MV early stopping algorithms
+        if config["EMV_or_WMV"] == "EMV":
+            self.alpha_EMV = config["alpha_EMV"]
+        else:
+            self.windowSize = config["alpha_EMV"]
 
         # Create summary writer from tensorboard
         self.tensorboard = config["tensorboard"]
@@ -196,10 +201,11 @@ class iResults(vDenoising):
                     self.write_image_tensorboard(self.writer,f*self.phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
 
     def runComputation(self,config,root):
-        if ("read_only_MV_csv" in config):
-            if (config["read_only_MV_csv"]):
-                if ("nested" in config["method"] or "Gong" in config["method"]):
-                    self.MV_several_alphas_plot(config)
+        if (config["read_only_MV_csv"]):
+            if ("nested" in config["method"] or "Gong" in config["method"]):
+                if(config["DIP_early_stopping"]):# WMV
+                    self.WMV_plot(config)
+                self.MV_several_alphas_plot(config)
         else:
             if (hasattr(self,'beta')):
                 self.beta_string = ', beta = ' + str(self.beta)
@@ -257,11 +263,26 @@ class iResults(vDenoising):
             print("loop over")
 
             if ("nested" in config["method"] or "Gong" in config["method"]):
+                # Save computed variance from WMV/EMV in csv
+                with open(self.MV_csv_path(self.alpha_EMV,config), 'w', newline='') as myfile:
+                    wr = writer_csv(myfile,delimiter=';')
+                    wr.writerow(self.VAR_recon)  
                 if(config["DIP_early_stopping"]):# WMV
                     self.WMV_plot(config)
 
     def WMV_plot(self,config):
 
+        if (config["read_only_MV_csv"]):
+            with open(self.MV_csv_path(self.alpha_EMV,config), 'r') as myfile:
+                spamreader = reader_csv(myfile,delimiter=';')
+                rows_csv = list(spamreader)
+                self.VAR_recon = [float(rows_csv[0][i]) for i in range(int(self.i_init),min(len(rows_csv[0]),self.total_nb_iter))]
+
+            for i in range(self.i_init,self.total_nb_iter+self.i_init):
+                if (self.run_WMV("MV_metrics_already_in_csv",self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,i)):
+                    print("ES point found, break loop")
+                    break
+        
         self.VAR_recon_original = np.copy(self.VAR_recon)
 
         # 2.2 plot window moving variance
@@ -270,25 +291,22 @@ class iResults(vDenoising):
             var_x = np.arange(self.windowSize-1, self.windowSize + len(self.VAR_recon)-1)  # define x axis of WMV
         else:
             var_x = np.arange(len(self.VAR_recon))  # define x axis of EMV
-            # var_x = np.arange(self.patienceNumber + self.epochStar + 1)  # define x axis of EMV
-        
-        # Save computed variance from WMV/EMV in csv
-        with open(self.MV_csv_path(self.alpha_EMV,config), 'w', newline='') as myfile:
-            wr = writer_csv(myfile,delimiter=';')
-            wr.writerow(self.VAR_recon)        
+            # var_x = np.arange(self.patienceNumber + self.epochStar + 1)  # define x axis of EMV     
         
         # Remove first iterations 
         remove_first_iterations = 0
-        # remove_first_iterations = 200
+        # remove_first_iterations = 150
         # Remove last iterations
         last_iteration = self.total_nb_iter
         last_iteration = 1000
+        last_iteration = self.epochStar + self.patienceNumber
         
         var_x = var_x[remove_first_iterations:last_iteration+1]
         self.VAR_recon = self.VAR_recon[remove_first_iterations:last_iteration+1]
-        self.MSE_WMV = self.MSE_WMV[remove_first_iterations:last_iteration+1]
-        self.PSNR_WMV = self.PSNR_WMV[remove_first_iterations:last_iteration+1]
-        self.SSIM_WMV = self.SSIM_WMV[remove_first_iterations:last_iteration+1]
+        if (not config["read_only_MV_csv"]):
+            self.MSE_WMV = self.MSE_WMV[remove_first_iterations:last_iteration+1]
+            self.PSNR_WMV = self.PSNR_WMV[remove_first_iterations:last_iteration+1]
+            self.SSIM_WMV = self.SSIM_WMV[remove_first_iterations:last_iteration+1]
 
         plt.plot(var_x, self.VAR_recon, 'r')
         plt.title('Window Moving Variance,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
@@ -307,119 +325,121 @@ class iResults(vDenoising):
         for i in range(len(self.VAR_recon)):
             self.writer.add_scalar('WMV in the phantom (should follow MSE trend to find peak)', self.VAR_recon[i], var_x[i])
 
-        # 2.3 plot MSE
-        plt.figure(2)
-        plt.plot(var_x,self.MSE_WMV, 'y')
-        plt.title('MSE,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
-        plt.axvline(self.epochStar, c='g')
-        # plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
-        plt.axhline(y=np.min(self.MSE_WMV), c="black", linewidth=0.5)
-        if (config["EMV_or_WMV"] == "WMV"):
-            plt.savefig(self.mkdir(self.subroot + '/self.MSE_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
-                self.lr) + '-lr' + str(self.lr) + '+self.MSE_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
-        else:
-            plt.savefig(self.mkdir(self.subroot + '/self.MSE_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
-            self.lr) + '-lr' + str(self.lr) + '+self.MSE_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
-
-        # 2.4 plot PSNR
-        plt.figure(3)
-        plt.plot(var_x,self.PSNR_WMV)
-        plt.title('PSNR,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
-        plt.axvline(self.epochStar, c='g')
-        # plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
-        plt.axhline(y=np.max(self.PSNR_WMV), c="black", linewidth=0.5)
-        if (config["EMV_or_WMV"] == "WMV"):
-            plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
-                self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
-        else:
-            plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
-            self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
-        #'''
-        # 2.5 plot SSIM
-        plt.figure(4)
-        plt.plot(var_x,self.SSIM_WMV, c='orange')
-        plt.title('SSIM,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
-        plt.axvline(self.epochStar, c='g')
-        # plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
-        plt.axhline(y=np.max(self.SSIM_WMV), c="black", linewidth=0.5)
-        if (config["EMV_or_WMV"] == "WMV"):
-            plt.savefig(self.mkdir(self.subroot + '/self.SSIM_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
-                self.lr) + '-lr' + str(self.lr) + '+self.SSIM_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
-        else:
-            plt.savefig(self.mkdir(self.subroot + '/self.SSIM_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
-            self.lr) + '-lr' + str(self.lr) + '+self.SSIM_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
-        
-        #'''
-        
-        # 2.6 plot all the curves together
-        fig, ax1 = plt.subplots()
-        fig.subplots_adjust(right=0.8, left=0.1, bottom=0.12)
-        ax2 = ax1.twinx()  # creat other y-axis for different scale
-        ax3 = ax1.twinx()  # creat other y-axis for different scale
-        ax4 = ax1.twinx()  # creat other y-axis for different scale
-        if (config["EMV_or_WMV"] == "WMV"):
-            ax2.spines.right.set_position(("axes", 1.18))
-        p4, = ax4.plot(var_x,self.MSE_WMV, "y", label="MSE")
-        p1, = ax1.plot(var_x,self.PSNR_WMV, label="PSNR")
-        p2, = ax2.plot(var_x, self.VAR_recon, "r", label="WMV")
-        p3, = ax3.plot(var_x,self.SSIM_WMV, "orange", label="SSIM")
-        #ax1.set_xlim(0, self.total_nb_iter-1)
-        ax1.set_xlim(0, min(self.epochStar+self.patienceNumber,self.total_nb_iter-1))
-        plt.title('skip : ' + str(config["skip_connections"]) + ' lr=' + str(self.lr))
-        ax1.set_ylabel("Peak Signal-Noise ratio")
-        ax2.set_ylabel("Window-Moving variance")
-        ax3.set_ylabel("Structural similarity")
-        ax4.yaxis.set_visible(False)
-        ax1.yaxis.label.set_color(p1.get_color())
-        ax2.yaxis.label.set_color(p2.get_color())
-        ax3.yaxis.label.set_color(p3.get_color())
-        tkw = dict(size=3, width=1)
-        ax1.tick_params(axis='y', colors=p1.get_color(), **tkw)
-        ax1.tick_params(axis='x', colors="green", **tkw)
-        ax2.tick_params(axis='y', colors=p2.get_color(), **tkw)
-        ax3.tick_params(axis='y', colors=p3.get_color(), **tkw)
-        ax1.tick_params(axis='x', **tkw)
-        ax1.legend(handles=[p1, p3, p2, p4])
-        ax1.axvline(self.epochStar, c='g', linewidth=1, ls='--')
-        if (config["EMV_or_WMV"] == "WMV"):
-            ax1.axvline(self.windowSize-1, c='g', linewidth=1, ls=':')
-        ax1.axvline(self.epochStar+self.patienceNumber, c='g', lw=1, ls=':')
-        if (config["EMV_or_WMV"] == "WMV"):
-            if self.epochStar+self.patienceNumber > self.epochStar:
-                plt.xticks([self.epochStar, self.windowSize-1, self.epochStar+self.patienceNumber], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize), '+' + str(self.patienceNumber)], color='green')
+        if (not config["read_only_MV_csv"]):
+            # 2.3 plot MSE
+            plt.figure(2)
+            plt.plot(var_x,self.MSE_WMV, 'y')
+            plt.title('MSE,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
+            plt.axvline(self.epochStar, c='g')
+            # plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
+            plt.axhline(y=np.min(self.MSE_WMV), c="black", linewidth=0.5)
+            if (config["EMV_or_WMV"] == "WMV"):
+                plt.savefig(self.mkdir(self.subroot + '/self.MSE_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                    self.lr) + '-lr' + str(self.lr) + '+self.MSE_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
             else:
-                plt.xticks([self.epochStar, self.windowSize-1], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize)], color='green')
+                plt.savefig(self.mkdir(self.subroot + '/self.MSE_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
+                self.lr) + '-lr' + str(self.lr) + '+self.MSE_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
+
+            # 2.4 plot PSNR
+            plt.figure(3)
+            plt.plot(var_x,self.PSNR_WMV)
+            plt.title('PSNR,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
+            plt.axvline(self.epochStar, c='g')
+            # plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
+            plt.axhline(y=np.max(self.PSNR_WMV), c="black", linewidth=0.5)
+            if (config["EMV_or_WMV"] == "WMV"):
+                plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                    self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
+            else:
+                plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
+                self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
+            #'''
+            # 2.5 plot SSIM
+            plt.figure(4)
+            plt.plot(var_x,self.SSIM_WMV, c='orange')
+            plt.title('SSIM,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
+            plt.axvline(self.epochStar, c='g')
+            # plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
+            plt.axhline(y=np.max(self.SSIM_WMV), c="black", linewidth=0.5)
+            if (config["EMV_or_WMV"] == "WMV"):
+                plt.savefig(self.mkdir(self.subroot + '/self.SSIM_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                    self.lr) + '-lr' + str(self.lr) + '+self.SSIM_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
+            else:
+                plt.savefig(self.mkdir(self.subroot + '/self.SSIM_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
+                self.lr) + '-lr' + str(self.lr) + '+self.SSIM_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
             
-            plt.savefig(self.mkdir(self.subroot + '/combined/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
-                self.lr) + '-lr' + str(self.lr) + '+combined-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
-        else:
-            plt.savefig(self.mkdir(self.subroot + '/combined/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
-                self.lr) + '-lr' + str(self.lr) + '+combined-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
+            #'''
+            
+            # 2.6 plot all the curves together
+            fig, ax1 = plt.subplots()
+            fig.subplots_adjust(right=0.8, left=0.1, bottom=0.12)
+            ax2 = ax1.twinx()  # creat other y-axis for different scale
+            ax3 = ax1.twinx()  # creat other y-axis for different scale
+            ax4 = ax1.twinx()  # creat other y-axis for different scale
+            if (config["EMV_or_WMV"] == "WMV"):
+                ax2.spines.right.set_position(("axes", 1.18))
+            p4, = ax4.plot(var_x,self.MSE_WMV, "y", label="MSE")
+            p1, = ax1.plot(var_x,self.PSNR_WMV, label="PSNR")
+            p2, = ax2.plot(var_x, self.VAR_recon, "r", label="WMV, alpha=" + str(self.alpha_EMV))
+            p3, = ax3.plot(var_x,self.SSIM_WMV, "orange", label="SSIM")
+            #ax1.set_xlim(0, self.total_nb_iter-1)
+            ax1.set_xlim(0, min(self.epochStar+self.patienceNumber,self.total_nb_iter-1))
+            plt.title('skip : ' + str(config["skip_connections"]) + ' lr=' + str(self.lr))
+            ax1.set_ylabel("Peak Signal-Noise ratio")
+            ax2.set_ylabel("Window-Moving variance")
+            ax3.set_ylabel("Structural similarity")
+            ax4.yaxis.set_visible(False)
+            ax1.yaxis.label.set_color(p1.get_color())
+            ax2.yaxis.label.set_color(p2.get_color())
+            ax3.yaxis.label.set_color(p3.get_color())
+            tkw = dict(size=3, width=1)
+            ax1.tick_params(axis='y', colors=p1.get_color(), **tkw)
+            ax1.tick_params(axis='x', colors="green", **tkw)
+            ax2.tick_params(axis='y', colors=p2.get_color(), **tkw)
+            ax3.tick_params(axis='y', colors=p3.get_color(), **tkw)
+            ax1.tick_params(axis='x', **tkw)
+            ax1.legend(handles=[p1, p3, p2, p4])
+            ax1.axvline(self.epochStar, c='g', linewidth=1, ls='--')
+            if (config["EMV_or_WMV"] == "WMV"):
+                ax1.axvline(self.windowSize-1, c='g', linewidth=1, ls=':')
+            ax1.axvline(self.epochStar+self.patienceNumber, c='g', lw=1, ls=':')
+            if (config["EMV_or_WMV"] == "WMV"):
+                if self.epochStar+self.patienceNumber > self.epochStar:
+                    plt.xticks([self.epochStar, self.windowSize-1, self.epochStar+self.patienceNumber], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize), '+' + str(self.patienceNumber)], color='green')
+                else:
+                    plt.xticks([self.epochStar, self.windowSize-1], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize)], color='green')
+                
+                plt.savefig(self.mkdir(self.subroot + '/combined/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                    self.lr) + '-lr' + str(self.lr) + '+combined-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
+            else:
+                plt.savefig(self.mkdir(self.subroot + '/combined/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
+                    self.lr) + '-lr' + str(self.lr) + '+combined-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
 
-        # 2.4 plot PSNR
-        plt.figure(3)
-        plt.plot(self.PSNR_WMV)
+            # 2.4 plot PSNR
+            plt.figure(3)
+            plt.plot(self.PSNR_WMV)
 
-        '''
-        N = 100
-        moving_average_PSNR = self.moving_average(self.PSNR_WMV,N)
-        plt.plot(np.arange(N-1,len(self.PSNR_WMV)), moving_average_PSNR)
-        '''
+            '''
+            N = 100
+            moving_average_PSNR = self.moving_average(self.PSNR_WMV,N)
+            plt.plot(np.arange(N-1,len(self.PSNR_WMV)), moving_average_PSNR)
+            '''
 
 
-        plt.title('PSNR,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
-        plt.axvline(self.epochStar, c='g')
-        # plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
-        plt.axhline(y=np.max(self.PSNR_WMV), c="black", linewidth=0.5)
-        if (config["EMV_or_WMV"] == "WMV"):
-            plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
-                self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
-        else:
-            plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
-            self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
+            plt.title('PSNR,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
+            plt.axvline(self.epochStar, c='g')
+            # plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
+            plt.axhline(y=np.max(self.PSNR_WMV), c="black", linewidth=0.5)
+            if (config["EMV_or_WMV"] == "WMV"):
+                plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                    self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
+            else:
+                plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
+                self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
     
     def MV_csv_path(self,alpha_EMV,config):
-        if ("read_only_MV_csv" in config):
+        Path(self.subroot_metrics + self.method + '/' + self.suffix_metrics + '/').mkdir(parents=True, exist_ok=True)
+        if (config["read_only_MV_csv"]):
             return self.subroot_metrics + self.method + '/' + self.suffix_metrics + '/' + config["EMV_or_WMV"] + '_alpha=' + str(alpha_EMV) + "_nb_it=" + str(self.total_nb_iter) + '.csv'
         else:
             return self.subroot_metrics + self.method + '/' + self.suffix_metrics + '/' + config["EMV_or_WMV"] + '_alpha=' + str(alpha_EMV) + "_nb_it=" + str(self.total_nb_iter-1) + '.csv'
@@ -427,15 +447,16 @@ class iResults(vDenoising):
     def MV_several_alphas_plot(self,config):
 
         # Remove first iterations 
+        remove_first_iterations = 415
         remove_first_iterations = 100
-        # remove_first_iterations = 300
         # remove_first_iterations = 400
         # remove_first_iterations = 1500
         # Remove last iterations
         last_iteration = self.total_nb_iter
-        last_iteration = 3000
+        last_iteration = 4000
+        # last_iteration = 500
 
-        for smooth in [True,False]:
+        for smooth in [False,True]:
             plt.figure()
             if (config["EMV_or_WMV"] == "EMV"):
                 # alpha_list = [0.01,0.0251,0.1,0.5,0.99]
@@ -450,7 +471,7 @@ class iResults(vDenoising):
                     with open(self.MV_csv_path(alpha_EMV,config), 'r') as myfile:
                         spamreader = reader_csv(myfile,delimiter=';')
                         rows_csv = list(spamreader)
-                        self.MV[alpha_idx] = [float(rows_csv[0][i]) for i in range(int(self.i_init) - 1,min(len(rows_csv[0]),self.total_nb_iter))]
+                        self.MV[alpha_idx] = [float(rows_csv[0][i]) for i in range(int(self.i_init),min(len(rows_csv[0]),self.total_nb_iter))]
                         self.MV[alpha_idx] = self.MV[alpha_idx][remove_first_iterations:last_iteration+1]
                         self.MV_original[alpha_idx] = self.MV[alpha_idx]
 
@@ -466,7 +487,8 @@ class iResults(vDenoising):
 
                     plt.plot(np.arange(remove_first_iterations,min(last_iteration+1,self.total_nb_iter+1)),self.MV[alpha_idx],label=alpha_EMV)
                     plt.legend()
-                    print("MV min for alpha_EMV=",alpha_EMV,"at it= (10 first removed, after ",1000+remove_first_iterations," also)",np.argmin(self.MV[alpha_idx][10:1000]) + remove_first_iterations)
+                    print("MV min for alpha_EMV=",alpha_EMV,"at it= (10 first removed, after ",1000+remove_first_iterations," also)",", smooth=",str(smooth),np.argmin(self.MV[alpha_idx][10:1000]) + remove_first_iterations)
+                plt.title(str(remove_first_iterations) + " first iterations + " + str(self.total_nb_iter-last_iteration) + " final iterations removed")
                 plt.savefig(self.mkdir(self.subroot + '/several_alphas/' + self.suffix) + '/' + str(
                 self.lr) + '-lr' + str(self.lr) + '+several_alphas' '_' + str(alpha_list) + '_' + str(remove_first_iterations) + '_' + str(last_iteration) + '_smooth=' + str(smooth) + '.png')
 
@@ -746,11 +768,16 @@ class iResults(vDenoising):
         if (config["DIP_early_stopping"]):
             self.SUCCESS = self.classWMV.SUCCESS
 
-            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out,i,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate,descale=False)
-            self.VAR_recon = self.classWMV.VAR_recon
-            self.MSE_WMV = self.classWMV.MSE_WMV
-            self.PSNR_WMV = self.classWMV.PSNR_WMV
-            self.SSIM_WMV = self.classWMV.SSIM_WMV
+            if (config["read_only_MV_csv"]):
+                EMV_csv = self.VAR_recon[i]
+            else:
+                EMV_csv = np.NaN
+            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out,i,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate,descale=False,EMV_csv=EMV_csv)
+            if (not config["read_only_MV_csv"]):
+                self.VAR_recon = self.classWMV.VAR_recon
+                self.MSE_WMV = self.classWMV.MSE_WMV
+                self.PSNR_WMV = self.classWMV.PSNR_WMV
+                self.SSIM_WMV = self.classWMV.SSIM_WMV
             self.epochStar = self.classWMV.epochStar
             if config["EMV_or_WMV"] == "EMV":
                 self.alpha_EMV = self.classWMV.alpha_EMV
@@ -758,9 +785,10 @@ class iResults(vDenoising):
                 self.windowSize = self.classWMV.windowSize
             self.patienceNumber = self.classWMV.patienceNumber
 
-            if self.SUCCESS:
+            if self.SUCCESS: # Will be true 1 epoch after self.classWMV.SUCCESS becomes True
                 print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
-                self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner)
-        
+                return 1
+                # self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner)
+            return 0
         # else:
         #     self.log("SUCCESS", int(False))
