@@ -92,13 +92,19 @@ class DIP_2D(LightningModule):
 
         # Layers in CNN architecture
         self.deep1 = Sequential(ReplicationPad2d(1),
-                                   Conv2d(1, num_channel[0], (3, 3), stride=1, padding=pad[1]),
-                                   BatchNorm2d(num_channel[0]),
-                                   LeakyReLU(L_relu),
-                                   ReplicationPad2d(1),
-                                   Conv2d(num_channel[0], num_channel[0], (3, 3), stride=1, padding=pad[1]),
-                                   BatchNorm2d(num_channel[0]),
-                                   LeakyReLU(L_relu))
+                                   Conv2d(1, num_channel[0], (3, 3), stride=1, padding=pad[1]))#,
+                                #    BatchNorm2d(num_channel[0]),
+                                #    LeakyReLU(L_relu),
+                                #    ReplicationPad2d(1),
+                                #    Conv2d(num_channel[0], num_channel[0], (3, 3), stride=1, padding=pad[1]),
+                                #    BatchNorm2d(num_channel[0]),
+                                #    LeakyReLU(L_relu))
+
+        self.bn1 = BatchNorm2d(num_channel[0])
+        self.leaky1 = LeakyReLU(L_relu)
+        # self.leaky1 = LeakyReLU(L_relu)
+        # self.leaky1 = LeakyReLU(L_relu)
+
 
         self.down1 = Sequential(ReplicationPad2d(1),
                                    Conv2d(num_channel[0], num_channel[0], 3, stride=(2, 2), padding=pad[1]),
@@ -193,6 +199,11 @@ class DIP_2D(LightningModule):
     def forward(self, x):
         # Encoder
         out1 = self.deep1(x)
+        self.write_current_img_task(out1,inside=True,name="beforebn1")
+        out1 = self.bn1(out1)
+        self.write_current_img_task(out1,inside=True,name="beforeleaky1")
+        out1 = self.leaky1(out1)
+        self.write_current_img_task(out1,inside=True,name="nextleaky1")
         out = self.down1(out1)
         out2 = self.deep2(out)
         out = self.down2(out2)
@@ -214,14 +225,18 @@ class DIP_2D(LightningModule):
         else:
             out = self.deep6(out)
         out = self.up3(out)
+        self.write_current_img_task(out1,inside=True,name="from encoder before adding SC3")
+        self.write_current_img_task(out,inside=True,name="from decoder before adding SC3")
         if (self.skip >= 3): # or self.override_input):
             out_skip3 = out1 + out
+            out_skip3 = out1
+            self.write_current_img_task(out_skip3,inside=True,name="after adding SC3")
             out = self.deep7(out_skip3)
         else:
             out = self.deep7(out)
 
         if (self.method == 'Gong'):
-            self.write_current_img_task(out,inside=True)
+            # self.write_current_img_task(out,inside=True)
             out = self.positivity(out)
 
         return out
@@ -278,16 +293,18 @@ class DIP_2D(LightningModule):
             if (self.current_epoch == self.sub_iter_DIP - 1):
                 self.write_current_img_task(out)
 
-    def write_current_img_task(self,out,inside=False):
+    def write_current_img_task(self,out,inside=False,name=""):
         try:
-            out_np = out.detach().numpy()[0,0,:,:]
+            out_np = out.detach().numpy()[0,:,:,:]
         except:
-            out_np = out.cpu().detach().numpy()[0,0,:,:]
+            out_np = out.cpu().detach().numpy()[0,:,:,:]
 
         print("self.current_epoch",self.current_epoch)
         if (inside):
             print("save before ReLU here")
-            # self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/beforeReLU_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+            if (name == ""):
+                name = "beforeReLU"
+            self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/' + name + '_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
         else:
             self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
