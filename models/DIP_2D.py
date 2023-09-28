@@ -15,7 +15,7 @@ from iWMV import iWMV
 
 class DIP_2D(LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done):
         super().__init__()
 
         # Save all the arguments passed to your model in the checkpoint, especially to save learning rate
@@ -50,6 +50,9 @@ class DIP_2D(LightningModule):
         self.global_it = global_it
         self.param1_scale_im_corrupt = param1_scale_im_corrupt
         self.param2_scale_im_corrupt = param2_scale_im_corrupt
+        
+        self.sub_iter_DIP_already_done_before_training = sub_iter_DIP_already_done
+        self.sub_iter_DIP_already_done = sub_iter_DIP_already_done
 
         self.fixed_hyperparameters_list = fixed_hyperparameters_list
         self.hyperparameters_list = hyperparameters_list
@@ -261,6 +264,9 @@ class DIP_2D(LightningModule):
         # WMV
         self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.scanner)
         
+        # Increment number of iterations since beginnning of DNA
+        self.sub_iter_DIP_already_done += 1
+
         return loss
 
     def configure_optimizers(self):
@@ -304,7 +310,7 @@ class DIP_2D(LightningModule):
         elif (self.all_images_DIP == "True"):
             self.write_current_img_task(out)
         elif (self.all_images_DIP == "Last"):
-            if (self.current_epoch == self.sub_iter_DIP - 1):
+            if (self.current_epoch == self.sub_iter_DIP + self.sub_iter_DIP_already_done_before_training - 1):
                 self.write_current_img_task(out)
 
     def write_current_img_task(self,out,inside=False):

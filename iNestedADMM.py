@@ -107,13 +107,19 @@ class iNestedADMM(vReconstruction):
             classDenoising.checkpoint_simple_path = self.subroot+'Block2/' + self.suffix + '/checkpoint/'
             classDenoising.name_run = ""
             # Train network at current global iteration
-            classDenoising.sub_iter_DIP = config["sub_iter_DIP"]
+            classDenoising.sub_iter_DIP = config["sub_iter_DIP"] + self.sub_iter_DIP_already_done
             classDenoising.sub_iter_DIP_initial_and_final = config["sub_iter_DIP_initial_and_final"]
             classDenoising.global_it = self.global_it
             # Launch denoising task
             print("Denoising in reconstruction")
             classDenoising.initializeSpecific(config,root)
             classDenoising.runComputation(config,root)
+            
+            self.sub_iter_DIP_already_done = classDenoising.sub_iter_DIP_already_done
+            if (config["DIP_early_stopping"]):
+                if (classDenoising.epochStar != -1):
+                    classDenoising.sub_iter_DIP_already_done = self.sub_iter_DIP_already_done - classDenoising.patienceNumber
+                    self.sub_iter_DIP_already_done = classDenoising.sub_iter_DIP_already_done
 
             # # Copy last checkpoint to file "last.ckpt" or to ES checkpoint 
             # import shutil
@@ -212,39 +218,44 @@ class iNestedADMM(vReconstruction):
 
     def initializeSettingsForCurrentIteration(self,config,i_init,root,classDenoising):
         # If pre or last iteration, do WMV and initialize vDenoising object if pre iteration
-        if ((self.global_it == i_init and ((i_init == -1 and not config["unnested_1st_global_iter"])) or (config["unnested_1st_global_iter"])) or (self.global_it == self.max_iter - 1)): # TESTCT_random
+        if ((self.global_it == i_init and ((i_init == -1 and not config["unnested_1st_global_iter"])) or (config["unnested_1st_global_iter"]))): # or (self.global_it == self.max_iter - 1)): # TESTCT_random
             if (self.scanner != "mMR_3D"):
                 # if (self.phantom != "image50_0"):
                 config["DIP_early_stopping"] = True # WMV for pre and last iteration, instead of 300 iterations of Gong
+                config["finetuning"] = "ES" # save NN state at ES point for next global iteration
             config["all_images_DIP"] = "True"
             # Pre iteration : put CT as input and initialize vDenoising object
             # if (self.global_it != self.max_iter - 1 or config["unnested_1st_global_iter"]):
-            if (self.global_it != self.max_iter - 1):
-                # Initialize vDenoising object
-                classDenoising = vDenoising(config,self.global_it)
-                # Put CT as input (mu_DIP = 200 is for random only)
-                if (not (i_init == 0 and config["unnested_1st_global_iter"])):
-                    if (self.net == "DIP" and config["mu_DIP"] != 200):
-                        classDenoising.override_input = True
-                    else:
-                        classDenoising.override_input = False
+            # if (self.global_it != self.max_iter - 1):
+            # Initialize vDenoising object
+            classDenoising = vDenoising(config,self.global_it)
+            # Put CT as input (mu_DIP = 200 is for random only)
+            if (not (i_init == 0 and config["unnested_1st_global_iter"])):
+                if (self.net == "DIP" and config["mu_DIP"] != 200):
+                    classDenoising.override_input = True
                 else:
                     classDenoising.override_input = False
-                # Initialize other variables
-                classDenoising.fixed_hyperparameters_list = self.fixed_hyperparameters_list
-                classDenoising.hyperparameters_list = self.hyperparameters_list
-                classDenoising.debug = self.debug
-                classDenoising.config = self.config
-                classDenoising.root = self.root
-                classDenoising.method = self.method
-                classDenoising.scanner = self.scanner
-                classDenoising.initializeGeneralVariables(config,root)
+            else:
+                classDenoising.override_input = False
+            # Initialize other variables
+            classDenoising.sub_iter_DIP_already_done = 0
+            self.sub_iter_DIP_already_done = 0
+            classDenoising.fixed_hyperparameters_list = self.fixed_hyperparameters_list
+            classDenoising.hyperparameters_list = self.hyperparameters_list
+            classDenoising.debug = self.debug
+            classDenoising.config = self.config
+            classDenoising.root = self.root
+            classDenoising.method = self.method
+            classDenoising.scanner = self.scanner
+            classDenoising.initializeGeneralVariables(config,root)
         
         # During iterations, do not do WMV
         if (self.global_it == i_init + 1 and ((i_init == -1 and not config["unnested_1st_global_iter"]) or (i_init == 0 and config["unnested_1st_global_iter"]))): # TESTCT_random , put back random input
             config["DIP_early_stopping"] = False
+            config["finetuning"] = "last" # save NN state at last epoch for next global iteration
             if ("3D" not in self.phantom):
                 config["all_images_DIP"] = "Last" # Only save last image to save space
+                config["all_images_DIP"] = "True" # Save all images for 3D to understand DIP behavior
             else:
                 config["all_images_DIP"] = "True" # Save all images for 3D to understand DIP behavior
             # Put back original input

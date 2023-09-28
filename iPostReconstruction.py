@@ -21,6 +21,7 @@ class iPostReconstruction(vDenoising):
         #     os.system("rm -rf " + self.subroot+'Block2/' + self.suffix + '/checkpoint/'+format(self.experiment) + "*")
 
         self.override_input = False
+        self.sub_iter_DIP_already_done = 0
         vDenoising.initializeSpecific(self,config,root)
         # Loading DIP x_label (corrupted image) from block1
         #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning.img',shape=(self.PETImage_shape),type_im='<d') # ADMMLim for nested
