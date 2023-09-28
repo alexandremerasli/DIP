@@ -6,7 +6,7 @@ from os import getcwd, makedirs
 from os.path import exists, isfile
 from functools import partial
 from ray import tune
-from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, mean, std, sum, array, column_stack, transpose
+from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, mean, std, sum, array, column_stack, transpose, dstack, meshgrid, arange
 from numpy import max as max_np
 from numpy import min as min_np
 from pandas import read_table
@@ -90,10 +90,12 @@ class vGeneral(abc.ABC):
             # Define ROIs for image0 phantom, otherwise it is already done in the database
             if (self.phantom == "image0" or self.phantom == "image2_0" and config["task"] != "show_metrics_results_already_computed"):
                 self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
-            if (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
+            elif (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
                 self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
-            if ((self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
+            elif ((self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
                 self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
+            elif ((self.phantom == "image50_1") and config["task"] != "show_metrics_results_already_computed"):
+                self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot_data)
         return config
 
     def createDirectoryAndConfigFile(self,config):
@@ -191,10 +193,17 @@ class vGeneral(abc.ABC):
         self.phantom_ROI = self.get_phantom_ROI(self.phantom)
         if ("3D" not in self.phantom):
             bkg_ROI_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw'
-            if (isfile(bkg_ROI_path)):
-                self.bkg_ROI = self.fijii_np(bkg_ROI_path, shape=(self.PETImage_shape),type_im='<f')
-                if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
-                    self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            cold_ROI_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw'
+            if (isfile(bkg_ROI_path) or isfile(cold_ROI_path)):
+                if ("50" not in self.phantom):    
+                    self.bkg_ROI = self.fijii_np(bkg_ROI_path, shape=(self.PETImage_shape),type_im='<f')
+                else:
+                    self.bkg_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
+                if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_1"):
+                    if (self.phantom != "image50_1"):
+                        self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                    else:
+                        self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')    
                     self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     # This ROIs has already been defined, but is computed for the sake of simplicity
@@ -205,9 +214,13 @@ class vGeneral(abc.ABC):
                     self.hot_TEP_ROI = array(self.hot_ROI)
                     self.hot_TEP_match_square_ROI = array(self.hot_ROI)
                     self.hot_perfect_match_ROI = array(self.hot_ROI)
-                self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                self.cold_inside_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_inside_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                self.cold_edge_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_edge_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                self.cold_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
+                if ("4" in self.phantom):
+                    self.cold_inside_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_inside_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                    self.cold_edge_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_edge_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                else:
+                    self.cold_inside_ROI = self.cold_ROI
+                    self.cold_edge_ROI = self.cold_ROI
             else:
                 self.initializeGeneralVariables(config,root)
 
@@ -799,6 +812,48 @@ class vGeneral(abc.ABC):
         self.save_img(phantom_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + self.phantom[5:] + '.raw')
         self.save_img(bkg_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw')
 
+
+    def define_ROI_brain_with_tumors(self,PETImage_shape,subroot):
+
+        # Define external radius to not take into account in ROI definition
+        remove_external_radius = 1 # MIC abstract 2022, 2023
+        # remove_external_radius = 3 # ROIs further away from true edges
+
+        # Define ROIs
+        tumor_1a_ROI = self.points_in_circle(15,-25,4,PETImage_shape)
+
+        # tumor_1b_ROI = self.points_in_circle(0,25,4,PETImage_shape)
+        xx,yy = meshgrid(arange(66,72),arange(52,60))
+        tumor_1b_ROI = list(map(tuple, dstack([xx.ravel(), yy.ravel()])[0]))
+
+        tumor_2_MR_ROI = self.points_in_circle(-25,0,8,PETImage_shape)
+        tumor_2_PET_ROI = self.points_in_circle(-27,0,4,PETImage_shape)
+        tumor_3a_ROI = self.points_in_circle(25,0,4,PETImage_shape)
+
+
+        
+        tumor_3a_mask = zeros(PETImage_shape, dtype='<f')
+        tumor_1b_mask = zeros(PETImage_shape, dtype='<f')
+        tumor_1a_mask = zeros(PETImage_shape, dtype='<f')
+        tumor_2_PET_mask = zeros(PETImage_shape, dtype='<f')
+
+        ROI_MR_list = [tumor_1a_ROI,tumor_2_MR_ROI,tumor_3a_ROI]
+        ROI_PET_list = [tumor_1a_ROI,tumor_2_PET_ROI]
+
+        ROI_list = [tumor_3a_ROI,tumor_1b_ROI,tumor_1a_ROI,tumor_2_PET_ROI]
+        mask_list = [tumor_3a_mask, tumor_1b_mask, tumor_1a_mask, tumor_2_PET_mask]
+        for i in range(len(ROI_list)):
+            ROI = ROI_list[i]
+            mask = mask_list[i]
+            for couple in ROI:
+                mask[couple] = 1
+
+        # Storing into file instead of defining them at each metrics computation
+        self.save_img(tumor_1b_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw')
+        self.save_img(tumor_2_PET_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw')
+        self.save_img(tumor_1a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw')
+        self.save_img(tumor_3a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw')
+
     def write_image_tensorboard(self,writer,image,name,suffix,image_gt,i=0,full_contrast=False):
         # Creating matplotlib figure with colorbar
         figure()
@@ -859,7 +914,7 @@ class vGeneral(abc.ABC):
         header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data pat
         dim = ' -dim ' + PETImage_shape_str
         if (self.scanner != "mMR_3D"):
-            if (self.phantom != "image50_0"):
+            if (self.phantom != "image50_0" and self.phantom != "image50_1"):
                 vox = ' -vox 4,4,4'
             else:
                 vox = ' -vox 2,2,2'
@@ -1021,6 +1076,8 @@ class vGeneral(abc.ABC):
     def ImageAndItToResumeComputation(self,sorted_files, it, folder_sub_path):
         sorted_files.sort(key=self.natural_keys)
         last_file = sorted_files[-1]
+        if ("scaled" in last_file):
+            last_file = sorted_files[-2]
         if ("=" in last_file): # post reco mode
             last_file = last_file[-10:]
             last_file = "it_" + last_file.split("=",1)[1]

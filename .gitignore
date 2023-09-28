@@ -39,6 +39,8 @@ runs/
 old_runs/
 simu_mmr/
 simu_biograph/
+simu_mmr_brain/
+simu_mmr_brain_tumors/
 .vscode/
 trash/
 __pycache__/

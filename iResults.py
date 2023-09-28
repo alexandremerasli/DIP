@@ -65,10 +65,11 @@ class iResults(vDenoising):
         self.defineTotalNbIter_beta_rho(config["method"], config, config["task"],stopping_criterion=False) # Compute metrics for every iterations, stopping_criterion will be used in final curves
 
         # Define variables for MV early stopping algorithms
-        if config["EMV_or_WMV"] == "EMV":
-            self.alpha_EMV = config["alpha_EMV"]
-        else:
-            self.windowSize = config["alpha_EMV"]
+        if ("nested" in config["method"] or "Gong" in config["method"]):
+            if config["EMV_or_WMV"] == "EMV":
+                self.alpha_EMV = config["alpha_EMV"]
+            else:
+                self.windowSize = config["alpha_EMV"]
 
         # Create summary writer from tensorboard
         self.tensorboard = config["tensorboard"]
@@ -285,6 +286,7 @@ class iResults(vDenoising):
                 self.VAR_recon = [float(rows_csv[0][i]) for i in range(int(self.i_init),min(len(rows_csv[0]),self.total_nb_iter))]
 
             for i in range(self.i_init,self.total_nb_iter+self.i_init):
+            # for i in range(self.i_init,4444):
                 if (self.run_WMV("MV_metrics_already_in_csv",self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,i)):
                     print("ES point found, break loop")
                     break
@@ -454,24 +456,23 @@ class iResults(vDenoising):
 
         # Remove first iterations 
         remove_first_iterations = 415
-        remove_first_iterations = 100
+        remove_first_iterations = 50
         # remove_first_iterations = 400
         # remove_first_iterations = 1500
         # Remove last iterations
         last_iteration = self.total_nb_iter
-        last_iteration = 4000
+        last_iteration = 2000
         # last_iteration = 500
 
         for smooth in [False,True]:
             plt.figure()
             if (config["EMV_or_WMV"] == "EMV"):
-                # alpha_list = [0.01,0.0251,0.1,0.5,0.99]
-                alpha_list = [0.0251,0.1,0.5,0.9]
-                # alpha_list = [0.1,0.5,0.9]
-                # alpha_list = [1]
+                alpha_list = [0.9,0.5,0.1,0.05,0.0251]
+                # alpha_list = [0.99,0.5,0.0251]
+                # alpha_list = sorted(alpha_list,reverse=True)
+
                 self.MV = len(alpha_list) * [0]
                 self.MV_original = len(alpha_list) * [0]
-                alpha_list = sorted(alpha_list,reverse=True)
                 for alpha_idx in range(len(alpha_list)):
                     alpha_EMV = alpha_list[alpha_idx]
                     with open(self.MV_csv_path(alpha_EMV,config), 'r') as myfile:
@@ -491,7 +492,9 @@ class iResults(vDenoising):
                             self.MV[alpha_idx][i] = (1-alpha_tmp) * self.MV[alpha_idx][i-1] + alpha_tmp * self.MV_original[alpha_idx][i]
 
 
-                    plt.plot(np.arange(remove_first_iterations,min(last_iteration+1,self.total_nb_iter+1)),self.MV[alpha_idx],label=alpha_EMV)
+                    # plt.plot(np.arange(remove_first_iterations,min(last_iteration+1,self.total_nb_iter+1)),self.MV[alpha_idx],label=alpha_EMV)
+                    plt.plot(np.arange(remove_first_iterations,min(last_iteration+1,self.total_nb_iter+1)),np.log(self.MV[alpha_idx]),label=alpha_EMV)
+                    plt.ylabel("log scale")
                     plt.legend()
                     print("MV min for alpha_EMV=",alpha_EMV,"at it= (10 first removed, after ",1000+remove_first_iterations," also)",", smooth=",str(smooth),np.argmin(self.MV[alpha_idx][10:1000]) + remove_first_iterations)
                 plt.title(str(remove_first_iterations) + " first iterations + " + str(self.total_nb_iter-last_iteration) + " final iterations removed")

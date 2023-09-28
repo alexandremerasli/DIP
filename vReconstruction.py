@@ -27,8 +27,8 @@ class vReconstruction(vGeneral):
     def initializeSpecific(self,config,root, *args, **kwargs):
         self.createDirectoryAndConfigFile(config)
         # Delete previous ckpt files from previous runs
-        if (config["finetuning"] == "ES"):
-            os.system("rm -rf " + self.subroot+'Block2/' + self.suffix + '/checkpoint/'+format(self.experiment) + "*")
+        # if (config["finetuning"] == "ES"):
+        #     os.system("rm -rf " + self.subroot+'Block2/' + self.suffix + '/checkpoint/'+format(self.experiment) + "*")
 
 
         # Specific hyperparameters for reconstruction module (Do it here to have raytune config hyperparameters selection)
@@ -98,7 +98,7 @@ class vReconstruction(vGeneral):
             output_path = ' -dout ' + path_mlem_init # Output path for CASTOR framework
             dim = ' -dim ' + self.PETImage_shape_str
             if (self.scanner != "mMR_3D"):
-                if (self.phantom != "image50_0"):
+                if (self.phantom != "image50_0" and self.phantom != "image50_1"):
                     vox = ' -vox 4,4,4'
                 else:
                     vox = ' -vox 2,2,2'
@@ -314,7 +314,7 @@ class vReconstruction(vGeneral):
                 os.system(x_reconstruction_command_line + ' -oit -1')
             else:
                 os.system(x_reconstruction_command_line)
-                os.system(x_reconstruction_command_line + ' -oit -1')
+                # os.system(x_reconstruction_command_line + ' -oit -1')
         else: # ADMMLim, save output at all iterations
             os.system(x_reconstruction_command_line)
         # Change iteration name for header if stopping criterion reached
@@ -385,7 +385,8 @@ class vReconstruction(vGeneral):
                 it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
                 u_for_additional_data = ''
                 v_for_additional_data = ''
-                initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + self.image_init_path_without_extension + '.hdr' if self.image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
+                initialimage = ''
+                # initialimage = self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img'
 
         # Initialization image if nested according to global iteration
         if ("nested" in self.method):
