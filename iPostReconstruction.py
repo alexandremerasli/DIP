@@ -17,8 +17,8 @@ class iPostReconstruction(vDenoising):
     def initializeSpecific(self,config,root, *args, **kwargs):
         print("Denoising in post reconstruction")
         # Delete previous ckpt files from previous runs
-        if (config["finetuning"] == "ES"):
-            os.system("rm -rf " + self.subroot+'Block2/' + self.suffix + '/checkpoint/'+format(self.experiment) + "*")
+        # if (config["finetuning"] == "ES"):
+        #     os.system("rm -rf " + self.subroot+'Block2/' + self.suffix + '/checkpoint/'+format(self.experiment) + "*")
 
         self.override_input = False
         vDenoising.initializeSpecific(self,config,root)
@@ -40,9 +40,9 @@ class iPostReconstruction(vDenoising):
         
         
         
-        # self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<f')
+        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<f')
         # self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/relu_exp_target_1_rois_50.img",shape=(self.PETImage_shape),type_im='<d')
-        self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<d')
+        # self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<d')
         
         
         
@@ -151,33 +151,21 @@ class iPostReconstruction(vDenoising):
         classResults.writeBeginningImages(self.suffix,self.image_net_input)
         classResults.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
         classResults.image_corrupt = self.image_corrupt
-        # Train model using previously trained network (at iteration before)
-       
-       
+        # Before training, list all images already saved
         folder_sub_path = self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + str(self.experiment)
         sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if os.path.splitext(filename)[1] == '.img']
+        # Train model using previously trained network (at iteration before)
+        model = self.train_process(self.param1_scale_im_corrupt, self.param2_scale_im_corrupt, self.scaling_input, self.suffix,config, self.finetuning, self.processing_unit, self.total_nb_iter, self.method, self.global_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, all_images_DIP = self.all_images_DIP)
         
-        # Check if previous computation was already done
-        if len(sorted_files) > 0:
-            initialimage_not_used, it_not_used, last_iter = self.ImageAndItToResumeComputation(sorted_files,"",folder_sub_path)
-        else:
-            last_iter = -1
-
-        if (last_iter > 0):
-            nb_iter_train = self.total_nb_iter - (last_iter + 1)
-        else:
-            nb_iter_train = self.total_nb_iter
-        
-        if (nb_iter_train > 0):
-            model = self.train_process(self.param1_scale_im_corrupt, self.param2_scale_im_corrupt, self.scaling_input, self.suffix,config, self.finetuning, self.processing_unit, nb_iter_train, self.method, self.global_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, all_images_DIP = self.all_images_DIP, last_iter=last_iter)
-        else:
-            if(self.PETImage_shape[2] == 1): # 2D 
-                raise ValueError("need to select a higher number of iterations, because the " + str(self.total_nb_iter) + " first iterations were already computed")
-            else:
-                last_iter = -1
-                model = self.train_process(self.param1_scale_im_corrupt, self.param2_scale_im_corrupt, self.scaling_input, self.suffix,config, self.finetuning, self.processing_unit, nb_iter_train, self.method, self.global_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, all_images_DIP = self.all_images_DIP, last_iter=last_iter)
-
-
+        # if (nb_iter_train > 0):
+        #     model = self.train_process(self.param1_scale_im_corrupt, self.param2_scale_im_corrupt, self.scaling_input, self.suffix,config, self.finetuning, self.processing_unit, nb_iter_train, self.method, self.global_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, all_images_DIP = self.all_images_DIP)
+        # else:
+        #     if(self.PETImage_shape[2] == 1): # 2D 
+        #         raise ValueError("need to select a higher number of iterations, because the " + str(self.total_nb_iter) + " first iterations were already computed")
+        #     else:
+        #         last_iter = -1
+        #         model = self.train_process(self.param1_scale_im_corrupt, self.param2_scale_im_corrupt, self.scaling_input, self.suffix,config, self.finetuning, self.processing_unit, nb_iter_train, self.method, self.global_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, all_images_DIP = self.all_images_DIP)
+            
 
         ## Variables for WMV ##
         if (model.DIP_early_stopping):
@@ -200,7 +188,23 @@ class iPostReconstruction(vDenoising):
         else:
             out = model(self.image_net_input_torch)
 
-        # Write descaled images in files
+        # Check if previous computation was already done to only scale last computed images
+        if len(sorted_files) > 0:
+            initialimage_not_used, it_not_used, last_iter = self.ImageAndItToResumeComputation(sorted_files,"",folder_sub_path)
+        else:
+            last_iter = -1
+
+        if (last_iter > 0):
+            nb_iter_train = self.total_nb_iter - (last_iter + 1)
+        else:
+            nb_iter_train = self.total_nb_iter
+        
+        # Override total number of iterations if ES point found
+        if (model.DIP_early_stopping):
+            if (model.epochStar != -1):
+                self.total_nb_iter = model.epochStar + self.patienceNumber
+            
+        # Iterations to be descaled
         if (self.all_images_DIP == "True"):
             epoch_values = np.arange(last_iter+1,self.total_nb_iter)
         elif (self.all_images_DIP == "False"):
@@ -209,12 +213,8 @@ class iPostReconstruction(vDenoising):
         elif (self.all_images_DIP == "Last"):
             epoch_values = np.array([self.total_nb_iter-1])
 
-        ## Variables for WMV ##
-        queueQ = []
-        VAR_min = np.inf
-        #model.SUCCESS = False
-        stagnate = 0
 
+        # Write descaled images in files
         for epoch in epoch_values:
             if (self.all_images_DIP == "Last"):
                 net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + "/ES_out_" + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'

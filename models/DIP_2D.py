@@ -1,4 +1,4 @@
-from torch import max, abs, optim, load, mean
+from torch import max, abs, optim, load, mean, clone
 from torch.nn import ReplicationPad2d, Conv2d, BatchNorm2d, LeakyReLU, Conv2d, BatchNorm2d, LeakyReLU, Sequential, Upsample, ReLU, MSELoss
 from pytorch_lightning import LightningModule, seed_everything
 from numpy import min as min_np
@@ -15,8 +15,11 @@ from iWMV import iWMV
 
 class DIP_2D(LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, last_iter, override_input, scanner):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner):
         super().__init__()
+
+        # Save all the arguments passed to your model in the checkpoint, especially to save learning rate
+        self.save_hyperparameters()
 
         #'''
         # Set random seed if asked (for NN weights here)
@@ -32,6 +35,11 @@ class DIP_2D(LightningModule):
 
         #'''
         
+        # from torch import load
+        # if (isfile(self.checkpoint_simple_path_exp + '/optimizer.pth')):
+        #     ckpt = load(self.checkpoint_simple_path_exp + '/optimizer.pth')
+        #     self.current_epoch = ckpt['epoch']
+
         # Defining variables from config        
         self.lr = config['lr']
         self.opti_DIP = config['opti_DIP']
@@ -72,8 +80,6 @@ class DIP_2D(LightningModule):
         #    self.suffix = config["task"] + ' ' + self.suffix
         self.suffix = suffix
         
-        self.last_iter = last_iter + 1
-
         # Monitor lr
         self.mean_inside_list = []
         self.ema_lr = [0, 0]
@@ -243,6 +249,15 @@ class DIP_2D(LightningModule):
         # Monitor learning rate across iterations
         self.monitor_lr(out,image_corrupt_torch)
 
+        # # Save state dict
+        # from torch import save
+        # save({
+        #     'optimizer_state_dict' : self.optimizers().state_dict(),
+        #     'model_state_dict': self.state_dict(),
+        #     'loss': loss,
+        #     'epoch': self.current_epoch,
+        # }, self.checkpoint_simple_path_exp + '/optimizer.pth')
+
         # WMV
         self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.scanner)
         
@@ -258,6 +273,13 @@ class DIP_2D(LightningModule):
         if (self.opti_DIP == 'Adam'):
             optimizer = optim.Adam(self.parameters(), lr=self.lr, weight_decay=5E-8) # Optimizing using Adam
             #optimizer = optim.Adam(self.parameters(), lr=self.lr) # Optimizing using Adam
+
+            # for group in optimizer.param_groups:
+            #     for p in group['params']:
+            #         print(p)
+            #         if p.grad is not None:
+            #             print(optimizer.state[p]['exp_avg'])
+
         elif (self.opti_DIP == 'LBFGS' or self.opti_DIP is None): # None means no argument was given in command line
             optimizer = optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=10,line_search_fn=None) # Optimizing using L-BFGS
             # optimizer = optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4,line_search_fn="strong_wolfe") # Optimizing using L-BFGS 1
@@ -266,6 +288,13 @@ class DIP_2D(LightningModule):
             optimizer = optim.SGD(self.parameters(), lr=self.lr) # Optimizing using SGD
         elif (self.opti_DIP == 'Adadelta'):
             optimizer = optim.Adadelta(self.parameters()) # Optimizing using Adadelta
+
+        # from torch import load
+        # if (isfile(self.checkpoint_simple_path_exp + '/optimizer.pth')):
+        #     ckpt = load(self.checkpoint_simple_path_exp + '/optimizer.pth')
+        #     optimizer.load_state_dict(ckpt['optimizer_state_dict'])
+        
+
         return optimizer
 
     def write_current_img(self,out):
@@ -289,7 +318,7 @@ class DIP_2D(LightningModule):
             print("save before ReLU here")
             # self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/beforeReLU_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
         else:
-            self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+            self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
         config_copy = dict(config)
@@ -308,10 +337,10 @@ class DIP_2D(LightningModule):
         print('Succesfully save in:', name)
 
     def monitor_lr(self,out,image_corrupt_torch):
-        if (not hasattr(self.config,"monitor_lr")):
+        if ("monitor_lr" not in self.config):
             self.config["monitor_lr"] = False
         if (self.config["monitor_lr"]):
-            out_descale_np = self.descale_imag(copy(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
+            out_descale_np = self.descale_imag(clone(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
             # try:
             #     # out_descale_np = out_descale.detach().numpy()[0,0,:,:]
             #     out_descale_np = out_descale
@@ -338,7 +367,7 @@ class DIP_2D(LightningModule):
                 alpha_ema_lr = 0.1
                 self.ema_lr.append((1-alpha_ema_lr) * self.ema_lr[self.current_epoch-1] + alpha_ema_lr * self.mean_inside_list[self.current_epoch])
 
-                print(self.ema_lr[self.current_epoch])
+                # print(self.ema_lr[self.current_epoch])
 
                 if (sign(self.ema_lr[self.current_epoch] - self.ema_lr[self.current_epoch - 1]) != sign(self.ema_lr[self.current_epoch - 1] - self.ema_lr[self.current_epoch - 2])):
                     # if (self.lr > 1e-5): # Minimum lr value to 1e-5, does not need to better stability

@@ -100,7 +100,9 @@ class iNestedADMM(vReconstruction):
             classDenoising = self.initializeSettingsForCurrentIteration(config,i_init,root,classDenoising)
             # Loading DIP x_label (corrupted image) from block1
             classDenoising.image_corrupt = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(self.global_it) +'_x_label' + self.suffix + '.img',shape=(self.PETImage_shape))
-            classDenoising.image_corrupt_init = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(-1) +'_x_label' + self.suffix + '.img',shape=(self.PETImage_shape))
+            if ("scaling_all_init" in config):
+                if (config["scaling_all_init"]):
+                    classDenoising.image_corrupt_init = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(-1) +'_x_label' + self.suffix + '.img',shape=(self.PETImage_shape))
             classDenoising.net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + '' + format(self.global_it) + self.suffix + '.img'
             classDenoising.checkpoint_simple_path = self.subroot+'Block2/' + self.suffix + '/checkpoint/'
             classDenoising.name_run = ""
@@ -113,15 +115,20 @@ class iNestedADMM(vReconstruction):
             classDenoising.initializeSpecific(config,root)
             classDenoising.runComputation(config,root)
 
-            # Copy last checkpoint to file "last.ckpt"
-            import shutil
-            for file in os.listdir(classDenoising.checkpoint_simple_path_exp):
-                if ("epoch" in file):
-                    shutil.copy(os.path.join(classDenoising.checkpoint_simple_path_exp,file),os.path.join(classDenoising.checkpoint_simple_path_exp,"last.ckpt"))
-                    os.remove(os.path.join(classDenoising.checkpoint_simple_path_exp,file))
-
+            # # Copy last checkpoint to file "last.ckpt" or to ES checkpoint 
+            # import shutil
+            # for file in os.listdir(classDenoising.checkpoint_simple_path_exp):
+            #     if (self.finetuning != "ES" or self.global_it >= 0):
+            #         if ("epoch" in file):
+            #             shutil.copy(os.path.join(classDenoising.checkpoint_simple_path_exp,file),os.path.join(classDenoising.checkpoint_simple_path_exp,"last.ckpt"))
+            #             os.remove(os.path.join(classDenoising.checkpoint_simple_path_exp,file))
+            #     else:
+            #         if (file == "epoch=" + str(classDenoising.epochStar) + "-step=" + str(classDenoising.epochStar) + ".ckpt"):
+            #             shutil.copy(os.path.join(classDenoising.checkpoint_simple_path_exp,"epoch=" + str(classDenoising.epochStar) + "-step=" + str(classDenoising.epochStar) + ".ckpt"),os.path.join(classDenoising.checkpoint_simple_path_exp,"last.ckpt"))
+            #         # os.remove(os.path.join(classDenoising.checkpoint_simple_path_exp,"epoch=" + str(classDenoising.epochStar) + "-step=" + str(classDenoising.epochStar) + ".ckpt"))
+            #         else:
+            #             os.remove(os.path.join(classDenoising.checkpoint_simple_path_exp,file))
             if (self.global_it == i_init):
-
                 classResults.writeBeginningImages(self.suffix,classDenoising.image_net_input) # Write GT and DIP input
                 classResults.writeCorruptedImage(0,self.max_iter,classDenoising.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
 
@@ -236,8 +243,10 @@ class iNestedADMM(vReconstruction):
         # During iterations, do not do WMV
         if (self.global_it == i_init + 1 and ((i_init == -1 and not config["unnested_1st_global_iter"]) or (i_init == 0 and config["unnested_1st_global_iter"]))): # TESTCT_random , put back random input
             config["DIP_early_stopping"] = False
-            config["all_images_DIP"] = "Last" # Only save last image to save space
-            # config["all_images_DIP"] = "True" # Only save last image to save space
+            if ("3D" not in self.phantom):
+                config["all_images_DIP"] = "Last" # Only save last image to save space
+            else:
+                config["all_images_DIP"] = "True" # Save all images for 3D to understand DIP behavior
             # Put back original input
             if (self.net == "DIP"):
                 classDenoising.override_input = False

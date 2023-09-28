@@ -11,7 +11,7 @@ from iWMV import iWMV
 
 class DIP_3D(pl.LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, last_iter, override_input, scanner ):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner ):
         super().__init__()
 
         #'''
@@ -62,8 +62,6 @@ class DIP_3D(pl.LightningModule):
         #if (config["task"] == "post_reco"):
         #    self.suffix = config["task"] + ' ' + self.suffix
         self.suffix = suffix
-
-        self.last_iter = last_iter + 1
         
         '''
         if (config['mlem_sequence'] is None):
@@ -296,7 +294,7 @@ class DIP_3D(pl.LightningModule):
         plt.colorbar()
         plt.show()
         '''
-        self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+        self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
         config_copy = dict(config)
@@ -330,8 +328,6 @@ class DIP_3D(pl.LightningModule):
 
     def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner):
         if (self.DIP_early_stopping):
-            self.SUCCESS = self.classWMV.SUCCESS
-            self.log("SUCCESS", int(self.classWMV.SUCCESS))
 
             try:
                 out_np = out.detach().numpy()[0,0,:,:]
@@ -339,6 +335,8 @@ class DIP_3D(pl.LightningModule):
                 out_np = out.cpu().detach().numpy()[0,0,:,:]
 
             self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(copy(out_np),self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
+            self.SUCCESS = self.classWMV.SUCCESS
+            self.log("SUCCESS", int(self.classWMV.SUCCESS))
             self.VAR_recon = self.classWMV.VAR_recon
             self.MSE_WMV = self.classWMV.MSE_WMV
             self.PSNR_WMV = self.classWMV.PSNR_WMV
@@ -353,6 +351,7 @@ class DIP_3D(pl.LightningModule):
             self.patienceNumber = self.classWMV.patienceNumber
 
             if self.SUCCESS:
+            # if self.classWMV.SUCCESS:
                 print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
                 self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner)
         

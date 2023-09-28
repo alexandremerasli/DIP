@@ -7,7 +7,10 @@ from vGeneral import vGeneral
 
 class iWMV(vGeneral):
     def __init__(self, config):
-        #super().__init__()
+        # super().__init__(config)
+        print("init")
+
+    def initializeSpecific(self,config,root, *args, **kwargs):
 
         ## Variables for WMV ##
         self.queueQ = []
@@ -15,7 +18,6 @@ class iWMV(vGeneral):
         self.SUCCESS = False
         self.stagnate = 0
 
-    def initializeSpecific(self,config,root, *args, **kwargs):
         self.patienceNumber = config["patienceNumber"]
         self.epochStar = -1
         self.VAR_recon = []
@@ -82,11 +84,12 @@ class iWMV(vGeneral):
                 # Taking only slice from 3D data
                 # out = out[:,:,int(out.shape[2]/2)+20]
                 # image_gt_reversed = image_gt_reversed[:,:,int(image_gt_reversed.shape[2]/2)+20]
-                out = out[:,:,54]
-                image_gt_reversed = image_gt_reversed[:,:,54]
+                slice_MV = 54
+                out = out[:,:,slice_MV]
+                image_gt_reversed = image_gt_reversed[:,:,slice_MV]
                 if (len(self.EMA.shape) == 3):
                     # self.EMA = self.EMA[:,:,int(self.EMA.shape[2]/2)+20]
-                    self.EMA = self.EMA[:,:,54]
+                    self.EMA = self.EMA[:,:,slice_MV]
 
 
                 out_cropped = out
@@ -153,6 +156,7 @@ class iWMV(vGeneral):
 
         #'''
         if SUCCESS:
+            self.SUCCESS = SUCCESS
             # Open output corresponding to epoch star
             net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
             out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f')
