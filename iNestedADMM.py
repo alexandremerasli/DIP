@@ -34,6 +34,7 @@ class iNestedADMM(vReconstruction):
             classResults.rho = self.rho
             classResults.debug = self.debug
             classResults.hyperparameters_list = self.hyperparameters_list
+            classResults.fixed_hyperparameters_list = self.fixed_hyperparameters_list
             classResults.scanner = self.scanner
             classResults.phantom_ROI = self.phantom_ROI
             if ("3D" not in self.phantom):
@@ -117,7 +118,7 @@ class iNestedADMM(vReconstruction):
             
             self.sub_iter_DIP_already_done = classDenoising.sub_iter_DIP_already_done
             if (config["DIP_early_stopping"]):
-                if (classDenoising.epochStar != -1):
+                if (classDenoising.SUCCESS):
                     classDenoising.sub_iter_DIP_already_done = self.sub_iter_DIP_already_done - classDenoising.patienceNumber
                     self.sub_iter_DIP_already_done = classDenoising.sub_iter_DIP_already_done
 
@@ -255,7 +256,7 @@ class iNestedADMM(vReconstruction):
             config["finetuning"] = "last" # save NN state at last epoch for next global iteration
             if ("3D" not in self.phantom):
                 config["all_images_DIP"] = "Last" # Only save last image to save space
-                config["all_images_DIP"] = "True" # Save all images for 3D to understand DIP behavior
+                # config["all_images_DIP"] = "True" # Save all images for 3D to understand DIP behavior
             else:
                 config["all_images_DIP"] = "True" # Save all images for 3D to understand DIP behavior
             # Put back original input

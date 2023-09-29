@@ -98,6 +98,7 @@ class iPostReconstruction(vDenoising):
             classResults = iResults(config)
             classResults.nb_replicates = self.nb_replicates
             classResults.debug = self.debug
+            classResults.fixed_hyperparameters_list = self.fixed_hyperparameters_list
             classResults.hyperparameters_list = self.hyperparameters_list
             classResults.scanner = self.scanner
             if ("3D" not in self.phantom):
@@ -202,7 +203,7 @@ class iPostReconstruction(vDenoising):
         
         # Override total number of iterations if ES point found
         if (model.DIP_early_stopping):
-            if (model.epochStar != -1):
+            if (model.SUCCESS):
                 self.total_nb_iter = model.epochStar + self.patienceNumber
             
         # Iterations to be descaled

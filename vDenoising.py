@@ -134,7 +134,8 @@ class vDenoising(vGeneral):
 
         trainer.fit(model, train_dataloader)
         
-        # trainer.save_checkpoint(self.checkpoint_simple_path_exp + "/last.ckpt")
+        if (finetuning == "last"):
+            trainer.save_checkpoint(self.checkpoint_simple_path_exp + "/last.ckpt")
 
         # Copy last checkpoint to file "last.ckpt" or to ES checkpoint 
         import shutil
@@ -191,7 +192,7 @@ class vDenoising(vGeneral):
             if (finetuning == 'last'): # last model saved in checkpoint
                 # Checkpoints pl variables
                 logger = TensorBoardLogger(save_dir=checkpoint_simple_path, version=format(experiment), name=name) # Store checkpoints in checkpoint_simple_path path
-                checkpoint_callback = ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_last=True, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0)
+                checkpoint_callback = ModelCheckpoint(dirpath=checkpoint_simple_path_exp, save_top_k=0) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0)
                 # checkpoint_callback = ModelCheckpoint(dirpath=checkpoint_simple_path_exp) # Only save last checkpoint as last.ckpt (save_last = True), do not save checkpoint at each epoch (save_top_k = 0)
                 # trainer = Trainer(max_epochs=sub_iter_DIP,log_every_n_steps=1, logger=logger, callbacks=[checkpoint_callback, tuning_callback, early_stopping_callback],gpus=gpus, accelerator=accelerator,log_gpu_memory="all", progress_bar_refresh_rate=0, weights_summary=None, profiler="simple") # Prepare trainer model with callback to save checkpoint        
                 

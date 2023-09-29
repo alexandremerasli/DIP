@@ -52,7 +52,7 @@ class iResults(vDenoising):
                     self.global_it = -1
             else:
                 self.global_it = -100
-            if (config["DIP_early_stopping"] and "show_results_post_reco" in config["task"]):
+            if (config["DIP_early_stopping"]):# and "show_results_post_reco" in config["task"]):
                 self.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,root,self.scanner)
                 self.lr = config['lr']
 

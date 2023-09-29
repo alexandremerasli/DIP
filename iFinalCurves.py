@@ -35,6 +35,7 @@ class iFinalCurves(vGeneral):
         beta_BSREM_for_DNA = 0.01
         # Rename my settings (MIC)
         rename_settings = "TMI"
+        rename_settings = "hyperparameters_paper"
 
         # Convert Gong to DIPRecon
         DIPRecon = False
@@ -587,6 +588,18 @@ class iFinalCurves(vGeneral):
                         replicates_legend[fig_nb].append('DNA')
                     elif ("DIPRecon" in method):
                         replicates_legend[fig_nb].append('DIPRecon')
+                elif(rename_settings == "hyperparameters_paper"):
+                    if ("nested_ADMMLim_more_ADMMLim_it_10" in method):
+                        replicates_legend[fig_nb].append(r'DNA$^{positive~norm}$')
+                    if ("nested_APPGML_1it" in method):
+                        replicates_legend[fig_nb].append(r'DNA$^{norm}$')
+                    if ("nested_APPGML_4it" in method):
+                        replicates_legend[fig_nb].append(r'DNA$^{stand}$')
+                    if ("DIPRecon_skip3_3_my_settings" in method):
+                        replicates_legend[fig_nb].append(r'DIPRecon$^{positive norm}$')
+                    elif ("DIPRecon_CT_1_skip" in method):
+                        replicates_legend[fig_nb].append(r'DIPRecon$^{norm}$')
+                        
 
     def choose_good_config_file(self,method,config,csv_before_MIC,DIPRecon):
         # Gong reconstruction
@@ -1013,23 +1026,25 @@ class iFinalCurves(vGeneral):
 
         for i in range(len(sorted_suffixes)):
             i_replicate = idx_wanted[i] # Loop over rhos and replicates, for each sorted rho, take sorted replicate
-            if (rename_settings == "TMI"): # Remove Gong failing replicates and replace them
-                if (self.phantom == "image40_1"):
-                    if (self.scaling == "normalization"):
-                        DIPRecon_failing_replicate_list = list(np.array([19,25,29,36])-1)
-                        replicates_replace_list = list(np.array([41,42,45,46])-1)
-                    elif (self.scaling == "positive_normalization"):
-                        DIPRecon_failing_replicate_list = list(np.array([19])-1)
-                        replicates_replace_list = list(np.array([41])-1)
-                if (self.phantom == "image4_0"):
-                    if (self.scaling == "positive_normalization"):
-                        # DIPRecon_failing_replicate_list = list(np.array([35])-1)
-                        # replicates_replace_list = list(np.array([41])-1)
-                        # DIPRecon_failing_replicate_list = list(np.array([3,10,15,38])-1)
-                        # replicates_replace_list = list(np.array([1,2,4,5])-1)
-                        print("final replicates to remove ?????????????????????,,,????")
-                if (i_replicate in DIPRecon_failing_replicate_list):
-                    i_replicate = replicates_replace_list[DIPRecon_failing_replicate_list.index(i_replicate)]
+            # if (rename_settings == "TMI"): # Remove Gong failing replicates and replace them
+            #     if (self.phantom == "image40_1"):
+            #         if (self.scaling == "normalization"):
+            #             # DIPRecon_failing_replicate_list = list(np.array([19,25,29,36])-1)
+            #             # replicates_replace_list = list(np.array([41,42,45,46])-1)
+            #             print("final replicates to remove ?????????????????????,,,????")
+            #         elif (self.scaling == "positive_normalization"):
+            #             # DIPRecon_failing_replicate_list = list(np.array([19])-1)
+            #             # replicates_replace_list = list(np.array([41])-1)
+            #             print("final replicates to remove ?????????????????????,,,????")
+            #     if (self.phantom == "image4_0"):
+            #         if (self.scaling == "positive_normalization"):
+            #             # DIPRecon_failing_replicate_list = list(np.array([35])-1)
+            #             # replicates_replace_list = list(np.array([41])-1)
+            #             # DIPRecon_failing_replicate_list = list(np.array([3,10,15,38])-1)
+            #             # replicates_replace_list = list(np.array([1,2,4,5])-1)
+            #             print("final replicates to remove ?????????????????????,,,????")
+            #     if (i_replicate in DIPRecon_failing_replicate_list):
+            #         i_replicate = replicates_replace_list[DIPRecon_failing_replicate_list.index(i_replicate)]
 
             suffix = sorted_suffixes[i].rstrip("\n")
             replicate = "replicate_" + str(i_replicate + 1)

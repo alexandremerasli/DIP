@@ -139,7 +139,7 @@ class vGeneral(abc.ABC):
             # Initialize ROIs before ray
             self.initializeBeforeRay(config,root)
             # Launch computation
-            tune.run(partial(self.do_everything,root=root,only_suffix_replicate_file = only_suffix_replicate_file), config=config,local_dir = getcwd() + '/runs', progress_reporter = ExperimentTerminationReporter())
+            tune.run(partial(self.do_everything,root=root,only_suffix_replicate_file = only_suffix_replicate_file), config=config,local_dir = getcwd() + '/runs',resources_per_trial={"cpu": 1})
         else: # Without raytune
             # Remove grid search if not using ray and choose first element of each config key.
             config = self.removeGridSearch(config,task)            
@@ -622,8 +622,7 @@ class vGeneral(abc.ABC):
             elif (scaling == 'positive_normalization'):
                 image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = self.norm_positive_imag(image_corrupt[:,:,slice])
             else: # No scaling required
-                image_corrupt = squeeze(image_corrupt)
-                image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = image_corrupt, 0, 0
+                image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = squeeze(image_corrupt), 0, 0
 
         
         if (1 not in image_corrupt.shape): # 3D
