@@ -45,8 +45,14 @@ class vReconstruction(vGeneral):
                 self.alpha = None
             else:
                 if (config["recoInNested"] == "ADMMLim"):
-                    self.stoppingCriterionValue = config["stoppingCriterionValue"]
-                    self.saveSinogramsUAndV = config["saveSinogramsUAndV"]
+                    if ("stoppingCriterionValue" in config):
+                        self.stoppingCriterionValue = config["stoppingCriterionValue"]
+                    else:
+                        self.stoppingCriterionValue = 0
+                    if ("stoppingCriterionValue" in config):
+                        self.saveSinogramsUAndV = config["saveSinogramsUAndV"]
+                    else:
+                        self.saveSinogramsUAndV = 0
                     self.alpha = config["alpha"]
                     self.adaptive_parameters = config["adaptive_parameters"]
                 else:

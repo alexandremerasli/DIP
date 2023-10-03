@@ -1,4 +1,4 @@
-from torch import max, abs, optim, load, mean, clone
+from torch import max, abs, optim, load, mean, clone, rand
 from torch.nn import ReplicationPad2d, Conv2d, BatchNorm2d, LeakyReLU, Conv2d, BatchNorm2d, LeakyReLU, Sequential, Upsample, ReLU, MSELoss
 from pytorch_lightning import LightningModule, seed_everything
 from numpy import min as min_np
@@ -6,6 +6,7 @@ from numpy import max as max_np
 from numpy import mean as mean_np
 from numpy import std as std_np
 from numpy import ones_like, dtype, fromfile, sign, newaxis, copy
+from numpy.random import uniform
 
 from pathlib import Path
 from os.path import isfile
@@ -53,7 +54,6 @@ class DIP_2D(LightningModule):
         
         self.sub_iter_DIP_already_done_before_training = sub_iter_DIP_already_done
         self.sub_iter_DIP_already_done = sub_iter_DIP_already_done
-        self.override_SC_init = config['override_SC_init']
         self.fixed_hyperparameters_list = fixed_hyperparameters_list
         self.hyperparameters_list = hyperparameters_list
         self.scaling_input = scaling_input
@@ -62,6 +62,17 @@ class DIP_2D(LightningModule):
         self.root = root
         self.config = config
         self.experiment = config["experiment"]
+
+        # MIC study
+        if ("override_SC_init" in config):
+            self.override_SC_init = config['override_SC_init']
+        else:
+            self.override_SC_init = False
+        if ("dropout" in config):
+            self.dropout = config['dropout']
+        else:
+            self.dropout = 0
+        
         '''
         ## Variables for WMV ##
         self.queueQ = []
@@ -200,6 +211,11 @@ class DIP_2D(LightningModule):
         # self.positivity = Softplus() # Final SiLU to enforce positivity of ouput image, smoother than ReLU
 
     def forward(self, x):
+
+        # Dropout 
+        # drop_sample = uniform(0,1,3)
+        drop_sample = rand(3)
+
         # Encoder
         out1 = self.deep1(x)
         out = self.down1(out1)
@@ -211,19 +227,19 @@ class DIP_2D(LightningModule):
 
         # Decoder
         out = self.up1(out)
-        if (self.skip >= 1 or self.override_SC_init): # or self.override_input):
+        if ((self.skip >= 1 or self.override_SC_init) and drop_sample[0] > self.dropout): # or self.override_input):
             out_skip1 = out3 + out
             out = self.deep5(out_skip1)
         else:
             out = self.deep5(out)
         out = self.up2(out)
-        if (self.skip >= 2 or self.override_SC_init): # or self.override_input):
+        if ((self.skip >= 2 or self.override_SC_init) and drop_sample[1] > self.dropout): # or self.override_input):
             out_skip2 = out2 + out
             out = self.deep6(out_skip2)
         else:
             out = self.deep6(out)
         out = self.up3(out)
-        if (self.skip >= 3 or self.override_SC_init): # or self.override_input):
+        if ((self.skip >= 3 or self.override_SC_init) and drop_sample[2] > self.dropout): # or self.override_input):
             out_skip3 = out1 + out
             out = self.deep7(out_skip3)
         else:

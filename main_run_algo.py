@@ -89,10 +89,12 @@ config_files = ["Gong_CT_1_skip","Gong_CT_2_skip"]
 config_files = ['APGMAP_configuration']
 # config_files = ['ADMMLim_configuration']
 config_files = ['nested_ADMMLim_more_ADMMLim_it_10_configuration']
+# config_files = ['nested_APPGML_1it_configuration']
 # config_files = ['nested_ADMMLim_more_ADMMLim_it_30_configuration']
 # config_files = ['OSEM_configuration']
 # config_files = ['Gong_skip3_3_my_settings']
 # config_files = ['BSREM_configuration']
+config_files = ['nested_MIC_brain_2D']
 # config_files = [f[:-3] for f in os.listdir('all_config') if os.path.isfile(os.path.join('all_config', f))]
 
 # config_files = ['ADMMLim_configuration']
@@ -102,12 +104,17 @@ for lib_string in config_files:
     if (True):
         lib = importlib.import_module('all_config.' + lib_string)
         config = lib.config_func_MIC()
-        config["image"] = tune.grid_search(['image40_1'])
+        config["image"] = tune.grid_search(['image4_0'])
+        config["image"] = tune.grid_search(['image50_1'])
+        # config["image"] = tune.grid_search(['image50_0'])
+        # config["image"] = tune.grid_search(['image40_1'])
         # config["image"] = tune.grid_search(['image010_3D'])
-        # config["replicates"] = tune.grid_search(list(range(1,45+1)))
-        config["replicates"] = tune.grid_search([1])
-        config["max_iter"] = tune.grid_search([1])
-        config["ray"] = False
+        config["replicates"] = tune.grid_search(list(range(1,3+1)))
+        # config["replicates"] = tune.grid_search([21])
+        config["max_iter"] = tune.grid_search([500])
+        # config["post_reco_in_suffix"] = tune.grid_search([False]) # If want to show EMV results which were not on post reconstruction, in DNA init
+        # config["read_only_MV_csv"] = tune.grid_search([True])
+        config["ray"] = True
 
         root = os.getcwd()
 
