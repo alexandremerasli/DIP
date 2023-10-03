@@ -53,7 +53,7 @@ class DIP_2D(LightningModule):
         
         self.sub_iter_DIP_already_done_before_training = sub_iter_DIP_already_done
         self.sub_iter_DIP_already_done = sub_iter_DIP_already_done
-
+        self.override_SC_init = config['override_SC_init']
         self.fixed_hyperparameters_list = fixed_hyperparameters_list
         self.hyperparameters_list = hyperparameters_list
         self.scaling_input = scaling_input
@@ -211,19 +211,19 @@ class DIP_2D(LightningModule):
 
         # Decoder
         out = self.up1(out)
-        if (self.skip >= 1): # or self.override_input):
+        if (self.skip >= 1 or self.override_SC_init): # or self.override_input):
             out_skip1 = out3 + out
             out = self.deep5(out_skip1)
         else:
             out = self.deep5(out)
         out = self.up2(out)
-        if (self.skip >= 2): # or self.override_input):
+        if (self.skip >= 2 or self.override_SC_init): # or self.override_input):
             out_skip2 = out2 + out
             out = self.deep6(out_skip2)
         else:
             out = self.deep6(out)
         out = self.up3(out)
-        if (self.skip >= 3): # or self.override_input):
+        if (self.skip >= 3 or self.override_SC_init): # or self.override_input):
             out_skip3 = out1 + out
             out = self.deep7(out_skip3)
         else:

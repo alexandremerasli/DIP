@@ -151,6 +151,9 @@ class vDenoising(vGeneral):
                 else:
                     os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
 
+        if (os.path.isdir(os.path.join(checkpoint_simple_path_previous_exp))):
+            shutil.rmtree(os.path.join(checkpoint_simple_path_previous_exp))
+
         return model
 
     def create_pl_trainer(self,finetuning, processing_unit, sub_iter_DIP, global_it, net, checkpoint_simple_path, experiment, checkpoint_simple_path_exp, checkpoint_simple_path_previous_exp, config, name=''):

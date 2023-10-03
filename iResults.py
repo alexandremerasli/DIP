@@ -69,7 +69,7 @@ class iResults(vDenoising):
             if config["EMV_or_WMV"] == "EMV":
                 self.alpha_EMV = config["alpha_EMV"]
             else:
-                self.windowSize = config["windowSize"]
+                self.windowSize = config["alpha_EMV"]
 
         # Create summary writer from tensorboard
         self.tensorboard = config["tensorboard"]
@@ -101,13 +101,33 @@ class iResults(vDenoising):
         if (not hasattr(self,"phantom_ROI")):
             if ("3D" not in self.phantom):
                 self.phantom_ROI = self.get_phantom_ROI(self.phantom)
-                # self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                # if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
+                #     self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                #     self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                #     self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                #     # This ROIs has already been defined, but is computed for the sake of simplicity
+                #     self.hot_ROI = self.hot_TEP_ROI
+                # else:
+                #     self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                #     # These ROIs do not exist, so put them equal to hot ROI for the sake of simplicity
+                #     self.hot_TEP_ROI = np.array(self.hot_ROI)
+                #     self.hot_TEP_match_square_ROI = np.array(self.hot_ROI)
+                #     self.hot_perfect_match_ROI = np.array(self.hot_ROI)
+                # self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                # self.cold_inside_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_inside_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                # self.cold_edge_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_edge_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+
+                bkg_ROI_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw'
+                cold_ROI_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw'
+                if ("50" not in self.phantom):    
+                    self.bkg_ROI = self.fijii_np(bkg_ROI_path, shape=(self.PETImage_shape),type_im='<f')
+                else:
+                    self.bkg_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
                 if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_1"):
                     if (self.phantom != "image50_1"):
                         self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     else:
-                        self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')    
-                    
+                        self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')    
                     self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     # This ROIs has already been defined, but is computed for the sake of simplicity
@@ -118,13 +138,16 @@ class iResults(vDenoising):
                     self.hot_TEP_ROI = np.array(self.hot_ROI)
                     self.hot_TEP_match_square_ROI = np.array(self.hot_ROI)
                     self.hot_perfect_match_ROI = np.array(self.hot_ROI)
-                self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                self.cold_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
                 if ("4" in self.phantom):
                     self.cold_inside_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_inside_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     self.cold_edge_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_edge_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                 else:
                     self.cold_inside_ROI = self.cold_ROI
                     self.cold_edge_ROI = self.cold_ROI
+
+
+
         if ("3D" not in self.phantom):
             # Metrics arrays
             self.PSNR_recon = np.zeros(int(self.total_nb_iter ) + 1)
@@ -278,11 +301,7 @@ class iResults(vDenoising):
 
             if ("nested" in config["method"] or "Gong" in config["method"]):
                 # Save computed variance from WMV/EMV in csv
-                if config["EMV_or_WMV"] == "WMV":
-                    MV_csv_path = self.WMV_csv_path(self.windowSize,config)
-                else:
-                    MV_csv_path = self.EMV_csv_path(self.alpha_EMV,config)
-                with open(MV_csv_path, 'w', newline='') as myfile:
+                with open(self.MV_csv_path(self.alpha_EMV,config), 'w', newline='') as myfile:
                     wr = writer_csv(myfile,delimiter=';')
                     wr.writerow(self.VAR_recon)  
                 if(config["DIP_early_stopping"]):# WMV
@@ -291,11 +310,7 @@ class iResults(vDenoising):
     def WMV_plot(self,config):
 
         if (config["read_only_MV_csv"]):
-            if config["EMV_or_WMV"] == "WMV":
-                MV_csv_path = self.WMV_csv_path(self.windowSize,config)
-            else:
-                MV_csv_path = self.EMV_csv_path(self.alpha_EMV,config)
-            with open(MV_csv_path, 'r') as myfile:
+            with open(self.MV_csv_path(self.alpha_EMV,config), 'r') as myfile:
                 spamreader = reader_csv(myfile,delimiter=';')
                 rows_csv = list(spamreader)
                 self.VAR_recon = [float(rows_csv[0][i]) for i in range(int(self.i_init),min(len(rows_csv[0]),self.total_nb_iter))]
@@ -399,22 +414,11 @@ class iResults(vDenoising):
             ax2 = ax1.twinx()  # creat other y-axis for different scale
             ax3 = ax1.twinx()  # creat other y-axis for different scale
             ax4 = ax1.twinx()  # creat other y-axis for different scale
-            # if (config["EMV_or_WMV"] == "WMV"):
-            #     ax2.spines.right.set_position(("axes", 1.18))
-            
-            log_scale = False
-            log_scale = True
-            if (log_scale):
-                self.MSE_WMV = np.log(self.MSE_WMV)
-                self.PSNR_WMV = np.log(self.PSNR_WMV)
-                self.VAR_recon = np.log(self.VAR_recon)
-                self.SSIM_WMV = np.log(self.SSIM_WMV)
+            if (config["EMV_or_WMV"] == "WMV"):
+                ax2.spines.right.set_position(("axes", 1.18))
             p4, = ax4.plot(var_x,self.MSE_WMV, "y", label="MSE")
             p1, = ax1.plot(var_x,self.PSNR_WMV, label="PSNR")
-            if (config["EMV_or_WMV"] == "WMV"):
-                p2, = ax2.plot(var_x, self.VAR_recon, "r", label="WMV, windo=" + str(self.windowSize))
-            else:
-                p2, = ax2.plot(var_x, self.VAR_recon, "r", label="WMV, alpha=" + str(self.alpha_EMV))
+            p2, = ax2.plot(var_x, self.VAR_recon, "r", label="WMV, alpha=" + str(self.alpha_EMV))
             p3, = ax3.plot(var_x,self.SSIM_WMV, "orange", label="SSIM")
             #ax1.set_xlim(0, self.total_nb_iter-1)
             ax1.set_xlim(0, min(self.epochStar+self.patienceNumber,self.total_nb_iter-1))
@@ -471,14 +475,7 @@ class iResults(vDenoising):
                 plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
                 self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
     
-    def WMV_csv_path(self,window_size,config):
-        Path(self.subroot_metrics + self.method + '/' + self.suffix_metrics + '/').mkdir(parents=True, exist_ok=True)
-        if (config["read_only_MV_csv"]):
-            return self.subroot_metrics + self.method + '/' + self.suffix_metrics + '/' + config["EMV_or_WMV"] + '_windo=' + str(window_size) + "_nb_it=" + str(self.total_nb_iter) + '.csv'
-        else:
-            return self.subroot_metrics + self.method + '/' + self.suffix_metrics + '/' + config["EMV_or_WMV"] + '_windo=' + str(window_size) + "_nb_it=" + str(self.total_nb_iter-1) + '.csv'
-
-    def EMV_csv_path(self,alpha_EMV,config):
+    def MV_csv_path(self,alpha_EMV,config):
         Path(self.subroot_metrics + self.method + '/' + self.suffix_metrics + '/').mkdir(parents=True, exist_ok=True)
         if (config["read_only_MV_csv"]):
             return self.subroot_metrics + self.method + '/' + self.suffix_metrics + '/' + config["EMV_or_WMV"] + '_alpha=' + str(alpha_EMV) + "_nb_it=" + str(self.total_nb_iter) + '.csv'
@@ -489,81 +486,50 @@ class iResults(vDenoising):
 
         # Remove first iterations 
         remove_first_iterations = 415
-        remove_first_iterations = 100
+        remove_first_iterations = 50
         # remove_first_iterations = 400
         # remove_first_iterations = 1500
         # Remove last iterations
         last_iteration = self.total_nb_iter
         last_iteration = 2000
         # last_iteration = 500
-        
-        log_scale = True
-        # log_scale = False
 
         for smooth in [False,True]:
             plt.figure()
             if (config["EMV_or_WMV"] == "EMV"):
                 alpha_list = [0.9,0.5,0.1,0.05,0.0251]
-                # alpha_list = [0.99,0.5,0.1,0.05]
-                # alpha_list = [0.99,0.5,0.1,0.0251]
-                # alpha_list = [0.99,0.5,0.1]
-                # alpha_list = [0.1]
+                # alpha_list = [0.99,0.5,0.0251]
                 # alpha_list = sorted(alpha_list,reverse=True)
 
-                config_list = alpha_list
-            else:
-                window_list = [10,50,100,500]
-                
-                config_list = window_list
+                self.MV = len(alpha_list) * [0]
+                self.MV_original = len(alpha_list) * [0]
+                for alpha_idx in range(len(alpha_list)):
+                    alpha_EMV = alpha_list[alpha_idx]
+                    with open(self.MV_csv_path(alpha_EMV,config), 'r') as myfile:
+                        spamreader = reader_csv(myfile,delimiter=';')
+                        rows_csv = list(spamreader)
+                        self.MV[alpha_idx] = [float(rows_csv[0][i]) for i in range(int(self.i_init),min(len(rows_csv[0]),self.total_nb_iter))]
+                        self.MV[alpha_idx] = self.MV[alpha_idx][remove_first_iterations:last_iteration+1]
+                        self.MV_original[alpha_idx] = self.MV[alpha_idx]
 
-            
+                    
+                    # Smooth MV curve
+                    alpha_tmp = 0.025
+                    # smooth = False
+                    if (smooth):
+                        self.MV[alpha_idx][0] = 0
+                        for i in range(1,len(self.MV[alpha_idx])):
+                            self.MV[alpha_idx][i] = (1-alpha_tmp) * self.MV[alpha_idx][i-1] + alpha_tmp * self.MV_original[alpha_idx][i]
 
-            self.MV = len(config_list) * [0]
-            self.MV_original = len(config_list) * [0]
-            for idx in range(len(config_list)):
-                param_EMV = config_list[idx]
-                if config["EMV_or_WMV"] == "WMV":
-                    MV_csv_path = self.WMV_csv_path(self.windowSize,config)
-                else:
-                    MV_csv_path = self.EMV_csv_path(self.alpha_EMV,config)
-                with open(MV_csv_path, 'r') as myfile:
-                    spamreader = reader_csv(myfile,delimiter=';')
-                    rows_csv = list(spamreader)
-                    self.MV[idx] = [float(rows_csv[0][i]) for i in range(int(self.i_init),min(len(rows_csv[0]),self.total_nb_iter))]
-                    self.MV[idx] = self.MV[idx][remove_first_iterations:last_iteration+1]
-                    self.MV_original[idx] = self.MV[idx]
 
-                
-                # Smooth MV curve
-                alpha_tmp = 0.025
-                alpha_tmp = 0.01
-                # smooth = False
-                if (smooth):
-                    self.MV[idx][0] = 0
-                    for i in range(1,len(self.MV[idx])):
-                        self.MV[idx][i] = (1-alpha_tmp) * self.MV[idx][i-1] + alpha_tmp * self.MV_original[idx][i]
-
-                if (config["EMV_or_WMV"] == "WMV"):
-                    var_x = np.arange(self.windowSize-1, self.windowSize + len(self.VAR_recon)-1)  # define x axis of WMV
-                else:
-                    var_x = np.arange(len(self.VAR_recon))  # define x axis of EMVnp.arange(remove_first_iterations,min(last_iteration+1,self.total_nb_iter)
-                    # var_x = np.arange(self.patienceNumber + self.epochStar + 1)  # define x axis of EMV  
-
-                if (log_scale):
-                    plt.plot(var_x,np.log(self.MV[idx]),label=param_EMV)
+                    # plt.plot(np.arange(remove_first_iterations,min(last_iteration+1,self.total_nb_iter+1)),self.MV[alpha_idx],label=alpha_EMV)
+                    plt.plot(np.arange(remove_first_iterations,min(last_iteration+1,self.total_nb_iter+1)),np.log(self.MV[alpha_idx]),label=alpha_EMV)
                     plt.ylabel("log scale")
-                else:
-                    plt.plot(np.arange(remove_first_iterations,min(last_iteration+1,self.total_nb_iter)),self.MV[idx],label=param_EMV)
-                plt.legend()
-                if config["EMV_or_WMV"] == "WMV":
-                    print("MV min for window size=",param_EMV,"at it= (10 first removed, after ",1000+remove_first_iterations," also)",", smooth=",str(smooth),np.argmin(self.MV[idx][10:1000])+10 + remove_first_iterations)
-                    plt.savefig(self.mkdir(self.subroot + '/several_windows/' + self.suffix) + '/' + str(
-                    self.lr) + '-lr' + str(self.lr) + '+several_windows' '_' + str(config_list) + '_' + str(remove_first_iterations) + '_' + str(last_iteration) + '_smooth=' + str(smooth) + '.png')
-                else:
-                    print("MV min for alpha_EMV=",param_EMV,"at it= (10 first removed, after ",1000+remove_first_iterations," also)",", smooth=",str(smooth),np.argmin(self.MV[idx][10:1000])+10 + remove_first_iterations)
-                    plt.savefig(self.mkdir(self.subroot + '/several_alphas/' + self.suffix) + '/' + str(
-                    self.lr) + '-lr' + str(self.lr) + '+several_alphas' '_' + str(config_list) + '_' + str(remove_first_iterations) + '_' + str(last_iteration) + '_smooth=' + str(smooth) + '.png')
-            plt.title(str(remove_first_iterations) + " first iterations + " + str(self.total_nb_iter-last_iteration) + " final iterations removed")
+                    plt.legend()
+                    print("MV min for alpha_EMV=",alpha_EMV,"at it= (10 first removed, after ",1000+remove_first_iterations," also)",", smooth=",str(smooth),np.argmin(self.MV[alpha_idx][10:1000]) + remove_first_iterations)
+                plt.title(str(remove_first_iterations) + " first iterations + " + str(self.total_nb_iter-last_iteration) + " final iterations removed")
+                plt.savefig(self.mkdir(self.subroot + '/several_alphas/' + self.suffix) + '/' + str(
+                self.lr) + '-lr' + str(self.lr) + '+several_alphas' '_' + str(alpha_list) + '_' + str(remove_first_iterations) + '_' + str(last_iteration) + '_smooth=' + str(smooth) + '.png')
 
     def loop_on_replicates(self,config,i):
         for p in range(1,self.nb_replicates+1):
@@ -690,7 +656,7 @@ class iResults(vDenoising):
     def compute_IR_whole(self, PETImage_shape, image_recon,i,IR_whole_recon,image):
         ROI_act = image_recon
         IR_whole_recon[i] = (np.std(ROI_act) / np.mean(ROI_act))
-        # print("IR_whole_recon",IR_whole_recon)
+        print("IR_whole_recon",IR_whole_recon)
         #print('Image roughness in the background', IR_whole_recon[i],' , must be as small as possible')
 
 
@@ -842,20 +808,10 @@ class iResults(vDenoising):
             self.SUCCESS = self.classWMV.SUCCESS
 
             if (config["read_only_MV_csv"]):
-                if (config["EMV_or_WMV"] == "EMV"):
-                    EMV_csv = self.VAR_recon[i]
-                else:
-                    pass
-                    # if (i < self.windowSize):
-                    #     self.WMV = 0
-                    # else:
-                    #     self.WMV = MV_csv
+                MV_csv = self.VAR_recon[i]
             else:
-                EMV_csv = np.NaN
-            if (config["EMV_or_WMV"] == "WMV"):
-                self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out,i,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate,descale=False,MV_csv=np.NaN)
-            else:
-                self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out,i,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate,descale=False,MV_csv=EMV_csv)
+                MV_csv = np.NaN
+            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out,i,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate,descale=False,MV_csv=MV_csv)
             if (not config["read_only_MV_csv"]):
                 self.VAR_recon = self.classWMV.VAR_recon
                 self.MSE_WMV = self.classWMV.MSE_WMV
