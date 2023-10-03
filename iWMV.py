@@ -32,6 +32,7 @@ class iWMV(vGeneral):
             self.EMV = 0
             self.alpha_EMV = config["alpha_EMV"]
         else:
+            # self.MV = 0
             self.windowSize = config["windowSize"]
 
         #self.queueQ = array((self.windowSize,self.PETImage_shape))
@@ -53,7 +54,7 @@ class iWMV(vGeneral):
     def runComputation(self,config,root):
         pass
 
-    def WMV(self,out,epoch,queueQ,SUCCESS,VAR_min,stagnate,descale=True,EMV_csv=NaN):
+    def WMV(self,out,epoch,queueQ,SUCCESS,VAR_min,stagnate,descale=True,MV_csv=NaN):
         
         if (out != "MV_metrics_already_in_csv"):
             # Descale, squeeze image and add 3D dimension to 1 (ok for 2D images)
@@ -97,37 +98,52 @@ class iWMV(vGeneral):
 
             from skimage.metrics import peak_signal_noise_ratio
             from skimage.metrics import structural_similarity
-            self.MSE_WMV.append(mean((image_gt_cropped - out_cropped)**2))
-            self.PSNR_WMV.append(peak_signal_noise_ratio(image_gt_cropped, out_cropped, data_range=amax(out_cropped) - amin(out_cropped)))
-            self.SSIM_WMV.append(structural_similarity(squeeze(image_gt_cropped), squeeze(out_cropped), data_range=out_cropped.max() - out_cropped.min()))
+
+            append_metrics = False
+            if (self.EMV_or_WMV == "WMV"):
+                if (len(queueQ) == self.windowSize - 1):
+                    append_metrics = True
+            else:
+                append_metrics = True
+
+            if append_metrics:
+                self.MSE_WMV.append(mean((image_gt_cropped - out_cropped)**2))
+                self.PSNR_WMV.append(peak_signal_noise_ratio(image_gt_cropped, out_cropped, data_range=amax(out_cropped) - amin(out_cropped)))
+                self.SSIM_WMV.append(structural_similarity(squeeze(image_gt_cropped), squeeze(out_cropped), data_range=out_cropped.max() - out_cropped.min()))
 
         if (self.EMV_or_WMV == "WMV"):
             #'''
             #####################################  Window Moving Variance  #############################################
-            queueQ.append(out_cropped.flatten()) # Add last computed image to last element in queueQ from window
-            if (len(queueQ) == self.windowSize):
-                # Compute mean for this window
-                mean_im = queueQ[0].copy()
-                for x in queueQ[1:self.windowSize]:
-                    mean_im += x
-                mean_im = mean_im / self.windowSize
-                # Compute variance for this window
-                VAR = norm(queueQ[0] - mean_im) ** 2
-                for x in queueQ[1:self.windowSize]:
-                    VAR += norm(x - mean_im) ** 2
-                VAR = VAR / self.windowSize
-                # Check if current variance is smaller than minimum previously computed variance, else count number of iterations since this minimum
-                if VAR < VAR_min and not SUCCESS:
-                    VAR_min = VAR
-                    self.epochStar = epoch  # current detection point
-                    stagnate = 1
-                else:
-                    stagnate += 1
-                # ES point has been found
-                if stagnate == self.patienceNumber:
-                    SUCCESS = True
-                queueQ.pop(0) # Remove first element in queueQ from window for next variance computation
-                self.VAR_recon.append(VAR) # Store current variance to plot variance curve after
+            if (out != "MV_metrics_already_in_csv"):
+                queueQ.append(out_cropped.flatten()) # Add last computed image to last element in queueQ from window
+                if (len(queueQ) == self.windowSize):
+                    # Compute mean for this window
+                    mean_im = queueQ[0].copy()
+                    for x in queueQ[1:self.windowSize]:
+                        mean_im += x
+                    mean_im = mean_im / self.windowSize
+                    # Compute variance for this window
+                    VAR = norm(queueQ[0] - mean_im) ** 2
+                    for x in queueQ[1:self.windowSize]:
+                        VAR += norm(x - mean_im) ** 2
+                    VAR = VAR / self.windowSize
+                    # Check if current variance is smaller than minimum previously computed variance, else count number of iterations since this minimum
+                    if VAR < VAR_min and not SUCCESS:
+                        VAR_min = VAR
+                        self.epochStar = epoch  # current detection point
+                        stagnate = 1
+                    else:
+                        stagnate += 1
+                    # ES point has been found
+                    if stagnate == self.patienceNumber:
+                        SUCCESS = True
+                    queueQ.pop(0) # Remove first element in queueQ from window for next variance computation
+                    self.VAR_recon.append(VAR) # Store current variance to plot variance curve after
+            # else:
+            #     if (epoch < self.windowSize):
+            #         self.WMV = 0
+            #     else:
+            #         self.WMV = MV_csv
             #'''
         else:
             #'''
@@ -138,7 +154,7 @@ class iWMV(vGeneral):
                 # Compute EMA to be used in next window
                 self.EMA = (1-self.alpha_EMV) * self.EMA + self.alpha_EMV * out_cropped
             else:
-                self.EMV = EMV_csv
+                self.EMV = MV_csv
             # Check if current variance is smaller than minimum previously computed variance, else count number of iterations since this minimum
             if self.EMV < VAR_min and not SUCCESS:
                 VAR_min = self.EMV

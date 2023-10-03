@@ -819,28 +819,38 @@ class vGeneral(abc.ABC):
         # remove_external_radius = 3 # ROIs further away from true edges
 
         # Define ROIs
-        tumor_1a_ROI = self.points_in_circle(15,-25,4,PETImage_shape)
+        tumor_1a_ROI = self.points_in_circle(15,-25,4-remove_external_radius,PETImage_shape)
+        tumor_1a_ROI_bkg = self.points_in_circle(15,-25,4+remove_external_radius,PETImage_shape)
 
         # tumor_1b_ROI = self.points_in_circle(0,25,4,PETImage_shape)
         xx,yy = meshgrid(arange(66,72),arange(52,60))
         tumor_1b_ROI = list(map(tuple, dstack([xx.ravel(), yy.ravel()])[0]))
 
-        tumor_2_MR_ROI = self.points_in_circle(-25,0,8,PETImage_shape)
-        tumor_2_PET_ROI = self.points_in_circle(-27,0,4,PETImage_shape)
-        tumor_3a_ROI = self.points_in_circle(25,0,4,PETImage_shape)
-
-
+        tumor_2_MR_ROI = self.points_in_circle(-25,0,8-remove_external_radius,PETImage_shape)
+        tumor_2_PET_ROI = self.points_in_circle(-27,0,4-remove_external_radius,PETImage_shape)
+        tumor_2_PET_ROI_bkg = self.points_in_circle(-27,0,4+remove_external_radius,PETImage_shape)
+        tumor_3a_ROI = self.points_in_circle(13,25,4-remove_external_radius,PETImage_shape)
         
         tumor_3a_mask = zeros(PETImage_shape, dtype='<f')
         tumor_1b_mask = zeros(PETImage_shape, dtype='<f')
         tumor_1a_mask = zeros(PETImage_shape, dtype='<f')
         tumor_2_PET_mask = zeros(PETImage_shape, dtype='<f')
+        phantom_mask = self.fijii_np(subroot+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + self.phantom[5:] + '.raw', shape=self.PETImage_shape)
+        bkg_mask = zeros(PETImage_shape, dtype='<f')
+        
+        phantom_ROI_bkg = []
+        for x in range(0,PETImage_shape[0]):
+            for y in range(0,PETImage_shape[1]):
+                if (phantom_mask[x,y] == 1):
+                    phantom_ROI_bkg.append((x,y))
+        bkg_ROI = list(set(phantom_ROI_bkg) - set(tumor_1a_ROI_bkg) - set(tumor_2_PET_ROI_bkg))
+
 
         ROI_MR_list = [tumor_1a_ROI,tumor_2_MR_ROI,tumor_3a_ROI]
         ROI_PET_list = [tumor_1a_ROI,tumor_2_PET_ROI]
 
-        ROI_list = [tumor_3a_ROI,tumor_1b_ROI,tumor_1a_ROI,tumor_2_PET_ROI]
-        mask_list = [tumor_3a_mask, tumor_1b_mask, tumor_1a_mask, tumor_2_PET_mask]
+        ROI_list = [tumor_3a_ROI,tumor_1b_ROI,tumor_1a_ROI,tumor_2_PET_ROI, bkg_ROI]
+        mask_list = [tumor_3a_mask, tumor_1b_mask, tumor_1a_mask, tumor_2_PET_mask, bkg_mask]
         for i in range(len(ROI_list)):
             ROI = ROI_list[i]
             mask = mask_list[i]
@@ -852,6 +862,7 @@ class vGeneral(abc.ABC):
         self.save_img(tumor_2_PET_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw')
         self.save_img(tumor_1a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw')
         self.save_img(tumor_3a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw')
+        self.save_img(bkg_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw')
 
     def write_image_tensorboard(self,writer,image,name,suffix,image_gt,i=0,full_contrast=False):
         # Creating matplotlib figure with colorbar

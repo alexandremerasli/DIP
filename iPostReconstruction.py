@@ -172,8 +172,8 @@ class iPostReconstruction(vDenoising):
         ## Variables for WMV ##
         if (model.DIP_early_stopping):
             self.epochStar = model.classWMV.epochStar
-            if (config["EMV_or_WMV"] == "WMV"):
-                classResults.windowSize = self.windowSize
+            # if (config["EMV_or_WMV"] == "WMV"):
+            #     classResults.windowSize = self.windowSize
             self.patienceNumber = model.classWMV.patienceNumber
             self.VAR_recon = model.classWMV.VAR_recon
             self.MSE_WMV = model.classWMV.MSE_WMV
@@ -205,7 +205,10 @@ class iPostReconstruction(vDenoising):
         if (model.DIP_early_stopping):
             if (model.SUCCESS):
                 self.total_nb_iter = model.epochStar + self.patienceNumber
-            
+
+        # Initialize WMV class
+        model.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,root,self.scanner)
+
         # Iterations to be descaled
         if (self.all_images_DIP == "True"):
             epoch_values = np.arange(last_iter+1,self.total_nb_iter)
@@ -287,9 +290,9 @@ class iPostReconstruction(vDenoising):
             classResults.MSE_WMV = self.MSE_WMV
             classResults.PSNR_WMV = self.PSNR_WMV
             classResults.SSIM_WMV = self.SSIM_WMV
-            if (config["EMV_or_WMV"] == "WMV"):
-                classResults.windowSize = self.windowSize
+            # if (config["EMV_or_WMV"] == "WMV"):
+            #     classResults.windowSize = self.windowSize
             classResults.patienceNumber = self.patienceNumber
             classResults.SUCCESS = self.SUCCESS
-            if (config["EMV_or_WMV"] == "WMV"):
-                classResults.WMV_plot(config)
+            # if (config["EMV_or_WMV"] == "WMV"):
+            #     classResults.WMV_plot(config)
