@@ -15,7 +15,7 @@ def save_img(img,name):
     img.tofile(fp)
     print('Succesfully save in:', name)
 
-factor = 0
+factor = 0.1
 img = factor * np.ones((112,112))
 root = "/home/meraslia/workspace_reco/test_dynamic/"
 save_img(img,root + str(factor) + "_image.img")
