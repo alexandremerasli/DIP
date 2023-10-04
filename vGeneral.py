@@ -93,15 +93,15 @@ class vGeneral(abc.ABC):
             self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
             self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
-            # Define ROIs for image0 phantom, otherwise it is already done in the database
-            if (self.phantom == "image0" or self.phantom == "image2_0" and config["task"] != "show_metrics_results_already_computed"):
-                self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
-            elif (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
-                self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
-            elif ((self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
-                self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
-            elif ((self.phantom == "image50_1") and config["task"] != "show_metrics_results_already_computed"):
-                self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot_data)
+            # # Define ROIs for image0 phantom, otherwise it is already done in the database
+            # if (self.phantom == "image0" or self.phantom == "image2_0" and config["task"] != "show_metrics_results_already_computed"):
+            #     self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
+            # elif (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
+            #     self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
+            # elif ((self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
+            #     self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
+            # elif ((self.phantom == "image50_1") and config["task"] != "show_metrics_results_already_computed"):
+            #     self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot_data)
         return config
 
     def createDirectoryAndConfigFile(self,config):
@@ -195,6 +195,17 @@ class vGeneral(abc.ABC):
         # # Loading Ground Truth image to compute metrics
         # self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')            
 
+
+        # Define ROIs for image0 phantom, otherwise it is already done in the database
+        if (self.phantom == "image0" or self.phantom == "image2_0" and config["task"] != "show_metrics_results_already_computed"):
+            self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
+        elif (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
+            self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
+        elif ((self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
+            self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
+        elif ((self.phantom == "image50_1") and config["task"] != "show_metrics_results_already_computed"):
+            self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot_data)
+
         # Defining ROIs
         self.phantom_ROI = self.get_phantom_ROI(self.phantom)
         if ("3D" not in self.phantom):
@@ -213,6 +224,7 @@ class vGeneral(abc.ABC):
                         self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')    
                     self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                    self.hot_MR_recon = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     # This ROIs has already been defined, but is computed for the sake of simplicity
                     self.hot_ROI = self.hot_TEP_ROI
                 else:
@@ -221,6 +233,7 @@ class vGeneral(abc.ABC):
                     self.hot_TEP_ROI = array(self.hot_ROI)
                     self.hot_TEP_match_square_ROI = array(self.hot_ROI)
                     self.hot_perfect_match_ROI = array(self.hot_ROI)
+                    self.hot_MR_recon = array(self.hot_ROI)
                 self.cold_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
                 if ("4" in self.phantom):
                     self.cold_inside_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_inside_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
@@ -799,6 +812,8 @@ class vGeneral(abc.ABC):
         tumor_perfect_match_ROI_mask = zeros(PETImage_shape, dtype='<f')
         phantom_mask = zeros(PETImage_shape, dtype='<f')
         bkg_mask = zeros(PETImage_shape, dtype='<f')
+        tumor_3a_mask_whole = zeros(PETImage_shape, dtype='<f')
+        tumor_3a_mask_whole[26:40,63:69] = 1
 
         ROI_list = [cold_ROI, cold_inside_ROI, cold_edge_ROI, hot_TEP_ROI, hot_TEP_match_square_ROI, hot_perfect_match_ROI, phantom_ROI, bkg_ROI]
         mask_list = [cold_mask, cold_inside_mask, cold_edge_mask, tumor_TEP_mask, tumor_TEP_match_square_ROI_mask, tumor_perfect_match_ROI_mask, phantom_mask, bkg_mask]
@@ -817,6 +832,7 @@ class vGeneral(abc.ABC):
         self.save_img(tumor_perfect_match_ROI_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw')
         self.save_img(phantom_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + self.phantom[5:] + '.raw')
         self.save_img(bkg_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw')
+        self.save_img(tumor_3a_mask_whole, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw')
 
 
     def define_ROI_brain_with_tumors(self,PETImage_shape,subroot):
@@ -833,7 +849,7 @@ class vGeneral(abc.ABC):
         tumor_1b_ROI = list(map(tuple, dstack([xx.ravel(), yy.ravel()])[0]))
 
         tumor_2_MR_ROI = self.points_in_circle(-25,0,8-remove_external_radius,PETImage_shape)
-        tumor_2_PET_ROI = self.points_in_circle(-27,0,4-remove_external_radius,PETImage_shape)
+        tumor_2_PET_ROI = self.points_in_circle(-27,0,4,PETImage_shape) # Do not remove external radius to show effect of intermediate setting
         # tumor_3a_ROI = self.points_in_circle(25,0,4-remove_external_radius,PETImage_shape)
         tumor_3a_ROI = self.points_in_circle(13,25,4-remove_external_radius,PETImage_shape)
         tumor_3a_ROI_whole = self.points_in_circle(13,25,4,PETImage_shape)
@@ -862,7 +878,7 @@ class vGeneral(abc.ABC):
         self.save_img(tumor_2_PET_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw')
         self.save_img(tumor_1a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw')
         self.save_img(tumor_3a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw')
-        # self.save_img(tumor_3a_mask_whole, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw')
+        self.save_img(tumor_3a_mask_whole, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw')
 
     def write_image_tensorboard(self,writer,image,name,suffix,image_gt,i=0,full_contrast=False):
         # Creating matplotlib figure with colorbar

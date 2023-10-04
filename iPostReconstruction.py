@@ -106,6 +106,7 @@ class iPostReconstruction(vDenoising):
                 classResults.hot_TEP_ROI = self.hot_TEP_ROI
                 classResults.hot_TEP_match_square_ROI = self.hot_TEP_match_square_ROI
                 classResults.hot_perfect_match_ROI = self.hot_perfect_match_ROI
+                classResults.hot_MR_recon = self.hot_MR_recon
                 classResults.hot_ROI = self.hot_ROI
                 classResults.cold_ROI = self.cold_ROI
                 classResults.cold_inside_ROI = self.cold_inside_ROI

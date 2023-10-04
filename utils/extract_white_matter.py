@@ -44,7 +44,7 @@ plt.imshow(img1_np,cmap="gray")
 
 # Erosion
 # declare an structuring elment
-selem = morph.disk(1)
+selem = morph.disk(2)
 # apply a scipy morphological operation
 eroded_im = morph.erosion(img1_np, selem)
 

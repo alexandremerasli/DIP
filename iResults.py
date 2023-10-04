@@ -130,6 +130,7 @@ class iResults(vDenoising):
                         self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')    
                     self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                    self.hot_MR_recon = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     # This ROIs has already been defined, but is computed for the sake of simplicity
                     self.hot_ROI = self.hot_TEP_ROI
                 else:
@@ -138,6 +139,7 @@ class iResults(vDenoising):
                     self.hot_TEP_ROI = np.array(self.hot_ROI)
                     self.hot_TEP_match_square_ROI = np.array(self.hot_ROI)
                     self.hot_perfect_match_ROI = np.array(self.hot_ROI)
+                    self.hot_MR_recon = np.array(self.hot_ROI)
                 self.cold_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
                 if ("4" in self.phantom):
                     self.cold_inside_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_inside_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
@@ -160,7 +162,8 @@ class iResults(vDenoising):
             self.AR_hot_TEP_recon = np.zeros(int(self.total_nb_iter ) + 1)
             self.AR_hot_TEP_match_square_recon = np.zeros(int(self.total_nb_iter ) + 1)
             self.AR_hot_perfect_match_recon = np.zeros(int(self.total_nb_iter ) + 1)
-            
+            self.AR_hot_MR_recon = np.zeros(int(self.total_nb_iter ) + 1)
+
             self.loss_DIP_recon = np.zeros(int(self.total_nb_iter ) + 1)
             self.CRC_hot_recon = np.zeros(int(self.total_nb_iter ) + 1)
             self.AR_bkg_recon = np.zeros(int(self.total_nb_iter ) + 1)
@@ -223,7 +226,7 @@ class iResults(vDenoising):
     def writeEndImagesAndMetrics(self,i,max_iter,PETImage_shape,f,suffix,phantom,net,pet_algo,iteration_name='iterations'):       
         # Metrics for NN output
         if ("3D" not in phantom):
-            self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_hot_TEP_recon,self.AR_hot_TEP_match_square_recon,self.AR_hot_perfect_match_recon,self.loss_DIP_recon,self.CRC_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,self.IR_whole_recon,self.mean_inside_recon,phantom,writer=self.writer)
+            self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_hot_TEP_recon,self.AR_hot_TEP_match_square_recon,self.AR_hot_perfect_match_recon,self.AR_hot_MR_recon,self.loss_DIP_recon,self.CRC_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,self.IR_whole_recon,self.mean_inside_recon,phantom,writer=self.writer)
 
         if (self.tensorboard):
             # Write image over ADMM iterations
@@ -660,7 +663,7 @@ class iResults(vDenoising):
         #print('Image roughness in the background', IR_whole_recon[i],' , must be as small as possible')
 
 
-    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,SSIM_recon,MA_cold_recon,AR_hot_recon,AR_hot_TEP_recon,AR_hot_TEP_match_square_recon,AR_hot_perfect_match_recon,loss_DIP_recon,CRC_hot_recon,AR_bkg_recon,IR_bkg_recon,IR_whole_recon,mean_inside_recon,image,writer=None):
+    def compute_metrics(self, PETImage_shape, image_recon,image_gt,i,PSNR_recon,PSNR_norm_recon,MSE_recon,SSIM_recon,MA_cold_recon,AR_hot_recon,AR_hot_TEP_recon,AR_hot_TEP_match_square_recon,AR_hot_perfect_match_recon,AR_hot_MR_recon,loss_DIP_recon,CRC_hot_recon,AR_bkg_recon,IR_bkg_recon,IR_whole_recon,mean_inside_recon,image,writer=None):
         # radius - 1 is to remove partial volume effect in metrics computation / radius + 1 must be done on cold and hot ROI when computing background ROI, because we want to exclude those regions from big cylinder
         image_recon_cropped = image_recon*self.phantom_ROI
         image_recon_norm = self.norm_imag(image_recon_cropped)[0] # normalizing DIP output
@@ -717,6 +720,10 @@ class iResults(vDenoising):
         # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c 50. 90. 0. 20. 4. 400)
         hot_perfect_match_ROI_act = image_recon[self.hot_perfect_match_ROI==1]
         AR_hot_perfect_match_recon[i] = np.mean(hot_perfect_match_ROI_act)
+        
+        # Mean Activity Recovery (ARmean) in hot MR calculation
+        hot_MR_ROI_act = image_recon[self.hot_MR_recon==1]
+        AR_hot_MR_recon[i] = np.mean(hot_MR_ROI_act)
 
         # Mean Activity Recovery (ARmean) in background calculation (-c 0. 0. 0. 150. 4. 100)
         bkg_ROI_act = image_recon[self.bkg_ROI==1]
@@ -783,6 +790,7 @@ class iResults(vDenoising):
             writer.add_scalar('Mean Concentration Recovery coefficient in hot (only in TEP) cylinder (best : 1)', AR_hot_TEP_recon[i], i)
             writer.add_scalar('Mean Concentration Recovery coefficient in hot (square MR, circle TEP) cylinder (best : 1)', AR_hot_TEP_match_square_recon[i], i)
             writer.add_scalar('Mean Concentration Recovery coefficient in hot (perfect match) cylinder (best : 1)', AR_hot_perfect_match_recon[i], i)
+            writer.add_scalar('Mean Concentration Recovery coefficient in hot (only in MR) (best : 1)', AR_hot_MR_recon[i], i)
             writer.add_scalar('Mean Concentration Recovery coefficient in background (best : 1)', AR_bkg_recon[i], i)
             writer.add_scalar('DIP loss', loss_DIP_recon[i], i)
             writer.add_scalar('Mean inside phantom', mean_inside_recon[i], i)
