@@ -6,7 +6,7 @@ from numpy import max as max_np
 from numpy import mean as mean_np
 from numpy import std as std_np
 from numpy import ones_like, dtype, fromfile, sign, newaxis, copy
-from numpy.random import uniform
+from numpy.random import seed, uniform
 
 from pathlib import Path
 from os.path import isfile
@@ -16,7 +16,7 @@ from iWMV import iWMV
 
 class DIP_2D(LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init):
         super().__init__()
 
         # Save all the arguments passed to your model in the checkpoint, especially to save learning rate
@@ -64,10 +64,7 @@ class DIP_2D(LightningModule):
         self.experiment = config["experiment"]
 
         # MIC study
-        if ("override_SC_init" in config):
-            self.override_SC_init = config['override_SC_init']
-        else:
-            self.override_SC_init = False
+        self.override_SC_init = override_SC_init
         if ("dropout" in config):
             self.dropout = config['dropout']
         else:
@@ -212,9 +209,14 @@ class DIP_2D(LightningModule):
 
     def forward(self, x):
 
-        # Dropout 
-        # drop_sample = uniform(0,1,3)
-        drop_sample = rand(3)
+        # Dropout, changing numpy seed at each global iteration
+        if (self.dropout > 0):
+            seed(self.global_it + 1000)
+            drop_sample = uniform(0,1,3)
+            # drop_sample = rand(3)
+            seed(1)
+        else:
+            drop_sample = (1,1,1)
 
         # Encoder
         out1 = self.deep1(x)

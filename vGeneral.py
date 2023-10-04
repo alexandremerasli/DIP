@@ -62,6 +62,12 @@ class vGeneral(abc.ABC):
         self.castor_foms = config["castor_foms"]
         self.FLTNB = config["FLTNB"]
 
+        # MIC study
+        if ("override_SC_init" in config):
+            self.override_SC_init = config['override_SC_init']
+        else:
+            self.override_SC_init = False
+
         if ("read_only_MV_csv" not in config):
             config["read_only_MV_csv"] = False
 
@@ -195,10 +201,11 @@ class vGeneral(abc.ABC):
             bkg_ROI_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw'
             cold_ROI_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw'
             if (isfile(bkg_ROI_path) or isfile(cold_ROI_path)):
-                if ("50" not in self.phantom):    
-                    self.bkg_ROI = self.fijii_np(bkg_ROI_path, shape=(self.PETImage_shape),type_im='<f')
-                else:
-                    self.bkg_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
+                self.bkg_ROI = self.fijii_np(bkg_ROI_path, shape=(self.PETImage_shape),type_im='<f')
+                # if ("50" not in self.phantom):    
+                #     self.bkg_ROI = self.fijii_np(bkg_ROI_path, shape=(self.PETImage_shape),type_im='<f')
+                # else:
+                #     self.bkg_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
                 if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_1"):
                     if (self.phantom != "image50_1"):
                         self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
@@ -825,14 +832,16 @@ class vGeneral(abc.ABC):
         xx,yy = meshgrid(arange(66,72),arange(52,60))
         tumor_1b_ROI = list(map(tuple, dstack([xx.ravel(), yy.ravel()])[0]))
 
-        tumor_2_MR_ROI = self.points_in_circle(-25,0,8,PETImage_shape)
-        tumor_2_PET_ROI = self.points_in_circle(-27,0,4,PETImage_shape)
-        # tumor_3a_ROI = self.points_in_circle(25,0,4,PETImage_shape)
-        tumor_3a_ROI = self.points_in_circle(13,25,4,PETImage_shape)
+        tumor_2_MR_ROI = self.points_in_circle(-25,0,8-remove_external_radius,PETImage_shape)
+        tumor_2_PET_ROI = self.points_in_circle(-27,0,4-remove_external_radius,PETImage_shape)
+        # tumor_3a_ROI = self.points_in_circle(25,0,4-remove_external_radius,PETImage_shape)
+        tumor_3a_ROI = self.points_in_circle(13,25,4-remove_external_radius,PETImage_shape)
+        tumor_3a_ROI_whole = self.points_in_circle(13,25,4,PETImage_shape)
 
 
         
         tumor_3a_mask = zeros(PETImage_shape, dtype='<f')
+        tumor_3a_mask_whole = zeros(PETImage_shape, dtype='<f')
         tumor_1b_mask = zeros(PETImage_shape, dtype='<f')
         tumor_1a_mask = zeros(PETImage_shape, dtype='<f')
         tumor_2_PET_mask = zeros(PETImage_shape, dtype='<f')
@@ -840,8 +849,8 @@ class vGeneral(abc.ABC):
         ROI_MR_list = [tumor_1a_ROI,tumor_2_MR_ROI,tumor_3a_ROI]
         ROI_PET_list = [tumor_1a_ROI,tumor_2_PET_ROI]
 
-        ROI_list = [tumor_3a_ROI,tumor_1b_ROI,tumor_1a_ROI,tumor_2_PET_ROI]
-        mask_list = [tumor_3a_mask, tumor_1b_mask, tumor_1a_mask, tumor_2_PET_mask]
+        ROI_list = [tumor_3a_ROI,tumor_1b_ROI,tumor_1a_ROI,tumor_2_PET_ROI,tumor_3a_ROI_whole]
+        mask_list = [tumor_3a_mask, tumor_1b_mask, tumor_1a_mask, tumor_2_PET_mask,tumor_3a_mask_whole]
         for i in range(len(ROI_list)):
             ROI = ROI_list[i]
             mask = mask_list[i]
@@ -853,6 +862,7 @@ class vGeneral(abc.ABC):
         self.save_img(tumor_2_PET_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw')
         self.save_img(tumor_1a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw')
         self.save_img(tumor_3a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw')
+        # self.save_img(tumor_3a_mask_whole, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw')
 
     def write_image_tensorboard(self,writer,image,name,suffix,image_gt,i=0,full_contrast=False):
         # Creating matplotlib figure with colorbar

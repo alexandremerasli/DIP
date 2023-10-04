@@ -238,6 +238,13 @@ class iNestedADMM(vReconstruction):
                     classDenoising.override_input = False
             else:
                 classDenoising.override_input = False
+
+            # MIC study
+            if ("override_SC_init" in config):
+                classDenoising.override_SC_init = config['override_SC_init']
+            else:
+                classDenoising.override_SC_init = False
+
             # Initialize other variables
             classDenoising.sub_iter_DIP_already_done = 0
             self.sub_iter_DIP_already_done = 0
@@ -262,6 +269,7 @@ class iNestedADMM(vReconstruction):
             # Put back original input
             if (self.net == "DIP"):
                 classDenoising.override_input = False
+                classDenoising.override_SC_init = False
 
         return classDenoising
 

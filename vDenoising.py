@@ -460,10 +460,10 @@ class vDenoising(vGeneral):
     def choose_net(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, override_input):
         if (net == 'DIP'): # Loading DIP architecture
             if(PETImage_shape[2] == 1): # 2D
-                model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done)
+                model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)
                 model_class = DIP_2D
             else: # 3D
-                model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done)
+                model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)
                 model_class = DIP_3D
         elif (net == 'DIP_VAE'): # Loading DIP VAE architecture
             model = VAE_DIP_2D(config)
