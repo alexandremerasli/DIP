@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from skimage.metrics import peak_signal_noise_ratio
 from skimage.metrics import structural_similarity
+import numpy as np
+from scipy.ndimage import map_coordinates
 
 # Local files to import
 #from vGeneral import vGeneral
@@ -75,7 +77,12 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         change_replicates = "TMI"
         plot_profile = True
 
-        
+        # Avoid to divide by zero value in GT when normalizing std
+        for i in range(self.image_gt.shape[0]):
+            for j in range(self.image_gt.shape[0]):
+                if (self.image_gt[i,j] == 0):
+                    self.phantom_ROI[i,j] = 0
+    
 
         if (self.replicate != 1):
             print(self.replicate)
@@ -125,7 +132,10 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             nan_replicates = []
             DIPRecon_failing_replicate_list = []
             fig, ax_profile = plt.subplots()
-            avg_line = np.copy(f_init_avg[30,58:78])
+            # avg_line = np.copy(f_init_avg[30,58:78])
+            avg_line = self.nb_replicates * [0]
+            # lines_angles = self.nb_replicates * []
+            # min_len_zi = self.nb_replicates * []
             for p in range(self.nb_replicates,0,-1):
                 p_for_file = p
                 if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
@@ -202,13 +212,25 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
 
                 # Plot profile
                 if (plot_profile):
-                    line = f_list[p-1][30,58:78]
-                    avg_line += line / self.nb_replicates
-                    ax_profile.plot(line)
+                    # line = f_list[p-1][30,58:78]
+                    # ax_profile.plot(line)
+                    nb_angles=100
+                    angles = np.linspace(0, (nb_angles - 1) * np.pi / nb_angles, nb_angles)
+                    lines_angles,means,min_len_zi = self.compute_mean(f_list[p-1],(66,33),10,angles)
+                    avg_line[p-1] = np.zeros(min_len_zi)
+                    for angle in range(nb_angles):
+                        ax_profile.plot(lines_angles[angle,:min_len_zi])
+                        # avg_line = np.squeeze(avg_line) + np.squeeze(lines_angles[angle]) / self.nb_replicates
+                        avg_line[p-1] = np.squeeze(avg_line[p-1]) + np.squeeze(lines_angles[angle,:min_len_zi]) / nb_angles
             
-            ax_profile.plot(avg_line,color="black",linewidth=7)
-            plt.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'ax_profile.png')
+            final_avg_line = np.zeros_like(avg_line[0])
 
+            for p in range(len(avg_line)):
+                for i in range(len(avg_line[0])):
+                    final_avg_line[i] += avg_line[p][i] / self.nb_replicates
+
+            ax_profile.plot(final_avg_line,color="black",linewidth=5)
+            fig.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'ax_profile' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + '.png')
 
             # if len(nan_replicates) > 0:
             #     raise ValueError("naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan",nan_replicates)
@@ -317,6 +339,54 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             # Save images 
             self.write_image_tensorboard(self.writer,self.f_p,self.method + " at IR=" + str(int(round(IR,2)*100)) + "%, for replicate " + str(p) + ", it=" + str(i) + ", SSIM=" + str(round(SSIM_min,3)),self.suffix,self.image_gt,0) # image at IR=30% in tensorboard
             self.write_image_tensorboard(self.writer,self.f_p,self.method + " at IR=" + str(int(round(IR,2)*100)) + ", for replicate" + str(p) + ", it=" + str(i) + ", SSIM=" + str(round(SSIM_min,3)) + " (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # image at IR=30% in tensorboard
+
+    def rotate_point(self, origin, point, angle):
+        """
+        Rotate a point counterclockwise by a given angle around a given origin.
+        The angle should be given in radians.
+        """
+        ox, oy = origin
+        px, py = point
+
+        qx = ox + np.cos(angle) * (px - ox) - np.sin(angle) * (py - oy)
+        qy = oy + np.sin(angle) * (px - ox) + np.cos(angle) * (py - oy)
+
+        return qx, qy
+
+    def compute_mean(self, image, center, radius, angles):
+        means = []
+        zi_angles = np.zeros((len(angles),2*radius))
+        min_len_zi = np.inf
+        fig,ax=plt.subplots()
+        for i in range(len(angles)):
+            angle = angles[i]
+            # Compute the start and end points of the line
+            start = self.rotate_point(center, (center[0] - radius, center[1]), angle)
+            end = self.rotate_point(center, (center[0] + radius, center[1]), angle)
+
+            # Create the vector of points along the line
+            length = int(np.hypot(end[0]-start[0], end[1]-start[1]))
+            x,y = np.linspace(start[0], end[0], length), np.linspace(start[1], end[1], length)
+            # Threshold coordinates to int values
+            x_int = x.astype(np.int)
+            y_int = y.astype(np.int)
+            # Show line on image
+            # ax.imshow(image[58:78,20:40],cmap='gray_r',vmin=np.min(image[58:78,20:40]),vmax=np.max(image[58:78,20:40]))
+            ax.imshow(image,cmap='gray_r')
+            ax.plot(x_int,y_int)
+
+            # Extract the values along the line, using cubic interpolation
+            zi = map_coordinates(np.squeeze(image), np.vstack((y,x)))
+            zi_angles[i,:len(zi)] = zi
+            min_len_zi = min(min_len_zi,len(zi))
+
+            # Compute the mean
+            mean = np.mean(zi)
+            means.append(mean)
+
+        fig.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'profile_line_on_image' + '_nb_angles=' + str(len(angles)) + '_nb_repl=' + str(self.nb_replicates) + '.png')
+            
+        return zi_angles, means, min_len_zi
 
     def compareImages(self,suffix):
         if (self.tensorboard):
