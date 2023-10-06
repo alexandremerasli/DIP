@@ -54,7 +54,7 @@ class iWMV(vGeneral):
     def runComputation(self,config,root):
         pass
 
-    def WMV(self,out,epoch,queueQ,SUCCESS,VAR_min,stagnate,descale=True,MV_csv=NaN):
+    def WMV(self,out,epoch,sub_iter_DIP,queueQ,SUCCESS,VAR_min,stagnate,descale=True,MV_csv=NaN):
         
         if (out != "MV_metrics_already_in_csv"):
             # Descale, squeeze image and add 3D dimension to 1 (ok for 2D images)
@@ -169,8 +169,6 @@ class iWMV(vGeneral):
                 self.VAR_recon.append(self.EMV) # Store current variance to plot variance curve after
             #'''
 
-
-        #'''
         if SUCCESS:
             self.SUCCESS = SUCCESS
             # Open output corresponding to epoch star
@@ -187,6 +185,8 @@ class iWMV(vGeneral):
             print("#### WMV ########################################################")
             print("                 ES point found, epoch* =", self.epochStar)
             print("#################################################################")
-        #'''
+        else:
+            if (epoch == sub_iter_DIP-1): # No ES was found, so set it back to intiial value
+                self.epochStar = -1
 
         return SUCCESS, VAR_min, stagnate

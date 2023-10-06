@@ -44,7 +44,10 @@ class DIP_2D(LightningModule):
         # Defining variables from config        
         self.lr = config['lr']
         self.opti_DIP = config['opti_DIP']
-        self.sub_iter_DIP = config['sub_iter_DIP']
+        if (global_it == -1):
+            self.sub_iter_DIP = config['sub_iter_DIP_initial_and_final']
+        else:
+            self.sub_iter_DIP = config['sub_iter_DIP']
         self.skip = config['skip_connections']
         self.method = method
         self.all_images_DIP = all_images_DIP
@@ -426,7 +429,7 @@ class DIP_2D(LightningModule):
             if (len(out_np.shape) == 2): # 2D
                 out_np = out_np[:,:,newaxis]
 
-            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(copy(out_np),self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
+            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(copy(out_np),self.current_epoch,self.sub_iter_DIP,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
             self.VAR_recon = self.classWMV.VAR_recon
             self.MSE_WMV = self.classWMV.MSE_WMV
             self.PSNR_WMV = self.classWMV.PSNR_WMV
