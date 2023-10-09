@@ -132,7 +132,6 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             nan_replicates = []
             DIPRecon_failing_replicate_list = []
             fig, ax_profile = plt.subplots()
-            # avg_line = np.copy(f_init_avg[30,58:78])
             avg_line = self.nb_replicates * [0]
             # lines_angles = self.nb_replicates * []
             # min_len_zi = self.nb_replicates * []
@@ -211,12 +210,19 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
 
 
                 # Plot profile
+                if (self.phantom == "image40_1"):
+                    center_x_MR_tumor, center_y_MR_tumor = 66,33
+                    radius_MR_tumor = 10
+                elif (self.phantom == "image50_1"):
+                    center_x_MR_tumor, center_y_MR_tumor = 68,80
+                    radius_MR_tumor = 5
+                    
                 if (plot_profile):
-                    # line = f_list[p-1][30,58:78]
-                    # ax_profile.plot(line)
-                    nb_angles=100
+                    nb_angles=1
                     angles = np.linspace(0, (nb_angles - 1) * np.pi / nb_angles, nb_angles)
-                    lines_angles,means,min_len_zi = self.compute_mean(f_list[p-1],(66,33),10,angles)
+                    lines_angles,means,min_len_zi = self.compute_mean(f_list[p-1],(center_x_MR_tumor,center_y_MR_tumor),radius_MR_tumor,angles)
+                    # self.MR = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw',shape=(self.PETImage_shape),type_im='<f')
+                    # lines_angles,means,min_len_zi = self.compute_mean(self.MR,(center_x_MR_tumor,center_y_MR_tumor),radius_MR_tumor,angles)
                     avg_line[p-1] = np.zeros(min_len_zi)
                     for angle in range(nb_angles):
                         ax_profile.plot(lines_angles[angle,:min_len_zi])
@@ -230,11 +236,13 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                     final_avg_line[i] += avg_line[p][i] / self.nb_replicates
 
             ax_profile.plot(final_avg_line,color="black",linewidth=5)
+            if (self.phantom == "image50_1"):
+                # ax_profile.set_ylim([1.25,2.75])
+                ax_profile.set_ylim([1,3])
             fig.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'ax_profile' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + '.png')
 
             # if len(nan_replicates) > 0:
             #     raise ValueError("naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan",nan_replicates)
-
             self.nb_usable_replicates = self.nb_replicates - len(nan_replicates)
             f /= self.nb_usable_replicates
             f_init_avg /= self.nb_usable_replicates
@@ -371,8 +379,9 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             x_int = x.astype(np.int)
             y_int = y.astype(np.int)
             # Show line on image
-            # ax.imshow(image[58:78,20:40],cmap='gray_r',vmin=np.min(image[58:78,20:40]),vmax=np.max(image[58:78,20:40]))
-            ax.imshow(image,cmap='gray_r')
+            cax = ax.imshow(image,cmap='gray_r')
+            ax.set_axis_off()
+            fig.colorbar(cax)
             ax.plot(x_int,y_int)
 
             # Extract the values along the line, using cubic interpolation

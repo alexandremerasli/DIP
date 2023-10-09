@@ -819,7 +819,7 @@ class iResults(vDenoising):
                 MV_csv = self.VAR_recon[i]
             else:
                 MV_csv = np.NaN
-            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out,i,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate,descale=False,MV_csv=MV_csv)
+            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out,i,config["sub_iter_DIP"],self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate,descale=False,MV_csv=MV_csv)
             if (not config["read_only_MV_csv"]):
                 self.VAR_recon = self.classWMV.VAR_recon
                 self.MSE_WMV = self.classWMV.MSE_WMV
