@@ -61,7 +61,14 @@ class vGeneral(abc.ABC):
         self.penalty = config["penalty"]
         self.castor_foms = config["castor_foms"]
         self.FLTNB = config["FLTNB"]
-
+        if ("PSF" in config):
+            if (not config["PSF"]):
+                self.PSF = False
+            else:
+                self.PSF = True
+        else:
+            self.PSF = True
+        
         # MIC study
         if ("override_SC_init" in config):
             self.override_SC_init = config['override_SC_init']
@@ -958,6 +965,11 @@ class vGeneral(abc.ABC):
                 psf = ' -conv gaussian,4.5,4.5,3.5::psf' # isotropic psf in simulated phantoms
             else:
                 psf = ' -conv gaussian,4,4,3.5::psf' # isotropic psf in simulated phantoms
+
+        # Remove PSF if post smoothing negative (for test without PSF)
+        if (not self.PSF):
+            psf = ''
+
 
         if (post_smoothing != 0):
             if ("1" in PETImage_shape_str.split(',')): # 2D
