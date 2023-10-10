@@ -192,15 +192,16 @@ class iPostReconstruction(vDenoising):
             out = model(self.image_net_input_torch)
 
         # Check if previous computation was already done to only scale last computed images
-        if len(sorted_files) > 0:
-            initialimage_not_used, it_not_used, last_iter = self.ImageAndItToResumeComputation(sorted_files,"",folder_sub_path)
-        else:
-            last_iter = -1
+        # if len(sorted_files) > 0:
+        #     initialimage_not_used, it_not_used, last_iter = self.ImageAndItToResumeComputation(sorted_files,"",folder_sub_path)
+        # else:
+        #     last_iter = -1
 
-        if (last_iter > 0):
-            nb_iter_train = self.total_nb_iter - (last_iter + 1)
-        else:
-            nb_iter_train = self.total_nb_iter
+        # if (last_iter > 0):
+        #     nb_iter_train = self.total_nb_iter - (last_iter + 1)
+        # else:
+        #     nb_iter_train = self.total_nb_iter
+        last_iter = -1
         
         # Override total number of iterations if ES point found
         if (model.DIP_early_stopping):
@@ -234,7 +235,7 @@ class iPostReconstruction(vDenoising):
             # WMV
             # self.log("SUCCESS", int(model.classWMV.SUCCESS))
             if (model.DIP_early_stopping):
-                model.classWMV.SUCCESS,model.classWMV.VAR_min,model.classWMV.stagnate = model.classWMV.WMV(np.copy(out),model.current_epoch,model.classWMV.queueQ,model.classWMV.SUCCESS,model.classWMV.VAR_min,model.classWMV.stagnate)
+                model.classWMV.SUCCESS,model.classWMV.VAR_min,model.classWMV.stagnate = model.classWMV.WMV(np.copy(out),model.current_epoch,model.sub_iter_DIP,model.classWMV.queueQ,model.classWMV.SUCCESS,model.classWMV.VAR_min,model.classWMV.stagnate)
                 self.VAR_recon = model.classWMV.VAR_recon
                 self.MSE_WMV = model.classWMV.MSE_WMV
                 self.PSNR_WMV = model.classWMV.PSNR_WMV

@@ -214,7 +214,7 @@ class DIP_2D(LightningModule):
 
         # Dropout, changing numpy seed at each global iteration
         if (self.dropout > 0):
-            seed(self.global_it + 1000)
+            seed((self.global_it+100) * 10000 + self.current_epoch)
             drop_sample = uniform(0,1,3)
             # drop_sample = rand(3)
             seed(1)

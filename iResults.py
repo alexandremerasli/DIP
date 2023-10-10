@@ -151,32 +151,33 @@ class iResults(vDenoising):
 
 
         if ("3D" not in self.phantom):
+            more_it = 1
             # Metrics arrays
-            self.PSNR_recon = np.zeros(int(self.total_nb_iter ) + 1)
-            self.PSNR_norm_recon = np.zeros(int(self.total_nb_iter ) + 1)
-            self.MSE_recon = np.zeros(int(self.total_nb_iter ) + 1)
-            self.SSIM_recon = np.zeros(int(self.total_nb_iter ) + 1)
-            self.MA_cold_recon = np.zeros(int(self.total_nb_iter ) + 1)
-            self.AR_hot_recon = np.zeros(int(self.total_nb_iter ) + 1)
+            self.PSNR_recon = np.zeros(int(self.total_nb_iter ) + more_it)
+            self.PSNR_norm_recon = np.zeros(int(self.total_nb_iter ) + more_it)
+            self.MSE_recon = np.zeros(int(self.total_nb_iter ) + more_it)
+            self.SSIM_recon = np.zeros(int(self.total_nb_iter ) + more_it)
+            self.MA_cold_recon = np.zeros(int(self.total_nb_iter ) + more_it)
+            self.AR_hot_recon = np.zeros(int(self.total_nb_iter ) + more_it)
             
-            self.AR_hot_TEP_recon = np.zeros(int(self.total_nb_iter ) + 1)
-            self.AR_hot_TEP_match_square_recon = np.zeros(int(self.total_nb_iter ) + 1)
-            self.AR_hot_perfect_match_recon = np.zeros(int(self.total_nb_iter ) + 1)
-            self.AR_hot_MR_recon = np.zeros(int(self.total_nb_iter ) + 1)
+            self.AR_hot_TEP_recon = np.zeros(int(self.total_nb_iter ) + more_it)
+            self.AR_hot_TEP_match_square_recon = np.zeros(int(self.total_nb_iter ) + more_it)
+            self.AR_hot_perfect_match_recon = np.zeros(int(self.total_nb_iter ) + more_it)
+            self.AR_hot_MR_recon = np.zeros(int(self.total_nb_iter ) + more_it)
 
-            self.loss_DIP_recon = np.zeros(int(self.total_nb_iter ) + 1)
-            self.CRC_hot_recon = np.zeros(int(self.total_nb_iter ) + 1)
-            self.AR_bkg_recon = np.zeros(int(self.total_nb_iter ) + 1)
-            self.IR_bkg_recon = np.zeros(int(self.total_nb_iter ) + 1)
-            self.IR_whole_recon = np.empty(int(self.total_nb_iter ) + 1)
+            self.loss_DIP_recon = np.zeros(int(self.total_nb_iter ) + more_it)
+            self.CRC_hot_recon = np.zeros(int(self.total_nb_iter ) + more_it)
+            self.AR_bkg_recon = np.zeros(int(self.total_nb_iter ) + more_it)
+            self.IR_bkg_recon = np.zeros(int(self.total_nb_iter ) + more_it)
+            self.IR_whole_recon = np.empty(int(self.total_nb_iter ) + more_it)
             self.IR_whole_recon[:] = 0 #np.nan
 
-            self.mean_inside_recon = np.zeros(int(self.total_nb_iter ) + 1)
+            self.mean_inside_recon = np.zeros(int(self.total_nb_iter ) + more_it)
 
             self.likelihoods = [] # Will be appended
 
-            self.MA_cold_inside = np.zeros(int(self.total_nb_iter ) + 1)
-            self.MA_cold_edge = np.zeros(int(self.total_nb_iter ) + 1)
+            self.MA_cold_inside = np.zeros(int(self.total_nb_iter ) + more_it)
+            self.MA_cold_edge = np.zeros(int(self.total_nb_iter ) + more_it)
 
         if ( 'nested' in self.method or  'Gong' in self.method):
             #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type_im='<d')
@@ -303,11 +304,11 @@ class iResults(vDenoising):
             print("loop over")
 
             if ("nested" in config["method"] or "Gong" in config["method"]):
-                # Save computed variance from WMV/EMV in csv
-                with open(self.MV_csv_path(self.alpha_EMV,config), 'w', newline='') as myfile:
-                    wr = writer_csv(myfile,delimiter=';')
-                    wr.writerow(self.VAR_recon)  
                 if(config["DIP_early_stopping"]):# WMV
+                    # Save computed variance from WMV/EMV in csv
+                    with open(self.MV_csv_path(self.alpha_EMV,config), 'w', newline='') as myfile:
+                        wr = writer_csv(myfile,delimiter=';')
+                        wr.writerow(self.VAR_recon)  
                     self.WMV_plot(config)
 
     def WMV_plot(self,config):

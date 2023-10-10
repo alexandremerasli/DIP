@@ -36,6 +36,7 @@ class iFinalCurves(vGeneral):
         # Rename my settings (MIC)
         rename_settings = "TMI"
         rename_settings = "hyperparameters_paper"
+        rename_settings = "MIC"
 
         # Convert Gong to DIPRecon
         DIPRecon = False
@@ -101,8 +102,8 @@ class iFinalCurves(vGeneral):
 
         if (self.phantom == "image2_0"):
             ROI_list = ['cold','hot','phantom']
-        elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
-            ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom']
+        elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1"):
+            ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','hot_TEP_match_square_recon','phantom']
             # ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom','whole']
             # ROI_list = ['whole']
             # ROI_list = ['cold','cold_inside','cold_edge']
@@ -201,7 +202,7 @@ class iFinalCurves(vGeneral):
                         color_dict[key] = len(color_dict[key]) * ['black']
                 else:
                     color_avg = None
-                    if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
+                    if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1"):
                         color_avg = color_dict[method_without_configuration][0]    
                     
 
@@ -536,7 +537,7 @@ class iFinalCurves(vGeneral):
     def label_method_plot(self,replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings):
         if (self.phantom == "image2_0"):
             replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
-        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
+        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1"):
             if ("nested" not in method and "DIPRecon" not in method):
                 if (fig_nb != 2):
                     replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
@@ -858,7 +859,7 @@ class iFinalCurves(vGeneral):
 
             color_dict = {**color_dict, **color_dict_supp} # Comparison between reconstruction methods
 
-        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
+        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1"):
             color_dict_after_MIC = {
                 "nested_ADMMLim" : ['cyan','blue','teal','blueviolet','black'],
                 #"nested_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
@@ -922,8 +923,18 @@ class iFinalCurves(vGeneral):
                 "OSEM" : ['darkorange'] + 5*['cyan','blue','teal','blueviolet'],
                 "BSREM" : ['grey'] + 5*['cyan','blue','teal','blueviolet']
             }
+            
+            color_dict_MIC2023_DNA = {
+                "nested" : ['red','pink'],
+                "nested_MIC_brain_2D" : ['red','pink'],
+                "DIPRecon" : ['cyan','blue','teal','blueviolet'],
+                "APGMAP" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "ADMMLim" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
+                "OSEM" : ['darkorange'] + 5*['cyan','blue','teal','blueviolet'],
+                "BSREM" : ['grey'] + 5*['cyan','blue','teal','blueviolet']
+            }
 
-            color_dict = {**color_dict_after_MIC, **color_dict_add_tests, **color_dict_TMI_DNA} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
+            color_dict = {**color_dict_after_MIC, **color_dict_add_tests, **color_dict_TMI_DNA, **color_dict_MIC2023_DNA} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
 
         if (self.phantom == "image2_0"):                    
             marker_dict = {
@@ -944,7 +955,7 @@ class iFinalCurves(vGeneral):
             }
 
             marker_dict = {**marker_dict, **marker_dict_supp}
-        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
+        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1"):
             marker_dict = {
                 "APPGML_it" : [':'],
                 "APPGML_subsets" : ['-'],
@@ -987,6 +998,7 @@ class iFinalCurves(vGeneral):
                 "nested_random_1_skip_10it" : [marker_dict["random"][0]],
                 "nested_random_0_skip_10it" : [marker_dict["random"][0]],
                 "nested_DD" : [marker_dict["random"][0]],
+                "nested_MIC_brain_2D" : [marker_dict["CT"][0]],
                 "DIPRecon_BSREM_stand" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_CT_3_skip" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_CT_2_skip" : [marker_dict["DIPRecon"][0]],
@@ -1082,14 +1094,24 @@ class iFinalCurves(vGeneral):
                 PSNR_norm_recon.append(np.array(rows_csv[1]))
                 MSE_recon.append(np.array(rows_csv[2]))
                 SSIM_recon.append(np.array(rows_csv[3]))
-                MA_cold_recon.append(np.array(np.array(rows_csv[4]) - 10) / 10 * 100) # relative bias
-                # MA_cold_recon.append(np.array(np.array(rows_csv[4]) - 10) * 100) # bias
-                AR_hot_recon.append(np.array(rows_csv[5]) / 400 * 100)
+                if "50" in self.phantom:
+                    cold_GT = 0.5
+                    hot_GT = 10
+                    bkg_GT = 2
+                else:
+                    cold_GT = 10
+                    hot_GT = 400
+                MA_cold_recon.append(np.array(np.array(rows_csv[4]) - cold_GT) / cold_GT * 100) # relative bias
+                # MA_cold_recon.append(np.array(np.array(rows_csv[4]) - cold_GT) * 100) # bias
+                AR_hot_recon.append(np.array(rows_csv[5]) / hot_GT * 100)
 
                 if (not csv_before_MIC):
-                    AR_hot_TEP_recon.append(np.array(rows_csv[6]) / 400 * 100)
-                    AR_hot_TEP_match_square_recon.append(np.array(rows_csv[7]) / 400 * 100)
-                    AR_hot_perfect_match_recon.append(np.array(rows_csv[8]) / 400 * 100)
+                    if "50" in self.phantom:
+                        AR_hot_TEP_recon.append(np.array(rows_csv[6]) / bkg_GT * 100) # This is the MR only region
+                    else:
+                        AR_hot_TEP_recon.append(np.array(rows_csv[6]) / hot_GT * 100) # This is the MR only region
+                    AR_hot_TEP_match_square_recon.append(np.array(rows_csv[7]) / hot_GT * 100)
+                    AR_hot_perfect_match_recon.append(np.array(rows_csv[8]) / hot_GT * 100)
                     AR_bkg_recon.append(np.array(rows_csv[9]))
                     IR_bkg_recon.append(np.array(rows_csv[10]))
                     # IR_whole_recon.append(np.array(rows_csv[13])) # IR whole recon is useless
