@@ -136,8 +136,8 @@ class iNestedADMM(vReconstruction):
             #         # os.remove(os.path.join(classDenoising.checkpoint_simple_path_exp,"epoch=" + str(classDenoising.epochStar) + "-step=" + str(classDenoising.epochStar) + ".ckpt"))
             #         else:
             #             os.remove(os.path.join(classDenoising.checkpoint_simple_path_exp,file))
+            classResults.writeBeginningImages(self.suffix,classDenoising.image_net_input_scale,self.global_it) # Write GT and DIP input
             if (self.global_it == i_init):
-                classResults.writeBeginningImages(self.suffix,classDenoising.image_net_input) # Write GT and DIP input
                 classResults.writeCorruptedImage(0,self.max_iter,classDenoising.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
 
 

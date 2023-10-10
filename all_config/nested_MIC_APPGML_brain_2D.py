@@ -28,7 +28,7 @@ def config_func_MIC():
         "finetuning" : tune.grid_search(['ES']),
         "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
         "unnested_1st_global_iter" : tune.grid_search([False]), # If True, unnested are computed after 1st global iteration (because rho is set to 0). If False, needs to set f_init to initialize the network, as in Gong paper, and rho is not changed.
-        "sub_iter_DIP_initial_and_final" : tune.grid_search([2000]), # Number of epochs in first global iteration (pre iteraiton) in network optimization (only for Gong for now)
+        "sub_iter_DIP_initial_and_final" : tune.grid_search([2]), # Number of epochs in first global iteration (pre iteraiton) in network optimization (only for Gong for now)
         "nb_inner_iteration" : tune.grid_search([1]), # Number of inner iterations in ADMMLim (if mlem_sequence is False). (3 sub iterations are done within 1 inner iteration in CASToR)
         "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMLim
         "xi_DIP" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in Gong and nested
@@ -45,40 +45,27 @@ def config_func_MIC():
     hyperparameters_config = {
         "recoInNested" : tune.grid_search(["APGMAP"]), # Which algorithm to use in nested (ADMMLim or APGMAP)
         "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
-        # "image_init_path_without_extension" : tune.grid_search(['MLEM_it60']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
-        "rho" : tune.grid_search([0.003,8e-4,0.008,0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        "rho" : tune.grid_search([0.003,0.3,0.03,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        # "rho" : tune.grid_search([0.00003,0.0003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        # "rho" : tune.grid_search([3e-4,3e-5,3e-1,3e-2]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        # "rho" : tune.grid_search([0.3,0.03,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        "rho" : tune.grid_search([0.3,0.03,0.003,3e-4]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "adaptive_parameters_DIP" : tune.grid_search(["nothing"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
         "mu_DIP" : tune.grid_search([10]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
-        "tau_DIP" : tune.grid_search([0.95,0.92,0.9,0.8]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
         "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
         ## network hyperparameters
         # "monitor_lr" : tune.grid_search([True]), # Learning rate in network optimization
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
-        "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
+        "sub_iter_DIP" : tune.grid_search([2]), # Number of epochs in network optimization
         "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
         "skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "override_SC_init" : tune.grid_search([True]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+        "diffusion_model_like" : tune.grid_search([0.02]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "dropout" : tune.grid_search([0.1]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
-        # "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-        "scaling" : tune.grid_search(['normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-        # "scaling" : tune.grid_search(['standardization','normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-        "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-        # "scaling_all_init" : tune.grid_search([True,False]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-        # "scaling_all_init" : tune.grid_search([False]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-        "input" : tune.grid_search(['random']), # Neural network input (random or CT)
+        "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
         # "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
         "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
         "k_DD" : tune.grid_search([32]), # k for Deep Decoder
         ## ADMMLim - OPTITR hyperparameters
-        "nb_outer_iteration": tune.grid_search([10]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
+        "nb_outer_iteration": tune.grid_search([2]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
         # "nb_outer_iteration": tune.grid_search([3]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
         "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMLim
         "adaptive_parameters" : tune.grid_search(["both"]), # which parameters are adaptive ? Must be set to nothing, alpha, or both (which means alpha and tau)
@@ -91,7 +78,7 @@ def config_func_MIC():
         # Optimization transfer (OPTITR) hyperparameters
         "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False
         # AML/APGMAP hyperparameters
-        "A_AML" : tune.grid_search([-100]), # AML lower bound A
+        "A_AML" : tune.grid_search([-10]), # AML lower bound A
         # Post smoothing by CASToR after reconstruction
         "post_smoothing" : tune.grid_search([0]), # Post smoothing by CASToR after reconstruction
         #"post_smoothing" : tune.grid_search([6,9,12,15]), # Post smoothing by CASToR after reconstruction

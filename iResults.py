@@ -205,13 +205,13 @@ class iResults(vDenoising):
         if ('Gong' in config["method"] or 'nested' in config["method"]):
             self.i_init = 0
 
-    def writeBeginningImages(self,suffix,image_net_input=None):
+    def writeBeginningImages(self,suffix,image_net_input=None,i=0):
         if (self.tensorboard):
             self.write_image_tensorboard(self.writer,self.image_gt,"Ground Truth (emission map)",suffix,self.image_gt,0,full_contrast=True) # Ground truth in tensorboard
             if (image_net_input is not None):
                 # image_net_input_reversed = np.max(image_net_input) - image_net_input
                 image_net_input_reversed = image_net_input # only colorbar will be reversed in write_image_tensorboard()
-                self.write_image_tensorboard(self.writer,image_net_input_reversed,"DIP input (FULL CONTRAST)",suffix,image_net_input_reversed,0,full_contrast=True) # DIP input in tensorboard
+                self.write_image_tensorboard(self.writer,image_net_input_reversed,"DIP input (FULL CONTRAST)",suffix,image_net_input_reversed,i,full_contrast=True) # DIP input in tensorboard
 
     def writeCorruptedImage(self,i,max_iter,x_label,suffix,pet_algo,iteration_name='iterations'):
         if (self.tensorboard):

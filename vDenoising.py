@@ -9,7 +9,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 
 # Useful
 from numpy import inf, array, arange, ones
-from numpy.random import seed, uniform
+from numpy.random import seed, uniform, multivariate_normal, normal
 import os
 from pathlib import Path
 os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
@@ -82,9 +82,16 @@ class vDenoising(vGeneral):
             # modify input with line on the edge of the phantom, or to remove a region (DIP input tests)
             # self.modify_input_line_edge(config)     
             # Rescale network input
-            image_net_input_scale = self.rescale_imag(self.image_net_input,self.scaling_input)[0]
+            self.image_net_input_scale = self.rescale_imag(self.image_net_input,self.scaling_input)[0]
+            # Diffusion model like : add random noise to anatomical input
+            if (self.input == "CT"):
+                # Genereate random input
+                # gaussian_distribution = multivariate_normal(mu, self.diffusion_model_like * , 10000)
+                gaussian_distribution = normal(0, (self.global_it+1) * self.diffusion_model_like,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).reshape(self.PETImage_shape) # reshaping (for DIP)
+                self.image_net_input_scale += gaussian_distribution
+
             # DIP input image, numpy --> torch
-            self.image_net_input_torch = Tensor(image_net_input_scale)
+            self.image_net_input_torch = Tensor(self.image_net_input_scale)
             # Adding dimensions to fit network architecture
             if (self.net == 'DIP' or self.net == 'DIP_VAE' or self.net == 'DD_AE'): # For autoencoders structure
                 if (self.PETImage_shape[2] == 1): # if 3D but with dim3 = 1 -> 2D
@@ -241,7 +248,9 @@ class vDenoising(vGeneral):
         
         # Write image if it does not exist
         if config["input"] == "random":
-            name = 'random_input'
+            name = 'random/replicate_' + str(self.replicate) + '/random_input'
+            if (not os.path.isdir(subroot+'Data/initialization/' + 'random/replicate_' + str(self.replicate) + '/')):
+                Path(subroot+'Data/initialization/' + 'random/replicate_' + str(self.replicate) + '/').mkdir(parents=True, exist_ok=True)
         elif config["input"] == "uniform":
             name = 'uniform_input'
         else: # CT input, do not need to create one
@@ -296,7 +305,7 @@ class vDenoising(vGeneral):
 
         if self.input == "random":        
             if (PETImage_shape[2] == 1):
-                file_path = (subroot+'Data/initialization/random_input_2D_' + net + '_' + str(self.PETImage_shape[0]) + '.img')
+                file_path = (subroot+'Data/initialization/random/replicate_' + str(self.replicate) + '/random_input_2D_' + net + '_' + str(self.PETImage_shape[0]) + '.img')
             else:
                 file_path = (subroot+'Data/initialization/random_input_3D_' + net + '_' + str(self.PETImage_shape[0]) + '.img')
         elif self.input == "CT":

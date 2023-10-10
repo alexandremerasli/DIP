@@ -78,6 +78,11 @@ class vGeneral(abc.ABC):
         if ("read_only_MV_csv" not in config):
             config["read_only_MV_csv"] = False
 
+        if ("diffusion_model_like" in config):
+            self.diffusion_model_like = config["diffusion_model_like"]
+        else:
+            self.diffusion_model_like = 0
+
         self.subroot_data = root + '/data/Algo/' # Directory root
         
         if (config["task"] != "show_metrics_results_already_computed_following_step"):
@@ -127,6 +132,7 @@ class vGeneral(abc.ABC):
             Path(self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
 
         Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
+        Path(self.subroot_data + 'Data/initialization/random').mkdir(parents=True, exist_ok=True)
         Path(self.subroot_data + 'Data/initialization/pytorch/replicate_' + str(self.replicate)).mkdir(parents=True, exist_ok=True)
                 
     def runRayTune(self,config,root,task,only_suffix_replicate_file=False):
