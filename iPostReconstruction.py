@@ -144,10 +144,10 @@ class iPostReconstruction(vDenoising):
         # '''
 
         # Corrupted image x_label, numpy --> torch float32
-        self.image_corrupt_torch = torch.Tensor(image_corrupt_input_scale)
+        self.image_corrupt_torch = torch.Tensor(self.several_DIP_inputs*[image_corrupt_input_scale])
         # Adding dimensions to fit network architecture
         if (self.PETImage_shape[2] == 1): # if 3D but with dim3 = 1 -> 2D
-            self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
+            self.image_corrupt_torch = self.image_corrupt_torch.view(self.several_DIP_inputs,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
             self.image_corrupt_torch = self.image_corrupt_torch[:,:,:,:,0]
         else: #3D
             self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[2],self.PETImage_shape[1],self.PETImage_shape[0])

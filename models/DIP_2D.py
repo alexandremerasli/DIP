@@ -5,7 +5,7 @@ from numpy import min as min_np
 from numpy import max as max_np
 from numpy import mean as mean_np
 from numpy import std as std_np
-from numpy import ones_like, dtype, fromfile, sign, newaxis, copy
+from numpy import ones_like, dtype, fromfile, sign, newaxis, copy, zeros, float32
 from numpy.random import seed, uniform
 
 from pathlib import Path
@@ -72,7 +72,11 @@ class DIP_2D(LightningModule):
             self.dropout = config['dropout']
         else:
             self.dropout = 0
-        
+        if ("several_DIP_inputs" in config): # Put several times the input
+            self.several_DIP_inputs = config["several_DIP_inputs"]
+        else:
+            self.several_DIP_inputs = 1
+
         '''
         ## Variables for WMV ##
         self.queueQ = []
@@ -214,10 +218,10 @@ class DIP_2D(LightningModule):
 
         # Dropout, changing numpy seed at each global iteration
         if (self.dropout > 0):
-            seed((self.global_it+100) * 10000 + self.current_epoch)
+            # seed((self.global_it+100) * 10000 + self.current_epoch)
             drop_sample = uniform(0,1,3)
             # drop_sample = rand(3)
-            seed(1)
+            # seed(1)
         else:
             drop_sample = (1,1,1)
 
@@ -260,12 +264,39 @@ class DIP_2D(LightningModule):
         return MSELoss()(out, image_corrupt_torch) # for DIP and DD
 
     def training_step(self, train_batch, batch_idx):
-        image_net_input_torch, image_corrupt_torch = train_batch
-        out = self.forward(image_net_input_torch)
-        # logging using tensorboard logger
-        loss = self.DIP_loss(out, image_corrupt_torch)
-        self.logger.experiment.add_scalar('loss', loss,self.current_epoch)        
+        loss = 0
+        # self.out_np = zeros((self.several_DIP_inputs,train_batch[0].shape[3],train_batch[0].shape[4]),dtype=float32)
+        for self.num_batch in range(train_batch[0].shape[0]):
+            image_net_input_torch, image_corrupt_torch = train_batch[0][self.num_batch,:,:,:,:],train_batch[1][self.num_batch,:,:,:,:]
+            out = self.forward(image_net_input_torch)
+            # logging using tensorboard logger
+            loss += self.DIP_loss(out, image_corrupt_torch)
+            # print(loss)
+            self.logger.experiment.add_scalar('loss', loss,self.current_epoch)
+
+            try:
+                # self.out_np[self.num_batch,:,:] = out.detach().numpy()[0,0,:,:]
+                self.out_np = out.detach().numpy()[0,0,:,:]
+            except:
+                # self.out_np[self.num_batch,:,:] = out.cpu().detach().numpy()[0,0,:,:]
+                self.out_np = out.cpu().detach().numpy()[0,0,:,:]
         
+
+        # for self.num_batch in range(int(len(train_batch)/2)):
+        #     image_net_input_torch, image_corrupt_torch = train_batch[self.num_batch],train_batch[self.num_batch+int(len(train_batch)/2)]
+        #     out = self.forward(image_net_input_torch)
+        #     # logging using tensorboard logger
+        #     loss += self.DIP_loss(out, image_corrupt_torch)
+        #     # print(loss)
+        #     self.logger.experiment.add_scalar('loss', loss,self.current_epoch)
+
+        #     try:
+        #         self.out_np[self.num_batch,:,:] = out.detach().numpy()[0,0,:,:]
+        #     except:
+        #         self.out_np[self.num_batch,:,:] = out.cpu().detach().numpy()[0,0,:,:]        
+        
+
+
         # Save image over epochs
         if (self.write_current_img_mode):
             self.write_current_img(out)
@@ -335,17 +366,12 @@ class DIP_2D(LightningModule):
                 self.write_current_img_task(out)
 
     def write_current_img_task(self,out,inside=False):
-        try:
-            out_np = out.detach().numpy()[0,0,:,:]
-        except:
-            out_np = out.cpu().detach().numpy()[0,0,:,:]
-
         print("self.current_epoch",self.current_epoch)
         if (inside):
             print("save before ReLU here")
             # self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/beforeReLU_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
         else:
-            self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+            self.save_img(self.out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
         config_copy = dict(config)

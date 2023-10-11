@@ -82,6 +82,21 @@ class vGeneral(abc.ABC):
             self.diffusion_model_like = config["diffusion_model_like"]
         else:
             self.diffusion_model_like = 0
+        
+        if ("diffusion_model_like_each_DIP" in config):
+            self.diffusion_model_like_each_DIP = config["diffusion_model_like_each_DIP"]
+            # if (self.diffusion_model_like_each_DIP == 0):
+            #     self.nb_DIP_inputs = 1
+            # else:
+            #     self.nb_DIP_inputs = int(1/self.diffusion_model_like_each_DIP)
+        else:
+            self.diffusion_model_like_each_DIP = 0
+            # self.nb_DIP_inputs = 1
+
+        if ("several_DIP_inputs" in config): # Put several times the input
+            self.several_DIP_inputs = config["several_DIP_inputs"]
+        else:
+            self.several_DIP_inputs = 1
 
         self.subroot_data = root + '/data/Algo/' # Directory root
         

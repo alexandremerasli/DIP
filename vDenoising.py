@@ -8,8 +8,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 
 # Useful
-from numpy import inf, array, arange, ones
-from numpy.random import seed, uniform, multivariate_normal, normal
+from numpy import inf, array, arange, ones, copy, zeros, linspace
+from numpy.random import seed, uniform, normal
 import os
 from pathlib import Path
 os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
@@ -85,17 +85,31 @@ class vDenoising(vGeneral):
             self.image_net_input_scale = self.rescale_imag(self.image_net_input,self.scaling_input)[0]
             # Diffusion model like : add random noise to anatomical input
             if (self.input == "CT"):
-                # Genereate random input
-                # gaussian_distribution = multivariate_normal(mu, self.diffusion_model_like * , 10000)
-                gaussian_distribution = normal(0, (self.global_it+1) * self.diffusion_model_like,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).reshape(self.PETImage_shape) # reshaping (for DIP)
-                self.image_net_input_scale += gaussian_distribution
+                # Generate random input
+                # gaussian_distribution = normal(0, (self.global_it+1) * self.diffusion_model_like,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).reshape(self.PETImage_shape) # reshaping (for DIP)
+                # self.image_net_input_scale += gaussian_distribution
+                if (self.diffusion_model_like != 0):
+                    if (self.several_DIP_inputs == 1):
+                        self.image_net_input_scale = self.add_gaussian_noise(copy(self.image_net_input_scale), self.global_it + 1,self.diffusion_model_like)
+                    else:
+                        raise ValueError("not implemented")
+                else:
+                    if (self.diffusion_model_like_each_DIP != 0 and self.several_DIP_inputs != 1):
+                        image_net_initial = copy(self.image_net_input_scale)
+                        it_list = linspace(0,int(1/self.diffusion_model_like_each_DIP),self.several_DIP_inputs)
+                        dim_image_net = list(self.PETImage_shape)
+                        dim_image_net.insert(0,self.several_DIP_inputs)
+                        self.image_net_input_scale = zeros(dim_image_net)
+                        for i in range(len(it_list)):
+                            self.image_net_input_scale[i,:,:,:] = self.add_gaussian_noise(copy(image_net_initial), it_list[i],self.diffusion_model_like_each_DIP)
+
 
             # DIP input image, numpy --> torch
             self.image_net_input_torch = Tensor(self.image_net_input_scale)
             # Adding dimensions to fit network architecture
             if (self.net == 'DIP' or self.net == 'DIP_VAE' or self.net == 'DD_AE'): # For autoencoders structure
                 if (self.PETImage_shape[2] == 1): # if 3D but with dim3 = 1 -> 2D
-                    self.image_net_input_torch = self.image_net_input_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
+                    self.image_net_input_torch = self.image_net_input_torch.view(self.several_DIP_inputs,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
                     self.image_net_input_torch = self.image_net_input_torch[:,:,:,:,0]
                 else: #3D
                     self.image_net_input_torch = self.image_net_input_torch.view(1,1,self.PETImage_shape[2],self.PETImage_shape[1],self.PETImage_shape[0])
@@ -104,10 +118,28 @@ class vDenoising(vGeneral):
                     self.image_net_input_torch = self.image_net_input_torch.view(1,config["k_DD"],input_size_DD,input_size_DD) # For Deep Decoder, if original Deep Decoder (i.e. only with decoder part)
             save(self.image_net_input_torch,self.subroot_data + 'Data/initialization/pytorch/replicate_' + str(self.replicate) + '/image_' + self.net + '_input_torch.pt')
 
+    def add_gaussian_noise(self,img,it,diffusion_model_like_each_DIP):
+        gaussian_distribution = normal(0, it * diffusion_model_like_each_DIP,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).reshape(self.PETImage_shape) # reshaping (for DIP)
+        return img + gaussian_distribution
+
     def train_process(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, suffix, config, finetuning, processing_unit, sub_iter_DIP, method, global_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, experiment, checkpoint_simple_path, name_run, subroot, all_images_DIP):
         # Implements Dataset
-        train_dataset = TensorDataset(image_net_input_torch, image_corrupt_torch)
-        train_dataloader = DataLoader(train_dataset, batch_size=1, num_workers=0) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
+        train_dataset = TensorDataset(image_net_input_torch, image_corrupt_torch) # Put several times the input
+        # train_dataset = TensorDataset(*self.several_DIP_inputs*[image_net_input_torch], *self.several_DIP_inputs*[image_corrupt_torch])
+        
+        # Add different level of gaussian noise to input
+        if (self.diffusion_model_like_each_DIP != 0):
+            it_list = arange(0,self.several_DIP_inputs)
+            train_dataset = ImagePairDataset([(image_net_input_torch[i], image_corrupt_torch) for i in range(len(it_list))])
+            image_net_input_torch = image_net_input_torch[:, :, None, :]
+            image_corrupt_torch = image_corrupt_torch[:, :, None, :]
+            train_dataset = ImagePairDataset([image_net_input_torch,image_corrupt_torch])
+            train_dataset = ImagePairDataset([(image_net_input_torch[i], image_corrupt_torch) for i in range(len(it_list))])
+
+        else:
+            train_dataset = ImagePairDataset([(image_net_input_torch,image_corrupt_torch) for i in range(self.several_DIP_inputs)])
+        
+        train_dataloader = DataLoader(train_dataset, batch_size=1,num_workers=0,shuffle=True) # Mini batch training
         # train_dataloader = DataLoader(train_dataset, batch_size=1, num_workers=1, persistent_workers=True) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
         # Choose network architecture as model
         model, model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, self.override_input)
@@ -394,10 +426,10 @@ class vDenoising(vGeneral):
             image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,self.scaling_input) # Scaling of current x_label image
 
         # Corrupted image x_label, numpy --> torch float32
-        self.image_corrupt_torch = Tensor(image_corrupt_input_scale)
+        self.image_corrupt_torch = Tensor(self.several_DIP_inputs*[image_corrupt_input_scale])
         # Adding dimensions to fit network architecture
         if (self.PETImage_shape[2] == 1): # if 3D but with dim3 = 1 -> 2D
-            self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
+            self.image_corrupt_torch = self.image_corrupt_torch.view(self.several_DIP_inputs,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
             self.image_corrupt_torch = self.image_corrupt_torch[:,:,:,:,0]
         else: #3D
             self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[2],self.PETImage_shape[1],self.PETImage_shape[0])
@@ -517,3 +549,15 @@ class vDenoising(vGeneral):
         # Reverse scaling like at the beginning and add it to list of samples
         out_descale = self.descale_imag(out,param1_scale_im_corrupt,param2_scale_im_corrupt,config["scaling"])
         return out_descale
+    
+
+from torch.utils.data import Dataset
+class ImagePairDataset(Dataset):
+    def __init__(self, image_pairs):
+        self.image_pairs = image_pairs
+
+    def __len__(self):
+        return len(self.image_pairs)
+
+    def __getitem__(self, idx):
+        return self.image_pairs[idx]
