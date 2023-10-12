@@ -70,33 +70,38 @@ class vGeneral(abc.ABC):
             self.PSF = True
         
         # MIC study
-        if ("override_SC_init" in config):
-            self.override_SC_init = config['override_SC_init']
-        else:
-            self.override_SC_init = False
+        if ("nested" in self.method or "Gong" in self.method or "DIPRecon" in self.method):
+            if ("override_SC_init" in config):
+                self.override_SC_init = config['override_SC_init']
+            else:
+                self.override_SC_init = False
 
-        if ("read_only_MV_csv" not in config):
-            config["read_only_MV_csv"] = False
+            if ("read_only_MV_csv" not in config):
+                config["read_only_MV_csv"] = False
 
-        if ("diffusion_model_like" in config):
-            self.diffusion_model_like = config["diffusion_model_like"]
-        else:
-            self.diffusion_model_like = 0
-        
-        if ("diffusion_model_like_each_DIP" in config):
-            self.diffusion_model_like_each_DIP = config["diffusion_model_like_each_DIP"]
-            # if (self.diffusion_model_like_each_DIP == 0):
-            #     self.nb_DIP_inputs = 1
-            # else:
-            #     self.nb_DIP_inputs = int(1/self.diffusion_model_like_each_DIP)
-        else:
-            self.diffusion_model_like_each_DIP = 0
-            # self.nb_DIP_inputs = 1
+            if ("diffusion_model_like" in config):
+                self.diffusion_model_like = config["diffusion_model_like"]
+            else:
+                self.diffusion_model_like = 0
+            
+            if ("diffusion_model_like_each_DIP" in config):
+                self.diffusion_model_like_each_DIP = config["diffusion_model_like_each_DIP"]
+                # if (self.diffusion_model_like_each_DIP == 0):
+                #     self.nb_DIP_inputs = 1
+                # else:
+                #     self.nb_DIP_inputs = int(1/self.diffusion_model_like_each_DIP)
+            else:
+                self.diffusion_model_like_each_DIP = 0
+                # self.nb_DIP_inputs = 1
 
-        if ("several_DIP_inputs" in config): # Put several times the input
-            self.several_DIP_inputs = config["several_DIP_inputs"]
-        else:
-            self.several_DIP_inputs = 1
+            if ("several_DIP_inputs" in config): # Put several times the input
+                self.several_DIP_inputs = config["several_DIP_inputs"]
+            else:
+                self.several_DIP_inputs = 1
+
+            # Override number of DIP sub iterations if several inputs
+            # if ("results" not in config["task"]):
+            # config["sub_iter_DIP"] = int(config["sub_iter_DIP"] / self.several_DIP_inputs)
 
         self.subroot_data = root + '/data/Algo/' # Directory root
         

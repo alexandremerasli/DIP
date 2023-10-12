@@ -83,25 +83,32 @@ class vDenoising(vGeneral):
             # self.modify_input_line_edge(config)     
             # Rescale network input
             self.image_net_input_scale = self.rescale_imag(self.image_net_input,self.scaling_input)[0]
-            # Diffusion model like : add random noise to anatomical input
-            if (self.input == "CT"):
-                # Generate random input
-                # gaussian_distribution = normal(0, (self.global_it+1) * self.diffusion_model_like,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).reshape(self.PETImage_shape) # reshaping (for DIP)
-                # self.image_net_input_scale += gaussian_distribution
-                if (self.diffusion_model_like != 0):
-                    if (self.several_DIP_inputs == 1):
-                        self.image_net_input_scale = self.add_gaussian_noise(copy(self.image_net_input_scale), self.global_it + 1,self.diffusion_model_like)
-                    else:
-                        raise ValueError("not implemented")
+            # Diffusion model like : add random noise to anatomical input or use several inputs for the same training
+            # if (self.input == "CT"):
+            # Generate random input
+            # gaussian_distribution = normal(0, (self.global_it+1) * self.diffusion_model_like,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).reshape(self.PETImage_shape) # reshaping (for DIP)
+            # self.image_net_input_scale += gaussian_distribution
+            if (self.diffusion_model_like != 0):
+                if (self.several_DIP_inputs == 1):
+                    self.image_net_input_scale = self.add_gaussian_noise(copy(self.image_net_input_scale), self.global_it + 1,self.diffusion_model_like)
                 else:
-                    if (self.diffusion_model_like_each_DIP != 0 and self.several_DIP_inputs != 1):
-                        image_net_initial = copy(self.image_net_input_scale)
-                        it_list = linspace(0,int(1/self.diffusion_model_like_each_DIP),self.several_DIP_inputs)
-                        dim_image_net = list(self.PETImage_shape)
-                        dim_image_net.insert(0,self.several_DIP_inputs)
-                        self.image_net_input_scale = zeros(dim_image_net)
-                        for i in range(len(it_list)):
-                            self.image_net_input_scale[i,:,:,:] = self.add_gaussian_noise(copy(image_net_initial), it_list[i],self.diffusion_model_like_each_DIP)
+                    raise ValueError("not implemented")
+            else:
+                if (self.diffusion_model_like_each_DIP != 0 and self.several_DIP_inputs != 1):
+                    image_net_initial = copy(self.image_net_input_scale)
+                    it_list = linspace(0,int(1/self.diffusion_model_like_each_DIP),self.several_DIP_inputs)
+                    dim_image_net = list(self.PETImage_shape)
+                    dim_image_net.insert(0,self.several_DIP_inputs)
+                    self.image_net_input_scale = zeros(dim_image_net)
+                    for i in range(len(it_list)):
+                        self.image_net_input_scale[i,:,:,:] = self.add_gaussian_noise(copy(image_net_initial), it_list[i],self.diffusion_model_like_each_DIP)
+                elif (self.diffusion_model_like_each_DIP == 0 and self.several_DIP_inputs != 1):
+                    image_net_initial = copy(self.image_net_input_scale)
+                    dim_image_net = list(self.PETImage_shape)
+                    dim_image_net.insert(0,self.several_DIP_inputs)
+                    self.image_net_input_scale = zeros(dim_image_net)
+                    for i in range(self.several_DIP_inputs):
+                        self.image_net_input_scale[i,:,:,:] = copy(image_net_initial)
 
 
             # DIP input image, numpy --> torch
@@ -130,10 +137,10 @@ class vDenoising(vGeneral):
         # Add different level of gaussian noise to input
         if (self.diffusion_model_like_each_DIP != 0):
             it_list = arange(0,self.several_DIP_inputs)
-            train_dataset = ImagePairDataset([(image_net_input_torch[i], image_corrupt_torch) for i in range(len(it_list))])
+            # train_dataset = ImagePairDataset([(image_net_input_torch[i], image_corrupt_torch) for i in range(len(it_list))])
             image_net_input_torch = image_net_input_torch[:, :, None, :]
             image_corrupt_torch = image_corrupt_torch[:, :, None, :]
-            train_dataset = ImagePairDataset([image_net_input_torch,image_corrupt_torch])
+            # train_dataset = ImagePairDataset([image_net_input_torch,image_corrupt_torch])
             train_dataset = ImagePairDataset([(image_net_input_torch[i], image_corrupt_torch) for i in range(len(it_list))])
 
         else:
