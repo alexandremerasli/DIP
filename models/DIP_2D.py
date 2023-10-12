@@ -236,19 +236,19 @@ class DIP_2D(LightningModule):
 
         # Decoder
         out = self.up1(out)
-        if ((self.skip >= 1 or self.override_SC_init) and drop_sample[0] > self.dropout): # or self.override_input):
+        if ((self.skip >= 1 or self.override_SC_init) and drop_sample[0] > 0.2*self.dropout and drop_sample[1] > 1*self.dropout and drop_sample[2] > 5*self.dropout): # or self.override_input):
             out_skip1 = out3 + out
             out = self.deep5(out_skip1)
         else:
             out = self.deep5(out)
         out = self.up2(out)
-        if ((self.skip >= 2 or self.override_SC_init) and drop_sample[1] > self.dropout): # or self.override_input):
+        if ((self.skip >= 2 or self.override_SC_init) and drop_sample[1] > 1*self.dropout and drop_sample[2] > 5*self.dropout): # or self.override_input):
             out_skip2 = out2 + out
             out = self.deep6(out_skip2)
         else:
             out = self.deep6(out)
         out = self.up3(out)
-        if ((self.skip >= 3 or self.override_SC_init) and drop_sample[2] > self.dropout): # or self.override_input):
+        if ((self.skip >= 3 or self.override_SC_init) and drop_sample[2] > 5*self.dropout): # or self.override_input):
             out_skip3 = out1 + out
             out = self.deep7(out_skip3)
         else:

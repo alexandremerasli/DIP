@@ -53,17 +53,20 @@ def config_func_MIC():
         ## network hyperparameters
         # "monitor_lr" : tune.grid_search([True]), # Learning rate in network optimization
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
-        "sub_iter_DIP" : tune.grid_search([300]), # Number of epochs in network optimization
+        "sub_iter_DIP" : tune.grid_search([3000]), # Number of epochs in network optimization
         "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
         "skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "override_SC_init" : tune.grid_search([True]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "diffusion_model_like" : tune.grid_search([0.12,0.15,0.2,0.25,0.3,0.5]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
-        "diffusion_model_like_each_DIP" : tune.grid_search([0.01,0.05,0.1,0.5]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+        # "diffusion_model_like_each_DIP" : tune.grid_search([0.01,0.05,0.1]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+        # "diffusion_model_like_each_DIP" : tune.grid_search([0,0.1]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "diffusion_model_like_each_DIP" : tune.grid_search([0.01]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
-        # "dropout" : tune.grid_search([0.1]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
-        "several_DIP_inputs" : tune.grid_search([5,10,50]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
-        # "several_DIP_inputs" : tune.grid_search([5]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+        "dropout" : tune.grid_search([0.01,0.05,0.1]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+        # "several_DIP_inputs" : tune.grid_search([1,5,10,50]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+        # "several_DIP_inputs" : tune.grid_search([1]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+        "several_DIP_inputs" : tune.grid_search([1,5,10]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+        # "several_DIP_inputs" : tune.grid_search([1]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
         # "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
