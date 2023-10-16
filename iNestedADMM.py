@@ -182,16 +182,18 @@ class iNestedADMM(vReconstruction):
                 self.writeAdaptiveRhoFile()
 
             # Nested ADMM stopping criterion
-            '''
-            if (classResults.IR_whole_recon[self.global_it] > IR_ref[0]):
-                print("Nested ADMM stopping criterion reached")
-                self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
-                stopping_criterion_file = open(self.path_stopping_criterion, "w")
-                stopping_criterion_file.write("stopping iteration :" + "\n")
-                stopping_criterion_file.write(str(self.global_it) + "\n")
-                stopping_criterion_file.close()
-                break
-            '''
+            # '''
+            if ("50" in self.phantom):
+                # if (classResults.IR_whole_recon[self.global_it] > IR_ref[0]):
+                if (classResults.IR_whole_recon[self.global_it] > 0.3):
+                    print("Nested ADMM stopping criterion reached")
+                    self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
+                    stopping_criterion_file = open(self.path_stopping_criterion, "w")
+                    stopping_criterion_file.write("stopping iteration :" + "\n")
+                    stopping_criterion_file.write(str(self.global_it) + "\n")
+                    stopping_criterion_file.close()
+                    break
+            # '''
 
         # Saving final image output
         self.save_img(self.f, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')
