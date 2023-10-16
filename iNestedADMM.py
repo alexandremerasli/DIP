@@ -144,7 +144,10 @@ class iNestedADMM(vReconstruction):
             print("--- %s seconds - DIP block ---" % (time.time() - start_time_block2))
             # Saving Final DIP output with name without epochs, and f from previous iteration for adaptive rho computation
             self.f_before = self.f
-            self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+            if (self.several_DIP_inputs == 1):
+                self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+            else: # MIC study : save DIP output with MR input (when using several DIP inputs)
+                self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '_batchidx=MR_forward.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
             self.save_img(self.f,self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_FINAL" + '.img')
             subroot_output_path = (self.subroot + 'Block2/' + self.suffix)
             # Write header with float precision because output of network is a float image
@@ -182,7 +185,7 @@ class iNestedADMM(vReconstruction):
                 self.writeAdaptiveRhoFile()
 
             # Nested ADMM stopping criterion
-            # '''
+            '''
             if ("50" in self.phantom):
                 # if (classResults.IR_whole_recon[self.global_it] > IR_ref[0]):
                 if (classResults.IR_whole_recon[self.global_it] > 0.3):
@@ -193,7 +196,7 @@ class iNestedADMM(vReconstruction):
                     stopping_criterion_file.write(str(self.global_it) + "\n")
                     stopping_criterion_file.close()
                     break
-            # '''
+            '''
 
         # Saving final image output
         self.save_img(self.f, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')

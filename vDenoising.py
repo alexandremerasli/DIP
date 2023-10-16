@@ -142,13 +142,16 @@ class vDenoising(vGeneral):
             # train_dataset = ImagePairDataset([(image_net_input_torch[i], image_corrupt_torch) for i in range(len(it_list))])
             image_net_input_torch = image_net_input_torch[:, :, None, :]
             image_corrupt_torch = image_corrupt_torch[:, :, None, :]
-            # train_dataset = ImagePairDataset([image_net_input_torch,image_corrupt_torch])
             train_dataset = ImagePairDataset([(image_net_input_torch[i], image_corrupt_torch) for i in range(len(it_list))])
+            # train_dataset = ImagePairDataset([(image_net_input_torch[len(it_list)-i-1], image_corrupt_torch) for i in range(len(it_list))])
 
         else:
             train_dataset = ImagePairDataset([(image_net_input_torch,image_corrupt_torch) for i in range(self.several_DIP_inputs)])
-        
-        train_dataloader = DataLoader(train_dataset, batch_size=1,num_workers=0,shuffle=True) # Mini batch training
+
+        if (config["tau_DIP"] == 200):        
+            train_dataloader = DataLoader(train_dataset, batch_size=1,num_workers=0,shuffle=False) # Mini batch training without shuffle
+        else:
+            train_dataloader = DataLoader(train_dataset, batch_size=1,num_workers=0,shuffle=True) # Mini batch training
         # train_dataloader = DataLoader(train_dataset, batch_size=1, num_workers=1, persistent_workers=True) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
         # Choose network architecture as model
         model, model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, self.override_input)
@@ -512,6 +515,21 @@ class vDenoising(vGeneral):
             # Write images over epochs
             classResults.writeEndImagesAndMetrics(epoch,self.sub_iter_DIP,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)",all_images_DIP=all_images_DIP)
             '''
+
+        batch_idx = "MR_forward"
+        net_forward_MR = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.sub_iter_DIP_already_done-1) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img'
+        if (self.several_DIP_inputs > 1):
+        # if (os.path.isfile(net_forward_MR)):
+            out = self.fijii_np(net_forward_MR,shape=(self.PETImage_shape),type_im='<f')
+            # Descale like at the beginning
+            out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
+            # Saving image output
+            os.system("mv " + net_forward_MR + " " + self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.sub_iter_DIP_already_done - 1) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + 'scaled.img')
+            self.save_img(out_descale, net_forward_MR)
+            # Squeeze image by loading it
+            out_descale = self.fijii_np(net_forward_MR,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+            # Saving (now DESCALED) image output
+            self.save_img(out_descale, net_forward_MR)
 
 
     def choose_net(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, override_input):

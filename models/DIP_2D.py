@@ -77,6 +77,8 @@ class DIP_2D(LightningModule):
         else:
             self.several_DIP_inputs = 1
 
+        self.num_total_batch = -1
+        self.end_epoch = False
         '''
         ## Variables for WMV ##
         self.queueQ = []
@@ -264,10 +266,15 @@ class DIP_2D(LightningModule):
         return MSELoss()(out, image_corrupt_torch) # for DIP and DD
 
     def training_step(self, train_batch, batch_idx):
+        self.num_total_batch += 1
+        if (self.num_total_batch == 0):
+            if (self.sub_iter_DIP_already_done_before_training - self.current_epoch == 0):
+                self.out_np_all_inputs = zeros((self.several_DIP_inputs,train_batch[0].shape[3],train_batch[0].shape[4]),dtype=float32)
+            else:
+                self.out_np_all_inputs[:,:,:] = 0 # Do not instantiate a new array for memory efficiency
         loss = 0
-        # self.out_np = zeros((self.several_DIP_inputs,train_batch[0].shape[3],train_batch[0].shape[4]),dtype=float32)
-        for self.num_batch in range(train_batch[0].shape[0]):
-            image_net_input_torch, image_corrupt_torch = train_batch[0][self.num_batch,:,:,:,:],train_batch[1][self.num_batch,:,:,:,:]
+        for self.idx_inside_this_batch in range(train_batch[0].shape[0]):
+            image_net_input_torch, image_corrupt_torch = train_batch[0][self.idx_inside_this_batch,:,:,:,:],train_batch[1][self.idx_inside_this_batch,:,:,:,:]
             out = self.forward(image_net_input_torch)
             # logging using tensorboard logger
             loss += self.DIP_loss(out, image_corrupt_torch)
@@ -275,25 +282,33 @@ class DIP_2D(LightningModule):
             self.logger.experiment.add_scalar('loss', loss,self.current_epoch)
 
             try:
-                # self.out_np[self.num_batch,:,:] = out.detach().numpy()[0,0,:,:]
+                # self.out_np[self.idx_inside_this_batch,:,:] = out.detach().numpy()[0,0,:,:]
                 self.out_np = out.detach().numpy()[0,0,:,:]
             except:
-                # self.out_np[self.num_batch,:,:] = out.cpu().detach().numpy()[0,0,:,:]
+                # self.out_np[self.idx_inside_this_batch,:,:] = out.cpu().detach().numpy()[0,0,:,:]
                 self.out_np = out.cpu().detach().numpy()[0,0,:,:]
-        
 
-        # for self.num_batch in range(int(len(train_batch)/2)):
-        #     image_net_input_torch, image_corrupt_torch = train_batch[self.num_batch],train_batch[self.num_batch+int(len(train_batch)/2)]
+            if (self.num_total_batch != self.several_DIP_inputs - 1):
+                if (self.write_current_img_mode):
+                    self.write_current_img(out,batch_idx)
+            else:
+                # if (self.write_current_img_mode):
+                #     self.write_current_img(out,batch_idx)
+                self.end_epoch = True
+        
+        try:
+            self.out_np_all_inputs[self.num_total_batch,:,:] = out.detach().numpy()[0,0,:,:]
+        except:
+            self.out_np_all_inputs[self.num_total_batch,:,:] = out.cpu().detach().numpy()[0,0,:,:]        
+
+        # for self.idx_inside_this_batch in range(int(len(train_batch)/2)):
+        #     image_net_input_torch, image_corrupt_torch = train_batch[self.idx_inside_this_batch],train_batch[self.idx_inside_this_batch+int(len(train_batch)/2)]
         #     out = self.forward(image_net_input_torch)
         #     # logging using tensorboard logger
         #     loss += self.DIP_loss(out, image_corrupt_torch)
         #     # print(loss)
         #     self.logger.experiment.add_scalar('loss', loss,self.current_epoch)
 
-        #     try:
-        #         self.out_np[self.num_batch,:,:] = out.detach().numpy()[0,0,:,:]
-        #     except:
-        #         self.out_np[self.num_batch,:,:] = out.cpu().detach().numpy()[0,0,:,:]        
         
 
 
@@ -314,11 +329,30 @@ class DIP_2D(LightningModule):
         # }, self.checkpoint_simple_path_exp + '/optimizer.pth')
 
         # WMV
-        self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.scanner)
+        if (self.num_total_batch == self.several_DIP_inputs - 1):
+            self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.scanner)
         
         # Increment number of iterations since beginnning of DNA
-        self.sub_iter_DIP_already_done += 1
+        if (self.end_epoch): # We looped over all images of the batch
+            self.sub_iter_DIP_already_done += 1
+            if (self.write_current_img_mode):
+                out_avg = mean_np(self.out_np_all_inputs,axis=0)
+                # self.write_current_img(out_avg,batch_idx="avg")
+                batch_idx = "avg"
+                self.save_img(out_avg, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
 
+        if (self.num_total_batch == self.several_DIP_inputs - 1):
+            if ((self.current_epoch == self.sub_iter_DIP + self.sub_iter_DIP_already_done_before_training - 1)):
+                batch_idx = "MR_forward"
+                self.save_img(self.out_np_all_inputs[0,:,:], self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+            if (self.DIP_early_stopping):
+                if (self.SUCCESS):
+                    batch_idx = "MR_forward"
+                    self.save_img(self.out_np_all_inputs[0,:,:], self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+        if (self.end_epoch):
+            self.num_total_batch = -1
+            self.end_epoch = False
+        
         return loss
 
     def configure_optimizers(self):
@@ -330,14 +364,8 @@ class DIP_2D(LightningModule):
 
         if (self.opti_DIP == 'Adam'):
             optimizer = optim.Adam(self.parameters(), lr=self.lr, weight_decay=5E-8) # Optimizing using Adam
+            # optimizer = optim.Adam(self.parameters(), lr=self.lr, betas=(0,0)) # Optimizing using Adam
             #optimizer = optim.Adam(self.parameters(), lr=self.lr) # Optimizing using Adam
-
-            # for group in optimizer.param_groups:
-            #     for p in group['params']:
-            #         print(p)
-            #         if p.grad is not None:
-            #             print(optimizer.state[p]['exp_avg'])
-
         elif (self.opti_DIP == 'LBFGS' or self.opti_DIP is None): # None means no argument was given in command line
             optimizer = optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=10,line_search_fn=None) # Optimizing using L-BFGS
             # optimizer = optim.LBFGS(self.parameters(), lr=self.lr, history_size=10, max_iter=4,line_search_fn="strong_wolfe") # Optimizing using L-BFGS 1
@@ -346,32 +374,25 @@ class DIP_2D(LightningModule):
             optimizer = optim.SGD(self.parameters(), lr=self.lr) # Optimizing using SGD
         elif (self.opti_DIP == 'Adadelta'):
             optimizer = optim.Adadelta(self.parameters()) # Optimizing using Adadelta
-
-        # from torch import load
-        # if (isfile(self.checkpoint_simple_path_exp + '/optimizer.pth')):
-        #     ckpt = load(self.checkpoint_simple_path_exp + '/optimizer.pth')
-        #     optimizer.load_state_dict(ckpt['optimizer_state_dict'])
-        
-
         return optimizer
 
-    def write_current_img(self,out):
+    def write_current_img(self,out,batch_idx=-1):
         if (self.all_images_DIP == "False"):
             if ((self.current_epoch%(self.sub_iter_DIP // 10) == (self.sub_iter_DIP // 10) -1)):
-                self.write_current_img_task(out)
+                self.write_current_img_task(out,batch_idx=batch_idx)
         elif (self.all_images_DIP == "True"):
-            self.write_current_img_task(out)
+            self.write_current_img_task(out,batch_idx=batch_idx)
         elif (self.all_images_DIP == "Last"):
             if (self.current_epoch == self.sub_iter_DIP + self.sub_iter_DIP_already_done_before_training - 1):
-                self.write_current_img_task(out)
+                self.write_current_img_task(out,batch_idx=batch_idx)
 
-    def write_current_img_task(self,out,inside=False):
+    def write_current_img_task(self,out,inside=False,batch_idx=-1):
         print("self.current_epoch",self.current_epoch)
         if (inside):
             print("save before ReLU here")
             # self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/beforeReLU_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
         else:
-            self.save_img(self.out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+            self.save_img(self.out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
         config_copy = dict(config)

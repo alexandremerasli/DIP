@@ -54,7 +54,7 @@ def class_for_task(config,task):
     # elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
     #     from iResultsAlreadyComputed import iResultsAlreadyComputed
     #     classTask = iResultsAlreadyComputed(config)
-    elif (task == 'compare_2_methods'): # Show already computed results averaging over replicates
+    elif ('compare_2_methods' in task): # Show already computed results averaging over replicates
         config["average_replicates"] = tune.grid_search([True])
         from iResultsADMMLim_VS_APGMAP import iResultsADMMLim_VS_APGMAP
         classTask = iResultsADMMLim_VS_APGMAP(config)
@@ -79,42 +79,56 @@ def choose_task(config):
     # task = 'show_metrics_ADMMLim'
     # task = 'show_metrics_nested'
     # task = 'compare_2_methods'
+    # task = 'compare_2_methods_post_reco'
 
     return task
 
 # config_files = ["nested_random_3_skip_10it", "nested_CT_2_skip_10it", "nested_CT_1_skip_10it"]
-config_files = ["Gong_CT_1_skip", "Gong_CT_2_skip"]#, "Gong_CT_3_skip"]
-config_files = ["Gong_CT_3_skip","Gong_CT_1_skip","Gong_CT_2_skip"]
-config_files = ["Gong_CT_1_skip","Gong_CT_2_skip"]
-config_files = ['APGMAP_configuration']
+# config_files = ["Gong_CT_1_skip", "Gong_CT_2_skip"]#, "Gong_CT_3_skip"]
+# config_files = ["Gong_CT_3_skip","Gong_CT_1_skip","Gong_CT_2_skip"]
+# config_files = ["Gong_CT_1_skip","Gong_CT_2_skip"]
+# config_files = ['APGMAP_configuration']
 # config_files = ['ADMMLim_configuration']
-config_files = ['nested_ADMMLim_more_ADMMLim_it_10_configuration']
+# config_files = ['nested_ADMMLim_more_ADMMLim_it_10_configuration']
 # config_files = ['nested_APPGML_1it_configuration']
 # config_files = ['nested_ADMMLim_more_ADMMLim_it_30_configuration']
 # config_files = ['OSEM_configuration']
 # config_files = ['Gong_skip3_3_my_settings']
 # config_files = ['BSREM_configuration']
+config_files = 8*['nested_MIC_dropout']
+config_files = ['nested_MIC_dropout']
+config_files = ['nested_MIC_cookie_2D']
 config_files = ['nested_MIC_brain_2D']
+config_files = ['nested_MIC_APPGML_brain_2D']
+# config_files = ['nested_MIC_brain_2D_DNA_ADMMLim']
+# config_files = ['nested_MIC_cookie_2D_DNA_ADMMLim']
+# config_files = ['nested_MIC_several_inputs_brain_2D']
 # config_files = [f[:-3] for f in os.listdir('all_config') if os.path.isfile(os.path.join('all_config', f))]
 
 # config_files = ['ADMMLim_configuration']
 
+i=-1
 for lib_string in config_files:
-    # try:
-    if (True):
+    i+=1
+    try:
+    # if (True):
         lib = importlib.import_module('all_config.' + lib_string)
         config = lib.config_func_MIC()
-        config["image"] = tune.grid_search(['image4_0'])
-        config["image"] = tune.grid_search(['image50_1'])
-        # config["image"] = tune.grid_search(['image50_0'])
-        # config["image"] = tune.grid_search(['image40_1'])
+        # config["image"] = tune.grid_search(['image4_0'])
         # config["image"] = tune.grid_search(['image010_3D'])
-        config["replicates"] = tune.grid_search(list(range(1,3+1)))
-        # config["replicates"] = tune.grid_search([21])
+        if 'brain' in lib_string:
+            config["image"] = tune.grid_search(['image50_1'])
+            # config["image"] = tune.grid_search(['image40_1'])
+        else:
+            config["image"] = tune.grid_search(['image40_1'])
+            # config["image"] = tune.grid_search(['image50_1'])
+        config["replicates"] = tune.grid_search(list(range(1+5*i,1+5*i+1)))
+        config["replicates"] = tune.grid_search(list(range(1,1+1)))
+        # config["replicates"] = tune.grid_search([1])
         config["max_iter"] = tune.grid_search([500])
         # config["post_reco_in_suffix"] = tune.grid_search([False]) # If want to show EMV results which were not on post reconstruction, in DNA init
         # config["read_only_MV_csv"] = tune.grid_search([True])
-        config["ray"] = True
+        config["ray"] = False
 
         root = os.getcwd()
 
@@ -153,7 +167,7 @@ for lib_string in config_files:
                 if (type(value) == type(config_without_grid_search)):
                     if ("grid_search" in value):
                         config_without_grid_search[key] = value['grid_search']
-                        
+
                         if len(config_without_grid_search[key]) > 1:
                             print(key)
 
@@ -174,5 +188,5 @@ for lib_string in config_files:
         '''
         #sys.stdout.close()
         #sys.stdout=stdoutOrigin
-    # except:
-    #     print(lib_string + " did not work")
+    except:
+        print(lib_string + " did not work")
