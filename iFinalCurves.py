@@ -926,7 +926,9 @@ class iFinalCurves(vGeneral):
             
             color_dict_MIC2023_DNA = {
                 "nested" : ['red','pink'],
-                "nested_MIC_brain_2D" : ['red','pink'],
+                "nested_MIC_brain_2D" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "nested_MIC_cookie_2D" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "nested_MIC_cookie_2D_DNA_ADMMLim" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
                 "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "APGMAP" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "ADMMLim" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
@@ -998,7 +1000,8 @@ class iFinalCurves(vGeneral):
                 "nested_random_1_skip_10it" : [marker_dict["random"][0]],
                 "nested_random_0_skip_10it" : [marker_dict["random"][0]],
                 "nested_DD" : [marker_dict["random"][0]],
-                "nested_MIC_brain_2D" : [marker_dict["CT"][0]],
+                "nested_MIC_brain_2D" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_cookie_2D_DNA_ADMMLim" : 5*[marker_dict["CT"][0]],
                 "DIPRecon_BSREM_stand" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_CT_3_skip" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_CT_2_skip" : [marker_dict["DIPRecon"][0]],

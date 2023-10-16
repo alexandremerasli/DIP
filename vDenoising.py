@@ -8,7 +8,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 
 # Useful
-from numpy import inf, array, arange, ones, copy, zeros, linspace
+from numpy import inf, array, arange, ones, copy, zeros, linspace, float32
 from numpy.random import seed, uniform, normal
 import os
 from pathlib import Path
@@ -106,9 +106,11 @@ class vDenoising(vGeneral):
                     image_net_initial = copy(self.image_net_input_scale)
                     dim_image_net = list(self.PETImage_shape)
                     dim_image_net.insert(0,self.several_DIP_inputs)
-                    self.image_net_input_scale = zeros(dim_image_net)
+                    self.image_net_input_scale = zeros(dim_image_net,dtype=float32) # Like if one DIP input
                     for i in range(self.several_DIP_inputs):
                         self.image_net_input_scale[i,:,:,:] = copy(image_net_initial)
+                elif (self.diffusion_model_like_each_DIP != 0 and self.several_DIP_inputs == 1):
+                    self.image_net_input_scale = self.add_gaussian_noise(copy(self.image_net_input_scale), int(1/self.diffusion_model_like_each_DIP),self.diffusion_model_like_each_DIP)
 
 
             # DIP input image, numpy --> torch
