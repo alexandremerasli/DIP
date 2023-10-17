@@ -204,8 +204,8 @@ class vDenoising(vGeneral):
                         else:
                             os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
                     else: # if ES point not found, save last ckpt
-                        if (file == "epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*config["several_DIP_inputs"]-1) + ".ckpt"):
-                            shutil.copy(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*config["several_DIP_inputs"]-1) + ".ckpt"),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
+                        if (file == "epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*self.several_DIP_inputs-1) + ".ckpt"):
+                            shutil.copy(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*self.several_DIP_inputs-1) + ".ckpt"),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
                             # os.remove(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str(model.epochStar) + ".ckpt"))
                         else:
                             os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
