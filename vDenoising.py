@@ -198,8 +198,8 @@ class vDenoising(vGeneral):
             if (config["finetuning"] == "ES"):
                 if (config["DIP_early_stopping"]):
                     if (model.epochStar != -1): # if ES point found, save ES ckpt
-                        if (file == "epoch=" + str(model.epochStar) + "-step=" + str(model.epochStar) + ".ckpt"):
-                            shutil.copy(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str(model.epochStar) + ".ckpt"),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
+                        if (file == "epoch=" + str(model.epochStar) + "-step=" + str((model.epochStar+1)*self.several_DIP_inputs-1) + ".ckpt"):
+                            shutil.copy(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str((model.epochStar+1)*self.several_DIP_inputs-1) + ".ckpt"),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
                         # os.remove(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str(model.epochStar) + ".ckpt"))
                         else:
                             os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
