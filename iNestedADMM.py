@@ -185,18 +185,22 @@ class iNestedADMM(vReconstruction):
                 self.writeAdaptiveRhoFile()
 
             # Nested ADMM stopping criterion
-            '''
-            if ("50" in self.phantom):
-                # if (classResults.IR_whole_recon[self.global_it] > IR_ref[0]):
-                if (classResults.IR_whole_recon[self.global_it] > 0.3):
-                    print("Nested ADMM stopping criterion reached")
-                    self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
-                    stopping_criterion_file = open(self.path_stopping_criterion, "w")
-                    stopping_criterion_file.write("stopping iteration :" + "\n")
-                    stopping_criterion_file.write(str(self.global_it) + "\n")
-                    stopping_criterion_file.close()
-                    break
-            '''
+            if (self.global_it != i_init or config["unnested_1st_global_iter"]): # Gong after pre iteration
+                if ("50" in self.phantom):
+                    # if (classResults.IR_bkg_recon[self.global_it] > IR_ref[0]):
+                    if hasattr(self,"IR_bkg_smoothed"):
+                        alpha_IR = 0.6
+                        self.IR_bkg_smoothed = (1-alpha_IR) * self.IR_bkg_smoothed + alpha_IR * classResults.IR_bkg_recon[self.global_it]
+                    else:
+                        self.IR_bkg_smoothed = classResults.IR_bkg_recon[self.global_it]
+                    if (self.IR_bkg_smoothed > 0.3):
+                        print("Nested ADMM stopping criterion reached")
+                        self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
+                        stopping_criterion_file = open(self.path_stopping_criterion, "w")
+                        stopping_criterion_file.write("stopping iteration :" + "\n")
+                        stopping_criterion_file.write(str(self.global_it) + "\n")
+                        stopping_criterion_file.close()
+                        break
 
         # Saving final image output
         self.save_img(self.f, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')
