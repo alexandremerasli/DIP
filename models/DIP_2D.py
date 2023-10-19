@@ -335,11 +335,12 @@ class DIP_2D(LightningModule):
         # Increment number of iterations since beginnning of DNA
         if (self.end_epoch): # We looped over all images of the batch
             self.sub_iter_DIP_already_done += 1
-            if (self.write_current_img_mode):
-                out_avg = mean_np(self.out_np_all_inputs,axis=0)
-                # self.write_current_img(out_avg,batch_idx="avg")
-                batch_idx = "avg"
-                self.save_img(out_avg, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+            # Write avg over all images in the dataset
+            # if (self.write_current_img_mode):
+            #     out_avg = mean_np(self.out_np_all_inputs,axis=0)
+            #     # self.write_current_img(out_avg,batch_idx="avg")
+            #     batch_idx = "avg"
+            #     self.save_img(out_avg, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
 
         if (self.num_total_batch == self.several_DIP_inputs - 1):
             if ((self.current_epoch == self.sub_iter_DIP + self.sub_iter_DIP_already_done_before_training - 1)):

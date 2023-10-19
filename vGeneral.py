@@ -255,6 +255,7 @@ class vGeneral(abc.ABC):
                         self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     else:
                         self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')    
+                        self.hot_TEP_ROI_ref = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_white_matter_ref" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     self.hot_MR_recon = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
@@ -887,19 +888,23 @@ class vGeneral(abc.ABC):
         tumor_3a_ROI = self.points_in_circle(13,25,4-remove_external_radius,PETImage_shape)
         tumor_3a_ROI_whole = self.points_in_circle(13,25,4,PETImage_shape)
 
+        tumor_3a_ref_ROI = self.points_in_circle(-11,25,4-remove_external_radius,PETImage_shape)
+
+
 
         
         tumor_3a_mask = zeros(PETImage_shape, dtype='<f')
         tumor_3a_mask_whole = zeros(PETImage_shape, dtype='<f')
+        tumor_3a_mask_ref = zeros(PETImage_shape, dtype='<f')
         tumor_1b_mask = zeros(PETImage_shape, dtype='<f')
         tumor_1a_mask = zeros(PETImage_shape, dtype='<f')
         tumor_2_PET_mask = zeros(PETImage_shape, dtype='<f')
 
-        ROI_MR_list = [tumor_1a_ROI,tumor_2_MR_ROI,tumor_3a_ROI]
+        ROI_MR_list = [tumor_1a_ROI,tumor_2_MR_ROI,tumor_3a_ROI,tumor_3a_mask_ref]
         ROI_PET_list = [tumor_1a_ROI,tumor_2_PET_ROI]
 
-        ROI_list = [tumor_3a_ROI,tumor_1b_ROI,tumor_1a_ROI,tumor_2_PET_ROI,tumor_3a_ROI_whole]
-        mask_list = [tumor_3a_mask, tumor_1b_mask, tumor_1a_mask, tumor_2_PET_mask,tumor_3a_mask_whole]
+        ROI_list = [tumor_3a_ROI,tumor_1b_ROI,tumor_1a_ROI,tumor_2_PET_ROI,tumor_3a_ROI_whole,tumor_3a_ref_ROI]
+        mask_list = [tumor_3a_mask, tumor_1b_mask, tumor_1a_mask, tumor_2_PET_mask,tumor_3a_mask_whole,tumor_3a_mask_ref]
         for i in range(len(ROI_list)):
             ROI = ROI_list[i]
             mask = mask_list[i]
@@ -912,6 +917,7 @@ class vGeneral(abc.ABC):
         self.save_img(tumor_1a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw')
         self.save_img(tumor_3a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw')
         self.save_img(tumor_3a_mask_whole, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw')
+        self.save_img(tumor_3a_mask_ref, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_white_matter_ref" + self.phantom[5:] + '.raw')
 
     def write_image_tensorboard(self,writer,image,name,suffix,image_gt,i=0,full_contrast=False):
         # Creating matplotlib figure with colorbar
@@ -1190,8 +1196,8 @@ class vGeneral(abc.ABC):
                         with open(self.path_stopping_criterion) as f:
                             first_line = f.readline() # Read first line to get second one
                             #self.total_nb_iter = min(int(f.readline().rstrip()) - self.i_init, config["nb_outer_iteration"] - self.i_init + 1)
-                            self.total_nb_iter = int(f.readline().rstrip())
                             # self.total_nb_iter = int(f.readline().rstrip()) - self.i_init - 1
+                            self.total_nb_iter = int(f.readline().rstrip())
                             #self.total_nb_iter = int(self.total_nb_iter / self.i_init) # if 1 out of i_init iterations was saved
                             #self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1 # Override value
                     else:
