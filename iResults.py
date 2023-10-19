@@ -62,7 +62,8 @@ class iResults(vDenoising):
         else:
             self.i_init = 1
 
-        self.defineTotalNbIter_beta_rho(config["method"], config, config["task"],stopping_criterion=False) # Compute metrics for every iterations, stopping_criterion will be used in final curves
+        MIC_study = True
+        self.defineTotalNbIter_beta_rho(config["method"], config, config["task"],stopping_criterion=MIC_study) # Compute metrics for every iterations, stopping_criterion will be used in final curves
 
         # Define variables for MV early stopping algorithms
         if ("nested" in config["method"] or "Gong" in config["method"]):
@@ -135,6 +136,7 @@ class iResults(vDenoising):
                     self.hot_ROI = self.hot_TEP_ROI
                 else:
                     self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                    self.hot_TEP_ROI_ref = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_white_matter_ref" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     # These ROIs do not exist, so put them equal to hot ROI for the sake of simplicity
                     self.hot_TEP_ROI = np.array(self.hot_ROI)
                     self.hot_TEP_match_square_ROI = np.array(self.hot_ROI)
@@ -712,7 +714,11 @@ class iResults(vDenoising):
         ### Only useful for new phantom with 3 hot ROIs, but compute it for every phantom for the sake of simplicity ###
         # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
         hot_TEP_ROI_act = image_recon[self.hot_TEP_ROI==1]
-        AR_hot_TEP_recon[i] = np.mean(hot_TEP_ROI_act)
+        if ("50" not in self.phantom):
+            AR_hot_TEP_recon[i] = np.mean(hot_TEP_ROI_act)
+        else:
+            hot_TEP_ref_ROI_act = image_recon[self.hot_TEP_ROI_ref==1]
+            AR_hot_TEP_recon[i] = 100 * (np.mean(hot_TEP_ROI_act) - np.mean(hot_TEP_ref_ROI_act)) / np.mean(hot_TEP_ref_ROI_act)
         
         # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c -20. 70. 0. 20. 4. 400)
         hot_TEP_match_square_ROI_act = image_recon[self.hot_TEP_match_square_ROI==1]

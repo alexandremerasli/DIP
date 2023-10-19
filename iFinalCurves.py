@@ -929,6 +929,15 @@ class iFinalCurves(vGeneral):
                 "nested_MIC_brain_2D" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
                 "nested_MIC_cookie_2D" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
                 "nested_MIC_cookie_2D_DNA_ADMMLim" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+
+                "nested_MIC_brain_2D_intermediate" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "nested_MIC_brain_2D_MR" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "nested_MIC_brain_2D_random" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "nested_MIC_brain_2D_diff1" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "nested_MIC_brain_2D_diff5" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "nested_MIC_brain_2D_diff5_SC1" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "nested_MIC_brain_2D_diff5_SC2" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+
                 "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "APGMAP" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "ADMMLim" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
@@ -1002,6 +1011,16 @@ class iFinalCurves(vGeneral):
                 "nested_DD" : [marker_dict["random"][0]],
                 "nested_MIC_brain_2D" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_cookie_2D_DNA_ADMMLim" : 5*[marker_dict["CT"][0]],
+
+                "nested_MIC_brain_2D" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_intermediate" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_MR" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_random" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_diff1" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_diff5" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_diff5_SC1" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_diff5_SC2" : 5*[marker_dict["CT"][0]],
+
                 "DIPRecon_BSREM_stand" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_CT_3_skip" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_CT_2_skip" : [marker_dict["DIPRecon"][0]],
@@ -1110,7 +1129,8 @@ class iFinalCurves(vGeneral):
 
                 if (not csv_before_MIC):
                     if "50" in self.phantom:
-                        AR_hot_TEP_recon.append(np.array(rows_csv[6]) / bkg_GT * 100) # This is the MR only region
+                        # AR_hot_TEP_recon.append(np.array(np.array(rows_csv[6]) - bkg_GT) / bkg_GT * 100) # This is the MR only region (relative bias with respect to GT bkg)
+                        AR_hot_TEP_recon.append(np.array(np.array(rows_csv[6]))) # This is the MR only region  (relative bias with respect to current image bkg mean)
                     else:
                         AR_hot_TEP_recon.append(np.array(rows_csv[6]) / hot_GT * 100) # This is the MR only region
                     AR_hot_TEP_match_square_recon.append(np.array(rows_csv[7]) / hot_GT * 100)
