@@ -361,10 +361,10 @@ class iFinalCurves(vGeneral):
                                     idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                 else:
                                     idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
-                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][other_dim_idx])
+                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])
                                 if (variance_plot):
                                     # ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
-                                    ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1])), alpha = 0.4, label='_nolegend_',color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][other_dim_idx])                                
+                                    ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1])), alpha = 0.4, label='_nolegend_',color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])                                
                                 #ax[fig_nb].set_title('AR ' + 'in ' + ROI + ' region vs IR in background (with iterations)')
                             #'''
                             if (fig_nb == 1):
@@ -375,7 +375,7 @@ class iFinalCurves(vGeneral):
                                     idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                 else:
                                     idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
-                                ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][other_dim_idx])
+                                ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])
                                 # Plot dashed line for target value, according to ROI
                                 if (ROI != "whole"):
                                     if (quantitative_tradeoff):
@@ -394,7 +394,7 @@ class iFinalCurves(vGeneral):
                                 # Show variance shadow over average line if asked for
                                 if (variance_plot):
                                     #ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx]))*self.i_init, avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_') # if 1 out of i_init iterations was saved
-                                    ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])), avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_',color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][other_dim_idx])
+                                    ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])), avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_',color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])
                                 '''
                                 if len(method_list) == 1:
                                     ax[fig_nb].set_title(method + " reconstruction averaged on " + str(nb_usable_replicates) + " replicates (" + ROI + " ROI)")
@@ -414,9 +414,9 @@ class iFinalCurves(vGeneral):
                                 
                                 if ((not APGMAP_vs_ADMMLim and (method == "APGMAP" and config_other_dim[method][other_dim_idx] == A_shift_ref_APPGML) or (method != "APGMAP" and other_dim_idx == 0)) or APGMAP_vs_ADMMLim):
                                 #    nb_other_dim["APGMAP"] = 1
-                                    ax[fig_nb].plot(100*avg_IR[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)],'-o',linewidth=3,color=color_dict[method_without_configuration][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
+                                    ax[fig_nb].plot(100*avg_IR[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)],'-o',linewidth=3,color=color_dict[method_without_configuration][other_dim_idx],ls=marker_dict[method][idx_good_rho_color])#'-o',)
                                 if (variance_plot):
-                                    ax[fig_nb].fill(np.concatenate((100*(avg_IR[(cases,len_mini-1)] - np.sign(reg[fig_nb][cases])*std_IR[cases,-1]),100*(avg_IR[(cases,len_mini-1)][::-1] + np.sign(reg[fig_nb][cases][::-1])*std_IR[(cases,len_mini-1)][::-1]))),np.concatenate((avg_metrics[(cases,len_mini-1)]-std_metrics[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)][::-1]+std_metrics[(cases,len_mini-1)][::-1])), alpha = 0.4, label='_nolegend_', ls=marker_dict[method][other_dim_idx])
+                                    ax[fig_nb].fill(np.concatenate((100*(avg_IR[(cases,len_mini-1)] - np.sign(reg[fig_nb][cases])*std_IR[cases,-1]),100*(avg_IR[(cases,len_mini-1)][::-1] + np.sign(reg[fig_nb][cases][::-1])*std_IR[(cases,len_mini-1)][::-1]))),np.concatenate((avg_metrics[(cases,len_mini-1)]-std_metrics[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)][::-1]+std_metrics[(cases,len_mini-1)][::-1])), alpha = 0.4, label='_nolegend_', ls=marker_dict[method][idx_good_rho_color])
                                 # BSREM beta 0.01 white circle
                                 #'''
                                 if ('BSREM' in method):
@@ -432,8 +432,8 @@ class iFinalCurves(vGeneral):
                                         idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                     else:
                                         idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
-                                    ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],marker='o'*('CT' in method) + '*'*('random' in method) + 'o'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][other_dim_idx])#'-o',)
-                                    # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:],marker='o'*('CT' in method) + '*'*('random' in method) + '+'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][other_dim_idx],ls=marker_dict[method][other_dim_idx])#'-o',)
+                                    ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],marker='o'*('CT' in method) + '*'*('random' in method) + 'o'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])#'-o',)
+                                    # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:],marker='o'*('CT' in method) + '*'*('random' in method) + '+'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][other_dim_idx],ls=marker_dict[method][idx_good_rho_color])#'-o',)
                                     # unnested
                                     idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                     plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'D',markersize=10, mfc='none',color=color_dict[method_without_configuration][idx_good_rho_color],label='_nolegend_')
@@ -498,6 +498,9 @@ class iFinalCurves(vGeneral):
                         metric_AR_or_SSIM = 'likelihood'
                     else:
                         metric_AR_or_SSIM = 'SSIM'
+                if "50" in self.phantom:
+                    if (ROI == "hot_TEP"):
+                        ROI = "MR only"
                 if (fig_nb == 0):
                     title = pretitle + ' : ' + metric_AR_or_SSIM + ' ' + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
                 elif (fig_nb == 1):
@@ -571,14 +574,23 @@ class iFinalCurves(vGeneral):
                 if (rename_settings == "MIC"):
                     if ("random" in method):
                         replicates_legend[fig_nb].append("random input, " + str(config[method]["skip_connections"]) + " SC")
-                    elif ("CT" in method):
+                    elif ("CT" in method or "MR" in method):
                         replicates_legend[fig_nb].append("anatomical input, " + str(config[method]["skip_connections"]) + " SC")
                     elif ("DD" in method):
                         replicates_legend[fig_nb].append("random input, DD")
-                    else:
+                    elif ("intermediate" in method):
                         for rho_idx in range(nb_rho[method]):
                             for other_dim_idx in range(nb_other_dim[method]):
                                 label_name = "intermediate setting, " + str(config[method]["skip_connections"]) + " SC"
+                                if (nb_other_dim[method] > 1): # Remove rho from label if other dim
+                                    label_name += " : " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx])
+                                else:
+                                    label_name += " : " + rho_name + " = " + str(config[method]["rho"][rho_idx])
+                                replicates_legend[fig_nb].append(label_name)
+                    elif ("diff" in method):
+                        for rho_idx in range(nb_rho[method]):
+                            for other_dim_idx in range(nb_other_dim[method]):
+                                label_name = str(config_MIC["several_DIP_inputs"]["grid_search"][0]) + " DIP input" + "s"*(config_MIC["several_DIP_inputs"]["grid_search"][0] > 1) + " with mixture, " + str(config[method]["skip_connections"]) + " SC"
                                 if (nb_other_dim[method] > 1): # Remove rho from label if other dim
                                     label_name += " : " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx])
                                 else:
@@ -931,10 +943,10 @@ class iFinalCurves(vGeneral):
                 "nested_MIC_cookie_2D_DNA_ADMMLim" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
 
                 "nested_MIC_brain_2D_intermediate" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
-                "nested_MIC_brain_2D_MR" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "nested_MIC_brain_2D_MR" : 5*[color_dict_after_MIC["nested_CT_skip"][0]],
                 "nested_MIC_brain_2D_random" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
                 "nested_MIC_brain_2D_diff1" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
-                "nested_MIC_brain_2D_diff5" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "nested_MIC_brain_2D_diff5" : 5*[color_dict_after_MIC["nested_APPGML"][3]],
                 "nested_MIC_brain_2D_diff5_SC1" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
                 "nested_MIC_brain_2D_diff5_SC2" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
 
@@ -1017,7 +1029,7 @@ class iFinalCurves(vGeneral):
                 "nested_MIC_brain_2D_MR" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_random" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_diff1" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_diff5" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_diff5" : [':','dashdot','--','-'],
                 "nested_MIC_brain_2D_diff5_SC1" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_diff5_SC2" : 5*[marker_dict["CT"][0]],
 
@@ -1080,6 +1092,19 @@ class iFinalCurves(vGeneral):
             #     if (i_replicate in DIPRecon_failing_replicate_list):
             #         i_replicate = replicates_replace_list[DIPRecon_failing_replicate_list.index(i_replicate)]
 
+            if (rename_settings == "MIC"): # Remove Gong failing replicates and replace them
+                if (self.phantom == "image50_1"):
+                    rho = float(re.search(r'\d+(\.\d+)?', sorted_suffixes[i][sorted_suffixes[i].find("rho"):]).group())
+                    if ("nested_MIC_brain_2D_diff5" in method and config_MIC["sub_iter_DIP"]["grid_search"][0]==10 and rho==3):
+                        DIPRecon_failing_replicate_list = list(np.array([30])-1)
+                        replicates_replace_list = list(np.array([1])-1)
+                        print("final replicates to remove ?????????????????????,,,????")
+                    elif ("nested_MIC_brain_2D_diff5" in method and config_MIC["sub_iter_DIP"]["grid_search"][0]==10 and rho==0.3):
+                        DIPRecon_failing_replicate_list = list(np.array([1])-1)
+                        replicates_replace_list = list(np.array([40])-1)
+                        print("final replicates to remove ?????????????????????,,,????")
+                if (i_replicate in DIPRecon_failing_replicate_list):
+                    i_replicate = replicates_replace_list[DIPRecon_failing_replicate_list.index(i_replicate)]
             suffix = sorted_suffixes[i].rstrip("\n")
             replicate = "replicate_" + str(i_replicate + 1)
 
