@@ -382,7 +382,13 @@ class iFinalCurves(vGeneral):
                                         if ("cold" in ROI):
                                             target_value = 0
                                         else:
-                                            target_value = 100
+                                            if ("50" in self.phantom):
+                                                if (ROI == "hot_TEP"):
+                                                    target_value = 0
+                                                else:
+                                                    target_value = 100
+                                            else:
+                                                target_value = 100
                                     else:
                                         target_value = 1
                                     if ROI == ROI_list[-1]:
@@ -531,7 +537,13 @@ class iFinalCurves(vGeneral):
             ax[fig_nb].set_ylabel('Bias (%)')
             # ax[fig_nb].autoscale()
         elif 'hot' in ROI:
-            ax[fig_nb].set_ylabel('Activity Recovery (AR) (%) ')
+            if "50" in self.phantom:
+                if (ROI == "hot_TEP"): # MR only region for brain 2D phantom
+                    ax[fig_nb].set_ylabel('Bias (%) ')
+                else:
+                    ax[fig_nb].set_ylabel('Activity Recovery (AR) (%) ')
+            else:
+                ax[fig_nb].set_ylabel('Activity Recovery (AR) (%) ')
         elif ROI == "whole":
             ax[fig_nb].set_ylabel('log-likelihood')
         else:
@@ -590,7 +602,7 @@ class iFinalCurves(vGeneral):
                     elif ("diff" in method):
                         for rho_idx in range(nb_rho[method]):
                             for other_dim_idx in range(nb_other_dim[method]):
-                                label_name = str(config_MIC["several_DIP_inputs"]["grid_search"][0]) + " DIP input" + "s"*(config_MIC["several_DIP_inputs"]["grid_search"][0] > 1) + " with mixture, " + str(config[method]["skip_connections"]) + " SC"
+                                label_name = str(config[method]["several_DIP_inputs"]) + " DIP input" + "s"*(config[method]["several_DIP_inputs"] > 1) + " with mixture, " + str(config[method]["skip_connections"]) + " SC"
                                 if (nb_other_dim[method] > 1): # Remove rho from label if other dim
                                     label_name += " : " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx])
                                 else:
@@ -943,12 +955,20 @@ class iFinalCurves(vGeneral):
                 "nested_MIC_cookie_2D_DNA_ADMMLim" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
 
                 "nested_MIC_brain_2D_intermediate" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "nested_MIC_brain_2D_intermediate0" : 5*[color_dict_after_MIC["nested_ADMMLim"][3]],
+                "nested_MIC_brain_2D_intermediate1" : 5*[color_dict_after_MIC["nested_ADMMLim"][2]],
+                "nested_MIC_brain_2D_intermediate2" : 5*[color_dict_after_MIC["nested_ADMMLim"][1]],
+                "nested_MIC_brain_2D_intermediate3" : 5*[color_dict_after_MIC["nested_ADMMLim"][0]],
                 "nested_MIC_brain_2D_MR" : 5*[color_dict_after_MIC["nested_CT_skip"][0]],
+                "nested_MIC_brain_2D_MR0" : 5*[color_dict_after_MIC["nested_CT_skip"][4]],
+                "nested_MIC_brain_2D_MR1" : 5*[color_dict_after_MIC["nested_CT_skip"][5]],
+                "nested_MIC_brain_2D_MR2" : 5*[color_dict_after_MIC["nested_CT_skip"][0]],
+                "nested_MIC_brain_2D_MR3" : 5*[color_dict_after_MIC["nested_CT_skip"][1]],
                 "nested_MIC_brain_2D_random" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
                 "nested_MIC_brain_2D_diff1" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
                 "nested_MIC_brain_2D_diff5" : 5*[color_dict_after_MIC["nested_APPGML"][3]],
-                "nested_MIC_brain_2D_diff5_SC1" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
-                "nested_MIC_brain_2D_diff5_SC2" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "nested_MIC_brain_2D_diff5_SC1" : 5*[color_dict_after_MIC["nested_ADMMLim"][1]],
+                "nested_MIC_brain_2D_diff5_SC2" : 5*[color_dict_after_MIC["nested_ADMMLim"][2]],
 
                 "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "APGMAP" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
@@ -1026,12 +1046,20 @@ class iFinalCurves(vGeneral):
 
                 "nested_MIC_brain_2D" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_intermediate" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_intermediate0" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_intermediate1" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_intermediate2" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_intermediate3" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_MR" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_MR0" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_MR1" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_MR2" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_MR3" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_random" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_diff1" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_diff5" : [':','dashdot','--','-'],
-                "nested_MIC_brain_2D_diff5_SC1" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_diff5_SC2" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_diff5_SC1" : [':','dashdot','--','-'],
+                "nested_MIC_brain_2D_diff5_SC2" : [':','dashdot','--','-'],
 
                 "DIPRecon_BSREM_stand" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_CT_3_skip" : [marker_dict["DIPRecon"][0]],
@@ -1094,15 +1122,28 @@ class iFinalCurves(vGeneral):
 
             if (rename_settings == "MIC"): # Remove Gong failing replicates and replace them
                 if (self.phantom == "image50_1"):
-                    rho = float(re.search(r'\d+(\.\d+)?', sorted_suffixes[i][sorted_suffixes[i].find("rho"):]).group())
-                    if ("nested_MIC_brain_2D_diff5" in method and config_MIC["sub_iter_DIP"]["grid_search"][0]==10 and rho==3):
-                        DIPRecon_failing_replicate_list = list(np.array([30])-1)
-                        replicates_replace_list = list(np.array([1])-1)
-                        print("final replicates to remove ?????????????????????,,,????")
-                    elif ("nested_MIC_brain_2D_diff5" in method and config_MIC["sub_iter_DIP"]["grid_search"][0]==10 and rho==0.3):
-                        DIPRecon_failing_replicate_list = list(np.array([1])-1)
-                        replicates_replace_list = list(np.array([40])-1)
-                        print("final replicates to remove ?????????????????????,,,????")
+                    if (config[method]["nb_outer_iteration"]==2):
+                        rho = float(re.search(r'\d+(\.\d+)?', sorted_suffixes[i][sorted_suffixes[i].find("rho"):]).group())
+                        if (method == "nested_MIC_brain_2D_diff5" and config[method]["sub_iter_DIP"]==10 and rho==3):
+                            DIPRecon_failing_replicate_list = list(np.array([30])-1)
+                            replicates_replace_list = list(np.array([1])-1)
+                            print("final replicates to remove ?????????????????????,,,????")
+                        elif (method == "nested_MIC_brain_2D_diff5" and config[method]["sub_iter_DIP"]==10 and rho==0.3):
+                            DIPRecon_failing_replicate_list = list(np.array([1])-1)
+                            replicates_replace_list = list(np.array([40])-1)
+                            print("final replicates to remove ?????????????????????,,,????")
+                        elif (method == "nested_MIC_brain_2D_diff5_SC2" and config[method]["sub_iter_DIP"]==10 and rho==0.3):
+                            DIPRecon_failing_replicate_list = list(np.array([1,6,9,10])-1)
+                            replicates_replace_list = list(np.array([2,3,4,5])-1)
+                            print("final replicates to remove ?????????????????????,,,????")
+                        elif ("nested_MIC_brain_2D_MR2" in method):
+                            DIPRecon_failing_replicate_list = list(np.array([3])-1)
+                            replicates_replace_list = list(np.array([1])-1)
+                            print("final replicates to remove ?????????????????????,,,????")
+                        elif ("nested_MIC_brain_2D_MR1" in method):
+                            DIPRecon_failing_replicate_list = list(np.array([1,33])-1)
+                            replicates_replace_list = list(np.array([2,3])-1)
+                            print("final replicates to remove ?????????????????????,,,????")
                 if (i_replicate in DIPRecon_failing_replicate_list):
                     i_replicate = replicates_replace_list[DIPRecon_failing_replicate_list.index(i_replicate)]
             suffix = sorted_suffixes[i].rstrip("\n")
