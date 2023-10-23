@@ -19,6 +19,8 @@ from vGeneral import vGeneral
 
 from models.DIP_2D import DIP_2D # DIP
 from models.DIP_3D import DIP_3D # DIP
+from models.modules_Xin import DIP_skip_add # DIP Xin
+from models.modules_Xin import Swin_Unetr # Swin Unetr
 from models.VAE_DIP_2D import VAE_DIP_2D # DIP vae
 from models.DD_2D import DD_2D # DD
 from models.DD_AE_2D import DD_AE_2D # DD adding encoder part
@@ -110,13 +112,13 @@ class vDenoising(vGeneral):
                     for i in range(self.several_DIP_inputs):
                         self.image_net_input_scale[i,:,:,:] = copy(image_net_initial)
                 elif (self.diffusion_model_like_each_DIP != 0 and self.several_DIP_inputs == 1):
-                    self.image_net_input_scale = self.add_gaussian_noise(copy(self.image_net_input_scale), int(1/self.diffusion_model_like_each_DIP),self.diffusion_model_like_each_DIP)
+                    self.image_net_input_scale = self.add_gaussian_noise(copy(self.image_net_input_scale), 1,self.diffusion_model_like_each_DIP)
 
 
             # DIP input image, numpy --> torch
             self.image_net_input_torch = Tensor(self.image_net_input_scale)
             # Adding dimensions to fit network architecture
-            if (self.net == 'DIP' or self.net == 'DIP_VAE' or self.net == 'DD_AE'): # For autoencoders structure
+            if (self.net == 'DIP' or self.net == 'DIP_VAE' or self.net == 'DD_AE' or self.net == "DIP_Xin" or self.net == "Swin_Unetr"): # For autoencoders structure
                 if (self.PETImage_shape[2] == 1): # if 3D but with dim3 = 1 -> 2D
                     self.image_net_input_torch = self.image_net_input_torch.view(self.several_DIP_inputs,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
                     self.image_net_input_torch = self.image_net_input_torch[:,:,:,:,0]
@@ -167,17 +169,24 @@ class vDenoising(vGeneral):
 
         # model = self.load_model(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_previous_exp, training=True)
     
-        '''
-        if (self.processing_unit == 'CPU'):
-            summary_model = model
-        else:
-            summary_model = model.cuda()
-            from torchsummary import loadsummary
-            if (PETImage_shape[2] == 1): # 2D
-                summary(model, input_size=(1,PETImage_shape[0],PETImage_shape[1])) # for DIP
-            else: # 3D
-                summary(model, input_size=(1,PETImage_shape[0],PETImage_shape[1],PETImage_shape[2])) # for DIP
-        '''
+        # if (self.processing_unit == 'CPU'):
+        #     summary_model = model
+        # else:
+        #     summary_model = model.cuda()
+        #     from torchsummary import summary
+        #     if (PETImage_shape[2] == 1): # 2D
+        #         summary(model, input_size=(1,PETImage_shape[0],PETImage_shape[1])) # for DIP
+        #     else: # 3D
+        #         summary(model, input_size=(1,PETImage_shape[0],PETImage_shape[1],PETImage_shape[2])) # for DIP
+
+        # # Save the original standard output
+        # import sys
+        # original_stdout = sys.stdout 
+
+        # with open('model_summary.txt', 'w') as f:
+        #     sys.stdout = f # Change the standard output to the file we created.
+        #     summary(model, input_size=(1,PETImage_shape[0],PETImage_shape[1])) # for DIP
+        #     sys.stdout = original_stdout # Reset the standard output to its original value
         
         # Start training
         print('Starting optimization, iteration',global_it)
@@ -312,7 +321,7 @@ class vDenoising(vGeneral):
                 type_im = 'float32'
             elif (self.FLTNB == 'double'):
                 type_im = 'float64'
-            if (net == 'DIP' or net == 'DIP_VAE'):
+            if (net == 'DIP' or net == 'DIP_VAE' or self.net == "DIP_Xin" or self.net == "Swin_Unetr"):
                 if config["input"] == "random":
                     im_input = uniform(0,1,PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2]).astype(type_im) # initializing input image with random image (for DIP)
                 elif config["input"] == "uniform":
@@ -540,6 +549,25 @@ class vDenoising(vGeneral):
             else: # 3D
                 model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)
                 model_class = DIP_3D
+        elif (net == "DIP_Xin"):
+            self.embed_dim = 16
+            self.kernel_size = 3
+            self.skip = 3
+            self.num_layers = 3
+            self.depths = 2
+            self.mode = "bilinear"
+            param_scale = 57
+            model = DIP_skip_add(1,self.embed_dim,1,self.kernel_size,self.skip,self.num_layers,self.depths,self.mode,config,suffix,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)
+            model_class = DIP_skip_add
+        elif (net == "Swin_Unetr"):
+            self.embed_dim = 16
+            self.kernel_size = 3
+            self.skip = 3
+            self.num_layers = 3
+            self.depths = 2
+            self.mode = "bilinear"
+            model = Swin_Unetr(1,self.embed_dim,1,kernel_size=self.kernel_size,skip=self.skip,num_layer=self.num_layers,depths=self.depths,mode=self.mode)
+            model_class = DIP_skip_add
         elif (net == 'DIP_VAE'): # Loading DIP VAE architecture
             model = VAE_DIP_2D(config)
             model_class = VAE_DIP_2D
