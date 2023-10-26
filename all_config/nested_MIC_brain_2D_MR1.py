@@ -68,7 +68,7 @@ def config_func_MIC():
         # "skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "skip_connections" : tune.grid_search([1]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
-        "override_SC_init" : tune.grid_search([True]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+        # "override_SC_init" : tune.grid_search([True]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "dropout" : tune.grid_search([0.1]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "diffusion_model_like" : tune.grid_search([0.01,0.1]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)

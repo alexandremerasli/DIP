@@ -965,6 +965,10 @@ class iFinalCurves(vGeneral):
                 "nested_MIC_brain_2D_MR2" : 5*[color_dict_after_MIC["nested_CT_skip"][0]],
                 "nested_MIC_brain_2D_MR3" : 5*[color_dict_after_MIC["nested_CT_skip"][1]],
                 "nested_MIC_brain_2D_random" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "nested_MIC_brain_2D_random0" : 5*[color_dict_after_MIC["nested_random_skip"][3]],
+                "nested_MIC_brain_2D_random1" : 5*[color_dict_after_MIC["nested_random_skip"][2]],
+                "nested_MIC_brain_2D_random2" : 5*[color_dict_after_MIC["nested_random_skip"][1]],
+                "nested_MIC_brain_2D_random3" : 5*[color_dict_after_MIC["nested_random_skip"][0]],
                 "nested_MIC_brain_2D_diff1" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
                 "nested_MIC_brain_2D_diff5" : 5*[color_dict_after_MIC["nested_APPGML"][3]],
                 "nested_MIC_brain_2D_diff5_SC1" : 5*[color_dict_after_MIC["nested_ADMMLim"][1]],
@@ -1000,16 +1004,16 @@ class iFinalCurves(vGeneral):
             marker_dict = {**marker_dict, **marker_dict_supp}
         elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1"):
             marker_dict = {
-                "APPGML_it" : [':'],
-                "APPGML_subsets" : ['-'],
-                "ADMMLim" : ['--'],
-                "CT" : ['dashdot'],
-                "random" : ['dashdot'],
-                "intermediate" : ['-'],
-                "APGMAP" : ['-','-','-'],
-                "BSREM" : ['-'],
-                "OSEM" : ['-'],
-                "DIPRecon" : ['-']
+                "APPGML_it" : 15*[':'],
+                "APPGML_subsets" : 15*['-'],
+                "ADMMLim" : 15*['--'],
+                "CT" : 15*['dashdot'],
+                "random" : 15*['dashdot'],
+                "intermediate" : 15*['-'],
+                "APGMAP" : 15*['-','-','-'],
+                "BSREM" : 15*['-'],
+                "OSEM" : 15*['-'],
+                "DIPRecon" : 15*['-']
             }
             marker_dict_supp = {
                 "nested" : [marker_dict["ADMMLim"][0]], # 3 it
@@ -1056,6 +1060,10 @@ class iFinalCurves(vGeneral):
                 "nested_MIC_brain_2D_MR2" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_MR3" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_random" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_random0" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_random1" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_random2" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_random3" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_diff1" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_diff5" : [':','dashdot','--','-'],
                 "nested_MIC_brain_2D_diff5_SC1" : [':','dashdot','--','-'],
