@@ -237,7 +237,7 @@ class iPostReconstruction(vDenoising):
             # WMV
             # self.log("SUCCESS", int(model.classWMV.SUCCESS))
             if (model.DIP_early_stopping):
-                model.classWMV.SUCCESS,model.classWMV.VAR_min,model.classWMV.stagnate = model.classWMV.WMV(np.copy(out),model.current_epoch,model.sub_iter_DIP,model.classWMV.queueQ,model.classWMV.SUCCESS,model.classWMV.VAR_min,model.classWMV.stagnate)
+                model.classWMV.SUCCESS,model.classWMV.VAR_min,model.classWMV.stagnate = model.classWMV.WMV(np.copy(out),epoch,model.sub_iter_DIP,model.classWMV.queueQ,model.classWMV.SUCCESS,model.classWMV.VAR_min,model.classWMV.stagnate)
                 self.VAR_recon = model.classWMV.VAR_recon
                 self.MSE_WMV = model.classWMV.MSE_WMV
                 self.PSNR_WMV = model.classWMV.PSNR_WMV
