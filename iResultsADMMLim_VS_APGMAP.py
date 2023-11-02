@@ -75,6 +75,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         change_replicates = "TMI"
         change_replicates = "MIC"
         plot_profile = True
+        nb_angles = 1
 
         # Avoid to divide by zero value in GT when normalizing std
         for i in range(self.image_gt.shape[0]):
@@ -128,6 +129,11 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
 
         ########### Avg, std, replicate img at last iteration ############
 
+        import matplotlib
+        font = {'family' : 'normal',
+        'size'   : 14}
+        matplotlib.rc('font', **font)
+
 
         #for i in range(i_init,self.total_nb_iter+1):
         # for i in range(self.total_nb_iter,self.total_nb_iter+1):
@@ -136,6 +142,10 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         DIPRecon_failing_replicate_list = []
         fig, ax_profile = plt.subplots()
         avg_line = self.nb_replicates * [0]
+        fig_ref, ax_profile_ref = plt.subplots()
+        avg_line_ref = self.nb_replicates * [0]
+        self.replicates_with_profile = []
+
         # lines_angles = self.nb_replicates * []
         # min_len_zi = self.nb_replicates * []
         for p in range(self.nb_replicates,0,-1):
@@ -163,14 +173,14 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                 # if (p in DIPRecon_failing_replicate_list):
                 #     p_for_file = replicates_replace_list[DIPRecon_failing_replicate_list.index(p)]
 
-                if (change_replicates == "MIC"): # Remove Gong failing replicates and replace them
-                    if (self.phantom == "image50_1"):
-                        if (self.scaling == "positive_normalization"):
-                            DIPRecon_failing_replicate_list = list(np.array([1]))
-                            replicates_replace_list = list(np.array([6]))
-                            print("final replicates to remove ?????????????????????,,,????")
-                if (p in DIPRecon_failing_replicate_list):
-                    p_for_file = replicates_replace_list[DIPRecon_failing_replicate_list.index(p)]
+                # if (change_replicates == "MIC"): # Remove Gong failing replicates and replace them
+                #     if (self.phantom == "image50_1"):
+                #         if (self.scaling == "positive_normalization"):
+                #             DIPRecon_failing_replicate_list = list(np.array([1]))
+                #             replicates_replace_list = list(np.array([6]))
+                #             print("final replicates to remove ?????????????????????,,,????")
+                # if (p in DIPRecon_failing_replicate_list):
+                #     p_for_file = replicates_replace_list[DIPRecon_failing_replicate_list.index(p)]
             
 
                 self.subroot_p = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p_for_file) + '/' + self.method + '/' # Directory root
@@ -228,37 +238,59 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                 f_list[p-1] = self.f_p
 
 
-            # Plot profile
-            if (self.phantom == "image40_1"):
-                center_x_MR_tumor, center_y_MR_tumor = 66,33
-                radius_MR_tumor = 10
-            elif (self.phantom == "image50_1"):
-                center_x_MR_tumor, center_y_MR_tumor = 68,80
-                radius_MR_tumor = 5
                 
+            # Plot profile                             
             if (plot_profile):
-                nb_angles=1
-                angles = np.linspace(0, (nb_angles - 1) * np.pi / nb_angles, nb_angles)
-                lines_angles,means,min_len_zi = self.compute_mean(f_list[p-1],(center_x_MR_tumor,center_y_MR_tumor),radius_MR_tumor,angles)
-                # self.MR = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw',shape=(self.PETImage_shape),type_im='<f')
-                # lines_angles,means,min_len_zi = self.compute_mean(self.MR,(center_x_MR_tumor,center_y_MR_tumor),radius_MR_tumor,angles)
-                avg_line[p-1] = np.zeros(min_len_zi)
-                for angle in range(nb_angles):
-                    ax_profile.plot(lines_angles[angle,:min_len_zi])
-                    # avg_line = np.squeeze(avg_line) + np.squeeze(lines_angles[angle]) / self.nb_replicates
-                    avg_line[p-1] = np.squeeze(avg_line[p-1]) + np.squeeze(lines_angles[angle,:min_len_zi]) / nb_angles
+                ref_mean = np.mean(self.f_p[self.hot_TEP_ROI_ref==1])
+                self.plot_profile_func(ref_mean,avg_line,avg_line_ref,ax_profile,ax_profile_ref,p)
+                self.replicates_with_profile.append(p-1)
+
+            # break
+                
+            # Plot profile
+            # if (self.phantom == "image40_1"):
+            #     center_x_MR_tumor, center_y_MR_tumor = 66,33
+            #     radius_MR_tumor = 10
+            # elif (self.phantom == "image50_1"):
+            #     center_x_MR_tumor, center_y_MR_tumor = 68,80
+            #     radius_MR_tumor = 5
+            # if (plot_profile):
+            #     nb_angles=1
+            #     angles = np.linspace(0, (nb_angles - 1) * np.pi / nb_angles, nb_angles)
+            #     lines_angles,means,min_len_zi = self.compute_mean(f_list[p-1],(center_x_MR_tumor,center_y_MR_tumor),radius_MR_tumor,angles)
+            #     # self.MR = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw',shape=(self.PETImage_shape),type_im='<f')
+            #     # lines_angles,means,min_len_zi = self.compute_mean(self.MR,(center_x_MR_tumor,center_y_MR_tumor),radius_MR_tumor,angles)
+            #     avg_line[p-1] = np.zeros(min_len_zi)
+            #     for angle in range(nb_angles):
+            #         ax_profile.plot(lines_angles[angle,:min_len_zi])
+            #         # avg_line = np.squeeze(avg_line) + np.squeeze(lines_angles[angle]) / self.nb_replicates
+            #         avg_line[p-1] = np.squeeze(avg_line[p-1]) + np.squeeze(lines_angles[angle,:min_len_zi]) / nb_angles
         
-        final_avg_line = np.zeros_like(avg_line[0])
+        radius_MR_tumor, center_x_MR_tumor, center_y_MR_tumor = self.define_profile()
 
-        for p in range(len(avg_line)):
-            for i in range(len(avg_line[0])):
-                final_avg_line[i] += avg_line[p][i] / self.nb_replicates
+        final_avg_line = np.zeros_like(avg_line[-1])
+        final_avg_line_ref = np.zeros_like(avg_line[-1])
+        for p in range(self.nb_replicates):
+            for i in range(2*radius_MR_tumor):
+                if (p in self.replicates_with_profile):
+                    final_avg_line[i] += avg_line[p][i] / len(self.replicates_with_profile)
+                    final_avg_line_ref[i] += avg_line_ref[p][i] / len(self.replicates_with_profile)
 
-        ax_profile.plot(final_avg_line,color="black",linewidth=5)
+        ax_profile.plot(100*final_avg_line,color="black",linewidth=5,label="Average over realizations")
+        ax_profile_ref.plot(100*final_avg_line_ref,color="black",linewidth=5,label="Average over realizations")
         if (self.phantom == "image50_1"):
             # ax_profile.set_ylim([1.25,2.75])
             ax_profile.set_ylim([1,3])
+        ax_profile.set_ylabel("Relative bias (%)")
+        ax_profile_ref.set_ylabel("Relative bias (%)")
+        ax_profile.set_xlabel("Voxels")
+        ax_profile_ref.set_xlabel("Voxels")
+        ax_profile.legend()
+        ax_profile_ref.legend()
+        fig.subplots_adjust(left=0.125, right=0.9, bottom=0.11, top=0.9)
+        fig_ref.subplots_adjust(left=0.125, right=0.9, bottom=0.11, top=0.9)
         fig.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'ax_profile' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + '.png')
+        fig_ref.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'ax_profile_ref' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + '.png')
 
         # if len(nan_replicates) > 0:
         #     raise ValueError("naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan",nan_replicates)
@@ -269,6 +301,11 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         Path(self.subroot + 'Images/tmp/' + self.suffix + '/' + 'binary/').mkdir(parents=True, exist_ok=True)
 
         for p in set(range(self.nb_replicates,0,-1)) - set(nan_replicates):
+            print("fffffffffffffffffffffffffff")
+            print(f_list[p-1])
+            print(f_list[p-1].shape)
+            print(f_var.shape)
+            print(f.shape)
             f_var[self.phantom_ROI==1] += (f[self.phantom_ROI==1] - f_list[p-1][self.phantom_ROI==1])**2 / self.nb_usable_replicates
         
         self.write_image_tensorboard(self.writer,np.sqrt(f_var),self.method + " at convergence, std (not normalised) over " + str(self.nb_usable_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,p,full_contrast=True) # std of images at convergence across replicates in tensorboard
@@ -306,7 +343,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         self.save_img(f_init_avg,path_img + self.method + " denoised initialization over " + str(self.nb_usable_replicates) + " replicates" + ".img")
 
 
-        ########### Avg, std, replicate img at same IR ############
+        # ########### Avg, std, replicate img at same IR ############
 
         # IR_common = 23 # in %
         # IR_common = 11 # in %
@@ -348,6 +385,12 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         #         i_min = self.total_nb_iter
         #         self.IR_bkg_recon = np.zeros(self.total_nb_iter)
         #         IR = 0
+
+        #         import matplotlib
+        #         font = {'family' : 'normal',
+        #         'size'   : 14}
+        #         matplotlib.rc('font', **font)
+
         #         for i in range(self.total_nb_iter,i_init-1,-1):
         #         # for i in range(i_init,self.total_nb_iter+1):
         #             if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
@@ -417,6 +460,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
 
         #         ax_profile.plot(final_avg_line,color="black",linewidth=5)
         #         ax_profile_ref.plot(final_avg_line_ref,color="black",linewidth=5)
+                
         #         if (self.phantom == "image50_1"):
         #             # ax_profile.set_ylim([1.25,2.75])
         #             ax_profile.set_ylim([1,3])
@@ -455,8 +499,8 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         avg_line[p-1] = np.zeros(min_len_zi)
         avg_line_ref[p-1] = np.zeros(min_len_zi)
         for angle in range(nb_angles):
-            ax_profile.plot(lines_angles[angle,:min_len_zi])
-            ax_profile_ref.plot(lines_angles_ref[angle,:min_len_zi])
+            ax_profile.plot(100*lines_angles[angle,:min_len_zi])
+            ax_profile_ref.plot(100*lines_angles_ref[angle,:min_len_zi])
             # avg_line = np.squeeze(avg_line) + np.squeeze(lines_angles[angle]) / self.nb_replicates
             avg_line[p-1] = np.squeeze(avg_line[p-1]) + np.squeeze(lines_angles[angle,:min_len_zi]) / nb_angles
             avg_line_ref[p-1] = np.squeeze(avg_line_ref[p-1]) + np.squeeze(lines_angles_ref[angle,:min_len_zi]) / nb_angles
@@ -505,8 +549,6 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             # Compute the mean
             mean = np.mean(zi)
             means.append(mean)
-
-        fig.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'profile_line_on_image' + '_nb_angles=' + str(len(angles)) + '_nb_repl=' + str(self.nb_replicates) + '.png')
             
         return zi_angles, means, min_len_zi
 

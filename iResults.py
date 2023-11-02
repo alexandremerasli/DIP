@@ -210,7 +210,7 @@ class iResults(vDenoising):
 
     def writeBeginningImages(self,suffix,image_net_input=None,i=0):
         if (self.tensorboard):
-            self.write_image_tensorboard(self.writer,self.image_gt,"Ground Truth (emission map)",suffix,self.image_gt,0,full_contrast=True) # Ground truth in tensorboard
+            self.write_image_tensorboard(self.writer,self.image_gt,"Ground Truth (emission map)",suffix,self.image_gt,0) # Ground truth in tensorboard
             if (image_net_input is not None):
                 # image_net_input_reversed = np.max(image_net_input) - image_net_input
                 image_net_input_reversed = image_net_input # only colorbar will be reversed in write_image_tensorboard()
@@ -529,7 +529,7 @@ class iResults(vDenoising):
 
 
                     # plt.plot(np.arange(remove_first_iterations,min(last_iteration+1,self.total_nb_iter+1)),self.MV[alpha_idx],label=alpha_EMV)
-                    plt.plot(np.arange(remove_first_iterations,min(last_iteration+1,self.total_nb_iter+1)),np.log(self.MV[alpha_idx]),label=alpha_EMV)
+                    plt.plot(np.arange(remove_first_iterations,min(last_iteration+1,self.total_nb_iter)),np.log(self.MV[alpha_idx]),label=alpha_EMV)
                     plt.ylabel("log scale")
                     plt.legend()
                     print("MV min for alpha_EMV=",alpha_EMV,"at it= (10 first removed, after ",1000+remove_first_iterations," also)",", smooth=",str(smooth),np.argmin(self.MV[alpha_idx][10:1000]) + remove_first_iterations)

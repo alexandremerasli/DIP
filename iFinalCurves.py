@@ -31,12 +31,15 @@ class iFinalCurves(vGeneral):
         APGMAP_vs_ADMMLim = False
         # A_shift_ref_APPGML = -100 # image2_0
         A_shift_ref_APPGML = -1000 # image4_0, # image40_1
-        # Beta used to initialize DNA with BSREM with penalty strength beta
-        beta_BSREM_for_DNA = 0.01
-        # Rename my settings (MIC)
         rename_settings = "TMI"
         rename_settings = "hyperparameters_paper"
         rename_settings = "MIC"
+        # Beta used to initialize DNA with BSREM with penalty strength beta
+        if ("50" in self.phantom):
+            beta_BSREM_for_DNA = 2
+        else:
+            beta_BSREM_for_DNA = 0.01
+        # Rename my settings (MIC)
 
         # Convert Gong to DIPRecon
         DIPRecon = False
@@ -473,12 +476,14 @@ class iFinalCurves(vGeneral):
                             for other_dim_idx in range(nb_other_dim[method]):
                                 self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings)
                     else: # Do not loop on rho because here is at convergence
-                        self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings)
+                        for rho_idx in range(nb_rho[method]):
+                            for other_dim_idx in range(nb_other_dim[method]):
+                                self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings)
                     if (method == method_list[-1]):
                         legend_this_ROI = False
                         if (quantitative_tradeoff): # AR
                             if (len(ROI_list) > 2):
-                                if ROI == ROI_list[2] or ROI == ROI_list[-1]: # if legend is needed only in one ROI
+                                if (ROI == ROI_list[2] or ROI == ROI_list[-1] or rename_settings == "MIC"): # if legend is needed only in one ROI
                                     legend_this_ROI = True
                             else:
                                 legend_this_ROI = True
@@ -532,14 +537,17 @@ class iFinalCurves(vGeneral):
         if (fig_nb == 1):
             ax[fig_nb].set_xlabel('Iterations')
         else:
-            ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)')
+            if ("50" in self.phantom):
+                ax[fig_nb].set_xlabel('Image Roughness (IR) in the white matter (%)')
+            else:
+                ax[fig_nb].set_xlabel('Image Roughness (IR) in the background (%)')
         if 'cold' in ROI:
-            ax[fig_nb].set_ylabel('Bias (%)')
+            ax[fig_nb].set_ylabel('Relative bias (%)')
             # ax[fig_nb].autoscale()
         elif 'hot' in ROI:
             if "50" in self.phantom:
                 if (ROI == "hot_TEP"): # MR only region for brain 2D phantom
-                    ax[fig_nb].set_ylabel('Bias (%) ')
+                    ax[fig_nb].set_ylabel('Relative bias (%) ')
                 else:
                     ax[fig_nb].set_ylabel('Activity Recovery (AR) (%) ')
             else:
@@ -587,27 +595,30 @@ class iFinalCurves(vGeneral):
                     if ("random" in method):
                         replicates_legend[fig_nb].append("random input, " + str(config[method]["skip_connections"]) + " SC")
                     elif ("CT" in method or "MR" in method):
-                        replicates_legend[fig_nb].append("anatomical input, " + str(config[method]["skip_connections"]) + " SC")
+                        if (rename_settings == "MIC"):
+                            replicates_legend[fig_nb].append("MR input, " + str(config[method]["skip_connections"]) + " SC")
+                        else:
+                            replicates_legend[fig_nb].append("anatomical input, " + str(config[method]["skip_connections"]) + " SC")
                     elif ("DD" in method):
                         replicates_legend[fig_nb].append("random input, DD")
                     elif ("intermediate" in method):
-                        for rho_idx in range(nb_rho[method]):
-                            for other_dim_idx in range(nb_other_dim[method]):
-                                label_name = "intermediate setting, " + str(config[method]["skip_connections"]) + " SC"
-                                if (nb_other_dim[method] > 1): # Remove rho from label if other dim
-                                    label_name += " : " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx])
-                                else:
-                                    label_name += " : " + rho_name + " = " + str(config[method]["rho"][rho_idx])
-                                replicates_legend[fig_nb].append(label_name)
+                        # label_name = "intermediate setting, " + str(config[method]["skip_connections"]) + " SC"
+                        label_name = "MR_init_then_random, " + str(config[method]["skip_connections"]) + " SC"
+                        if (len(config[method]["rho"]) > 1): # Remove rho from label if other dim
+                            label_name += " : " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx])
+                            # label_name += " : " + rho_name + " = " + str(config[method]["rho"][rho_idx])
+                        else:
+                            print("ok")
+                        replicates_legend[fig_nb].append(label_name)
                     elif ("diff" in method):
-                        for rho_idx in range(nb_rho[method]):
-                            for other_dim_idx in range(nb_other_dim[method]):
-                                label_name = str(config[method]["several_DIP_inputs"]) + " DIP input" + "s"*(config[method]["several_DIP_inputs"] > 1) + " with mixture, " + str(config[method]["skip_connections"]) + " SC"
-                                if (nb_other_dim[method] > 1): # Remove rho from label if other dim
-                                    label_name += " : " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx])
-                                else:
-                                    label_name += " : " + rho_name + " = " + str(config[method]["rho"][rho_idx])
-                                replicates_legend[fig_nb].append(label_name)
+                        label_name = str(config[method]["several_DIP_inputs"]) + " DIP input" + "s"*(config[method]["several_DIP_inputs"] > 1) + " with mixture, " + str(config[method]["skip_connections"]) + " SC"
+                        label_name = "MR_5_noisier" + str(config[method]["skip_connections"]) + " SC"
+                        if (len(config[method]["rho"]) > 1): # Remove rho from label if other dim
+                            label_name += " : " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx])
+                            # label_name += " : " + rho_name + " = " + str(config[method]["rho"][rho_idx])
+                        else:
+                            print("ok")
+                        replicates_legend[fig_nb].append(label_name)
                 if (rename_settings == "TMI"):
                     if ("nested" in method):
                         replicates_legend[fig_nb].append('DNA')
@@ -963,14 +974,15 @@ class iFinalCurves(vGeneral):
                 "nested_MIC_brain_2D_MR0" : 5*[color_dict_after_MIC["nested_CT_skip"][4]],
                 "nested_MIC_brain_2D_MR1" : 5*[color_dict_after_MIC["nested_CT_skip"][5]],
                 "nested_MIC_brain_2D_MR2" : 5*[color_dict_after_MIC["nested_CT_skip"][0]],
-                "nested_MIC_brain_2D_MR3" : 5*[color_dict_after_MIC["nested_CT_skip"][1]],
+                "nested_MIC_brain_2D_MR3" : 5*['black'],
                 "nested_MIC_brain_2D_random" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
-                "nested_MIC_brain_2D_random0" : 5*[color_dict_after_MIC["nested_random_skip"][3]],
+                "nested_MIC_brain_2D_random0" : 5*['red'],
                 "nested_MIC_brain_2D_random1" : 5*[color_dict_after_MIC["nested_random_skip"][2]],
                 "nested_MIC_brain_2D_random2" : 5*[color_dict_after_MIC["nested_random_skip"][1]],
                 "nested_MIC_brain_2D_random3" : 5*[color_dict_after_MIC["nested_random_skip"][0]],
                 "nested_MIC_brain_2D_diff1" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
-                "nested_MIC_brain_2D_diff5" : 5*[color_dict_after_MIC["nested_APPGML"][3]],
+                # "nested_MIC_brain_2D_diff5" : [color_dict_after_MIC["nested_APPGML"][3],color_dict_after_MIC["nested_APPGML"][3],color_dict_after_MIC["nested_APPGML"][3],color_dict_after_MIC["nested_APPGML"][3]],
+                "nested_MIC_brain_2D_diff5" : [color_dict_after_MIC["nested_APPGML"][3],color_dict_after_MIC["nested_APPGML"][2],color_dict_after_MIC["nested_APPGML"][1],color_dict_after_MIC["nested_APPGML"][0]],
                 "nested_MIC_brain_2D_diff5_SC1" : 5*[color_dict_after_MIC["nested_ADMMLim"][1]],
                 "nested_MIC_brain_2D_diff5_SC2" : 5*[color_dict_after_MIC["nested_ADMMLim"][2]],
 
@@ -1152,6 +1164,10 @@ class iFinalCurves(vGeneral):
                             DIPRecon_failing_replicate_list = list(np.array([1,33])-1)
                             replicates_replace_list = list(np.array([2,3])-1)
                             print("final replicates to remove ?????????????????????,,,????")
+                        elif (method == "nested_MIC_brain_2D_intermediate3" and config[method]["sub_iter_DIP"]==100 and rho==3):
+                            DIPRecon_failing_replicate_list = list(np.array([26])-1)
+                            replicates_replace_list = list(np.array([40])-1)
+
                 if (i_replicate in DIPRecon_failing_replicate_list):
                     i_replicate = replicates_replace_list[DIPRecon_failing_replicate_list.index(i_replicate)]
             suffix = sorted_suffixes[i].rstrip("\n")
