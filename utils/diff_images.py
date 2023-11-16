@@ -24,7 +24,7 @@ parser.add_argument('--img2', type=str, dest='img2', help='second image .img')
 
 args = parser.parse_args()
 
-root = '/home/meraslia/workspace_reco/nested_admm/data/Algo/'
+root = 'data/Algo/'
 PETImage_shape = (112,112,1)
 same_scale_TMI = True # Save diff image with fixed scale to compare several difference images for TMI ReLU artifacts experiment
 

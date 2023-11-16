@@ -241,8 +241,14 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                 
             # Plot profile                             
             if (plot_profile):
+                # MR only
                 ref_mean = np.mean(self.f_p[self.hot_TEP_ROI_ref==1])
+                # Perfect and square match
+                # ref_mean = np.mean(self.f_p[self.hot_perfect_match_ROI==1])
+                # ref_mean = 10
                 self.plot_profile_func(ref_mean,avg_line,avg_line_ref,ax_profile,ax_profile_ref,p)
+                plt.imshow(self.f_p,cmap="gray_r")
+                plt.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'profile_line_on_image' + '_nb_angles=' + str(len(self.angles)) + '_nb_repl=' + str(self.nb_replicates) + '.png')
                 self.replicates_with_profile.append(p-1)
 
             # break
@@ -280,15 +286,20 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         ax_profile_ref.plot(100*final_avg_line_ref,color="black",linewidth=5,label="Average over realizations")
         if (self.phantom == "image50_1"):
             # ax_profile.set_ylim([1.25,2.75])
+            # MR only
             ax_profile.set_ylim([1,3])
+            ax_profile_ref.set_ylim([-50,100])
+            # Perfect and square match 
+            # ax_profile.set_ylim([7,11])
+            # ax_profile_ref.set_ylim([-100,40])
         ax_profile.set_ylabel("Relative bias (%)")
         ax_profile_ref.set_ylabel("Relative bias (%)")
         ax_profile.set_xlabel("Voxels")
         ax_profile_ref.set_xlabel("Voxels")
         ax_profile.legend()
         ax_profile_ref.legend()
-        fig.subplots_adjust(left=0.125, right=0.9, bottom=0.11, top=0.9)
-        fig_ref.subplots_adjust(left=0.125, right=0.9, bottom=0.11, top=0.9)
+        fig.subplots_adjust(left=0.15, right=0.9, bottom=0.11, top=0.9)
+        fig_ref.subplots_adjust(left=0.15, right=0.9, bottom=0.11, top=0.9)
         fig.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'ax_profile' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + '.png')
         fig_ref.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'ax_profile_ref' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + '.png')
 
@@ -479,8 +490,17 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             center_x_MR_tumor, center_y_MR_tumor = 66,33
             radius_MR_tumor = 10
         elif (self.phantom == "image50_1"):
+            # MR only
             center_x_MR_tumor, center_y_MR_tumor = 68,80
             radius_MR_tumor = 5
+
+            # # Perfect match
+            # center_x_MR_tumor, center_y_MR_tumor = 70,30
+            # radius_MR_tumor = 5
+
+            # # Square match
+            # center_x_MR_tumor, center_y_MR_tumor = 28,55
+            # radius_MR_tumor = 5
 
         return radius_MR_tumor, center_x_MR_tumor, center_y_MR_tumor
 
@@ -489,8 +509,8 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         radius_MR_tumor, center_x_MR_tumor, center_y_MR_tumor = self.define_profile()
 
         nb_angles=1
-        angles = np.linspace(0, (nb_angles - 1) * np.pi / nb_angles, nb_angles)
-        lines_angles,means,min_len_zi = self.compute_mean(self.f_p,(center_x_MR_tumor,center_y_MR_tumor),radius_MR_tumor,angles)
+        self.angles = np.linspace(0, (nb_angles - 1) * np.pi / nb_angles, nb_angles)
+        lines_angles,means,min_len_zi = self.compute_mean(self.f_p,(center_x_MR_tumor,center_y_MR_tumor),radius_MR_tumor,self.angles)
         
         lines_angles_ref = (lines_angles - ref_mean) / ref_mean
 

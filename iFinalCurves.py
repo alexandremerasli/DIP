@@ -464,6 +464,15 @@ class iFinalCurves(vGeneral):
                                     #    plt.xlim([12,57])
                                     #else:
                                     #    plt.xlim([12,57])
+
+                                    if (rename_settings == "MIC"):
+                                        plt.xlim([7,30])
+                                        if (quantitative_tradeoff):
+                                            if (ROI == "hot_perfect_match_recon" or ROI == "hot_TEP_match_square_recon"):
+                                                plt.ylim([75,97])
+                                            elif (ROI != "cold"):
+                                                plt.ylim([0,30])
+
                                     if (variance_plot):
                                         # ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
                                         ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1])), alpha = 0.4, label='_nolegend_')
@@ -511,13 +520,22 @@ class iFinalCurves(vGeneral):
                         metric_AR_or_SSIM = 'SSIM'
                 if "50" in self.phantom:
                     if (ROI == "hot_TEP"):
-                        ROI = "MR only"
+                        ROI = "MR_only"
                 if (fig_nb == 0):
                     title = pretitle + ' : ' + metric_AR_or_SSIM + ' ' + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
                 elif (fig_nb == 1):
                     title = pretitle + ' : ' + metric_AR_or_SSIM + ' ' + ' in ' + ROI + ' region for ' + str(nb_usable_replicates) + ' replicates' + '.png'
                 elif (fig_nb == 2):
                     title = pretitle + ' : ' + metric_AR_or_SSIM + ' ' + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
+
+                if (rename_settings == "MIC"):
+                    if (ROI == "cold"):
+                        title = "bias"
+                    elif (ROI == "phantom"):
+                        title = "SSIM"
+                    else:
+                        title = ROI
+                    title += ".png"
                 
                 try:
                     fig[fig_nb].savefig(self.subroot_data + 'metrics/' + self.phantom + '/' + title, bbox_inches='tight')
@@ -603,7 +621,8 @@ class iFinalCurves(vGeneral):
                         replicates_legend[fig_nb].append("random input, DD")
                     elif ("intermediate" in method):
                         # label_name = "intermediate setting, " + str(config[method]["skip_connections"]) + " SC"
-                        label_name = "MR_init_then_random, " + str(config[method]["skip_connections"]) + " SC"
+                        # label_name = r'MR$_{init}$' + ', ' + str(config[method]["skip_connections"]) + ' SC'
+                        label_name = "MR init" + ', ' + str(config[method]["skip_connections"]) + ' SC'
                         if (len(config[method]["rho"]) > 1): # Remove rho from label if other dim
                             label_name += " : " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx])
                             # label_name += " : " + rho_name + " = " + str(config[method]["rho"][rho_idx])
@@ -611,8 +630,14 @@ class iFinalCurves(vGeneral):
                             print("ok")
                         replicates_legend[fig_nb].append(label_name)
                     elif ("diff" in method):
+                        try:
+                            config[method]["several_DIP_inputs"]
+                        except:
+                            config[method]["several_DIP_inputs"] = 1
                         label_name = str(config[method]["several_DIP_inputs"]) + " DIP input" + "s"*(config[method]["several_DIP_inputs"] > 1) + " with mixture, " + str(config[method]["skip_connections"]) + " SC"
-                        label_name = "MR_5_noisier" + str(config[method]["skip_connections"]) + " SC"
+                        label_name = "MR_5_noisier ," + str(config[method]["skip_connections"]) + " SC"
+                        label_name = r"MR$_{5}$"
+                        label_name = "MR 5"
                         if (len(config[method]["rho"]) > 1): # Remove rho from label if other dim
                             label_name += " : " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx])
                             # label_name += " : " + rho_name + " = " + str(config[method]["rho"][rho_idx])
@@ -1166,6 +1191,9 @@ class iFinalCurves(vGeneral):
                             print("final replicates to remove ?????????????????????,,,????")
                         elif (method == "nested_MIC_brain_2D_intermediate3" and config[method]["sub_iter_DIP"]==100 and rho==3):
                             DIPRecon_failing_replicate_list = list(np.array([26])-1)
+                            replicates_replace_list = list(np.array([40])-1)
+                        elif (method == "nested_MIC_brain_2D_intermediate1" and config[method]["sub_iter_DIP"]==100 and rho==3):
+                            DIPRecon_failing_replicate_list = list(np.array([6])-1)
                             replicates_replace_list = list(np.array([40])-1)
 
                 if (i_replicate in DIPRecon_failing_replicate_list):

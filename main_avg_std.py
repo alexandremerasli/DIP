@@ -9,177 +9,175 @@
 # Useful
 import os
 from ray import tune
-
-#import sys
-#stdoutOrigin=sys.stdout 
-#sys.stdout = open("test_log.txt", "w")
-
 import importlib
+
+def uncompatible_parameters(config):
+    if (config["method"]["grid_search"][0] == 'nested' and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
+        raise ValueError("nested must be launched with rho > 0")
+    elif ((config["method"]["grid_search"][0] != 'Gong' and config["method"]["grid_search"][0] != 'nested') and task == "post_reco"):
+        raise ValueError("Only Gong or nested can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
+    elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["all_images_DIP"]["grid_search"][0] != "True" and config["DIP_early_stopping"]["grid_search"][0] == "True"):
+        raise ValueError("Please set all_images_DIP to True to save all images for nested or Gong reconstruction if using WMV.")
+    elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["rho"]["grid_search"][0] == 0 and task != "post_reco"):
+        raise ValueError("Please set rho > 0 for nested or Gong reconstruction (or set task to post reconstruction).")
+    elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["EMV_or_WMV"]["grid_search"][0] == "WMV"):
+        raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
+    elif (config["debug"] and config["ray"]):
+        raise ValueError("Debug mode must is used without ray")
+    elif (task == "post_reco" and config["DIP_early_stopping"]["grid_search"][0] == True and config["all_images_DIP"]["grid_search"][0] == "False"):
+        raise ValueError("post reco mode need to save all images if ES")
+
+def class_for_task(config,task):
+    if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
+        from iNestedADMM import iNestedADMM
+        classTask = iNestedADMM(config)
+        # raise ValueError("needs hyperparameters_config")
+    elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
+        from iComparison import iComparison
+        classTask = iComparison(config)
+    elif (task == 'post_reco'): # Run network denoising after a given reconstructed image im_corrupt
+        from iPostReconstruction import iPostReconstruction
+        classTask = iPostReconstruction(config)
+    elif (task == 'show_results'): # Show already computed results over iterations
+        from iResults import iResults
+        classTask = iResults(config)
+    elif (task == 'show_results_post_reco'): # Show already computed results over iterations of post reconstruction mode
+        from iResults import iResults
+        classTask = iResults(config)
+    elif (task == 'show_metrics_ADMMLim'): # Show ADMMLim FOMs over iterations
+        config["task"] = "show_results_post_reco"
+        from iMeritsADMMLim import iMeritsADMMLim
+        classTask = iMeritsADMMLim(config)
+    elif (task == 'show_metrics_nested'): # Show nested or Gong FOMs over iterations
+        from iMeritsNested import iMeritsNested
+        classTask = iMeritsNested(config)
+    # elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
+    #     from iResultsAlreadyComputed import iResultsAlreadyComputed
+    #     classTask = iResultsAlreadyComputed(config)
+    elif (task == 'compare_2_methods'): # Show already computed results averaging over replicates
+        config["average_replicates"] = tune.grid_search([True])
+        from iResultsADMMLim_VS_APGMAP import iResultsADMMLim_VS_APGMAP
+        classTask = iResultsADMMLim_VS_APGMAP(config)
+
+    return classTask
+
+def choose_task(config):
+    # Task to run reconstruction according to the method
+    if (config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested'):
+        task = 'full_reco_with_network'
+
+    elif ('ADMMLim' in config["method"]["grid_search"][0] or config["method"]["grid_search"][0] == 'MLEM' or config["method"]["grid_search"][0] == 'OPTITR' or config["method"]["grid_search"][0] == 'OSEM' or config["method"]["grid_search"][0] == 'BSREM' or config["method"]["grid_search"][0] == 'AML' or config["method"]["grid_search"][0] == 'APGMAP'):
+        task = 'castor_reco'
+
+    # Override task here if needed
+    # task = 'full_reco_with_network' # Run Gong or nested ADMM
+    # task = 'castor_reco' # Run CASToR reconstruction with given optimizer
+    # task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
+    # task = 'show_results_post_reco'
+    task = 'show_results'
+    # task = 'show_metrics_results_already_computed'
+    # task = 'show_metrics_ADMMLim'
+    # task = 'show_metrics_nested'
+    task = 'compare_2_methods'
+
+    return task
+
 # config_files = ["nested_random_3_skip_10it", "nested_CT_2_skip_10it", "nested_CT_1_skip_10it"]
 config_files = ["Gong_CT_1_skip", "Gong_CT_2_skip"]#, "Gong_CT_3_skip"]
 config_files = ["Gong_CT_3_skip","Gong_CT_1_skip","Gong_CT_2_skip"]
 config_files = ["Gong_CT_1_skip","Gong_CT_2_skip"]
-config_files = ['nested_ADMMLim_more_ADMMLim_it_10_configuration']
+config_files = ['APGMAP_configuration']
+# config_files = ['ADMMLim_configuration']
+config_files = ['nested_ADMMLim_more_ADMMLim_it_30_configuration','nested_ADMMLim_more_ADMMLim_it_10_configuration','nested_ADMMLim_more_ADMMLim_it_30_configuration']
+# config_files = ['nested_APPGML_1it_configuration']
+config_files = ['nested_ADMMLim_more_ADMMLim_it_10_configuration','nested_ADMMLim_more_ADMMLim_it_30_configuration']
+# config_files = ['OSEM_configuration']
+# config_files = ['Gong_skip3_3_my_settings']
+# config_files = ['nested_MIC_brain_2D']
 
+config_files = ['nested_MIC_brain_2D_intermediate','nested_MIC_brain_2D_MR','nested_MIC_brain_2D_random','nested_MIC_brain_2D_diff5','nested_MIC_brain_2D_diff1','nested_MIC_brain_2D_diff5_SC2','nested_MIC_brain_2D_diff5_SC1']
+config_files = ['nested_MIC_brain_2D_MR','nested_MIC_brain_2D_diff5']
+config_files = ['nested_MIC_brain_2D_intermediate']
+config_files = ['nested_MIC_brain_2D_diff5_SC2','nested_MIC_brain_2D_diff5_SC1']
+
+config_files = ['nested_MIC_brain_2D_MR0','nested_MIC_brain_2D_MR1','nested_MIC_brain_2D_MR2','nested_MIC_brain_2D_MR3']
+config_files = ['nested_MIC_brain_2D_intermediate0']
+config_files = ['nested_MIC_brain_2D_random0']
+config_files = ['nested_MIC_brain_2D_random3']
+config_files = ['nested_MIC_brain_2D_MR0','nested_MIC_brain_2D_MR1','nested_MIC_brain_2D_MR2','nested_MIC_brain_2D_MR3']
+config_files = ['nested_MIC_brain_2D_random0','nested_MIC_brain_2D_random1','nested_MIC_brain_2D_random2','nested_MIC_brain_2D_random3']
+config_files = ['nested_MIC_brain_2D_random0']
+config_files = ['nested_MIC_brain_2D_diff5','nested_MIC_brain_2D_MR3','nested_MIC_brain_2D_random0','nested_MIC_brain_2D_random3']
+config_files = ['nested_MIC_brain_2D_diff5','nested_MIC_brain_2D_MR3']
+# config_files = ['nested_MIC_brain_2D_intermediate3']
+config_files = ['nested_MIC_brain_2D_random0','nested_MIC_brain_2D_random3']
+
+config_files = ['nested_MIC_brain_2D_diff1']
+config_files = ['nested_MIC_brain_2D_diff5']
+config_files = ['nested_MIC_brain_2D_intermediate0','nested_MIC_brain_2D_intermediate1','nested_MIC_brain_2D_intermediate2','nested_MIC_brain_2D_intermediate3']
+config_files = ['nested_MIC_brain_2D_MR3']
+config_files = ['nested_MIC_brain_2D_intermediate2']
+config_files = ['nested_MIC_brain_2D_random0']
+# config_files = ['nested_MIC_brain_2D_diff5']
+# config_files = ['nested_MIC_brain_2D_intermediate3']
+# config_files = ['nested_MIC_brain_2D_MR3']
+
+# config_files = ['nested_MIC_brain_2D_intermediate0','nested_MIC_brain_2D_intermediate1','nested_MIC_brain_2D_intermediate2','nested_MIC_brain_2D_intermediate3']
 # config_files = [f[:-3] for f in os.listdir('all_config') if os.path.isfile(os.path.join('all_config', f))]
 
+# config_files = ['ADMMLim_configuration']
+# config_files = ['BSREM_configuration']
+
+i=-1
 for lib_string in config_files:
+    i+=1
     # try:
     if (True):
         lib = importlib.import_module('all_config.' + lib_string)
         config = lib.config_func_MIC()
-        # config["image"] = tune.grid_search(['image40_0'])
-        config["image"] = 'image40_0'
+        # config["image"] = tune.grid_search(['image4_0'])
+        # config["image"] = tune.grid_search(['image50_1'])
+        # config["image"] = tune.grid_search(['image50_0'])
+        # if (i > 0):
+        #     config["image"] = tune.grid_search(['image40_1'])
+        # else:
+        config["image"] = tune.grid_search(['image40_1'])
+        # config["image"] = tune.grid_search(['image4_0'])
+        config["image"] = tune.grid_search(['image50_1'])
+        # config["image"] = tune.grid_search(['image010_3D'])
+        config["replicates"] = tune.grid_search(list(range(1,6+1)))
         config["replicates"] = tune.grid_search(list(range(1,40+1)))
-        config["max_iter"] = tune.grid_search([98])
+        config["replicates"] = tune.grid_search(list(range(1,1+1)))
+        # config["replicates"] = tune.grid_search([1])
+        config["tensorboard"] = tune.grid_search([False])
+        config["DIP_early_stopping"] = tune.grid_search([False])
+        config["nb_outer_iteration"] = tune.grid_search([2])
+        # config["replicates"] = tune.grid_search([7,10,15,25,34,38,39])
+        config["max_iter"] = tune.grid_search([100])
+        # config["post_reco_in_suffix"] = tune.grid_search([False]) # If want to show EMV results which were not on post reconstruction, in DNA init
+        # config["read_only_MV_csv"] = tune.grid_search([True])
         config["ray"] = True
 
         root = os.getcwd()
 
-        # write random seed in a file to get it in network architectures
+        # Write random seed in a file to get it in network architectures
         os.system("rm -rf " + os.getcwd() +"/seed.txt")
         file_seed = open(os.getcwd() + "/seed.txt","w+")
         file_seed.write(str(config["random_seed"]["grid_search"][0]))
         file_seed.close()
 
         for method in config["method"]['grid_search']:
-
-            '''
-            # Gong reconstruction
-            if (config["method"]["grid_search"][0] == 'Gong' and len(config["method"]["grid_search"]) == 1):
-                print("configuration fiiiiiiiiiiiiiiiiiiile")
-                #config = np.load(root + 'config_DIP.npy',allow_pickle='TRUE').item()
-                from Gong_configuration import config_func_MIC
-                #config = config_func()
-                config = config_func_MIC()
-
-            # nested reconstruction
-            if (config["method"]["grid_search"][0] == 'nested' and len(config["method"]["grid_search"]) == 1):
-                print("configuration fiiiiiiiiiiiiiiiiiiile")
-                from nested_configuration import config_func_MIC
-                #config = config_func()
-                config = config_func_MIC()
-
-            # MLEM reconstruction
-            if (config["method"]["grid_search"][0] == 'MLEM' and len(config["method"]["grid_search"]) == 1):
-                print("configuration fiiiiiiiiiiiiiiiiiiile")
-                from MLEM_configuration import config_func_MIC
-                #config = config_func()
-                config = config_func_MIC()
-
-            # OSEM reconstruction
-            if (config["method"]["grid_search"][0] == 'OSEM' and len(config["method"]["grid_search"]) == 1):
-                print("configuration fiiiiiiiiiiiiiiiiiiile")
-                from OSEM_configuration import config_func_MIC
-                #config = config_func()
-                config = config_func_MIC()
-
-            # BSREM reconstruction
-            if (config["method"]["grid_search"][0] == 'BSREM' and len(config["method"]["grid_search"]) == 1):
-                print("configuration fiiiiiiiiiiiiiiiiiiile")
-                from BSREM_configuration import config_func_MIC
-                #config = config_func()
-                config = config_func_MIC()
-
-            # APGMAP reconstruction
-            if ('APGMAP' in config["method"]["grid_search"][0] and len(config["method"]["grid_search"]) == 1):
-                print("configuration fiiiiiiiiiiiiiiiiiiile")
-                from APGMAP_configuration import config_func_MIC
-                #config = config_func()
-                config = config_func_MIC()
-
-            # ADMMLim reconstruction
-            if (config["method"]["grid_search"][0] == 'ADMMLim' and len(config["method"]["grid_search"]) == 1):
-                print("configuration fiiiiiiiiiiiiiiiiiiile")
-                from ADMMLim_configuration import config_func_MIC
-                #config = config_func()
-                config = config_func_MIC()
-            '''
             config_tmp = dict(config)
             config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
 
-            '''
-            if (method == 'BSREM'):
-                config_tmp["rho"]['grid_search'] = [0.01,0.02,0.03,0.04,0.05]
-
-            if (method == 'Gong'):
-                config_tmp["nb_inner_iteration"]['grid_search'] = [50]
-                #config_tmp["lr"]['grid_search'] = [0.5]
-                #config_tmp["rho"]['grid_search'] = [0.0003]
-                config_tmp["lr"]['grid_search'] = [0.5]
-                config_tmp["rho"]['grid_search'] = [0.0003]
-            elif (method == 'nested'):
-                config_tmp["nb_inner_iteration"]['grid_search'] = [10]
-                #config_tmp["lr"]['grid_search'] = [0.01] # super nested
-                #config_tmp["rho"]['grid_search'] = [0.003] # super nested
-                config_tmp["lr"]['grid_search'] = [0.05]
-                config_tmp["rho"]['grid_search'] = [0.0003]
-            '''
-
             # Choose task to do (move this after raytune !!!)
-            if (config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested'):
-                task = 'full_reco_with_network'
-
-            elif ('ADMMLim' in config["method"]["grid_search"][0] or config["method"]["grid_search"][0] == 'MLEM' or config["method"]["grid_search"][0] == 'OPTITR' or config["method"]["grid_search"][0] == 'OSEM' or config["method"]["grid_search"][0] == 'BSREM' or config["method"]["grid_search"][0] == 'AML' or config["method"]["grid_search"][0] == 'APGMAP'):
-                task = 'castor_reco'
-
-            #task = 'full_reco_with_network' # Run Gong or nested ADMM
-            #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
-            #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
-            #task = 'show_results_post_reco'
-            #task = 'show_results'
-            #task = 'show_metrics_results_already_computed'
-            #task = 'show_metrics_ADMMLim'
-            #task = 'show_metrics_nested'
-            task = 'compare_2_methods'
+            task = choose_task(config)
 
             # Local files to import, AFTER CONFIG TO SET RANDOM SEED OR NOT
-            if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
-                from iNestedADMM import iNestedADMM
-                # classTask = iNestedADMM(hyperparameters_config)
-                raise ValueError("needs hyperparameters_config")
-            elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
-                from iComparison import iComparison
-                classTask = iComparison(config)
-            elif (task == 'post_reco'): # Run network denoising after a given reconstructed image im_corrupt
-                from iPostReconstruction import iPostReconstruction
-                classTask = iPostReconstruction(config)
-            elif (task == 'show_results'): # Show already computed results over iterations
-                from iResults import iResults
-                classTask = iResults(config)
-            elif (task == 'show_results_post_reco'): # Show already computed results over iterations of post reconstruction mode
-                from iResults import iResults
-                classTask = iResults(config)
-            elif (task == 'show_metrics_ADMMLim'): # Show ADMMLim FOMs over iterations
-                config["task"] = "show_results_post_reco"
-                from iMeritsADMMLim import iMeritsADMMLim
-                classTask = iMeritsADMMLim(config)
-            elif (task == 'show_metrics_nested'): # Show nested or Gong FOMs over iterations
-                from iMeritsNested import iMeritsNested
-                classTask = iMeritsNested(config)
-            # elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
-            #     from iResultsAlreadyComputed import iResultsAlreadyComputed
-            #     classTask = iResultsAlreadyComputed(config)
-            elif (task == 'compare_2_methods'): # Show already computed results averaging over replicates
-                config["average_replicates"] = tune.grid_search([True])
-                from iResultsADMMLim_VS_APGMAP import iResultsADMMLim_VS_APGMAP
-                classTask = iResultsADMMLim_VS_APGMAP(config)
+            classTask = class_for_task(config,task)
 
             # Incompatible parameters (should be written in vGeneral I think)
-            if (config["method"]["grid_search"][0] == 'nested' and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
-                raise ValueError("nested must be launched with rho > 0")
-            elif ((config["method"]["grid_search"][0] != 'Gong' and config["method"]["grid_search"][0] != 'nested') and task == "post_reco"):
-                raise ValueError("Only Gong or nested can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
-            elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["all_images_DIP"]["grid_search"][0] != "True" and config["DIP_early_stopping"]["grid_search"][0] == "True"):
-                raise ValueError("Please set all_images_DIP to True to save all images for nested or Gong reconstruction if using WMV.")
-            elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["rho"]["grid_search"][0] == 0 and task != "post_reco"):
-                raise ValueError("Please set rho > 0 for nested or Gong reconstruction (or set task to post reconstruction).")
-            elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["DIP_early_stopping"]["grid_search"][0]):
-                raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
-            elif (config["debug"] and config["ray"]):
-                raise ValueError("Debug mode must is used without ray")
-            elif (task == "post_reco" and config["DIP_early_stopping"]["grid_search"][0] == True and config["all_images_DIP"]["grid_search"][0] == "False"):
-                raise ValueError("post reco mode need to save all images if ES")
+            uncompatible_parameters(config)
 
             #'''
             os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + method + '.txt')
@@ -187,6 +185,10 @@ for lib_string in config_files:
 
             # Launch task
             classTask.runRayTune(config_tmp,root,task)
+            # try:
+            #     classTask.runRayTune(config_tmp,root,task)
+            # except:
+            #     print("raytune crashed")
             #'''
 
         if (task != "post_reco"):
