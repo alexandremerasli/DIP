@@ -99,7 +99,15 @@ config_files = 8*['nested_MIC_dropout']
 config_files = ['nested_MIC_dropout']
 config_files = ['nested_MIC_cookie_2D']
 config_files = ['nested_MIC_brain_2D']
+config_files = ['nested_MIC_brain_2D_diff5_SC1']
 config_files = ['nested_MIC_APPGML_brain_2D']
+config_files = ['nested_MIC_brain_2D_intermediate0','nested_MIC_brain_2D_intermediate1','nested_MIC_brain_2D_intermediate2']
+config_files = ['nested_MIC_APPGML_brain_2D']
+config_files = ['nested_MIC_brain_2D_random']
+config_files = ['nested_MIC_brain_2D_MR3']
+config_files = ['nested_MIC_brain_2D_diff1']
+config_files = ['nested_MIC_brain_2D_diff5']
+
 # config_files = ['nested_MIC_brain_2D_DNA_ADMMLim']
 # config_files = ['nested_MIC_cookie_2D_DNA_ADMMLim']
 # config_files = ['nested_MIC_several_inputs_brain_2D']
@@ -110,8 +118,8 @@ config_files = ['nested_MIC_APPGML_brain_2D']
 i=-1
 for lib_string in config_files:
     i+=1
-    try:
-    # if (True):
+    # try:
+    if (True):
         lib = importlib.import_module('all_config.' + lib_string)
         config = lib.config_func_MIC()
         # config["image"] = tune.grid_search(['image4_0'])
@@ -125,7 +133,7 @@ for lib_string in config_files:
         config["replicates"] = tune.grid_search(list(range(1+5*i,1+5*i+1)))
         config["replicates"] = tune.grid_search(list(range(1,1+1)))
         # config["replicates"] = tune.grid_search([1])
-        config["max_iter"] = tune.grid_search([500])
+        config["max_iter"] = tune.grid_search([300])
         # config["post_reco_in_suffix"] = tune.grid_search([False]) # If want to show EMV results which were not on post reconstruction, in DNA init
         # config["read_only_MV_csv"] = tune.grid_search([True])
         config["ray"] = False
@@ -188,5 +196,5 @@ for lib_string in config_files:
         '''
         #sys.stdout.close()
         #sys.stdout=stdoutOrigin
-    except:
-        print(lib_string + " did not work")
+    # except:
+    #     print(lib_string + " did not work")

@@ -148,8 +148,15 @@
 
 # image 4_0
 
-python3 main_Gong_BSREM_stand_random1skip.py
-python3 main_Gong_BSREM_stand_random2skip.py
-python3 main_Gong_BSREM_stand_random3skip.py
+# python3 main_Gong_BSREM_stand_random1skip.py
+# python3 main_Gong_BSREM_stand_random2skip.py
+# python3 main_Gong_BSREM_stand_random3skip.py
+
+sleep 25m
+# python3 main_run_algo.py
+python3 main_run_algo_MR_intermediate_random.py
+python3 main_run_algo_diff.py
+# python3 main_run_algo.py
+# python3 main_brain_DNA_TMI.py
 
 shutdown -P +1
