@@ -95,10 +95,15 @@ def choose_task(config):
 # config_files = ['OSEM_configuration']
 # config_files = ['Gong_skip3_3_my_settings']
 # config_files = ['BSREM_configuration']
-config_files = 8*['nested_MIC_dropout']
-config_files = ['nested_MIC_dropout']
-config_files = ['nested_MIC_cookie_2D']
-config_files = 10*['nested_MIC_brain_2D_intermediate','nested_MIC_brain_2D_MR','nested_MIC_brain_2D_random']
+# config_files = 8*['nested_MIC_dropout']
+# config_files = ['nested_MIC_dropout']
+# config_files = ['nested_MIC_cookie_2D']
+nb_computation = 5
+config_files = 2*nb_computation*['nested_MIC_brain_2D_intermediate','nested_MIC_brain_2D_MR','nested_MIC_brain_2D_random']
+config_files = 2*nb_computation*['nested_MIC_brain_2D_intermediate','nested_MIC_brain_2D_random']
+config_files = 2*nb_computation*['nested_MIC_brain_2D_intermediate','nested_MIC_brain_2D_random']
+config_files = 2*nb_computation*['nested_MIC_brain_2D_random']
+# config_files = 2*nb_computation*['nested_MIC_brain_2D_random']
 config_files = sorted(config_files)
 # config_files = ['nested_MIC_APPGML_brain_2D']
 # config_files = ['nested_MIC_brain_2D_DNA_ADMMLim']
@@ -109,9 +114,16 @@ config_files = sorted(config_files)
 # config_files = ['ADMMLim_configuration']
 
 i=-1
+num_meth=0
 for lib_string in config_files:
-    if (i>=10): # Restart count for new setting
+    if (i>=nb_computation): # Restart count for new setting
         i=-1
+        num_meth +=1
+    if (i > -1):
+        try:
+            os.system("rsync -a /home/meraslia/workspace_reco/nested_admm/data/Algo/image50_1 /disk/workspace_reco/nested_admm/data/Algo/image50_1_we" + lib_string)#_" + config_files[i] + str(i))
+        except:
+            print("copy failed")
     i+=1
     try:
     # if (True):
@@ -125,10 +137,17 @@ for lib_string in config_files:
         else:
             config["image"] = tune.grid_search(['image40_1'])
             # config["image"] = tune.grid_search(['image50_1'])
-        config["replicates"] = tune.grid_search(list(range(1+4*i,1+4*i+4)))
+        config["replicates"] = tune.grid_search(list(range(1+int(40/nb_computation)*i,1+int(40/nb_computation)*i+int(40/nb_computation))))
+        if (num_meth%2==0):
+            config["nb_outer_iteration"] = tune.grid_search([10])
+        elif (num_meth%2==1):
+            config["nb_outer_iteration"] = tune.grid_search([2])
+        else:
+            raise ValueError("bug num_meth")
+        
         # config["replicates"] = tune.grid_search(list(range(1,1+1)))
         # config["replicates"] = tune.grid_search([1])
-        config["max_iter"] = tune.grid_search([500])
+        config["max_iter"] = tune.grid_search([300])
         # config["post_reco_in_suffix"] = tune.grid_search([False]) # If want to show EMV results which were not on post reconstruction, in DNA init
         # config["read_only_MV_csv"] = tune.grid_search([True])
         config["ray"] = True
