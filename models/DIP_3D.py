@@ -11,7 +11,7 @@ from iWMV import iWMV
 
 class DIP_3D(pl.LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init):
         super().__init__()
 
         #'''
@@ -46,6 +46,9 @@ class DIP_3D(pl.LightningModule):
         self.root = root
         self.config = config
         self.experiment = config["experiment"]
+
+        self.override_SC_init = override_SC_init
+        
         '''
         ## Variables for WMV ##
         self.queueQ = []
@@ -206,19 +209,19 @@ class DIP_3D(pl.LightningModule):
 
         # Decoder
         out = self.up1(out)
-        if (self.skip >= 1):
+        if (self.skip >= 1 or self.override_SC_init):
             out_skip1 = out3 + out
             out = self.deep5(out_skip1)
         else:
             out = self.deep5(out)
         out = self.up2(out)
-        if (self.skip >= 2):
+        if (self.skip >= 2 or self.override_SC_init):
             out_skip2 = out2 + out
             out = self.deep6(out_skip2)
         else:
             out = self.deep6(out)
         out = self.up3(out)
-        if (self.skip >= 3):
+        if (self.skip >= 3 or self.override_SC_init):
             out_skip3 = out1 + out
             out = self.deep7(out_skip3)
         else:
@@ -237,6 +240,8 @@ class DIP_3D(pl.LightningModule):
 
     def training_step(self, train_batch, batch_idx):
         image_net_input_torch, image_corrupt_torch = train_batch
+        image_net_input_torch = image_net_input_torch[0,:,:,:,:,:]
+        image_corrupt_torch = image_corrupt_torch[0,:,:,:,:,:]
         '''
         import matplotlib.pyplot as plt
         plt.imshow(image_corrupt_torch.cpu().detach().numpy()[0,0,:,:,:][30,:,:],cmap='gray')
@@ -335,15 +340,15 @@ class DIP_3D(pl.LightningModule):
 
     def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner):
         if (self.DIP_early_stopping):
-
+            self.SUCCESS = self.classWMV.SUCCESS
+            self.log("SUCCESS", int(self.classWMV.SUCCESS))
             try:
                 out_np = out.detach().numpy()[0,0,:,:]
             except:
                 out_np = out.cpu().detach().numpy()[0,0,:,:]
 
-            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(copy(out_np),self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
-            self.SUCCESS = self.classWMV.SUCCESS
-            self.log("SUCCESS", int(self.classWMV.SUCCESS))
+            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(copy(out_np),self.current_epoch,self.sub_iter_DIP,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
+            
             self.VAR_recon = self.classWMV.VAR_recon
             self.MSE_WMV = self.classWMV.MSE_WMV
             self.PSNR_WMV = self.classWMV.PSNR_WMV
