@@ -124,7 +124,7 @@ class iResults(vDenoising):
                     self.bkg_ROI = self.fijii_np(bkg_ROI_path, shape=(self.PETImage_shape),type_im='<f')
                 else:
                     self.bkg_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
-                if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_1"):
+                if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_1" or self.phantom == "image50_2"):
                     if (self.phantom != "image50_1"):
                         self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                     else:
@@ -244,12 +244,18 @@ class iResults(vDenoising):
                     self.write_image_tensorboard(self.writer,f*self.phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
 
     def runComputation(self,config,root):
-        if (config["read_only_MV_csv"]):
-            if ("nested" in config["method"] or "Gong" in config["method"]):
-                if(config["DIP_early_stopping"]):# WMV
-                    self.WMV_plot(config)
-                self.MV_several_alphas_plot(config)
+        if ("read_only_MV_csv" in config):
+            if (config["read_only_MV_csv"]):
+                read_only_MV_csv = True
+                if ("nested" in config["method"] or "Gong" in config["method"]):
+                    if(config["DIP_early_stopping"]):# WMV
+                        self.WMV_plot(config)
+                    self.MV_several_alphas_plot(config)
+            else:
+                read_only_MV_csv = False
         else:
+            read_only_MV_csv = False
+        if (not read_only_MV_csv):
             if (hasattr(self,'beta')):
                 self.beta_string = ', beta = ' + str(self.beta)
 
@@ -714,7 +720,7 @@ class iResults(vDenoising):
         ### Only useful for new phantom with 3 hot ROIs, but compute it for every phantom for the sake of simplicity ###
         # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
         hot_TEP_ROI_act = image_recon[self.hot_TEP_ROI==1]
-        if ("50" not in self.phantom):
+        if (self.phantom != "image50_1"):
             AR_hot_TEP_recon[i] = np.mean(hot_TEP_ROI_act)
         else:
             hot_TEP_ref_ROI_act = image_recon[self.hot_TEP_ROI_ref==1]

@@ -40,7 +40,7 @@ class iNestedADMM(vReconstruction):
             if ("3D" not in self.phantom):
                 classResults.bkg_ROI = self.bkg_ROI
                 classResults.hot_TEP_ROI = self.hot_TEP_ROI
-                if ("50" in self.phantom):
+                if (self.phantom == "image50_1"):
                     classResults.hot_TEP_ROI_ref = self.hot_TEP_ROI_ref
                 classResults.hot_TEP_match_square_ROI = self.hot_TEP_match_square_ROI
                 classResults.hot_perfect_match_ROI = self.hot_perfect_match_ROI
@@ -188,7 +188,7 @@ class iNestedADMM(vReconstruction):
 
             # Nested ADMM stopping criterion
             if (self.global_it != i_init or config["unnested_1st_global_iter"]): # Gong after pre iteration
-                if ("50" in self.phantom):
+                if (self.phantom == "image50_1"):
                     # if (classResults.IR_bkg_recon[self.global_it] > IR_ref[0]):
                     if hasattr(self,"IR_bkg_smoothed"):
                         alpha_IR = 0.6
@@ -279,6 +279,8 @@ class iNestedADMM(vReconstruction):
                 # config["all_images_DIP"] = "True" # Save all images for 3D to understand DIP behavior
             else:
                 config["all_images_DIP"] = "True" # Save all images for 3D to understand DIP behavior
+                # config["all_images_DIP"] = "True" # Save all images for 3D to understand DIP behavior
+                config["all_images_DIP"] = "Last" # Only save last image to save space
             # Put back original input
             if (self.net == "DIP"):
                 classDenoising.override_input = False

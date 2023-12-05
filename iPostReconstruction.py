@@ -104,7 +104,7 @@ class iPostReconstruction(vDenoising):
             if ("3D" not in self.phantom):
                 classResults.bkg_ROI = self.bkg_ROI
                 classResults.hot_TEP_ROI = self.hot_TEP_ROI
-                if ("50" in self.phantom):
+                if (self.phantom == "image50_1"):
                     classResults.hot_TEP_ROI_ref = self.hot_TEP_ROI_ref
                 classResults.hot_TEP_match_square_ROI = self.hot_TEP_match_square_ROI
                 classResults.hot_perfect_match_ROI = self.hot_perfect_match_ROI

@@ -216,8 +216,9 @@ class vDenoising(vGeneral):
                             # os.remove(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str(model.epochStar) + ".ckpt"))
                         else:
                             os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
-        if (os.path.isdir(os.path.join(checkpoint_simple_path_previous_exp))):
-            shutil.rmtree(os.path.join(checkpoint_simple_path_previous_exp))
+        if(self.global_it >= 0):
+            if (os.path.isdir(os.path.join(checkpoint_simple_path_previous_exp))):
+                shutil.rmtree(os.path.join(checkpoint_simple_path_previous_exp))
 
         return model
 
@@ -360,7 +361,7 @@ class vDenoising(vGeneral):
             else:
                 file_path = (subroot+'Data/initialization/random_input_3D_' + net + '_' + str(self.PETImage_shape[0]) + '.img')
         elif self.input == "CT":
-            if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1"):
+            if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
                 if (os.path.isfile(subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw')): # If MR exists
                     file_path = subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw'
             else:

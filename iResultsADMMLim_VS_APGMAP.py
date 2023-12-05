@@ -12,6 +12,8 @@ from pathlib import Path
 from skimage.metrics import peak_signal_noise_ratio
 from skimage.metrics import structural_similarity
 import numpy as np
+from os.path import isfile, join
+from os import listdir
 from scipy.ndimage import map_coordinates
 
 # Local files to import
@@ -21,6 +23,10 @@ from vDenoising import vDenoising
 class iResultsADMMLim_VS_APGMAP(vDenoising):
     def __init__(self,config, *args, **kwargs):
         print("__init__")
+
+    def get_first_filename(self,directory):
+        filenames = sorted([filename for filename in listdir(directory) if isfile(join(directory, filename))])
+        return filenames[0] if filenames else None
 
     def initializeSpecific(self,config,root, *args, **kwargs):
         # Initialize general variables
@@ -73,8 +79,12 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         config["average_replicates"] = True
 
         change_replicates = "TMI"
-        change_replicates = "MIC"
-        plot_profile = True
+        # change_replicates = "MIC"
+        
+        if (change_replicates == "MIC"):
+            plot_profile = True
+        else:
+            plot_profile = False
         nb_angles = 1
 
         # Avoid to divide by zero value in GT when normalizing std
@@ -205,7 +215,9 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                             break
                     else:
                         self.f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-i_init) + "_FINAL" + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
-                        f_init_p = self.fijii_np(self.subroot_p+'Block1/' + self.suffix + '/before_eq22/' + '0_f_mu.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                        # f_init_p = self.fijii_np(self.subroot_p+'Block1/' + self.suffix + '/before_eq22/' + '0_f_mu.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                        local_dir = self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)
+                        f_init_p = self.fijii_np(local_dir+'/'+self.get_first_filename(local_dir),shape=(self.PETImage_shape),type_im='<f') # loading DIP output
                     if config["FLTNB"] == "double":
                         self.f_p.astype(np.float64)
                 elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'OPTITR' or config["method"] == 'OSEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or config["method"] == 'APGMAP'):
@@ -272,36 +284,38 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             #         # avg_line = np.squeeze(avg_line) + np.squeeze(lines_angles[angle]) / self.nb_replicates
             #         avg_line[p-1] = np.squeeze(avg_line[p-1]) + np.squeeze(lines_angles[angle,:min_len_zi]) / nb_angles
         
-        radius_MR_tumor, center_x_MR_tumor, center_y_MR_tumor = self.define_profile()
+        if (plot_profile):
 
-        final_avg_line = np.zeros_like(avg_line[-1])
-        final_avg_line_ref = np.zeros_like(avg_line[-1])
-        for p in range(self.nb_replicates):
-            for i in range(2*radius_MR_tumor):
-                if (p in self.replicates_with_profile):
-                    final_avg_line[i] += avg_line[p][i] / len(self.replicates_with_profile)
-                    final_avg_line_ref[i] += avg_line_ref[p][i] / len(self.replicates_with_profile)
+            radius_MR_tumor, center_x_MR_tumor, center_y_MR_tumor = self.define_profile()
 
-        ax_profile.plot(100*final_avg_line,color="black",linewidth=5,label="Average over realizations")
-        ax_profile_ref.plot(100*final_avg_line_ref,color="black",linewidth=5,label="Average over realizations")
-        if (self.phantom == "image50_1"):
-            # ax_profile.set_ylim([1.25,2.75])
-            # MR only
-            ax_profile.set_ylim([1,3])
-            ax_profile_ref.set_ylim([-50,100])
-            # Perfect and square match 
-            # ax_profile.set_ylim([7,11])
-            # ax_profile_ref.set_ylim([-100,40])
-        ax_profile.set_ylabel("Relative bias (%)")
-        ax_profile_ref.set_ylabel("Relative bias (%)")
-        ax_profile.set_xlabel("Voxels")
-        ax_profile_ref.set_xlabel("Voxels")
-        ax_profile.legend()
-        ax_profile_ref.legend()
-        fig.subplots_adjust(left=0.15, right=0.9, bottom=0.11, top=0.9)
-        fig_ref.subplots_adjust(left=0.15, right=0.9, bottom=0.11, top=0.9)
-        fig.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'ax_profile' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + '.png')
-        fig_ref.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'ax_profile_ref' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + '.png')
+            final_avg_line = np.zeros_like(avg_line[-1])
+            final_avg_line_ref = np.zeros_like(avg_line[-1])
+            for p in range(self.nb_replicates):
+                for i in range(2*radius_MR_tumor):
+                    if (p in self.replicates_with_profile):
+                        final_avg_line[i] += avg_line[p][i] / len(self.replicates_with_profile)
+                        final_avg_line_ref[i] += avg_line_ref[p][i] / len(self.replicates_with_profile)
+
+            ax_profile.plot(100*final_avg_line,color="black",linewidth=5,label="Average over realizations")
+            ax_profile_ref.plot(100*final_avg_line_ref,color="black",linewidth=5,label="Average over realizations")
+            if (self.phantom == "image50_1"):
+                # ax_profile.set_ylim([1.25,2.75])
+                # MR only
+                ax_profile.set_ylim([1,3])
+                ax_profile_ref.set_ylim([-50,100])
+                # Perfect and square match 
+                # ax_profile.set_ylim([7,11])
+                # ax_profile_ref.set_ylim([-100,40])
+            ax_profile.set_ylabel("Relative bias (%)")
+            ax_profile_ref.set_ylabel("Relative bias (%)")
+            ax_profile.set_xlabel("Voxels")
+            ax_profile_ref.set_xlabel("Voxels")
+            ax_profile.legend()
+            ax_profile_ref.legend()
+            fig.subplots_adjust(left=0.15, right=0.9, bottom=0.11, top=0.9)
+            fig_ref.subplots_adjust(left=0.15, right=0.9, bottom=0.11, top=0.9)
+            fig.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'ax_profile' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + '.png')
+            fig_ref.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'ax_profile_ref' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + '.png')
 
         # if len(nan_replicates) > 0:
         #     raise ValueError("naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan",nan_replicates)

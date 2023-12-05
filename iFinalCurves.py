@@ -32,8 +32,8 @@ class iFinalCurves(vGeneral):
         # A_shift_ref_APPGML = -100 # image2_0
         A_shift_ref_APPGML = -1000 # image4_0, # image40_1
         rename_settings = "TMI"
-        rename_settings = "hyperparameters_paper"
-        rename_settings = "MIC"
+        # rename_settings = "hyperparameters_paper"
+        # rename_settings = "MIC"
         # Beta used to initialize DNA with BSREM with penalty strength beta
         if ("50" in self.phantom):
             beta_BSREM_for_DNA = 2
@@ -105,7 +105,7 @@ class iFinalCurves(vGeneral):
 
         if (self.phantom == "image2_0"):
             ROI_list = ['cold','hot','phantom']
-        elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1"):
+        elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
             ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','hot_TEP_match_square_recon','phantom']
             # ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom','whole']
             # ROI_list = ['whole']
@@ -205,7 +205,7 @@ class iFinalCurves(vGeneral):
                         color_dict[key] = len(color_dict[key]) * ['black']
                 else:
                     color_avg = None
-                    if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1"):
+                    if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
                         color_avg = color_dict[method_without_configuration][0]    
                     
 
@@ -528,14 +528,14 @@ class iFinalCurves(vGeneral):
                 elif (fig_nb == 2):
                     title = pretitle + ' : ' + metric_AR_or_SSIM + ' ' + ' in ' + ROI + ' region vs IR in background (at convergence)' + '.png'
 
-                if (rename_settings == "MIC"):
-                    if (ROI == "cold"):
-                        title = "bias"
-                    elif (ROI == "phantom"):
-                        title = "SSIM"
-                    else:
-                        title = ROI
-                    title += ".png"
+                # if (rename_settings == "MIC"):
+                #     if (ROI == "cold"):
+                #         title = "bias"
+                #     elif (ROI == "phantom"):
+                #         title = "SSIM"
+                #     else:
+                #         title = ROI
+                #     title += ".png"
                 
                 try:
                     fig[fig_nb].savefig(self.subroot_data + 'metrics/' + self.phantom + '/' + title, bbox_inches='tight')
@@ -578,7 +578,7 @@ class iFinalCurves(vGeneral):
     def label_method_plot(self,replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings):
         if (self.phantom == "image2_0"):
             replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
-        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1"):
+        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
             if ("nested" not in method and "DIPRecon" not in method):
                 if (fig_nb != 2):
                     replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
@@ -648,7 +648,8 @@ class iFinalCurves(vGeneral):
                     if ("nested" in method):
                         replicates_legend[fig_nb].append('DNA')
                     elif ("DIPRecon" in method):
-                        replicates_legend[fig_nb].append('DIPRecon')
+                        # replicates_legend[fig_nb].append('DIPRecon')
+                        replicates_legend[fig_nb].append(method)
                 elif(rename_settings == "hyperparameters_paper"):
                     if ("nested_ADMMLim_more_ADMMLim_it_10" in method):
                         replicates_legend[fig_nb].append(r'DNA$^{positive~norm}$')
@@ -919,7 +920,7 @@ class iFinalCurves(vGeneral):
 
             color_dict = {**color_dict, **color_dict_supp} # Comparison between reconstruction methods
 
-        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1"):
+        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
             color_dict_after_MIC = {
                 "nested_ADMMLim" : ['cyan','blue','teal','blueviolet','black'],
                 #"nested_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
@@ -1000,6 +1001,10 @@ class iFinalCurves(vGeneral):
                 "nested_MIC_brain_2D_MR1" : 5*[color_dict_after_MIC["nested_CT_skip"][5]],
                 "nested_MIC_brain_2D_MR2" : 5*[color_dict_after_MIC["nested_CT_skip"][0]],
                 "nested_MIC_brain_2D_MR3" : 5*['black'],
+                "nested_APPGML_MIC_brain_2D_MR3" : 5*[color_dict_after_MIC["nested_CT_skip"][0]],
+                "DIPRecon_MIC_brain_2D_MR3" : 5*[color_dict_after_MIC["nested_CT_skip"][1]],
+                "DIPRecon_initDNA_MIC_brain_2D_MR3" : 5*[color_dict_after_MIC["nested_CT_skip"][2]],
+                "DIPRecon_initDNA_skip3_3_my_settings" : 5*[color_dict_after_MIC["nested_CT_skip"][3]],
                 "nested_MIC_brain_2D_random" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
                 "nested_MIC_brain_2D_random0" : 5*['red'],
                 "nested_MIC_brain_2D_random1" : 5*[color_dict_after_MIC["nested_random_skip"][2]],
@@ -1039,7 +1044,7 @@ class iFinalCurves(vGeneral):
             }
 
             marker_dict = {**marker_dict, **marker_dict_supp}
-        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1"):
+        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
             marker_dict = {
                 "APPGML_it" : 15*[':'],
                 "APPGML_subsets" : 15*['-'],
@@ -1096,6 +1101,10 @@ class iFinalCurves(vGeneral):
                 "nested_MIC_brain_2D_MR1" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_MR2" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_MR3" : 5*[marker_dict["CT"][0]],
+                "nested_APPGML_MIC_brain_2D_MR3" : 5*[marker_dict["CT"][0]],
+                "DIPRecon_MIC_brain_2D_MR3" : 5*[marker_dict["CT"][0]],
+                "DIPRecon_initDNA_MIC_brain_2D_MR3" : 5*[marker_dict["CT"][0]],
+                "DIPRecon_initDNA_skip3_3_my_settings" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_random" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_random0" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_random1" : 5*[marker_dict["CT"][0]],

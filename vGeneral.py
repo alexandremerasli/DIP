@@ -132,7 +132,7 @@ class vGeneral(abc.ABC):
             #     self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
             # elif ((self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
             #     self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
-            # elif ((self.phantom == "image50_1") and config["task"] != "show_metrics_results_already_computed"):
+            # elif ((self.phantom == "image50_1" or self.phantom == "image50_2") and config["task"] != "show_metrics_results_already_computed"):
             #     self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot_data)
         return config
 
@@ -236,7 +236,7 @@ class vGeneral(abc.ABC):
             self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
         elif ((self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
-        elif ((self.phantom == "image50_1") and config["task"] != "show_metrics_results_already_computed"):
+        elif ((self.phantom == "image50_1" or self.phantom == "image50_2") and config["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot_data)
 
         # Defining ROIs
@@ -913,11 +913,15 @@ class vGeneral(abc.ABC):
 
         # Storing into file instead of defining them at each metrics computation
         self.save_img(tumor_1b_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw')
-        self.save_img(tumor_2_PET_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw')
-        self.save_img(tumor_1a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw')
-        self.save_img(tumor_3a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw')
-        self.save_img(tumor_3a_mask_whole, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw')
-        self.save_img(tumor_3a_mask_ref, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_white_matter_ref" + self.phantom[5:] + '.raw')
+        if (self.phantom == "image50_1"):
+            self.save_img(tumor_1a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw')
+        elif (self.phantom == "image50_1"):
+            self.save_img(tumor_1a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw')
+            self.save_img(tumor_2_PET_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw')
+            self.save_img(tumor_3a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw')
+            self.save_img(tumor_3a_mask_whole, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw')
+            self.save_img(tumor_3a_mask_ref, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_white_matter_ref" + self.phantom[5:] + '.raw')
+            self.save_img(tumor_3a_mask_ref, subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw') # Useless for computation, just for constitency with other phantoms
 
     def write_image_tensorboard(self,writer,image,name,suffix,image_gt,i=0,full_contrast=False):
         # Creating matplotlib figure with colorbar
@@ -979,7 +983,7 @@ class vGeneral(abc.ABC):
         header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data pat
         dim = ' -dim ' + PETImage_shape_str
         if (self.scanner != "mMR_3D"):
-            if (self.phantom != "image50_0" and self.phantom != "image50_1"):
+            if (self.phantom != "image50_0" and self.phantom != "image50_1" and self.phantom != "image50_2"):
                 vox = ' -vox 4,4,4'
             else:
                 vox = ' -vox 2,2,2'

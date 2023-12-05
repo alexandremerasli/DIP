@@ -67,6 +67,18 @@ class DIP_2D(LightningModule):
         self.experiment = config["experiment"]
 
         # MIC study
+
+        if (self.global_it < 0):
+            if ("initDNA" in self.config):
+                if (self.config["initDNA"]):
+                    self.initDNA = True
+                else:
+                    self.initDNA = False
+            else:
+                self.initDNA = False
+        else:
+            self.initDNA = False
+
         self.override_SC_init = override_SC_init
         if ("dropout" in config):
             self.dropout = config['dropout']
@@ -256,9 +268,10 @@ class DIP_2D(LightningModule):
         else:
             out = self.deep7(out)
 
-        if (self.method == 'Gong'):
-            self.write_current_img_task(out,inside=True)
-            out = self.positivity(out)
+        if (self.method == 'Gong'):                
+            if (not self.initDNA):
+                self.write_current_img_task(out,inside=True)
+                out = self.positivity(out)
 
         return out
 
