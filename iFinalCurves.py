@@ -36,9 +36,11 @@ class iFinalCurves(vGeneral):
         # rename_settings = "MIC"
         # Beta used to initialize DNA with BSREM with penalty strength beta
         if ("50" in self.phantom):
-            beta_BSREM_for_DNA = 2
-        else:
+            beta_BSREM_for_DNA = 0.5
+        elif ("40" in self.phantom):
             beta_BSREM_for_DNA = 0.01
+        else:
+            beta_BSREM_for_DNA = 0.05
         # Rename my settings (MIC)
 
         # Convert Gong to DIPRecon
@@ -54,7 +56,7 @@ class iFinalCurves(vGeneral):
         nb_other_dim = dict.fromkeys(method_list)
         config_other_dim = dict.fromkeys(method_list)
         config_tmp = dict.fromkeys(method_list)
-        nb_replicates = dict.fromkeys(method_list)
+        self.nb_replicates = dict.fromkeys(method_list)
 
         for method in method_list: # Loop over methods
             if (MIC_config):
@@ -105,13 +107,14 @@ class iFinalCurves(vGeneral):
 
         if (self.phantom == "image2_0"):
             ROI_list = ['cold','hot','phantom']
-        elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
+        elif ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1"):
             ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','hot_TEP_match_square_recon','phantom']
             # ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom','whole']
             # ROI_list = ['whole']
             # ROI_list = ['cold','cold_inside','cold_edge']
             # ROI_list = ['cold']
-
+        elif(self.phantom == "image50_2"):
+            ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom']
         for ROI in ROI_list:
             # Plot tradeoff with SSIM (set quantitative_tradeoff is False) or AR (set quantitative_tradeoff to True)
             if ROI == 'phantom' or ROI == 'whole':
@@ -185,7 +188,7 @@ class iFinalCurves(vGeneral):
                     other_dim_name = ""
                     
                 nb_other_dim[method] = len(config_other_dim[method])
-                nb_replicates[method] = int(len(replicates[0]) / (nb_rho[method] * nb_other_dim[method]))
+                self.nb_replicates[method] = int(len(replicates[0]) / (nb_rho[method] * nb_other_dim[method]))
 
                 # Affect color and marker according to method and settings
                 marker_dict, color_dict = self.marker_color_dict_method()
@@ -205,7 +208,7 @@ class iFinalCurves(vGeneral):
                         color_dict[key] = len(color_dict[key]) * ['black']
                 else:
                     color_avg = None
-                    if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
+                    if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
                         color_avg = color_dict[method_without_configuration][0]    
                     
 
@@ -213,7 +216,7 @@ class iFinalCurves(vGeneral):
                 idx_wanted = []
                 for i in range(nb_rho[method]):
                     for p in range(nb_other_dim[method]):
-                        idx_wanted += range(0,nb_replicates[method])
+                        idx_wanted += range(0,self.nb_replicates[method])
 
                 # Check replicates from results are compatible with this script
                 replicate_idx = [int(re.findall(r'(\w+?)(\d+)', replicates[0][idx].rstrip())[0][-1]) for idx in range(len(replicates[0]))]
@@ -223,13 +226,13 @@ class iFinalCurves(vGeneral):
                     raise ValueError("Replicates are not the same for each case !")
 
                 if method == method_list[-1]:
-                    if not all(x == list(nb_replicates.values())[0] for x in list(nb_replicates.values())):
-                        print(nb_replicates)
+                    if not all(x == list(self.nb_replicates.values())[0] for x in list(self.nb_replicates.values())):
+                        print(self.nb_replicates)
                         raise ValueError("Replicates are not the same for each method !")
                 
                 # Sort suffixes from file by rho and other dim values 
                 sorted_suffixes = list(suffixes[0])
-                if (method != "ADMMLim" and "nested" not in method and "APGMAP" not in method and method != "BSREM"):
+                if (method != "ADMMLim" and "nested" not in method and "APGMAP" not in method and "BSREM" not in method):
                     sorted_suffixes.sort(key=self.natural_keys)
                 else:
                     sorted_suffixes.sort(key=self.natural_keys_ADMMLim)
@@ -244,35 +247,35 @@ class iFinalCurves(vGeneral):
 
 
                 # Compute number of displayable iterations for each rho and find case with smallest iterations (useful for ADMMLim)
-                len_mini_list = np.zeros((nb_rho[method],nb_other_dim[method],nb_replicates[method]),dtype=int)
+                len_mini_list = np.zeros((nb_rho[method],nb_other_dim[method],self.nb_replicates[method]),dtype=int)
                 len_mini = np.zeros((nb_rho[method]),dtype=int)
                 case_mini = np.zeros((nb_rho[method]),dtype=int)
                 for rho_idx in range(nb_rho[method]):
                     for other_dim_idx in range(nb_other_dim[method]):
-                        for replicate_idx in range(nb_replicates[method]):
-                            len_mini_list[rho_idx,other_dim_idx,replicate_idx] = len(metrics_final[replicate_idx + nb_replicates[method]*other_dim_idx + (nb_replicates[method]*nb_other_dim[method])*rho_idx])
+                        for replicate_idx in range(self.nb_replicates[method]):
+                            len_mini_list[rho_idx,other_dim_idx,replicate_idx] = len(metrics_final[replicate_idx + self.nb_replicates[method]*other_dim_idx + (self.nb_replicates[method]*nb_other_dim[method])*rho_idx])
                         len_mini[rho_idx] = int(np.min(len_mini_list[rho_idx]))
-                        case_mini[rho_idx] = int(np.argmin(len_mini_list[rho_idx,:,:])) + nb_replicates[method]*rho_idx
+                        case_mini[rho_idx] = int(np.argmin(len_mini_list[rho_idx,:,:])) + self.nb_replicates[method]*rho_idx
 
                 # Create numpy array with same number of iterations for each case
                 IR_final_array = []
                 metrics_final_array = []
                 for rho_idx in range(nb_rho[method]):
                     for other_dim_idx in range(nb_other_dim[method]):
-                        IR_final_array.append(np.zeros((nb_replicates[method],len_mini[rho_idx])))
-                        metrics_final_array.append(np.zeros((nb_replicates[method],len_mini[rho_idx])))
+                        IR_final_array.append(np.zeros((self.nb_replicates[method],len_mini[rho_idx])))
+                        metrics_final_array.append(np.zeros((self.nb_replicates[method],len_mini[rho_idx])))
                         for common_it in range(len_mini[rho_idx]):
-                            for replicate_idx in range(nb_replicates[method]):
-                                IR_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][replicate_idx,common_it] = IR_final[replicate_idx + nb_replicates[method]*other_dim_idx + (nb_replicates[method]*nb_other_dim[method])*rho_idx][common_it]
-                                metrics_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][replicate_idx,common_it] = metrics_final[replicate_idx + nb_replicates[method]*other_dim_idx + (nb_replicates[method]*nb_other_dim[method])*rho_idx][common_it]             
+                            for replicate_idx in range(self.nb_replicates[method]):
+                                IR_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][replicate_idx,common_it] = IR_final[replicate_idx + self.nb_replicates[method]*other_dim_idx + (self.nb_replicates[method]*nb_other_dim[method])*rho_idx][common_it]
+                                metrics_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][replicate_idx,common_it] = metrics_final[replicate_idx + self.nb_replicates[method]*other_dim_idx + (self.nb_replicates[method]*nb_other_dim[method])*rho_idx][common_it]             
 
                 
-                IR_final_final_array = np.zeros((nb_rho[method],nb_other_dim[method],nb_replicates[method],np.max(len_mini)))
-                metrics_final_final_array = np.zeros((nb_rho[method],nb_other_dim[method],nb_replicates[method],np.max(len_mini)))
+                IR_final_final_array = np.zeros((nb_rho[method],nb_other_dim[method],self.nb_replicates[method],np.max(len_mini)))
+                metrics_final_final_array = np.zeros((nb_rho[method],nb_other_dim[method],self.nb_replicates[method],np.max(len_mini)))
                 for rho_idx in range(nb_rho[method]):
                     for other_dim_idx in range(nb_other_dim[method]):
                         for common_it in range(len_mini[rho_idx]):
-                            for replicate_idx in range(nb_replicates[method]):
+                            for replicate_idx in range(self.nb_replicates[method]):
                                 IR_final_final_array[rho_idx,other_dim_idx,replicate_idx,common_it] = IR_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][replicate_idx,common_it]
                                 metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,common_it] = metrics_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][replicate_idx,common_it]
 
@@ -289,8 +292,8 @@ class iFinalCurves(vGeneral):
                             reg[fig_nb] = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
                     for rho_idx in range(nb_rho[method]):
                         for other_dim_idx in range(nb_other_dim[method]):
-                            for replicate_idx in range(nb_replicates[method]):
-                                case = replicate_idx + nb_replicates[method]*other_dim_idx + (nb_replicates[method]*nb_other_dim[method])*rho_idx
+                            for replicate_idx in range(self.nb_replicates[method]):
+                                case = replicate_idx + self.nb_replicates[method]*other_dim_idx + (self.nb_replicates[method]*nb_other_dim[method])*rho_idx
                                 if (fig_nb == 0): # Plot tradeoff curves with all iterations
                                     it = np.arange(len(IR_final[case_mini[rho_idx]]))
                                     if (plot_all_replicates_curves):
@@ -301,7 +304,7 @@ class iFinalCurves(vGeneral):
                                 for it in range(len(IR_final[case_mini[rho_idx]])):
                                     reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][:,it],metrics_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][:,it])
                             #'''
-                            for replicate_idx in range(nb_replicates[method]):
+                            for replicate_idx in range(self.nb_replicates[method]):
                                 if (fig_nb == 1): # Plot metrics with iterations
                                     if (plot_all_replicates_curves):
                                         #ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,metrics_final_final_array[rho_idx,other_dim_idx,replicate_idx,:len_mini[rho_idx]],label='_nolegend_') # IR in % # if 1 out of i_init iterations was saved
@@ -314,7 +317,7 @@ class iFinalCurves(vGeneral):
 
 
                     #'''
-                    for replicate_idx in range(nb_replicates[method]):
+                    for replicate_idx in range(self.nb_replicates[method]):
                         for other_dim_idx in range(nb_other_dim[method]):
                             if (fig_nb == 2): # Plot tradeoff curves at convergence
                                 if (plot_all_replicates_curves):
@@ -339,17 +342,18 @@ class iFinalCurves(vGeneral):
                         for other_dim_idx in range(nb_other_dim[method]):
                             '''
                             # Compute average of tradeoff and bias curves with iterations
-                            avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sum(metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_replicates[method]
-                            avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sum(IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_replicates[method]
+                            avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sum(metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / self.nb_replicates[method]
+                            avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sum(IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / self.nb_replicates[method]
                             # Compute std bias curves with iterations
-                            std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sqrt(np.sum((metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]] - np.array(avg_metrics)[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]])**2,axis=0) / nb_replicates[method])
-                            std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sqrt(np.sum((IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]]- np.array(avg_IR)[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]])**2,axis=0) / nb_replicates[method])
+                            std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sqrt(np.sum((metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]] - np.array(avg_metrics)[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]])**2,axis=0) / self.nb_replicates[method])
+                            std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.sqrt(np.sum((IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]]- np.array(avg_IR)[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]])**2,axis=0) / self.nb_replicates[method])
                             '''
 
                             # Compute average of tradeoff and bias curves with iterations
                             # Remove NaNs from computation
                             # nb_usable_replicates = np.count_nonzero(~np.isnan(metrics_final_final_array[rho_idx,other_dim_idx,:,len_mini[rho_idx] - 5]))
-                            nb_usable_replicates = np.count_nonzero(~np.isnan(metrics_final_final_array[rho_idx,other_dim_idx,:,len_mini[rho_idx] - 1]))
+                            # nb_usable_replicates = np.count_nonzero(~np.isnan(IR_final_final_array[rho_idx,other_dim_idx,:,len_mini[rho_idx] - 1]))
+                            nb_usable_replicates = self.nb_replicates[method]
 
                             avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.nansum(metrics_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_usable_replicates
                             avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] = np.nansum(IR_final_final_array[rho_idx,other_dim_idx,:,:len_mini[rho_idx]],axis=0) / nb_usable_replicates
@@ -485,9 +489,9 @@ class iFinalCurves(vGeneral):
                             for other_dim_idx in range(nb_other_dim[method]):
                                 self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings)
                     else: # Do not loop on rho because here is at convergence
-                        for rho_idx in range(nb_rho[method]):
-                            for other_dim_idx in range(nb_other_dim[method]):
-                                self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings)
+                        # for rho_idx in range(nb_rho[method]):
+                        for other_dim_idx in range(nb_other_dim[method]):
+                            self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings)
                     if (method == method_list[-1]):
                         legend_this_ROI = False
                         if (quantitative_tradeoff): # AR
@@ -518,9 +522,12 @@ class iFinalCurves(vGeneral):
                         metric_AR_or_SSIM = 'likelihood'
                     else:
                         metric_AR_or_SSIM = 'SSIM'
-                if "50" in self.phantom:
+                if (self.phantom == "image50_1"):
                     if (ROI == "hot_TEP"):
                         ROI = "MR_only"
+                elif (self.phantom == "image50_2"):
+                    if (ROI == "hot_TEP"):
+                        ROI = "background"
                 if (fig_nb == 0):
                     title = pretitle + ' : ' + metric_AR_or_SSIM + ' ' + ' in ' + ROI + ' region vs IR in background (with iterations)' + '.png'
                 elif (fig_nb == 1):
@@ -578,7 +585,7 @@ class iFinalCurves(vGeneral):
     def label_method_plot(self,replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings):
         if (self.phantom == "image2_0"):
             replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
-        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
+        elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
             if ("nested" not in method and "DIPRecon" not in method):
                 if (fig_nb != 2):
                     replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
@@ -715,6 +722,42 @@ class iFinalCurves(vGeneral):
             from all_config.BSREM_configuration import config_func_MIC
             #config[method] = config_func()
             method_name = method
+            import importlib
+            globals().update(importlib.import_module('all_config.' + method + "_configuration").__dict__)
+            config[method] = config_MIC
+            config[method]["method"] = method_name
+
+            if ("50" in self.phantom):
+                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
+            elif ("40" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
+            elif ("4" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
+            else:
+                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
+
+            return config[method]
+
+        # BSREM reconstruction with Bowsher weights
+        if (method == 'BSREM_Bowsher'):
+            from all_config.BSREM_Bowsher_configuration import config_func_MIC
+            #config[method] = config_func()
+            method_name = "BSREM"
+            import importlib
+            globals().update(importlib.import_module('all_config.' + method + "_configuration").__dict__)
+            config[method] = config_MIC
+            config[method]["method"] = method_name
+            
+            if ("50" in self.phantom):
+                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
+            elif ("40" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
+            elif ("4" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
+            else:
+                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
+
+            return config[method]
 
         # APGMAP reconstruction
         if ('APGMAP' in method):
@@ -920,7 +963,7 @@ class iFinalCurves(vGeneral):
 
             color_dict = {**color_dict, **color_dict_supp} # Comparison between reconstruction methods
 
-        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
+        elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
             color_dict_after_MIC = {
                 "nested_ADMMLim" : ['cyan','blue','teal','blueviolet','black'],
                 #"nested_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
@@ -931,6 +974,7 @@ class iFinalCurves(vGeneral):
                 # "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "DIPRecon" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
                 "BSREM" : 5*['grey','cyan','blue','teal','blueviolet'],
+                "BSREM_Bowsher" : list(reversed(5*['grey','cyan','blue','teal','blueviolet'])),
                 # "BSREM" : ['grey'],
                 "OSEM" : ['orange'],
                 #"APGMAP" : ['darkgreen','lime','gold'],
@@ -982,7 +1026,8 @@ class iFinalCurves(vGeneral):
                 "APGMAP" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "ADMMLim" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
                 "OSEM" : ['darkorange'] + 5*['cyan','blue','teal','blueviolet'],
-                "BSREM" : ['grey'] + 5*['cyan','blue','teal','blueviolet']
+                "BSREM" : ['grey'] + 5*['cyan','blue','teal','blueviolet'],
+                "BSREM_Bowsher" : ['blueviolet'] + 5*['cyan','blue','teal','grey']
             }
             
             color_dict_MIC2023_DNA = {
@@ -1032,7 +1077,8 @@ class iFinalCurves(vGeneral):
                 "APGMAP" : ['-','--','loosely dotted'],
                 "ADMMLim" : ['-'],
                 "OSEM" : ['-'],
-                "BSREM" : ['-']
+                "BSREM" : ['-'],
+                "BSREM_Bowsher" : ['-']
             }
             marker_dict_supp = {
                 "nested_BSREM_stand" : [marker_dict["nested"][0]],
@@ -1044,7 +1090,7 @@ class iFinalCurves(vGeneral):
             }
 
             marker_dict = {**marker_dict, **marker_dict_supp}
-        elif(self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
+        elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
             marker_dict = {
                 "APPGML_it" : 15*[':'],
                 "APPGML_subsets" : 15*['-'],
@@ -1054,6 +1100,7 @@ class iFinalCurves(vGeneral):
                 "intermediate" : 15*['-'],
                 "APGMAP" : 15*['-','-','-'],
                 "BSREM" : 15*['-'],
+                "BSREM_Bowsher" : 15*['-'],
                 "OSEM" : 15*['-'],
                 "DIPRecon" : 15*['-']
             }
@@ -1238,12 +1285,24 @@ class iFinalCurves(vGeneral):
                             rows_csv[14] = [float(rows_csv[14][i]) for i in range(int(self.i_init) - 1, min(len(rows_csv[14]),self.total_nb_iter))]
                         else:
                             raise ValueError("likelihood is not in csv")
+                        
+
+                if (rename_settings == "TMI"): # Remove Gong failing replicates and replace them
+                    if (self.scaling == "positive_normalization"):
+                        if (np.sum(np.isnan(np.array(rows_csv[10]))) > 0):
+                            print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
+                            self.nb_replicates[method] -= 1
+                            continue
 
                 PSNR_recon.append(np.array(rows_csv[0]))
                 PSNR_norm_recon.append(np.array(rows_csv[1]))
                 MSE_recon.append(np.array(rows_csv[2]))
                 SSIM_recon.append(np.array(rows_csv[3]))
-                if "50" in self.phantom:
+                if (self.phantom == "image50_1"):
+                    cold_GT = 0.5
+                    hot_GT = 10
+                    bkg_GT = 2
+                elif (self.phantom == "image50_2"):
                     cold_GT = 0.5
                     hot_GT = 10
                     bkg_GT = 2
@@ -1259,7 +1318,7 @@ class iFinalCurves(vGeneral):
                         # AR_hot_TEP_recon.append(np.array(np.array(rows_csv[6]) - bkg_GT) / bkg_GT * 100) # This is the MR only region (relative bias with respect to GT bkg)
                         AR_hot_TEP_recon.append(np.array(np.array(rows_csv[6]))) # This is the MR only region  (relative bias with respect to current image bkg mean)
                     else:
-                        AR_hot_TEP_recon.append(np.array(rows_csv[6]) / hot_GT * 100) # This is the MR only region
+                        AR_hot_TEP_recon.append(np.array(rows_csv[6]) / hot_GT * 100) # This is only TEP region
                     AR_hot_TEP_match_square_recon.append(np.array(rows_csv[7]) / hot_GT * 100)
                     AR_hot_perfect_match_recon.append(np.array(rows_csv[8]) / hot_GT * 100)
                     AR_bkg_recon.append(np.array(rows_csv[9]))

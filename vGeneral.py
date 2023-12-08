@@ -130,7 +130,7 @@ class vGeneral(abc.ABC):
             #     self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
             # elif (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
             #     self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
-            # elif ((self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
+            # elif (("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
             #     self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
             # elif ((self.phantom == "image50_1" or self.phantom == "image50_2") and config["task"] != "show_metrics_results_already_computed"):
             #     self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot_data)
@@ -234,7 +234,7 @@ class vGeneral(abc.ABC):
             self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
         elif (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
-        elif ((self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
+        elif (("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
         elif ((self.phantom == "image50_1" or self.phantom == "image50_2") and config["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot_data)
@@ -245,40 +245,48 @@ class vGeneral(abc.ABC):
             bkg_ROI_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw'
             cold_ROI_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw'
             if (isfile(bkg_ROI_path) or isfile(cold_ROI_path)):
-                self.bkg_ROI = self.fijii_np(bkg_ROI_path, shape=(self.PETImage_shape),type_im='<f')
-                # if ("50" not in self.phantom):    
-                #     self.bkg_ROI = self.fijii_np(bkg_ROI_path, shape=(self.PETImage_shape),type_im='<f')
-                # else:
-                #     self.bkg_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
-                if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_1"):
-                    if (self.phantom != "image50_1"):
-                        self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                    else:
-                        self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')    
-                        self.hot_TEP_ROI_ref = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_white_matter_ref" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                    self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                    self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                    self.hot_MR_recon = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                    # This ROIs has already been defined, but is computed for the sake of simplicity
-                    self.hot_ROI = self.hot_TEP_ROI
-                else:
-                    self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                    # These ROIs do not exist, so put them equal to hot ROI for the sake of simplicity
-                    self.hot_TEP_ROI = array(self.hot_ROI)
-                    self.hot_TEP_match_square_ROI = array(self.hot_ROI)
-                    self.hot_perfect_match_ROI = array(self.hot_ROI)
-                    self.hot_MR_recon = array(self.hot_ROI)
-                self.cold_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
-                if ("4" in self.phantom):
-                    self.cold_inside_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_inside_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                    self.cold_edge_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_edge_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                else:
-                    self.cold_inside_ROI = self.cold_ROI
-                    self.cold_edge_ROI = self.cold_ROI
+                self.read_ROIs(bkg_ROI_path,cold_ROI_path)
             else:
                 self.initializeGeneralVariables(config,root)
 
-        
+    def read_ROIs(self,bkg_ROI_path,cold_ROI_path):
+
+        if ("50" not in self.phantom):    
+            self.bkg_ROI = self.fijii_np(bkg_ROI_path, shape=(self.PETImage_shape),type_im='<f')
+        else:
+            self.bkg_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
+        if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_1" or self.phantom == "image50_2"):              
+            self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.hot_MR_recon = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            if (self.phantom != "image50_2"):
+                self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            else:
+                self.hot_TEP_match_square_ROI = self.hot_perfect_match_ROI
+            # This ROIs has already been defined, but is computed for the sake of simplicity
+            self.hot_ROI = self.hot_perfect_match_ROI
+            # TEP only tumor (if there is one)
+            if (self.phantom == "image50_1"):
+                self.hot_TEP_ROI_ref = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_white_matter_ref" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            if ("50" in self.phantom):
+                # Use the hot_TEP_ROI to actually store the MR only region
+                self.hot_TEP_ROI = self.hot_MR_recon
+            else:
+                self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        else:
+            self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            # These ROIs do not exist, so put them equal to hot ROI for the sake of simplicity
+            self.hot_TEP_ROI = array(self.hot_ROI)
+            self.hot_TEP_match_square_ROI = array(self.hot_ROI)
+            self.hot_perfect_match_ROI = array(self.hot_ROI)
+            self.hot_MR_recon = array(self.hot_ROI)
+        self.cold_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
+        if ("4" in self.phantom):
+            self.cold_inside_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_inside_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.cold_edge_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_edge_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        else:
+            self.cold_inside_ROI = self.cold_ROI
+            self.cold_edge_ROI = self.cold_ROI
+
     def parametersIncompatibility(self,config,task):
         # Additional variables needing every values in config
         # Number of replicates         
@@ -315,7 +323,7 @@ class vGeneral(abc.ABC):
         if (len(config["method"]['grid_search']) == 1):
             if (config["method"]['grid_search'][0] != "AML" and "APGMAP" not in config["method"]['grid_search'][0] and "APGMAP" not in config["recoInNested"]['grid_search'][0]):
                 config.pop("A_AML", None)
-            if (config["method"]['grid_search'][0] == 'BSREM' or 'nested' in config["method"]['grid_search'][0] or 'Gong' in config["method"]['grid_search'][0] or 'DIPRecon' in config["method"]['grid_search'][0] or 'APGMAP' in config["method"]['grid_search'][0]):
+            if ('BSREM' in config["method"]['grid_search'][0] or 'nested' in config["method"]['grid_search'][0] or 'Gong' in config["method"]['grid_search'][0] or 'DIPRecon' in config["method"]['grid_search'][0] or 'APGMAP' in config["method"]['grid_search'][0]):
                 config.pop("post_smoothing", None)
             if ((config["method"]['grid_search'][0] != 'ADMMLim' and "nested" not in config["method"]['grid_search'][0]) or "APGMAP" in config["recoInNested"]['grid_search'][0]):
                 #config.pop("nb_inner_iteration", None)
@@ -913,15 +921,15 @@ class vGeneral(abc.ABC):
 
         # Storing into file instead of defining them at each metrics computation
         self.save_img(tumor_1b_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw')
+        self.save_img(tumor_3a_mask_whole, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw')
+        self.save_img(tumor_1a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw')
+        # if (self.phantom == "image50_1"):
+        #     self.save_img(tumor_1a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw')
         if (self.phantom == "image50_1"):
-            self.save_img(tumor_1a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw')
-        elif (self.phantom == "image50_1"):
-            self.save_img(tumor_1a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw')
             self.save_img(tumor_2_PET_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw')
             self.save_img(tumor_3a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw')
-            self.save_img(tumor_3a_mask_whole, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw')
             self.save_img(tumor_3a_mask_ref, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_white_matter_ref" + self.phantom[5:] + '.raw')
-            self.save_img(tumor_3a_mask_ref, subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw') # Useless for computation, just for constitency with other phantoms
+            # self.save_img(TAKE_FROM_ERODED_WHITE_MATTER_IN_OTHER_FILE, subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw') # Useless for computation, just for constitency with other phantoms
 
     def write_image_tensorboard(self,writer,image,name,suffix,image_gt,i=0,full_contrast=False):
         # Creating matplotlib figure with colorbar
@@ -1046,8 +1054,20 @@ class vGeneral(abc.ABC):
             penaltyStrength = ' -pnlt-beta ' + str(self.beta)
         elif (method == 'BSREM'):
             opti = ' -opti ' + method + ':' + self.subroot_data + method + '.conf'
-            pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
+            # Choose penalty config file according to Bowsher weights or not
             penaltyStrength = ' -pnlt-beta ' + str(self.beta)
+            if ("Bowsher" in self.config):
+                if (self.config["Bowsher"]):
+                    Bowsher = True
+                else:
+                    Bowsher = False
+            else:
+                Bowsher = False
+            if (Bowsher):
+                pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF_Bowsher.conf'
+                pnlt += ' -multimodal ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.hdr'
+            else:
+                pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
         elif ('nested' in method or 'ADMMLim' in method):
             if (self.recoInNested == "ADMMLim"):
                 opti = ' -opti ' + 'ADMMLim' + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) + ',' + str(self.tau_max) + ',' + str(self.stoppingCriterionValue) + ',' + str(self.saveSinogramsUAndV)

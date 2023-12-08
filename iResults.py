@@ -102,7 +102,7 @@ class iResults(vDenoising):
         if (not hasattr(self,"phantom_ROI")):
             if ("3D" not in self.phantom):
                 self.phantom_ROI = self.get_phantom_ROI(self.phantom)
-                # if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
+                # if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
                 #     self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                 #     self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
                 #     self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
@@ -120,37 +120,7 @@ class iResults(vDenoising):
 
                 bkg_ROI_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw'
                 cold_ROI_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw'
-                if ("50" not in self.phantom):    
-                    self.bkg_ROI = self.fijii_np(bkg_ROI_path, shape=(self.PETImage_shape),type_im='<f')
-                else:
-                    self.bkg_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
-                if (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_1" or self.phantom == "image50_2"):
-                    if (self.phantom != "image50_1"):
-                        self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                    else:
-                        self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')    
-                    self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                    self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                    self.hot_MR_recon = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                    # This ROIs has already been defined, but is computed for the sake of simplicity
-                    self.hot_ROI = self.hot_TEP_ROI
-                else:
-                    self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                    self.hot_TEP_ROI_ref = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_white_matter_ref" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                    # These ROIs do not exist, so put them equal to hot ROI for the sake of simplicity
-                    self.hot_TEP_ROI = np.array(self.hot_ROI)
-                    self.hot_TEP_match_square_ROI = np.array(self.hot_ROI)
-                    self.hot_perfect_match_ROI = np.array(self.hot_ROI)
-                    self.hot_MR_recon = np.array(self.hot_ROI)
-                self.cold_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
-                if ("4" in self.phantom):
-                    self.cold_inside_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_inside_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                    self.cold_edge_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_edge_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                else:
-                    self.cold_inside_ROI = self.cold_ROI
-                    self.cold_edge_ROI = self.cold_ROI
-
-
+                self.read_ROIs(bkg_ROI_path,cold_ROI_path)
 
         if ("3D" not in self.phantom):
             more_it = 1
@@ -312,12 +282,13 @@ class iResults(vDenoising):
             print("loop over")
 
             if ("nested" in config["method"] or "Gong" in config["method"]):
-                if(config["DIP_early_stopping"]):# WMV
-                    # Save computed variance from WMV/EMV in csv
-                    with open(self.MV_csv_path(self.alpha_EMV,config), 'w', newline='') as myfile:
-                        wr = writer_csv(myfile,delimiter=';')
-                        wr.writerow(self.VAR_recon)  
-                    self.WMV_plot(config)
+                if (config["DIP_early_stopping"]):# WMV
+                    if ("post_reco" in config["task"]):
+                        # Save computed variance from WMV/EMV in csv
+                        with open(self.MV_csv_path(self.alpha_EMV,config), 'w', newline='') as myfile:
+                            wr = writer_csv(myfile,delimiter=';')
+                            wr.writerow(self.VAR_recon)  
+                        self.WMV_plot(config)
 
     def WMV_plot(self,config):
 
@@ -547,7 +518,7 @@ class iResults(vDenoising):
         for p in range(1,self.nb_replicates+1):
             if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
                 self.subroot_p = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
-
+                self.pet_algo=config["method"]
                 # Take NNEPPS images if NNEPPS is asked for this run
                 if (config["NNEPPS"]):
                     NNEPPS_string = "_NNEPPS"
@@ -640,9 +611,10 @@ class iResults(vDenoising):
                 if ("nested" in config["method"] or "Gong" in config["method"]):
                     # self.run_WMV(f_p,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,i)
                     if(config["DIP_early_stopping"]):# WMV
-                        self.run_WMV(f_p,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,i)
-                        if (self.SUCCESS):
-                            return 1
+                        if ("post_reco" in config["task"]):
+                            self.run_WMV(f_p,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,i)
+                            if (self.SUCCESS):
+                                return 1
                 del f_p
 
 
@@ -720,11 +692,13 @@ class iResults(vDenoising):
         ### Only useful for new phantom with 3 hot ROIs, but compute it for every phantom for the sake of simplicity ###
         # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
         hot_TEP_ROI_act = image_recon[self.hot_TEP_ROI==1]
-        if (self.phantom != "image50_1"):
-            AR_hot_TEP_recon[i] = np.mean(hot_TEP_ROI_act)
-        else:
+        if (self.phantom == "image50_1"):
             hot_TEP_ref_ROI_act = image_recon[self.hot_TEP_ROI_ref==1]
             AR_hot_TEP_recon[i] = 100 * (np.mean(hot_TEP_ROI_act) - np.mean(hot_TEP_ref_ROI_act)) / np.mean(hot_TEP_ref_ROI_act)
+        elif (self.phantom == "image50_2"):
+            AR_hot_TEP_recon[i] = 100 * (np.mean(hot_TEP_ROI_act) -2.) / 2.
+        else:
+            AR_hot_TEP_recon[i] = np.mean(hot_TEP_ROI_act)
         
         # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c -20. 70. 0. 20. 4. 400)
         hot_TEP_match_square_ROI_act = image_recon[self.hot_TEP_match_square_ROI==1]
@@ -740,7 +714,10 @@ class iResults(vDenoising):
 
         # Mean Activity Recovery (ARmean) in background calculation (-c 0. 0. 0. 150. 4. 100)
         bkg_ROI_act = image_recon[self.bkg_ROI==1]
-        AR_bkg_recon[i] = np.mean(bkg_ROI_act) / 100.
+        if ("50" in self.phantom):
+            AR_bkg_recon[i] = np.mean(bkg_ROI_act) / 10.
+        else:
+            AR_bkg_recon[i] = np.mean(bkg_ROI_act) / 100.
 
         # Mean in whole denoised image
         # mean_inside_recon[i] = np.mean(image_recon) / np.mean(image_gt)

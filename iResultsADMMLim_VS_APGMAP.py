@@ -173,7 +173,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                 #         elif (self.scaling == "positive_normalization"):
                 #             DIPRecon_failing_replicate_list = list(np.array([19]))
                 #             replicates_replace_list = list(np.array([41]))
-                #     if (self.phantom == "image4_0"):
+                #     if ("4_" in self.phantom):
                 #         if (self.scaling == "positive_normalization"):
                 #             # DIPRecon_failing_replicate_list = list(np.array([35]))
                 #             # replicates_replace_list = list(np.array([41]))
