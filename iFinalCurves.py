@@ -29,17 +29,21 @@ class iFinalCurves(vGeneral):
 
         # Plot APGMAP vs ADMMLim (True)
         APGMAP_vs_ADMMLim = False
-        # A_shift_ref_APPGML = -100 # image2_0
-        A_shift_ref_APPGML = -1000 # image4_0, # image40_1
-        rename_settings = "TMI"
         # rename_settings = "hyperparameters_paper"
         # rename_settings = "MIC"
+        rename_settings = "TMI"
         # Beta used to initialize DNA with BSREM with penalty strength beta
         if ("50" in self.phantom):
             beta_BSREM_for_DNA = 0.5
+            A_shift_ref_APPGML = -10
         elif ("40" in self.phantom):
+            A_shift_ref_APPGML = -1000 # image4_0, # image40_1
             beta_BSREM_for_DNA = 0.01
+        elif ("4" in self.phantom):
+            beta_BSREM_for_DNA = 0.05
+            A_shift_ref_APPGML = -1000 # image4_0, # image40_
         else:
+            A_shift_ref_APPGML = -100 # image2_0
             beta_BSREM_for_DNA = 0.05
         # Rename my settings (MIC)
 
@@ -107,13 +111,13 @@ class iFinalCurves(vGeneral):
 
         if (self.phantom == "image2_0"):
             ROI_list = ['cold','hot','phantom']
-        elif ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1"):
+        elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1"):
             ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','hot_TEP_match_square_recon','phantom']
             # ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom','whole']
             # ROI_list = ['whole']
             # ROI_list = ['cold','cold_inside','cold_edge']
             # ROI_list = ['cold']
-        elif(self.phantom == "image50_2"):
+        elif(self.phantom == "image50_2" or self.phantom == "image4_1"):
             ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom']
         for ROI in ROI_list:
             # Plot tradeoff with SSIM (set quantitative_tradeoff is False) or AR (set quantitative_tradeoff to True)
@@ -249,12 +253,17 @@ class iFinalCurves(vGeneral):
                 # Compute number of displayable iterations for each rho and find case with smallest iterations (useful for ADMMLim)
                 len_mini_list = np.zeros((nb_rho[method],nb_other_dim[method],self.nb_replicates[method]),dtype=int)
                 len_mini = np.zeros((nb_rho[method]),dtype=int)
+                len_mini_to_remove = np.zeros((nb_rho[method]),dtype=int)
                 case_mini = np.zeros((nb_rho[method]),dtype=int)
                 for rho_idx in range(nb_rho[method]):
                     for other_dim_idx in range(nb_other_dim[method]):
                         for replicate_idx in range(self.nb_replicates[method]):
                             len_mini_list[rho_idx,other_dim_idx,replicate_idx] = len(metrics_final[replicate_idx + self.nb_replicates[method]*other_dim_idx + (self.nb_replicates[method]*nb_other_dim[method])*rho_idx])
                         len_mini[rho_idx] = int(np.min(len_mini_list[rho_idx]))
+                        len_mini_to_remove[rho_idx] = 1
+                        if (method == "ADMMLim"): # Add 1 to index if stopping criterion was reached to avoid having 0 for metrics
+                            if (len_mini[rho_idx] != self.total_nb_iter - self.i_init + 1):
+                                len_mini_to_remove[rho_idx] += 1
                         case_mini[rho_idx] = int(np.argmin(len_mini_list[rho_idx,:,:])) + self.nb_replicates[method]*rho_idx
 
                 # Create numpy array with same number of iterations for each case
@@ -321,7 +330,7 @@ class iFinalCurves(vGeneral):
                         for other_dim_idx in range(nb_other_dim[method]):
                             if (fig_nb == 2): # Plot tradeoff curves at convergence
                                 if (plot_all_replicates_curves):
-                                    ax[fig_nb].plot(100*IR_final_final_array[:,other_dim_idx,replicate_idx,:][(np.arange(nb_rho[method]),len_mini-1)],metrics_final_final_array[:,other_dim_idx,replicate_idx,:][(np.arange(nb_rho[method]),len_mini-1)],label='_nolegend_') # IR in %
+                                    ax[fig_nb].plot(100*IR_final_final_array[:,other_dim_idx,replicate_idx,:][(np.arange(nb_rho[method]),len_mini-len_mini_to_remove)],metrics_final_final_array[:,other_dim_idx,replicate_idx,:][(np.arange(nb_rho[method]),len_mini-len_mini_to_remove)],label='_nolegend_') # IR in %
                     #'''
 
                     #'''
@@ -427,9 +436,9 @@ class iFinalCurves(vGeneral):
                                 
                                 if ((not APGMAP_vs_ADMMLim and (method == "APGMAP" and config_other_dim[method][other_dim_idx] == A_shift_ref_APPGML) or (method != "APGMAP" and other_dim_idx == 0)) or APGMAP_vs_ADMMLim):
                                 #    nb_other_dim["APGMAP"] = 1
-                                    ax[fig_nb].plot(100*avg_IR[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)],'-o',linewidth=3,color=color_dict[method_without_configuration][other_dim_idx],ls=marker_dict[method][idx_good_rho_color])#'-o',)
+                                    ax[fig_nb].plot(100*avg_IR[(cases,len_mini-len_mini_to_remove)],avg_metrics[(cases,len_mini-len_mini_to_remove)],'-o',linewidth=3,color=color_dict[method_without_configuration][other_dim_idx],ls=marker_dict[method][idx_good_rho_color])#'-o',)
                                 if (variance_plot):
-                                    ax[fig_nb].fill(np.concatenate((100*(avg_IR[(cases,len_mini-1)] - np.sign(reg[fig_nb][cases])*std_IR[cases,-1]),100*(avg_IR[(cases,len_mini-1)][::-1] + np.sign(reg[fig_nb][cases][::-1])*std_IR[(cases,len_mini-1)][::-1]))),np.concatenate((avg_metrics[(cases,len_mini-1)]-std_metrics[(cases,len_mini-1)],avg_metrics[(cases,len_mini-1)][::-1]+std_metrics[(cases,len_mini-1)][::-1])), alpha = 0.4, label='_nolegend_', ls=marker_dict[method][idx_good_rho_color])
+                                    ax[fig_nb].fill(np.concatenate((100*(avg_IR[(cases,len_mini-len_mini_to_remove)] - np.sign(reg[fig_nb][cases])*std_IR[cases,-1]),100*(avg_IR[(cases,len_mini-len_mini_to_remove)][::-1] + np.sign(reg[fig_nb][cases][::-1])*std_IR[(cases,len_mini-len_mini_to_remove)][::-1]))),np.concatenate((avg_metrics[(cases,len_mini-len_mini_to_remove)]-std_metrics[(cases,len_mini-len_mini_to_remove)],avg_metrics[(cases,len_mini-len_mini_to_remove)][::-1]+std_metrics[(cases,len_mini-len_mini_to_remove)][::-1])), alpha = 0.4, label='_nolegend_', ls=marker_dict[method][idx_good_rho_color])
                                 # BSREM beta 0.01 white circle
                                 #'''
                                 if ('BSREM' in method):
@@ -763,19 +772,50 @@ class iFinalCurves(vGeneral):
         if ('APGMAP' in method):
             APGMAP_vs_ADMMLim = True
             from all_config.APGMAP_configuration import config_func_MIC
-            #config[method] = config_func()
-            #for method2 in method_list: # Loop over methods
-            #    if ('APGMAP' not in method2 and 'ADMMLim' not in method2):
-            #        APGMAP_vs_ADMMLim = False
-                    #config[method]['A_AML'] = {'grid_search': [100]}
             method_name = method
+            import importlib
+            globals().update(importlib.import_module('all_config.' + method + "_configuration").__dict__)
+            config[method] = config_MIC
+            config[method]["method"] = method_name
+
+            if ("50" in self.phantom):
+                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01,0.005,0.003,0.001,0.0005,0.0003,0.0001])
+                config[method]["A_AML"] = tune.grid_search([-10])
+            elif ("40" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
+                config[method]["A_AML"] = tune.grid_search([-1000])
+            elif ("4" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.0001,0.0003,0.0005,0.0007,0.0009,0.001,0.003,0.005,0.007,0.009])
+                config[method]["rho"] = tune.grid_search([0.0001,0.0003,0.0005,0.0007,0.0009])
+                config[method]["rho"] = tune.grid_search([1e-6,3e-6,5e-6,1e-5,3e-5,5e-5,0.0001,0.0003,0.0005,0.0007,0.0009])
+
+                config[method]["A_AML"] = tune.grid_search([-1000])
+            else:
+                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
+                config[method]["A_AML"] = tune.grid_search([-100])
+
+            return config[method]
 
         # ADMMLim reconstruction
         if (method == 'ADMMLim'):
             from all_config.ADMMLim_configuration import config_func_MIC
-            #config[method] = config_func()
+            method_name = method
+            import importlib
+            globals().update(importlib.import_module('all_config.' + method + "_configuration").__dict__)
+            config[method] = config_MIC
+            config[method]["method"] = method_name
 
+            if ("50" in self.phantom):
+                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
+            elif ("40" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
+            elif ("4" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.0001,0.0003,0.0005,0.0007,0.0009,0.001,0.003,0.005,0.007,0.009])
+                config[method]["rho"] = tune.grid_search([1e-6,3e-6,5e-6,1e-5,3e-5,5e-5,0.0001,0.0003,0.0005,0.0007,0.0009])
+            else:
+                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
 
+            return config[method]
 
         # nested reconstruction
         if ('nested_ADMMLim_u_v' in method):
@@ -1022,7 +1062,11 @@ class iFinalCurves(vGeneral):
 
             color_dict_TMI_DNA = {
                 "nested" : ['red','pink'],
+                "nested_image4_1_MR3" : ['peru','red','saddlebrown','blueviolet','lime','black','yellow','grey'],
+                "nested_image4_1_MR3_300" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey'],
+                "nested_image4_1_MR3_30" : ['saddlebrown','blueviolet','lime','black','yellow','grey'],
                 "DIPRecon" : ['cyan','blue','teal','blueviolet'],
+                "DIPRecon_image4_1_MR3" : ['lime','saddlebrown','red','lime','black','yellow','grey','peru'],
                 "APGMAP" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "ADMMLim" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
                 "OSEM" : ['darkorange'] + 5*['cyan','blue','teal','blueviolet'],
@@ -1152,6 +1196,11 @@ class iFinalCurves(vGeneral):
                 "DIPRecon_MIC_brain_2D_MR3" : 5*[marker_dict["CT"][0]],
                 "DIPRecon_initDNA_MIC_brain_2D_MR3" : 5*[marker_dict["CT"][0]],
                 "DIPRecon_initDNA_skip3_3_my_settings" : 5*[marker_dict["CT"][0]],
+                "nested_image4_1_MR3" : 5*[marker_dict["CT"][0]],
+                "nested_image4_1_MR3_300" : 5*[marker_dict["CT"][0]],
+                "nested_image4_1_MR3_30" : 5*[marker_dict["CT"][0]],
+                "DIPRecon" : 5*[marker_dict["CT"][0]],
+                "DIPRecon_image4_1_MR3" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_random" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_random0" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_random1" : 5*[marker_dict["CT"][0]],

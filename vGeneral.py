@@ -251,10 +251,8 @@ class vGeneral(abc.ABC):
 
     def read_ROIs(self,bkg_ROI_path,cold_ROI_path):
 
-        if ("50" not in self.phantom):    
-            self.bkg_ROI = self.fijii_np(bkg_ROI_path, shape=(self.PETImage_shape),type_im='<f')
-        else:
-            self.bkg_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
+        self.bkg_ROI = self.fijii_np(bkg_ROI_path, shape=(self.PETImage_shape),type_im='<f')
+        
         if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_1" or self.phantom == "image50_2"):              
             self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             self.hot_MR_recon = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
@@ -884,10 +882,10 @@ class vGeneral(abc.ABC):
         # remove_external_radius = 3 # ROIs further away from true edges
 
         # Define ROIs
-        tumor_1a_ROI = self.points_in_circle(15,-25,4,PETImage_shape)
+        tumor_1a_ROI = self.points_in_circle(15,-25,4-remove_external_radius,PETImage_shape)
 
         # tumor_1b_ROI = self.points_in_circle(0,25,4,PETImage_shape)
-        xx,yy = meshgrid(arange(66,72),arange(52,60))
+        xx,yy = meshgrid(arange(65,72),arange(53,59))
         tumor_1b_ROI = list(map(tuple, dstack([xx.ravel(), yy.ravel()])[0]))
 
         tumor_2_MR_ROI = self.points_in_circle(-25,0,8-remove_external_radius,PETImage_shape)
@@ -927,7 +925,7 @@ class vGeneral(abc.ABC):
         #     self.save_img(tumor_1a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw')
         if (self.phantom == "image50_1"):
             self.save_img(tumor_2_PET_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw')
-            self.save_img(tumor_3a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw')
+            self.save_img(tumor_3a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw') # Useless
             self.save_img(tumor_3a_mask_ref, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_white_matter_ref" + self.phantom[5:] + '.raw')
             # self.save_img(TAKE_FROM_ERODED_WHITE_MATTER_IN_OTHER_FILE, subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw') # Useless for computation, just for constitency with other phantoms
 
@@ -1050,8 +1048,22 @@ class vGeneral(abc.ABC):
         elif (method == 'APGMAP'):
             #opti = ' -opti ' + "APPGML" + ',1,1e-10,0.01,-1,' + str(self.A_AML) + ',0' # Multimodal image is only used by APPGML
             opti = ' -opti ' + "APPGML" + ':' + self.subroot + '/' + self.suffix  + '/' + 'APPGML.conf'
-            pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
+            # Choose penalty config file according to Bowsher weights or not
             penaltyStrength = ' -pnlt-beta ' + str(self.beta)
+            if ("Bowsher" in self.config):
+                if (self.config["Bowsher"]):
+                    Bowsher = True
+                else:
+                    Bowsher = False
+            else:
+                Bowsher = False
+            if (Bowsher):
+                pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF_Bowsher.conf'
+                pnlt += ' -multimodal ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.hdr'
+            else:
+                pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
+
+
         elif (method == 'BSREM'):
             opti = ' -opti ' + method + ':' + self.subroot_data + method + '.conf'
             # Choose penalty config file according to Bowsher weights or not
@@ -1081,8 +1093,22 @@ class vGeneral(abc.ABC):
                     pnlt = ' -pnlt ' + "QUAD" + ':' + self.subroot + 'Block1/' + self.suffix  + '/' + 'QUAD.conf'
                 elif ('ADMMLim' in method):
                     pnlt = ' -pnlt ' + penalty
-                    if penalty == "MRF":
+
+                    # Choose penalty config file according to Bowsher weights or not
+                    if ("Bowsher" in self.config):
+                        if (self.config["Bowsher"]):
+                            Bowsher = True
+                        else:
+                            Bowsher = False
+                    else:
+                        Bowsher = False
+
+                    if (Bowsher):
+                        pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF_Bowsher.conf'
+                        pnlt += ' -multimodal ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.hdr'
+                    elif penalty == "MRF":
                         pnlt += ':' + self.subroot_data + method + '_MRF.conf'
+
                 penaltyStrength = ' -pnlt-beta ' + str(rho)
             elif (self.recoInNested == "APGMAP"):
                 if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
