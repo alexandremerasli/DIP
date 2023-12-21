@@ -147,9 +147,15 @@ class iNestedADMM(vReconstruction):
             # Saving Final DIP output with name without epochs, and f from previous iteration for adaptive rho computation
             self.f_before = self.f
             if (self.several_DIP_inputs == 1):
-                self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                if (self.global_it == i_init):
+                    self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - classDenoising.patienceNumber - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                else:
+                    self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
             else: # MIC study : save DIP output with MR input (when using several DIP inputs)
-                self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '_batchidx=MR_forward.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                if (self.global_it == i_init):
+                    self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - classDenoising.patienceNumber - 1) + '_batchidx=MR_forward.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                else:
+                    self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '_batchidx=MR_forward.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
             self.save_img(self.f,self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_FINAL" + '.img')
             subroot_output_path = (self.subroot + 'Block2/' + self.suffix)
             # Write header with float precision because output of network is a float image
