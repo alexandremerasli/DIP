@@ -323,7 +323,7 @@ class vGeneral(abc.ABC):
                 config.pop("A_AML", None)
             if ('BSREM' in config["method"]['grid_search'][0] or 'nested' in config["method"]['grid_search'][0] or 'Gong' in config["method"]['grid_search'][0] or 'DIPRecon' in config["method"]['grid_search'][0] or 'APGMAP' in config["method"]['grid_search'][0]):
                 config.pop("post_smoothing", None)
-            if ((config["method"]['grid_search'][0] != 'ADMMLim' and "nested" not in config["method"]['grid_search'][0]) or "APGMAP" in config["recoInNested"]['grid_search'][0]):
+            if ((config["method"]['grid_search'][0] != 'ADMMLim' and config["method"]['grid_search'][0] != 'ADMMLim_Bowsher' and "nested" not in config["method"]['grid_search'][0]) or "APGMAP" in config["recoInNested"]['grid_search'][0]):
                 #config.pop("nb_inner_iteration", None)
                 config.pop("alpha", None)
                 config.pop("adaptive_parameters", None)
@@ -333,7 +333,7 @@ class vGeneral(abc.ABC):
                 config.pop("stoppingCriterionValue", None)
                 config.pop("saveSinogramsUAndV", None)
                 #config.pop("xi", None)
-            elif ((config["method"]['grid_search'][0] == 'ADMMLim' or "nested" in config["method"]['grid_search'][0]) and config["adaptive_parameters"]['grid_search'][0] == "nothing"):
+            elif ((config["method"]['grid_search'][0] == 'ADMMLim' or config["method"]['grid_search'][0] == 'ADMMLim_Bowsher' or "nested" in config["method"]['grid_search'][0]) and config["adaptive_parameters"]['grid_search'][0] == "nothing"):
                 config.pop("mu_adaptive", None)
                 config.pop("tau", None)
                 config.pop("tau_max", None)
@@ -475,7 +475,7 @@ class vGeneral(abc.ABC):
         config_copy = dict(config)
         if (NNEPPS==False):
             config_copy.pop('NNEPPS',None)
-        if config["method"] == "ADMMLim":
+        if (config["method"] == "ADMMLim" or config["method"] == "ADMMLim_Bowsher"):
             config_copy.pop('nb_outer_iteration',None)
         elif ("post_reco" in config_copy["task"]):
             if ("post_reco_in_suffix" not in config_copy):

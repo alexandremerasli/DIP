@@ -57,6 +57,7 @@ class DIP_2D(LightningModule):
         
         self.sub_iter_DIP_already_done_before_training = sub_iter_DIP_already_done
         self.sub_iter_DIP_already_done = sub_iter_DIP_already_done
+        self.sub_iter_DIP_this_global_it = 0
         self.fixed_hyperparameters_list = fixed_hyperparameters_list
         self.hyperparameters_list = hyperparameters_list
         self.scaling_input = scaling_input
@@ -348,6 +349,7 @@ class DIP_2D(LightningModule):
         # Increment number of iterations since beginnning of DNA
         if (self.end_epoch): # We looped over all images of the batch
             self.sub_iter_DIP_already_done += 1
+            self.sub_iter_DIP_this_global_it += 1
             # Write avg over all images in the dataset
             # if (self.write_current_img_mode):
             #     out_avg = mean_np(self.out_np_all_inputs,axis=0)
@@ -490,7 +492,7 @@ class DIP_2D(LightningModule):
             if (len(out_np.shape) == 2): # 2D
                 out_np = out_np[:,:,newaxis]
 
-            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(copy(out_np),self.current_epoch,self.sub_iter_DIP,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
+            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(copy(out_np),self.current_epoch,self.sub_iter_DIP,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate,current_DIP_iteration = self.sub_iter_DIP_this_global_it)
             self.VAR_recon = self.classWMV.VAR_recon
             self.MSE_WMV = self.classWMV.MSE_WMV
             self.PSNR_WMV = self.classWMV.PSNR_WMV

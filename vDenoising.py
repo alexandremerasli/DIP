@@ -198,7 +198,7 @@ class vDenoising(vGeneral):
         # Copy last checkpoint to file "last.ckpt" or to ES checkpoint 
         import shutil
         for file in os.listdir(self.checkpoint_simple_path_exp):
-            if (config["finetuning"] != "ES" or self.global_it >= 0):
+            if (config["finetuning"] != "ES"):# or self.global_it >= 0):
                 if ("epoch" in file):
                     shutil.copy(os.path.join(self.checkpoint_simple_path_exp,file),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
                     os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
@@ -209,13 +209,15 @@ class vDenoising(vGeneral):
                             shutil.copy(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str((model.epochStar+1)*self.several_DIP_inputs-1) + ".ckpt"),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
                         # os.remove(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str(model.epochStar) + ".ckpt"))
                         else:
-                            os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
+                            print(os.path.join(self.checkpoint_simple_path_exp,file))
+                            # os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
                     else: # if ES point not found, save last ckpt
                         if (file == "epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*self.several_DIP_inputs-1) + ".ckpt"):
                             shutil.copy(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*self.several_DIP_inputs-1) + ".ckpt"),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
                             # os.remove(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str(model.epochStar) + ".ckpt"))
                         else:
-                            os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
+                            # os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
+                            print(os.path.join(self.checkpoint_simple_path_exp,file))
         if(self.global_it >= 0):
             if (os.path.isdir(os.path.join(checkpoint_simple_path_previous_exp))):
                 shutil.rmtree(os.path.join(checkpoint_simple_path_previous_exp))
@@ -454,6 +456,7 @@ class vDenoising(vGeneral):
             out = model(self.image_net_input_torch)
 
         self.sub_iter_DIP_already_done = model.sub_iter_DIP_already_done
+        self.sub_iter_DIP_this_global_it = model.sub_iter_DIP_this_global_it
         self.sub_iter_DIP = self.sub_iter_DIP_already_done
 
         self.DIP_early_stopping = model.DIP_early_stopping
@@ -485,6 +488,7 @@ class vDenoising(vGeneral):
                 epoch_values = arange(0,self.sub_iter_DIP)
             else:
                 epoch_values = arange(self.sub_iter_DIP - config["sub_iter_DIP"],self.sub_iter_DIP)
+                epoch_values = arange(self.sub_iter_DIP - self.sub_iter_DIP_this_global_it,self.sub_iter_DIP)
         elif (self.all_images_DIP == "False"):
             #epoch_values = np.arange(0,self.sub_iter_DIP,max(self.sub_iter_DIP//10,1))
             epoch_values = arange(self.sub_iter_DIP//10,self.sub_iter_DIP+self.sub_iter_DIP//10,max(self.sub_iter_DIP//10,1)) - 1

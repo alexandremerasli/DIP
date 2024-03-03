@@ -120,6 +120,7 @@ class iNestedADMM(vReconstruction):
             classDenoising.runComputation(config,root)
             
             self.sub_iter_DIP_already_done = classDenoising.sub_iter_DIP_already_done
+            self.sub_iter_DIP_this_global_it = classDenoising.sub_iter_DIP_this_global_it
             if (config["DIP_early_stopping"]):
                 if (classDenoising.SUCCESS):
                     classDenoising.sub_iter_DIP_already_done = self.sub_iter_DIP_already_done - classDenoising.patienceNumber
@@ -216,8 +217,12 @@ class iNestedADMM(vReconstruction):
         if (self.global_it == i_init and not config["unnested_1st_global_iter"]): # Gong or nested at pre iteration -> only pre train the network
             if config["image_init_path_without_extension"] == "ADMMLim_it100":
                 x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_100it/replicate_' + str(self.replicate) + '/ADMMLim_it100.img',shape=(self.PETImage_shape),type_im='<d')
+            elif config["image_init_path_without_extension"] == "ADMMLim_it300":
+                x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/ADMMLim_300it' + '/replicate_' + str(self.replicate) + '/ADMMLim_it300.img',shape=(self.PETImage_shape),type_im='<f')
             elif config["image_init_path_without_extension"] == "ADMMLim_it1000":
                 x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_1000it/replicate_' + str(self.replicate) + '/ADMMLim_it1000.img',shape=(self.PETImage_shape),type_im='<d')
+            elif config["image_init_path_without_extension"] == "OSEM_it36":
+                x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/OSEM_36it' + '/replicate_' + str(self.replicate) + '/OSEM_it36.img',shape=(self.PETImage_shape),type_im='<f')
             elif config["image_init_path_without_extension"] == "MLEM_it60":
                 # x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type_im='<d')
                 x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/MLEM_60it' + '/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type_im='<f')
@@ -272,8 +277,10 @@ class iNestedADMM(vReconstruction):
         
         # During iterations, do not do WMV
         if (self.global_it == i_init + 1 and ((i_init == -1 and not config["unnested_1st_global_iter"]) or (i_init == 0 and config["unnested_1st_global_iter"]))): # TESTCT_random , put back random input
-            config["DIP_early_stopping"] = False
+            # config["DIP_early_stopping"] = False
+            config["DIP_early_stopping"] = True
             config["finetuning"] = "last" # save NN state at last epoch for next global iteration
+            # config["finetuning"] = "ES" # save NN state at last epoch for next global iteration
             if ("3D" not in self.phantom):
                 config["all_images_DIP"] = "Last" # Only save last image to save space
                 # config["all_images_DIP"] = "True" # Save all images for 3D to understand DIP behavior

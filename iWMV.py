@@ -25,6 +25,7 @@ class iWMV(vGeneral):
         self.PSNR_WMV = []
         self.SSIM_WMV = []
         self.SUCCESS = False
+        
 
         self.EMV_or_WMV = config["EMV_or_WMV"]
         if self.EMV_or_WMV == "EMV":    
@@ -54,7 +55,7 @@ class iWMV(vGeneral):
     def runComputation(self,config,root):
         pass
 
-    def WMV(self,out,epoch,sub_iter_DIP,queueQ,SUCCESS,VAR_min,stagnate,descale=True,MV_csv=NaN):
+    def WMV(self,out,epoch,sub_iter_DIP,queueQ,SUCCESS,VAR_min,stagnate,descale=True,MV_csv=NaN,current_DIP_iteration=0):
         
         if (out != "MV_metrics_already_in_csv"):
             # Descale, squeeze image and add 3D dimension to 1 (ok for 2D images)
@@ -170,6 +171,14 @@ class iWMV(vGeneral):
             #'''
 
         if SUCCESS:
+            import matplotlib.pyplot as plt
+            import numpy as np
+            if (not self.SUCCESS):
+                plt.plot(np.log(self.VAR_recon),label="Outer iteration : " + str(self.global_it))
+                plt.legend()
+                plt.ylabel("EMV (log scale)")
+                plt.xlabel("DIP Iterations")
+                plt.savefig(self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/EMV_global_' + str(self.global_it) + '.png')
             self.SUCCESS = SUCCESS
             # Open output corresponding to epoch star
             net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
@@ -186,7 +195,10 @@ class iWMV(vGeneral):
             print("                 ES point found, epoch* =", self.epochStar)
             print("#################################################################")
         else:
-            if (epoch == sub_iter_DIP-1): # No ES was found, so set it back to intiial value
+            if (epoch == sub_iter_DIP): # No ES was found, so set it back to intiial value
+                # self.epochStar = -1
+                print(self.epochStar)
+            if (current_DIP_iteration == sub_iter_DIP): # No ES was found, so set it back to intiial value
                 self.epochStar = -1
 
         return SUCCESS, VAR_min, stagnate
