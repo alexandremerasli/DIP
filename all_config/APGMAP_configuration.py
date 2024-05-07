@@ -42,7 +42,11 @@ def config_func_MIC():
         # "rho" : tune.grid_search([5e-7,9e-7,4e-6,8e-6]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         # "rho" : tune.grid_search([1e-3]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         #"rho" : tune.grid_search([3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        #"rho" : tune.grid_search([0.02]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+        "rho" : tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01,0.005,0.003,0.001,0.0005,0.0003,0.0001]), # FDG brain 2D
+        # "rho" : tune.grid_search([0.005,0.003,0.001,0.0005,0.0003,0.0001]), # FDG brain 2D
+        # "rho" : tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01]), # FDG brain 2D
+        "rho" : tune.grid_search([1e-6,3e-6,5e-6,1e-5,3e-5,5e-5,0.0001,0.0003,0.0005,0.0007,0.0009]), #image4_1
+        "rho" : tune.grid_search([3e-5]), #image4_1
         ## network hyperparameters
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
         "sub_iter_DIP" : tune.grid_search([1000]), # Number of epochs in network optimization
@@ -67,8 +71,8 @@ def config_func_MIC():
         # Optimization transfer (OPTITR) hyperparameters
         "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False
         # AML/APGMAP hyperparameters
-        # "A_AML" : tune.grid_search([-10000,-1000,-100]), # AML lower bound A
         "A_AML" : tune.grid_search([-1000]), # AML lower bound A
+        # "A_AML" : tune.grid_search([-10]), # AML lower bound A
         # Post smoothing by CASToR after reconstruction
         "post_smoothing" : tune.grid_search([0]), # Post smoothing by CASToR after reconstruction
         #"post_smoothing" : tune.grid_search([6,9,12,15]), # Post smoothing by CASToR after reconstruction

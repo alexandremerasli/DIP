@@ -23,7 +23,7 @@ def config_func_MIC():
     }
     # Configuration dictionnary for previous hyperparameters, but fixed to simplify
     fixed_config = {
-        "max_iter" : tune.grid_search([30]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
+        "max_iter" : tune.grid_search([1000]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
         "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
         "finetuning" : tune.grid_search(['False']),
         "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
@@ -48,7 +48,9 @@ def config_func_MIC():
         "rho" : tune.grid_search([1e-6,3e-6,5e-6,1e-5,3e-5,5e-5,0.0001,0.0003,0.0005,0.0007,0.0009]), # 90Y
         "rho" : tune.grid_search([1e-6,3e-6,5e-6,1e-5,3e-5,5e-5]), # 90Y
         "rho" : tune.grid_search([0.01,0.02,0.03,0.04,0.05]), # 90Y
-        "rho" : tune.grid_search([0.1,0.05,0.03,0.01]), # FDG cookie
+        "rho" : tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01]), # FDG cookie
+        "rho" : tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05]), # FDG cookie
+        # "rho" : tune.grid_search([0.01]), # FDG cookie
         "Bowsher" : tune.grid_search([True]), # NUYTS POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
 
         # "rho" : tune.grid_search([5e-7,9e-7,4e-6,8e-6]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)

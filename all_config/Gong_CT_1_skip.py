@@ -22,19 +22,21 @@ def config_func_MIC():
     }
     # Configuration dictionnary for previous hyperparameters, but fixed to simplify
     fixed_config = {
-        "max_iter" : tune.grid_search([99]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
-        "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
+        "max_iter" : tune.grid_search([499]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
+        "nb_subsets" : tune.grid_search([1]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
         "finetuning" : tune.grid_search(['last']),
         "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
         "unnested_1st_global_iter" : tune.grid_search([False]), # If True, unnested are computed after 1st global iteration (because rho is set to 0). If False, needs to set f_init to initialize the network, as in Gong paper, and rho is not changed.
-        "sub_iter_DIP_initial_and_final" : tune.grid_search([1000]), # Number of epochs in first global iteration (pre iteraiton) in network optimization (only for Gong for now)
+        "sub_iter_DIP_initial_and_final" : tune.grid_search([2000]), # Number of epochs in first global iteration (pre iteraiton) in network optimization (only for Gong for now)
         "nb_inner_iteration" : tune.grid_search([1]), # Number of inner iterations in ADMMLim (if mlem_sequence is False). (3 sub iterations are done within 1 inner iteration in CASToR)
         "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMLim
         "xi_DIP" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in Gong and nested
         "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
         "DIP_early_stopping" : tune.grid_search([False]), # Use DIP early stopping with WMV strategy
+        "EMV_or_WMV" : tune.grid_search(["EMV"]), # Use DIP early stopping with WMV or EMV
+        "alpha_EMV" : tune.grid_search([0.1]), # EMV forgetting factor alpha
         "windowSize" : tune.grid_search([50]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-        "patienceNumber" : tune.grid_search([100]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
+        "patienceNumber" : tune.grid_search([1000]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     }
     # Configuration dictionnary for hyperparameters to tune
     hyperparameters_config = {
@@ -49,10 +51,15 @@ def config_func_MIC():
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
         "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
         "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
-        "skip_connections" : tune.grid_search([1]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
-        "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
+        "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+        "scaling" : tune.grid_search(['normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
+        # "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
+        # "scaling_all_init" : tune.grid_search([True,False]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
+        # "scaling_all_init" : tune.grid_search([True]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
+        # "scaling_all_init" : tune.grid_search([False]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         #"scaling" : tune.grid_search(['standardization','positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-        "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
+        "input" : tune.grid_search(['random']), # Neural network input (random or CT)
+        # "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
         #"input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)
         "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
         "k_DD" : tune.grid_search([32]), # k for Deep Decoder

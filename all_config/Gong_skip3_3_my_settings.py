@@ -46,7 +46,7 @@ def config_func_MIC():
         "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "adaptive_parameters_DIP" : tune.grid_search(["nothing"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
-        "mu_DIP" : tune.grid_search([20]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
+        "mu_DIP" : tune.grid_search([10]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
         "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
         ## network hyperparameters
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
@@ -55,9 +55,9 @@ def config_func_MIC():
         "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "scaling" : tune.grid_search(['normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-        "scaling_all_init" : tune.grid_search([True,False]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-        "scaling_all_init" : tune.grid_search([True]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-        "scaling_all_init" : tune.grid_search([False]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
+        # "scaling_all_init" : tune.grid_search([True,False]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
+        # "scaling_all_init" : tune.grid_search([True]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
+        # "scaling_all_init" : tune.grid_search([False]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         #"scaling" : tune.grid_search(['standardization','positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         "input" : tune.grid_search(['random']), # Neural network input (random or CT)
         # "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
