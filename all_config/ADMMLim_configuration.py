@@ -8,7 +8,7 @@ def config_func_MIC():
         "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
         "method" : tune.grid_search(['ADMMLim']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
         "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
-        "nb_threads" : tune.grid_search([2]), # Number of desired threads. 0 means all the available threads
+        "nb_threads" : tune.grid_search([60]), # Number of desired threads. 0 means all the available threads
         "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
         "debug" : False, # Debug mode = run without raytune and with one iteration
         "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
@@ -43,6 +43,12 @@ def config_func_MIC():
         "rho" : tune.grid_search([3e-5,5e-5,7e-5,2e-4,4e-4,6e-4,8e-4,1e-3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "rho" : tune.grid_search([3e-5,5e-5,7e-5,2e-4,8e-4,1e-3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "rho" : tune.grid_search([5e-7,9e-7,4e-6,8e-6,3e-5,5e-5,7e-5,2e-4,8e-4,1e-3]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+        "rho" : tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01,0.005]), # FDG brain 2D
+        "rho" : tune.grid_search([0.05,0.03,0.01,0.005]), # FDG brain 2D
+        "rho" : tune.grid_search([1e-6,3e-6,5e-6,1e-5,3e-5,5e-5,0.0001,0.0003,0.0005,0.0007,0.0009]), # 90Y
+        "rho" : tune.grid_search([1e-6,3e-6,5e-6,1e-5,3e-5,5e-5]), # 90Y
+        "rho" : tune.grid_search([0]), # 90Y
+
         # "rho" : tune.grid_search([5e-7,9e-7,4e-6,8e-6]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         ## network hyperparameters
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
@@ -63,7 +69,7 @@ def config_func_MIC():
         "tau" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim
         "tau_max" : tune.grid_search([100]), # Maximum value for tau in adaptive tau in ADMMLim
         "stoppingCriterionValue" : tune.grid_search([0.001]), # Value of the stopping criterion in ADMMLim
-        "saveSinogramsUAndV" : tune.grid_search([1]), # 1 means save sinograms u and v from CASToR, otherwise it means do not save them
+        "saveSinogramsUAndV" : tune.grid_search([0]), # 1 means save sinograms u and v from CASToR, otherwise it means do not save them
             ## hyperparameters from CASToR algorithms 
         # Optimization transfer (OPTITR) hyperparameters
         "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False

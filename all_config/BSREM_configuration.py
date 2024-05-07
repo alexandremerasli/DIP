@@ -43,7 +43,8 @@ def config_func_MIC():
         "rho" : tune.grid_search([0.1,0.2,0.3,0.4,0.5,0.01,0.02,0.03,0.04,0.05,0.001,0.002,0.003,0.004,0.005]), # NUYTS POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         # "rho" : tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01]), # FDG brain 2D
         "rho" : tune.grid_search([0.1,0.05,0.03,0.01]), # FDG cookie
-        "rho" : tune.grid_search([0.01,0.02,0.03,0.04,0.05]), # 90Y
+        "rho" : tune.grid_search([0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.1]), # 90Y
+        "rho" : tune.grid_search([0.001,0.003,0.005,0.007,0.009]), # 90Y
         # "Bowsher" : tune.grid_search([False]), # NUYTS POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         # "rho" : tune.grid_search([0.01,0.02,0.03,0.04,0.05,0.001,0.002,0.003,0.004,0.005,0.1,0.2,0.3,0.4,0.5,1,2,3,4,5]), # NUYTS POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         # "rho" : tune.grid_search([0.5,3]), # NUYTS POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
