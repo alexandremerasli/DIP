@@ -41,7 +41,9 @@ class iPostReconstruction(vDenoising):
         
         
         
-        self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<f')
+        # self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<f')
+        # self.image_corrupt = self.fijii_np('data/Algo/image010_3D/replicate_1/Gong/Block1/config_image=BSREM_it30_rho=3e-08_adapt=nothing_mu_DI=100.1_tau_D=2_lr=0.01_sub_i=600_opti_=Adam_skip_=3_scali=positive_normalization_input=CT_nb_ou=2_mlem_=False/out_eq22/0.img',shape=(self.PETImage_shape),type_im='<f')
+        self.image_corrupt = self.fijii_np('/home/meraslia/Documents/Thèse/Résultats à montrer/2024_01_16/manuscrit hyperparam/artifacts/ADMMLim_4_1_it999.img',shape=(self.PETImage_shape),type_im='<f')
         # self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/relu_exp_target_1_rois_50.img",shape=(self.PETImage_shape),type_im='<d')
         # self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<d')
         

@@ -29,9 +29,12 @@ class iFinalCurves(vGeneral):
 
         # Plot APGMAP vs ADMMLim (True)
         APGMAP_vs_ADMMLim = False
+        # Number of points in final tradeoff curve for DIP based algorithms
+        nb_points_tradeoff_DIP = 25
         # rename_settings = "hyperparameters_paper"
-        # rename_settings = "MIC"
         rename_settings = "TMI"
+        rename_settings = "MIC"
+        rename_settings = "hyperparameters_paper"
         # Beta used to initialize DNA with BSREM with penalty strength beta
         if ("50" in self.phantom):
             beta_BSREM_for_DNA = 0.5
@@ -40,11 +43,11 @@ class iFinalCurves(vGeneral):
             A_shift_ref_APPGML = -1000 # image4_0, # image40_1
             beta_BSREM_for_DNA = 0.01
         elif ("4" in self.phantom):
-            beta_BSREM_for_DNA = 0.05
+            beta_BSREM_for_DNA = 0.01
             A_shift_ref_APPGML = -1000 # image4_0, # image40_
         else:
             A_shift_ref_APPGML = -100 # image2_0
-            beta_BSREM_for_DNA = 0.05
+            beta_BSREM_for_DNA = 0.01
         # Rename my settings (MIC)
 
         # Convert Gong to DIPRecon
@@ -153,7 +156,7 @@ class iFinalCurves(vGeneral):
                 if (method == 'ADMMLim'):
                     self.i_init = 30 # Remove first iterations
                     self.i_init = 20 # Remove first iterations
-                    # self.i_init = 1
+                    self.i_init = 1
                 elif ('DIPRecon' in method):
                     self.i_init = 1
                 else:
@@ -182,11 +185,14 @@ class iFinalCurves(vGeneral):
                     rho_name = "smoothing"
                     other_dim_name = ""
                 elif ("nested" in method or "DIPRecon" in method):
-                    rho_name = "rho"
                     # config_other_dim[method] = config[method]["lr"]
                     # other_dim_name = "lr"
+                    rho_name = "rho"
+                    # config_other_dim[method] = config_tmp[method]["rho"]["grid_search"]
                     config_other_dim[method] = config_tmp[method]["tau_DIP"]["grid_search"]
                     other_dim_name = "tau_DIP"
+                    config_other_dim[method] = config_tmp[method]["sub_iter_DIP"]["grid_search"]
+                    other_dim_name = "sub_it_DIP"
                 else:
                     config_other_dim[method] = [""]
                     other_dim_name = ""
@@ -229,14 +235,21 @@ class iFinalCurves(vGeneral):
                     print(np.sort(replicate_idx).astype(int)-1)
                     raise ValueError("Replicates are not the same for each case !")
 
-                if method == method_list[-1]:
-                    if not all(x == list(self.nb_replicates.values())[0] for x in list(self.nb_replicates.values())):
-                        print(self.nb_replicates)
-                        raise ValueError("Replicates are not the same for each method !")
+                # if method == method_list[-1]:
+                #     # Put DIPRecon nb replicates to the same as the first method
+                #     for key, value in self.nb_replicates.items():
+                #         if "DIPRecon" in key:
+                #             DIPRecon_nb_replicates = value
+                #             self.nb_replicates[key] = next(iter(self.nb_replicates.values()))
+
+
+                #     if not all(x == list(self.nb_replicates.values())[0] for x in list(self.nb_replicates.values())):
+                #         print(self.nb_replicates)
+                #         raise ValueError("Replicates are not the same for each method !")
                 
                 # Sort suffixes from file by rho and other dim values 
                 sorted_suffixes = list(suffixes[0])
-                if (method != "ADMMLim" and "nested" not in method and "APGMAP" not in method and "BSREM" not in method):
+                if (method != "ADMMLim" and method != "ADMMLim_Bowsher" and "nested" not in method and "APGMAP" not in method and "BSREM" not in method):
                     sorted_suffixes.sort(key=self.natural_keys)
                 else:
                     sorted_suffixes.sort(key=self.natural_keys_ADMMLim)
@@ -261,7 +274,7 @@ class iFinalCurves(vGeneral):
                             len_mini_list[rho_idx,other_dim_idx,replicate_idx] = len(metrics_final[replicate_idx + self.nb_replicates[method]*other_dim_idx + (self.nb_replicates[method]*nb_other_dim[method])*rho_idx])
                         len_mini[rho_idx] = int(np.min(len_mini_list[rho_idx]))
                         len_mini_to_remove[rho_idx] = 1
-                        if (method == "ADMMLim"): # Add 1 to index if stopping criterion was reached to avoid having 0 for metrics
+                        if (method == "ADMMLim" or method == "ADMMLim_Bowsher"): # Add 1 to index if stopping criterion was reached to avoid having 0 for metrics
                             if (len_mini[rho_idx] != self.total_nb_iter - self.i_init + 1):
                                 len_mini_to_remove[rho_idx] += 1
                         case_mini[rho_idx] = int(np.argmin(len_mini_list[rho_idx,:,:])) + self.nb_replicates[method]*rho_idx
@@ -380,9 +393,10 @@ class iFinalCurves(vGeneral):
                                 ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])
                                 if (variance_plot):
                                     # ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
-                                    ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1])), alpha = 0.4, label='_nolegend_',color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])                                
+                                    ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1])), alpha = 0.4, label='_nolegend_',color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])                                
                                 #ax[fig_nb].set_title('AR ' + 'in ' + ROI + ' region vs IR in background (with iterations)')
                             #'''
+                            # ax[fig_nb].set_ylim([90,117])
                             if (fig_nb == 1):
                                 # Plot average and std of bias curves with iterations
                                 #ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg) # if 1 out of i_init iterations was saved
@@ -417,6 +431,8 @@ class iFinalCurves(vGeneral):
                                 if (variance_plot):
                                     #ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx]))*self.i_init, avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_') # if 1 out of i_init iterations was saved
                                     ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])), avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_',color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])
+                                    
+
                                 '''
                                 if len(method_list) == 1:
                                     ax[fig_nb].set_title(method + " reconstruction averaged on " + str(nb_usable_replicates) + " replicates (" + ROI + " ROI)")
@@ -441,7 +457,7 @@ class iFinalCurves(vGeneral):
                                     ax[fig_nb].fill(np.concatenate((100*(avg_IR[(cases,len_mini-len_mini_to_remove)] - np.sign(reg[fig_nb][cases])*std_IR[cases,-1]),100*(avg_IR[(cases,len_mini-len_mini_to_remove)][::-1] + np.sign(reg[fig_nb][cases][::-1])*std_IR[(cases,len_mini-len_mini_to_remove)][::-1]))),np.concatenate((avg_metrics[(cases,len_mini-len_mini_to_remove)]-std_metrics[(cases,len_mini-len_mini_to_remove)],avg_metrics[(cases,len_mini-len_mini_to_remove)][::-1]+std_metrics[(cases,len_mini-len_mini_to_remove)][::-1])), alpha = 0.4, label='_nolegend_', ls=marker_dict[method][idx_good_rho_color])
                                 # BSREM beta 0.01 white circle
                                 #'''
-                                if ('BSREM' in method):
+                                if (method == 'BSREM'):
                                     idx = 0
                                     idx = sorted(config_tmp[method]["rho"]["grid_search"]).index(beta_BSREM_for_DNA)
                                     plt.plot(100*avg_IR[(cases[idx],len_mini[idx]-1)],avg_metrics[(cases[idx],len_mini[idx]-1)],'X', color='white', label='_nolegend_')
@@ -454,7 +470,7 @@ class iFinalCurves(vGeneral):
                                         idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                     else:
                                         idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
-                                    ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],marker='o'*('CT' in method) + '*'*('random' in method) + 'o'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])#'-o',)
+                                    ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)],marker='o'*('CT' in method) + '*'*('random' in method) + 'o'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])#'-o',)
                                     # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:],marker='o'*('CT' in method) + '*'*('random' in method) + '+'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][other_dim_idx],ls=marker_dict[method][idx_good_rho_color])#'-o',)
                                     # unnested
                                     idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
@@ -478,17 +494,17 @@ class iFinalCurves(vGeneral):
                                     #else:
                                     #    plt.xlim([12,57])
 
-                                    if (rename_settings == "MIC"):
-                                        plt.xlim([7,30])
-                                        if (quantitative_tradeoff):
-                                            if (ROI == "hot_perfect_match_recon" or ROI == "hot_TEP_match_square_recon"):
-                                                plt.ylim([75,97])
-                                            elif (ROI != "cold"):
-                                                plt.ylim([0,30])
+                                    # if (rename_settings == "MIC"):
+                                    #     plt.xlim([7,30])
+                                    #     if (quantitative_tradeoff):
+                                    #         if (ROI == "hot_perfect_match_recon" or ROI == "hot_TEP_match_square_recon"):
+                                    #             plt.ylim([75,97])
+                                    #         elif (ROI != "cold"):
+                                    #             plt.ylim([0,30])
 
                                     if (variance_plot):
                                         # ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
-                                        ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,20).astype(int)][::-1])), alpha = 0.4, label='_nolegend_')
+                                        ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1])), alpha = 0.4, label='_nolegend_')
                     #'''
                     # Set labels for x and y axes
                     self.set_axes_labels(ax,fig_nb,ROI)
@@ -513,6 +529,7 @@ class iFinalCurves(vGeneral):
                                 ax[fig_nb].legend(replicates_legend[fig_nb], prop={'size': 12})
                         else: # SSIM
                             ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
+                            print("SSIM")
 
             # Saving figures locally in png
             for fig_nb in range(3):
@@ -530,7 +547,7 @@ class iFinalCurves(vGeneral):
                     if (ROI == "whole"):
                         metric_AR_or_SSIM = 'likelihood'
                     else:
-                        metric_AR_or_SSIM = 'SSIM'
+                        metric_AR_or_SSIM = 'MSSIM'
                 if (self.phantom == "image50_1"):
                     if (ROI == "hot_TEP"):
                         ROI = "MR_only"
@@ -599,15 +616,21 @@ class iFinalCurves(vGeneral):
                 if (fig_nb != 2):
                     replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                 else:
-                    if (rename_settings == "TMI"):
-                        if ("ADMMLim" in method):
-                            replicates_legend[fig_nb].append('ADMM-Reg')
-                        elif ("APGMAP" in method):
-                            replicates_legend[fig_nb].append('APPGML')
+                    if (APGMAP_vs_ADMMLim):
+                        replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
+                    else:
+                        # if ("ADMMLim" in method):
+                        #     replicates_legend[fig_nb].append('ADMM-Reg')
+                        if (rename_settings == "TMI"):
+                            if ("ADMMLim" in method):
+                                replicates_legend[fig_nb].append('ADMM-Reg')
+                            elif ("APGMAP" in method):
+                                replicates_legend[fig_nb].append('APPGML')
+                            else:
+                                if ("BSREM" not in replicates_legend[fig_nb] or method != "BSREM"):
+                                    replicates_legend[fig_nb].append(method)
                         else:
                             replicates_legend[fig_nb].append(method)
-                    else:
-                        replicates_legend[fig_nb].append(method)
             else:
                 # replicates_legend[fig_nb].append(method)
                 if (APGMAP_vs_ADMMLim):
@@ -664,19 +687,56 @@ class iFinalCurves(vGeneral):
                     if ("nested" in method):
                         replicates_legend[fig_nb].append('DNA')
                     elif ("DIPRecon" in method):
-                        # replicates_legend[fig_nb].append('DIPRecon')
-                        replicates_legend[fig_nb].append(method)
+                        replicates_legend[fig_nb].append('DIPRecon')
+                        # replicates_legend[fig_nb].append(method)
                 elif(rename_settings == "hyperparameters_paper"):
+                    # if ("nested_MIC_brain_2D_MR3" in method):
+                    #     replicates_legend[fig_nb].append('DNA')
+                    # elif ("nested_APPGML_50_2" in method):
+                    #     replicates_legend[fig_nb].append('DNA-APPGML')
                     if ("nested_ADMMLim_more_ADMMLim_it_10" in method):
                         replicates_legend[fig_nb].append(r'DNA$^{positive~norm}$')
-                    if ("nested_APPGML_1it" in method):
+                    elif ("nested_APPGML_1it" in method):
                         replicates_legend[fig_nb].append(r'DNA$^{norm}$')
-                    if ("nested_APPGML_4it" in method):
+                    elif ("nested_APPGML_4it" in method):
                         replicates_legend[fig_nb].append(r'DNA$^{stand}$')
-                    if ("DIPRecon_skip3_3_my_settings" in method):
-                        replicates_legend[fig_nb].append(r'DIPRecon$^{positive norm}$')
+                    elif ("DIPRecon_skip3_3_my_settings" in method):
+                        replicates_legend[fig_nb].append(r'DIPRecon$^{positive~norm}$')
                     elif ("DIPRecon_CT_1_skip" in method):
                         replicates_legend[fig_nb].append(r'DIPRecon$^{norm}$')
+                    elif ("nested_image4_1_MR3_300" in method):
+                        replicates_legend[fig_nb].append(r'DNA$_{it~DIP~300}$')
+                    elif ("nested_image4_1_MR3_30" in method):
+                        replicates_legend[fig_nb].append(r'DNA$_{it~DIP~30}$')
+                    elif ("nested_image4_1_MR3_1000" in method):
+                        replicates_legend[fig_nb].append(r'DNA$_{it~DIP~1000}$')
+                    elif ("nested_image4_1_MR3_all_EMV" in method):
+                        replicates_legend[fig_nb].append(r'DNA$_{it~DIP~EMV}$')
+                    elif ("nested_image4_1_MR3" in method):
+                        replicates_legend[fig_nb].append(r'DNA$_{it~DIP~100}$')
+                    elif ("nested_MLEM_4_1" in method):
+                        replicates_legend[fig_nb].append(r'DNA$_{init~MLEM}$')
+                    elif ("nested_norm" in method):
+                        replicates_legend[fig_nb].append(r'DNA$^{norm}$')
+                    elif ("nested_stand" in method):
+                        replicates_legend[fig_nb].append(r'DNA$^{stand}$')
+                    elif ("nested_positive_norm" in method):
+                        replicates_legend[fig_nb].append(r'DNA$^{positive~norm}$')
+                    elif ("DIPRecon_stand" in method):
+                        replicates_legend[fig_nb].append(r'DIPRecon$^{stand}$')
+                    elif ("DIPRecon_positive_norm" in method):
+                        replicates_legend[fig_nb].append(r'DIPRecon$^{positive~norm}$')
+                    else:
+                        if ("nested" in method):
+                            # replicates_legend[fig_nb].append('DNA' + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
+                            replicates_legend[fig_nb].append(method + (": " + rho_name + " = " + str(config[method]["rho"][rho_idx]))*(rho_name!=""))
+                            # replicates_legend[fig_nb].append('DNA-APPGML' + (": " + r'$\rho_1$' + " = " + str(config[method]["rho"][rho_idx]))*(rho_name!=""))
+                        elif ("DIPRecon" in method):
+                            replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
+                            # replicates_legend[fig_nb].append('DIPRecon' + ( ": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
+                        else:
+                            replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
+
                         
 
     def choose_good_config_file(self,method,config,csv_before_MIC,DIPRecon):
@@ -759,6 +819,7 @@ class iFinalCurves(vGeneral):
             
             if ("50" in self.phantom):
                 config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
+                config[method]["rho"] = tune.grid_search([2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
             elif ("40" in self.phantom):
                 config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
             elif ("4" in self.phantom):
@@ -769,7 +830,7 @@ class iFinalCurves(vGeneral):
             return config[method]
 
         # APGMAP reconstruction
-        if ('APGMAP' in method):
+        if (method == "APGMAP"):
             APGMAP_vs_ADMMLim = True
             from all_config.APGMAP_configuration import config_func_MIC
             method_name = method
@@ -789,6 +850,34 @@ class iFinalCurves(vGeneral):
                 config[method]["rho"] = tune.grid_search([0.0001,0.0003,0.0005,0.0007,0.0009])
                 config[method]["rho"] = tune.grid_search([1e-6,3e-6,5e-6,1e-5,3e-5,5e-5,0.0001,0.0003,0.0005,0.0007,0.0009])
 
+                config[method]["A_AML"] = tune.grid_search([-1000])
+                config[method]["A_AML"] = tune.grid_search([-1000,-100,-10])
+            else:
+                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
+                config[method]["A_AML"] = tune.grid_search([-100])
+
+            return config[method]
+        
+        # APGMAP reconstruction with Bowsher weights
+        if (method == 'APGMAP_Bowsher'):
+            from all_config.APGMAP_Bowsher_configuration import config_func_MIC
+            #config[method] = config_func()
+            method_name = "APGMAP"
+            import importlib
+            globals().update(importlib.import_module('all_config.' + method + "_configuration").__dict__)
+            config[method] = config_MIC
+            config[method]["method"] = method_name
+            
+            if ("50" in self.phantom):
+                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
+                config[method]["rho"] = tune.grid_search([1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
+                # config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
+                config[method]["A_AML"] = tune.grid_search([-10])
+            elif ("40" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
+                config[method]["A_AML"] = tune.grid_search([-1000])
+            elif ("4" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
                 config[method]["A_AML"] = tune.grid_search([-1000])
             else:
                 config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
@@ -812,6 +901,31 @@ class iFinalCurves(vGeneral):
             elif ("4" in self.phantom):
                 config[method]["rho"] = tune.grid_search([0.0001,0.0003,0.0005,0.0007,0.0009,0.001,0.003,0.005,0.007,0.009])
                 config[method]["rho"] = tune.grid_search([1e-6,3e-6,5e-6,1e-5,3e-5,5e-5,0.0001,0.0003,0.0005,0.0007,0.0009])
+                config[method]["rho"] = tune.grid_search([0])
+            else:
+                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
+
+            return config[method]
+
+        # ADMMLim reconstruction with Bowsher weights
+        if (method == 'ADMMLim_Bowsher'):
+            from all_config.ADMMLim_Bowsher_configuration import config_func_MIC
+            #config[method] = config_func()
+            method_name = "ADMMLim"
+            import importlib
+            globals().update(importlib.import_module('all_config.' + method + "_configuration").__dict__)
+            config[method] = config_MIC
+            config[method]["method"] = method_name
+            
+            if ("50" in self.phantom):
+                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
+                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05])
+                # config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
+                # config[method]["rho"] = tune.grid_search([0.01])
+            elif ("40" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
+            elif ("4" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
             else:
                 config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
 
@@ -1018,7 +1132,9 @@ class iFinalCurves(vGeneral):
                 # "BSREM" : ['grey'],
                 "OSEM" : ['orange'],
                 #"APGMAP" : ['darkgreen','lime','gold'],
-                "APGMAP" : ['darkgreen','lime'],
+                "APGMAP" : list(reversed(['darkgreen','lime'])),
+                "APGMAP_Bowsher" : list(reversed(15*['darkgreen','lime'])),
+                "ADMMLim_Bowsher" : list(['cyan','darkviolet','red','saddlebrown','blueviolet','lime','black','yellow','grey','peru','gold','darkseagreen','cyan','blue','teal','black']),
             }
             color_dict_add_tests = {
                 "nested" : ['black'], # 3 it
@@ -1058,12 +1174,14 @@ class iFinalCurves(vGeneral):
                 "DIPRecon_random_3_skip" : [color_dict_after_MIC["DIPRecon"][4]],
                 "DIPRecon_random_2_skip" : [color_dict_after_MIC["DIPRecon"][5]],
                 "DIPRecon_random_1_skip" : [color_dict_after_MIC["DIPRecon"][6]],
+                "DIPRecon_MIC_brain_2D_MR3_30" : ['red','lime','black','yellow','grey','peru'],
             }
 
             color_dict_TMI_DNA = {
                 "nested" : ['red','pink'],
-                "nested_image4_1_MR3" : ['peru','red','saddlebrown','blueviolet','lime','black','yellow','grey'],
+                "nested_image4_1_MR3" : ['peru','red','saddlebrown','blueviolet','lime','grey','black','yellow'],
                 "nested_image4_1_MR3_300" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey'],
+                "nested_image4_1_MR3_1000" : ['blueviolet','lime','black','yellow','grey'],
                 "nested_image4_1_MR3_30" : ['saddlebrown','blueviolet','lime','black','yellow','grey'],
                 "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "DIPRecon_image4_1_MR3" : ['lime','saddlebrown','red','lime','black','yellow','grey','peru'],
@@ -1089,7 +1207,7 @@ class iFinalCurves(vGeneral):
                 "nested_MIC_brain_2D_MR0" : 5*[color_dict_after_MIC["nested_CT_skip"][4]],
                 "nested_MIC_brain_2D_MR1" : 5*[color_dict_after_MIC["nested_CT_skip"][5]],
                 "nested_MIC_brain_2D_MR2" : 5*[color_dict_after_MIC["nested_CT_skip"][0]],
-                "nested_MIC_brain_2D_MR3" : 5*['black'],
+                "nested_MIC_brain_2D_MR3" : 5*['black','red','saddlebrown','blueviolet','lime','grey','black','yellow','peru'],
                 "nested_APPGML_MIC_brain_2D_MR3" : 5*[color_dict_after_MIC["nested_CT_skip"][0]],
                 "DIPRecon_MIC_brain_2D_MR3" : 5*[color_dict_after_MIC["nested_CT_skip"][1]],
                 "DIPRecon_initDNA_MIC_brain_2D_MR3" : 5*[color_dict_after_MIC["nested_CT_skip"][2]],
@@ -1102,6 +1220,7 @@ class iFinalCurves(vGeneral):
                 "nested_MIC_brain_2D_diff1" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
                 # "nested_MIC_brain_2D_diff5" : [color_dict_after_MIC["nested_APPGML"][3],color_dict_after_MIC["nested_APPGML"][3],color_dict_after_MIC["nested_APPGML"][3],color_dict_after_MIC["nested_APPGML"][3]],
                 "nested_MIC_brain_2D_diff5" : [color_dict_after_MIC["nested_APPGML"][3],color_dict_after_MIC["nested_APPGML"][2],color_dict_after_MIC["nested_APPGML"][1],color_dict_after_MIC["nested_APPGML"][0]],
+                "nested_MIC_brain_2D_diff5_30" : [color_dict_after_MIC["nested_APPGML"][2],color_dict_after_MIC["nested_CT_skip"][2],color_dict_after_MIC["nested_CT_skip"][1],color_dict_after_MIC["nested_CT_skip"][0]],
                 "nested_MIC_brain_2D_diff5_SC1" : 5*[color_dict_after_MIC["nested_ADMMLim"][1]],
                 "nested_MIC_brain_2D_diff5_SC2" : 5*[color_dict_after_MIC["nested_ADMMLim"][2]],
 
@@ -1109,8 +1228,47 @@ class iFinalCurves(vGeneral):
                 "APGMAP" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "ADMMLim" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
                 "OSEM" : ['darkorange'] + 5*['cyan','blue','teal','blueviolet'],
-                "BSREM" : ['grey'] + 5*['cyan','blue','teal','blueviolet']
+                "BSREM" : ['grey'] + 5*['cyan','blue','teal','blueviolet'],
+
+                # Manuscrit
+                "APGMAP" : ['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "ADMMLim" : list(['cyan','darkviolet','red','saddlebrown','blueviolet','lime','black','yellow','grey','peru','gold','darkseagreen','cyan','blue','teal','black']),
+                "nested_image4_1_MR3" : ['black'],
+                "DIPRecon_image4_1_MR3" : 5*[color_dict_after_MIC["nested_CT_skip"][1]],
+
+                "nested_stand" : ['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "nested_norm" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "nested_positive_norm" : ['gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "nested_norm_init" : 5*['cyan','blue','teal','blueviolet'],
+                "nested_nothing" : 5*['blue','teal','blueviolet'],
+                "DIPRecon_stand" : list(reversed(['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'])),
+                "DIPRecon_norm" : list(reversed(['darkgreen','gold'] + 5*['cyan','blue','blueviolet','teal'])),
+                "DIPRecon_positive_norm" : list(reversed(['gold'] + 5*['cyan','teal','blueviolet','blue'])),
+                "DIPRecon_norm_init" : list(reversed(5*['cyan','blue','teal','blueviolet'])),
+                "DIPRecon_nothing" : list(reversed(5*['blue','teal','blueviolet'])),
+
+
+                "nested_ADMMLim" : ['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "nested_BSREM" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "nested_OSEM" : ['gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "nested_MLEM" : 5*['cyan','blue','teal','blueviolet'],
+
+                "nested_ADMMLim_4_1" : ['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "nested_BSREM_4_1" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "nested_OSEM_4_1" : ['gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "nested_MLEM_4_1" : 5*['cyan','blue','teal','blueviolet'],
+
+                "nested_image4_1_APPGML" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                # "nested_APPGML_50_2" : ['cyan','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "nested_APPGML_50_2" : 5*['black','red','saddlebrown','blueviolet','lime','grey','black','yellow','peru'],
+
+                "nested_image4_1_MR3_several_rhos" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "nested_image4_1_MR3_all_EMV" : ['lime'],
+
+                
+
             }
+
 
             color_dict = {**color_dict_after_MIC, **color_dict_add_tests, **color_dict_TMI_DNA, **color_dict_MIC2023_DNA} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
 
@@ -1139,10 +1297,12 @@ class iFinalCurves(vGeneral):
                 "APPGML_it" : 15*[':'],
                 "APPGML_subsets" : 15*['-'],
                 "ADMMLim" : 15*['--'],
+                "ADMMLim_Bowsher" : 15*['-'],
                 "CT" : 15*['dashdot'],
                 "random" : 15*['dashdot'],
                 "intermediate" : 15*['-'],
                 "APGMAP" : 15*['-','-','-'],
+                "APGMAP_Bowsher" : 15*['-'],
                 "BSREM" : 15*['-'],
                 "BSREM_Bowsher" : 15*['-'],
                 "OSEM" : 15*['-'],
@@ -1191,13 +1351,15 @@ class iFinalCurves(vGeneral):
                 "nested_MIC_brain_2D_MR0" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_MR1" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_MR2" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_MR3" : 5*[marker_dict["CT"][0]],
+                "nested_MIC_brain_2D_MR3" : 15*[marker_dict["CT"][0]],
                 "nested_APPGML_MIC_brain_2D_MR3" : 5*[marker_dict["CT"][0]],
                 "DIPRecon_MIC_brain_2D_MR3" : 5*[marker_dict["CT"][0]],
                 "DIPRecon_initDNA_MIC_brain_2D_MR3" : 5*[marker_dict["CT"][0]],
                 "DIPRecon_initDNA_skip3_3_my_settings" : 5*[marker_dict["CT"][0]],
+                "DIPRecon_MIC_brain_2D_MR3_30" : 5*[marker_dict["CT"][0]],
                 "nested_image4_1_MR3" : 5*[marker_dict["CT"][0]],
                 "nested_image4_1_MR3_300" : 5*[marker_dict["CT"][0]],
+                "nested_image4_1_MR3_1000" : 5*[marker_dict["CT"][0]],
                 "nested_image4_1_MR3_30" : 5*[marker_dict["CT"][0]],
                 "DIPRecon" : 5*[marker_dict["CT"][0]],
                 "DIPRecon_image4_1_MR3" : 5*[marker_dict["CT"][0]],
@@ -1208,6 +1370,7 @@ class iFinalCurves(vGeneral):
                 "nested_MIC_brain_2D_random3" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_diff1" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_brain_2D_diff5" : [':','dashdot','--','-'],
+                "nested_MIC_brain_2D_diff5_30" : [':','dashdot','--','-'],
                 "nested_MIC_brain_2D_diff5_SC1" : [':','dashdot','--','-'],
                 "nested_MIC_brain_2D_diff5_SC2" : [':','dashdot','--','-'],
 
@@ -1219,6 +1382,34 @@ class iFinalCurves(vGeneral):
                 "DIPRecon_random_3_skip" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_random_2_skip" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_random_1_skip" : [marker_dict["DIPRecon"][0]],
+
+
+                
+                "nested_stand" : [marker_dict["DIPRecon"][0]],
+                "nested_norm" : [marker_dict["DIPRecon"][0]],
+                "nested_positive_norm" : [marker_dict["DIPRecon"][0]],
+                "nested_norm_init" : [marker_dict["DIPRecon"][0]],
+                "nested_nothing" : [marker_dict["DIPRecon"][0]],
+                "DIPRecon_stand" : [marker_dict["DIPRecon"][0]],
+                "DIPRecon_norm" : [marker_dict["DIPRecon"][0]],
+                "DIPRecon_positive_norm" : [marker_dict["DIPRecon"][0]],
+                "DIPRecon_norm_init" : [marker_dict["DIPRecon"][0]],
+                "DIPRecon_nothing" : [marker_dict["DIPRecon"][0]],
+
+                "nested_ADMMLim" : [marker_dict["DIPRecon"][0]],
+                "nested_BSREM" : [marker_dict["DIPRecon"][0]],
+                "nested_OSEM" : [marker_dict["DIPRecon"][0]],
+                "nested_MLEM" : [marker_dict["DIPRecon"][0]],
+
+                "nested_ADMMLim_4_1" : [marker_dict["DIPRecon"][0]],
+                "nested_BSREM_4_1" : [marker_dict["DIPRecon"][0]],
+                "nested_OSEM_4_1" : [marker_dict["DIPRecon"][0]],
+                "nested_MLEM_4_1" : [marker_dict["DIPRecon"][0]],
+
+                "nested_image4_1_APPGML" : [marker_dict["DIPRecon"][0]],
+                "nested_APPGML_50_2" : 5*[marker_dict["DIPRecon"][0]],
+                "nested_image4_1_MR3_several_rhos" : 5*[marker_dict["DIPRecon"][0]],
+                "nested_image4_1_MR3_all_EMV" : 5*[marker_dict["DIPRecon"][0]],
             }
             marker_dict = {**marker_dict, **marker_dict_supp}
 
@@ -1336,12 +1527,36 @@ class iFinalCurves(vGeneral):
                             raise ValueError("likelihood is not in csv")
                         
 
-                if (rename_settings == "TMI"): # Remove Gong failing replicates and replace them
-                    if (self.scaling == "positive_normalization"):
-                        if (np.sum(np.isnan(np.array(rows_csv[10]))) > 0):
-                            print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
-                            self.nb_replicates[method] -= 1
-                            continue
+                if (rename_settings == "TMI" or rename_settings == "hyperparameters_paper"): # Remove Gong failing replicates and replace them
+                    if (np.sum(np.isnan(np.array(rows_csv[10]))) > 0):
+                        print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
+                        self.nb_replicates[method] -= 1
+                        continue
+                    if (i_replicate == 17-1 and rows_csv[6][0] == -100): # ReLU artifact in white matter...
+                        print("remove replicate 17 in loop to load metrics if relu artifact in white matter ?????????????????????,,,????")
+                        self.nb_replicates[method] -= 1
+                        continue                    
+                    if (i_replicate == 7-1 and rows_csv[6][0] == -100): # ReLU artifact in white matter...
+                        print("remove replicate 17 in loop to load metrics if relu artifact in white matter ?????????????????????,,,????")
+                        self.nb_replicates[method] -= 1
+                        continue
+                if (rename_settings == "hyperparameters_paper"): # Remove DNA-EMV failing replicates and replace them
+                    if (i_replicate == 4-1 and method == "DIPRecon_positive_norm"):
+                        print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
+                        self.nb_replicates[method] -= 1
+                        continue
+                    if (i_replicate == 12-1 and method == "DIPRecon_positive_norm"):
+                        print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
+                        self.nb_replicates[method] -= 1
+                        continue
+
+                    if (i_replicate in np.array([1,3,10,13,14])-1 and method == "DIPRecon_stand"):
+                        print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
+                        self.nb_replicates[method] -= 1
+                        continue
+
+
+
 
                 PSNR_recon.append(np.array(rows_csv[0]))
                 PSNR_norm_recon.append(np.array(rows_csv[1]))

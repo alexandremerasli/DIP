@@ -28,32 +28,46 @@ PETImage_shape = (200,200,109)
 PETImage_shape = (172,172,127)
 
 
-args.img1 = "data/Algo/image010_3D/replicate_1/nested/Block2/config_image=BSREM_it30_rho=0.03_adapt=nothing_mu_DI=50_tau_D=50_lr=0.01_sub_i=300_overr=True_opti_=Adam_skip_=3_scali=standardization_input=CT_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/out_cnn/24/out_DIP-1_FINAL.img"
-args.img2 = "data/Algo/image010_3D/replicate_1/nested/Block2/config_image=BSREM_it30_rho=0.03_adapt=nothing_mu_DI=50_tau_D=50_lr=0.01_sub_i=300_overr=True_opti_=Adam_skip_=3_scali=standardization_input=CT_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/out_cnn/24/out_DIP98_FINAL.img"
+# args.img1 = "data/Algo/image010_3D/replicate_1/nested/Block2/config_image=BSREM_it30_rho=0.03_adapt=nothing_mu_DI=50_tau_D=50_lr=0.01_sub_i=300_overr=True_opti_=Adam_skip_=3_scali=standardization_input=CT_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/out_cnn/24/out_DIP-1_FINAL.img"
+# args.img2 = "data/Algo/image010_3D/replicate_1/nested/Block2/config_image=BSREM_it30_rho=0.03_adapt=nothing_mu_DI=50_tau_D=50_lr=0.01_sub_i=300_overr=True_opti_=Adam_skip_=3_scali=standardization_input=CT_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/out_cnn/24/out_DIP98_FINAL.img"
 
+args.img1 = "data/Algo/image010_3D/replicate_1/nested/Block2/config_image=BSREM_it30_rho=3e-05_adapt=nothing_mu_DI=400_tau_D=2_lr=0.01_sub_i=300_opti_=Adam_skip_=3_scali=standardization_scali=False_input=CT_nb_ou=30_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/out_cnn/24/out_DIP-1_FINAL.img"
+# args.img1 = "data/Algo/image010_3D/replicate_1/nested/Block1/config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=333_tau_D=2_lr=0.01_sub_i=300_opti_=Adam_skip_=3_scali=standardization_scali=False_input=CT_nb_ou=100_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/during_eq22/0_it2.img"
+args.img2 = "data/Algo/image010_3D/replicate_1/nested/Block2/config_image=BSREM_it30_rho=3e-05_adapt=nothing_mu_DI=400_tau_D=2_lr=0.01_sub_i=300_opti_=Adam_skip_=3_scali=standardization_scali=False_input=CT_nb_ou=30_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/out_cnn/24/out_DIP79_FINAL.img"
+args.img2 = "data/Algo/image010_3D/replicate_1/MLEM_172_2mm/config_image=BSREM_it30_overr=True_mlem_=False_post_=0/MLEM_it60.img"
 
-
-
+same_scale_TMI = True # Save diff image with fixed scale to compare several difference images for TMI ReLU artifacts experiment
 
 img1_np = fijii_np(args.img1, shape=(PETImage_shape))
+img2_np = fijii_np(args.img2, shape=(PETImage_shape))
+
+num_slice = 62
+
+img1_np = img1_np[num_slice,:,:]
+img2_np = img2_np[num_slice,:,:]
+
 print("min 1 = " ,np.min(img1_np))
 print("mean 1 = " ,np.mean(img1_np))
 print("max 1 = " ,np.max(img1_np))
-img2_np = fijii_np(args.img2, shape=(PETImage_shape))
 print("")
 print("min 2 = " ,np.min(img2_np))
 print("mean 2 = " ,np.mean(img2_np))
 print("max 2 = " ,np.max(img2_np))
 
-img1_np = img1_np[55,:,:]
-img2_np = img2_np[55,:,:]
-
 #'''
 plt.figure()
-#plt.imshow(np.abs(img1_np - img2_np), cmap='gray_r')
-plt.imshow(img1_np - img2_np, cmap='bwr')
+
+if (same_scale_TMI):
+    maxi=max(abs(np.min(img1_np - img2_np)),np.max(img1_np - img2_np))
+    # maxi=20
+    mini=-maxi
+    plt.imshow(img1_np - img2_np, cmap='bwr',vmin=mini,vmax=maxi)
+else:
+    plt.imshow(img1_np - img2_np, cmap='bwr')
+
 plt.title('absolute difference between img1 and img2 (1-2)')
 plt.colorbar()
+plt.axis("off")
 plt.savefig(root+'diff_img.png')
 
 plt.figure()
@@ -82,14 +96,16 @@ plt.figure()
 #plt.imshow(img1_np, cmap='gray_r',vmin=np.min(img1_np),vmax=np.max(img1_np))
 print(img1_np.shape)
 plt.imshow(img1_np, cmap='gray_r',vmin=0,vmax=12000)
-plt.title('img1')
+# plt.title('img1')
 plt.colorbar()
+plt.axis("off")
 plt.savefig(root+'img1.png')
 
 plt.figure()
 #plt.imshow(np.abs(img2_np), cmap='gray_r')
 #plt.imshow(img2_np, cmap='gray_r',vmin=np.min(img1_np),vmax=np.max(img1_np))
 plt.imshow(img2_np, cmap='gray_r',vmin=0,vmax=12000)
-plt.title('img2')
+# plt.title('img2')
 plt.colorbar()
+plt.axis("off")
 plt.savefig(root+'img2.png')

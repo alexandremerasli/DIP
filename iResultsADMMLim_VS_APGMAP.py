@@ -78,13 +78,14 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         
         config["average_replicates"] = True
 
-        change_replicates = "TMI"
-        # change_replicates = "MIC"
+        self.change_replicates = "TMI"
+        # self.change_replicates = "MIC"
         
-        if (change_replicates == "MIC"):
+        if (self.change_replicates == "MIC"):
             plot_profile = True
         else:
             plot_profile = False
+            # plot_profile = True
         nb_angles = 1
 
         # Avoid to divide by zero value in GT when normalizing std
@@ -165,7 +166,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             p_for_file = p
             i = self.total_nb_iter
             if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
-                # if (change_replicates == "TMI"): # Remove Gong failing replicates and replace them
+                # if (self.change_replicates == "TMI"): # Remove Gong failing replicates and replace them
                 #     if (self.phantom == "image40_1"):
                 #         if (self.scaling == "normalization"):
                 #             DIPRecon_failing_replicate_list = list(np.array([19,25,29,36]))
@@ -183,7 +184,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                 # if (p in DIPRecon_failing_replicate_list):
                 #     p_for_file = replicates_replace_list[DIPRecon_failing_replicate_list.index(p)]
 
-                # if (change_replicates == "MIC"): # Remove Gong failing replicates and replace them
+                # if (self.change_replicates == "MIC"): # Remove Gong failing replicates and replace them
                 #     if (self.phantom == "image50_1"):
                 #         if (self.scaling == "positive_normalization"):
                 #             DIPRecon_failing_replicate_list = list(np.array([1]))
@@ -253,8 +254,16 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                 
             # Plot profile                             
             if (plot_profile):
-                # MR only
-                ref_mean = np.mean(self.f_p[self.hot_TEP_ROI_ref==1])
+                if (self.phantom == "image50_1"):
+                    # MR only
+                    ref_mean = np.mean(self.f_p[self.hot_TEP_ROI_ref==1])
+                if (self.change_replicates == "TMI"):
+                    # self.f_p = self.image_gt
+                    # ref_mean = np.mean(self.f_p[69,44:67])
+                    ref_mean = [0.5,0.5,0.5,0.5,0.5,2,2,2]
+                    # plt.imshow(self.f_p[69,44:67],cmap="gray_r",vmin=0,vmax=10)
+                    # plt.show()
+                    print("ok")
                 # Perfect and square match
                 # ref_mean = np.mean(self.f_p[self.hot_perfect_match_ROI==1])
                 # ref_mean = 10
@@ -394,7 +403,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         #     avg_line_ref = self.nb_replicates * [0]
         #     self.replicates_with_profile = []
         #     for p in range(self.nb_replicates,0,-1):
-        #         # if (change_replicates == "MIC"): # Remove Gong failing replicates and replace them
+        #         # if (self.change_replicates == "MIC"): # Remove Gong failing replicates and replace them
         #         #     if (self.phantom == "image50_1"):
         #         #         if (self.scaling == "positive_normalization"):
         #         #             DIPRecon_failing_replicate_list = list(np.array([1]))
@@ -507,6 +516,14 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             # MR only
             center_x_MR_tumor, center_y_MR_tumor = 68,80
             radius_MR_tumor = 5
+        elif (self.phantom == "image50_2"):
+            # profile on cerebrospinal fluid
+            # center_x_MR_tumor, center_y_MR_tumor = 55,69
+            # radius_MR_tumor = 11
+            # center_x_MR_tumor, center_y_MR_tumor = 43,42
+            # radius_MR_tumor = 5
+            center_x_MR_tumor, center_y_MR_tumor = 55,71
+            radius_MR_tumor = 4
 
             # # Perfect match
             # center_x_MR_tumor, center_y_MR_tumor = 70,30
@@ -557,6 +574,8 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         zi_angles = np.zeros((len(angles),2*radius))
         min_len_zi = np.inf
         fig,ax=plt.subplots()
+        if (self.phantom == "image50_2" and self.change_replicates == "TMI"):
+            angles += np.pi / 2
         for i in range(len(angles)):
             angle = angles[i]
             # Compute the start and end points of the line
