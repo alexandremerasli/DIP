@@ -18,7 +18,7 @@ def uncompatible_parameters(config):
         raise ValueError("Only Gong or nested can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
     elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["all_images_DIP"]["grid_search"][0] != "True" and config["DIP_early_stopping"]["grid_search"][0] == "True"):
         raise ValueError("Please set all_images_DIP to True to save all images for nested or Gong reconstruction if using WMV.")
-    elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["rho"]["grid_search"][0] == 0 and task != "post_reco"):
+    elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["rho"]["grid_search"][0] == 0 and "post_reco" not in task):
         raise ValueError("Please set rho > 0 for nested or Gong reconstruction (or set task to post reconstruction).")
     elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["EMV_or_WMV"]["grid_search"][0] == "WMV"):
         raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
@@ -83,73 +83,20 @@ def choose_task(config):
 
     return task
 
-# config_files = ["nested_random_3_skip_10it", "nested_CT_2_skip_10it", "nested_CT_1_skip_10it"]
-# config_files = ["Gong_CT_1_skip", "Gong_CT_2_skip"]#, "Gong_CT_3_skip"]
-# config_files = ["Gong_CT_3_skip","Gong_CT_1_skip","Gong_CT_2_skip"]
-# config_files = ["Gong_CT_1_skip","Gong_CT_2_skip"]
-# config_files = ['APGMAP_configuration']
-# config_files = ['ADMMLim_configuration']
-# config_files = ['nested_ADMMLim_more_ADMMLim_it_10_configuration']
-# config_files = ['nested_APPGML_1it_configuration']
-# config_files = ['nested_ADMMLim_more_ADMMLim_it_30_configuration']
-# config_files = ['OSEM_configuration']
-config_files = 8*['nested_MIC_dropout']
-config_files = ['nested_MIC_dropout']
-config_files = ['nested_MIC_cookie_2D']
-config_files = ['nested_MIC_brain_2D']
-config_files = ['nested_MIC_brain_2D_diff5_SC1']
-config_files = ['nested_MIC_APPGML_brain_2D']
-config_files = ['nested_MIC_brain_2D_intermediate0','nested_MIC_brain_2D_intermediate1','nested_MIC_brain_2D_intermediate2']
-config_files = ['nested_MIC_APPGML_brain_2D']
-config_files = ['nested_MIC_brain_2D_random']
-config_files = ['nested_MIC_brain_2D_diff1']
-config_files = ['nested_MIC_brain_2D_diff5']
+
 
 # TMI paper
-nb_computation = 6
-config_files = ['Gong_MIC_brain_2D_MR3']
-config_files = ['nested_MIC_brain_2D_MR3']
-# config_files = nb_computation*['Gong_initDNA_MIC_brain_2D_MR3','Gong_skip3_3_my_settings','Gong_initDNA_skip3_3_my_settings']
-# config_files = ['Gong_initDNA_skip3_3_my_settings']
-# config_files = ['Gong_initDNA_MIC_brain_2D_MR3']
-# config_files = ['Gong_MIC_brain_2D_MR3']
-# config_files = ['Gong_skip3_3_my_settings','nested_ADMMLim_more_ADMMLim_it_10_configuration']
-# config_files = nb_computation*['Gong_image4_1_MR3','nested_image4_1_MR3']
-# config_files = ['nested_image4_1_MR3','Gong_image4_1_MR3','nested_image4_1_MR3']
-
-# # config_files = ['nested_APPGML_MIC_brain_2D_MR3']
-# # config_files = ['Gong_MIC_brain_2D_MR3']
-config_files = nb_computation*['BSREM_configuration']
-config_files = ['BSREM_configuration']
-# config_files = ["Gong_image4_1_MR3"]
-config_files = ["nested_image4_1_MR3_all_EMV"]
-config_files = ['nested_MIC_brain_2D_MR3']
-config_files = ["Gong_norm"]
-config_files = ["Gong_positive_norm"]
-config_files = ["Gong_stand"]
-config_files = ["nested_MIC_brain_2D_MR3"]
-# config_files = (nb_computation-1)*['APGMAP_configuration']
-# config_files = nb_computation*['APGMAP_configuration']
-# config_files = ['APGMAP_configuration']
-# config_files = nb_computation*['ADMMLim_configuration']
-# config_files = (nb_computation-1)*['ADMMLim_configuration']
-# config_files = ['ADMMLim_configuration']
-# config_files = nb_computation*['OSEM_configuration']
-# config_files = ['OSEM_configuration']
-
-# config_files = ['nested_MIC_brain_2D_DNA_ADMMLim']
-# config_files = ['nested_MIC_cookie_2D_DNA_ADMMLim']
-# config_files = ['nested_MIC_several_inputs_brain_2D']
-# config_files = [f[:-3] for f in os.listdir('all_config') if os.path.isfile(os.path.join('all_config', f))]
-
-# config_files = ['ADMMLim_configuration']
+nb_computation = 2
+config_files = ['Gong_configuration']
+config_files = ['nested_configuration']
+config_files = ['nested_LBFGS_denoising_configuration']
 
 i=-1
 num_meth=0
 for lib_string in config_files:
     i+=1
     if (i>=nb_computation): # Restart count for new setting
-        i=-1
+        i=2
         num_meth +=1
     # try:
     if (True):
@@ -169,19 +116,20 @@ for lib_string in config_files:
 
         config["image"] = tune.grid_search(['image4_1'])
         config["image"] = tune.grid_search(['image50_2'])
-        config["image"] = tune.grid_search(['image50_1'])
-        config["replicates"] = tune.grid_search(list(range(41+int((100-40)/nb_computation)*i,41+int((100-40)/nb_computation)*i+int((100-40)/nb_computation))))
-        config["replicates"] = tune.grid_search(list(range(1,15+1)))
-        config["replicates"] = tune.grid_search(list(range(1,1+1)))
+        config["replicates"] = tune.grid_search(list(range(1+int(40/nb_computation)*i,1+int(40/nb_computation)*i+int(40/nb_computation))))
+        config["replicates"] = tune.grid_search(list(range(1+int(20/nb_computation)*i,1+int(20/nb_computation)*i+int(20/nb_computation))))
+        config["replicates"] = tune.grid_search(list(range(1,20+1)))
         # if (i==0):
         #     config["max_iter"] = tune.grid_search([500])
         # else:
         #     config["max_iter"] = tune.grid_search([30])
             # i=-1
-        config["max_iter"] = tune.grid_search([700])
+        config["max_iter"] = tune.grid_search([1000])
         # config["post_reco_in_suffix"] = tune.grid_search([False]) # If want to show EMV results which were not on post reconstruction, in DNA init
         # config["read_only_MV_csv"] = tune.grid_search([True])
-        config["ray"] = False
+        config["ray"] = True
+        print(config["method"])
+        print(config["replicates"])
 
         root = os.getcwd()
 

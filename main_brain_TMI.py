@@ -89,6 +89,7 @@ config_files = ["Gong_CT_1_skip","Gong_CT_2_skip"]
 config_files = ['APGMAP_configuration']
 # config_files = ['ADMMLim_configuration']
 config_files = ['nested_ADMMLim_more_ADMMLim_it_80_configuration']
+config_files = ['Gong_brain_3D_TMI']
 # config_files = ['nested_ADMMLim_more_ADMMLim_it_10_configuration']
 # config_files = ['nested_APPGML_1it_configuration']
 # config_files = ['nested_ADMMLim_more_ADMMLim_it_30_configuration']
@@ -109,7 +110,7 @@ for lib_string in config_files:
         # config["image"] = tune.grid_search(['image50_1'])
         config["replicates"] = tune.grid_search(list(range(1,1+1)))
         # config["replicates"] = tune.grid_search([11])
-        config["max_iter"] = tune.grid_search([100])
+        config["max_iter"] = tune.grid_search([1000])
         # config["post_reco_in_suffix"] = tune.grid_search([False]) # If want to show EMV results which were not on post reconstruction, in DNA init
         # config["read_only_MV_csv"] = tune.grid_search([True])
         config["ray"] = False

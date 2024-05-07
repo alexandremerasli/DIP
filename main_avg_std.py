@@ -54,7 +54,7 @@ def class_for_task(config,task):
     # elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
     #     from iResultsAlreadyComputed import iResultsAlreadyComputed
     #     classTask = iResultsAlreadyComputed(config)
-    elif (task == 'compare_2_methods'): # Show already computed results averaging over replicates
+    elif ('compare_2_methods' in task): # Show already computed results averaging over replicates
         config["average_replicates"] = tune.grid_search([True])
         from iResultsADMMLim_VS_APGMAP import iResultsADMMLim_VS_APGMAP
         classTask = iResultsADMMLim_VS_APGMAP(config)
@@ -74,89 +74,114 @@ def choose_task(config):
     # task = 'castor_reco' # Run CASToR reconstruction with given optimizer
     # task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
     # task = 'show_results_post_reco'
-    task = 'show_results'
+    # task = 'show_results'
     # task = 'show_metrics_results_already_computed'
     # task = 'show_metrics_ADMMLim'
     # task = 'show_metrics_nested'
-    task = 'compare_2_methods'
+    # task = 'compare_2_methods'
+    # task = 'compare_2_methods_post_reco'
 
     return task
 
 # config_files = ["nested_random_3_skip_10it", "nested_CT_2_skip_10it", "nested_CT_1_skip_10it"]
-config_files = ["Gong_CT_1_skip", "Gong_CT_2_skip"]#, "Gong_CT_3_skip"]
-config_files = ["Gong_CT_3_skip","Gong_CT_1_skip","Gong_CT_2_skip"]
-config_files = ["Gong_CT_1_skip","Gong_CT_2_skip"]
-config_files = ['APGMAP_configuration']
+# config_files = ["Gong_CT_1_skip", "Gong_CT_2_skip"]#, "Gong_CT_3_skip"]
+# config_files = ["Gong_CT_3_skip","Gong_CT_1_skip","Gong_CT_2_skip"]
+# config_files = ["Gong_CT_1_skip","Gong_CT_2_skip"]
+# config_files = ['APGMAP_configuration']
 # config_files = ['ADMMLim_configuration']
-config_files = ['nested_ADMMLim_more_ADMMLim_it_30_configuration','nested_ADMMLim_more_ADMMLim_it_10_configuration','nested_ADMMLim_more_ADMMLim_it_30_configuration']
+# config_files = ['nested_ADMMLim_more_ADMMLim_it_10_configuration']
 # config_files = ['nested_APPGML_1it_configuration']
-config_files = ['nested_ADMMLim_more_ADMMLim_it_10_configuration','nested_ADMMLim_more_ADMMLim_it_30_configuration']
+# config_files = ['nested_ADMMLim_more_ADMMLim_it_30_configuration']
 # config_files = ['OSEM_configuration']
-# config_files = ['Gong_skip3_3_my_settings']
-# config_files = ['nested_MIC_brain_2D']
-
-config_files = ['nested_MIC_brain_2D_intermediate','nested_MIC_brain_2D_MR','nested_MIC_brain_2D_random','nested_MIC_brain_2D_diff5','nested_MIC_brain_2D_diff1','nested_MIC_brain_2D_diff5_SC2','nested_MIC_brain_2D_diff5_SC1']
-config_files = ['nested_MIC_brain_2D_MR','nested_MIC_brain_2D_diff5']
-config_files = ['nested_MIC_brain_2D_intermediate']
-config_files = ['nested_MIC_brain_2D_diff5_SC2','nested_MIC_brain_2D_diff5_SC1']
-
-config_files = ['nested_MIC_brain_2D_MR0','nested_MIC_brain_2D_MR1','nested_MIC_brain_2D_MR2','nested_MIC_brain_2D_MR3']
-config_files = ['nested_MIC_brain_2D_intermediate0']
-config_files = ['nested_MIC_brain_2D_random0']
-config_files = ['nested_MIC_brain_2D_random3']
-config_files = ['nested_MIC_brain_2D_MR0','nested_MIC_brain_2D_MR1','nested_MIC_brain_2D_MR2','nested_MIC_brain_2D_MR3']
-config_files = ['nested_MIC_brain_2D_random0','nested_MIC_brain_2D_random1','nested_MIC_brain_2D_random2','nested_MIC_brain_2D_random3']
-config_files = ['nested_MIC_brain_2D_random0']
-config_files = ['nested_MIC_brain_2D_diff5','nested_MIC_brain_2D_MR3','nested_MIC_brain_2D_random0','nested_MIC_brain_2D_random3']
-config_files = ['nested_MIC_brain_2D_diff5','nested_MIC_brain_2D_MR3']
-# config_files = ['nested_MIC_brain_2D_intermediate3']
-config_files = ['nested_MIC_brain_2D_random0','nested_MIC_brain_2D_random3']
-
+config_files = 8*['nested_MIC_dropout']
+config_files = ['nested_MIC_dropout']
+config_files = ['nested_MIC_cookie_2D']
+config_files = ['nested_MIC_brain_2D']
+config_files = ['nested_MIC_brain_2D_diff5_SC1']
+config_files = ['nested_MIC_APPGML_brain_2D']
+config_files = ['nested_MIC_brain_2D_intermediate0','nested_MIC_brain_2D_intermediate1','nested_MIC_brain_2D_intermediate2']
+config_files = ['nested_MIC_APPGML_brain_2D']
+config_files = ['nested_MIC_brain_2D_random']
 config_files = ['nested_MIC_brain_2D_diff1']
 config_files = ['nested_MIC_brain_2D_diff5']
-config_files = ['nested_MIC_brain_2D_intermediate0','nested_MIC_brain_2D_intermediate1','nested_MIC_brain_2D_intermediate2','nested_MIC_brain_2D_intermediate3']
-config_files = ['nested_MIC_brain_2D_MR3']
-config_files = ['nested_MIC_brain_2D_intermediate2']
-config_files = ['nested_MIC_brain_2D_random0']
-# config_files = ['nested_MIC_brain_2D_diff5']
-# config_files = ['nested_MIC_brain_2D_intermediate3']
-# config_files = ['nested_MIC_brain_2D_MR3']
 
-# config_files = ['nested_MIC_brain_2D_intermediate0','nested_MIC_brain_2D_intermediate1','nested_MIC_brain_2D_intermediate2','nested_MIC_brain_2D_intermediate3']
+# TMI paper
+nb_computation = 4
+# config_files = nb_computation*['Gong_initDNA_MIC_brain_2D_MR3','Gong_skip3_3_my_settings','Gong_initDNA_skip3_3_my_settings']
+# config_files = ['Gong_initDNA_skip3_3_my_settings']
+# config_files = ['Gong_initDNA_MIC_brain_2D_MR3']
+# config_files = ['Gong_MIC_brain_2D_MR3']
+# config_files = ['Gong_skip3_3_my_settings','nested_ADMMLim_more_ADMMLim_it_10_configuration']
+# config_files = nb_computation*['Gong_image4_1_MR3','nested_image4_1_MR3']
+config_files = ['nested_image4_1_MR3','Gong_image4_1_MR3','nested_image4_1_MR3']
+
+# config_files = ['nested_APPGML_MIC_brain_2D_MR3']
+config_files = ['nested_MIC_brain_2D_MR3']
+config_files = (nb_computation-1)*['Gong_MIC_brain_2D_MR3']
+config_files += nb_computation*['nested_MIC_brain_2D_MR3']
+
+# config_files = nb_computation*['BSREM_Bowsher_configuration']
+# # config_files = ["nested_image4_1_MR3"]
+# config_files = ["Gong_image4_1_MR3"]
+
+# config_files = ['ADMMLim_Bowsher_configuration']
+# config_files = ['APGMAP_Bowsher_configuration']
+
+# config_files = (nb_computation-1)*['APGMAP_configuration']
+# config_files = nb_computation*['APGMAP_configuration']
+# # config_files = ['APGMAP_configuration']
+# # config_files = nb_computation*['ADMMLim_configuration']
+# # config_files = (nb_computation-1)*['ADMMLim_configuration']
+config_files = ['ADMMLim_configuration']
+# config_files = nb_computation*['OSEM_configuration']
+# config_files = ['OSEM_configuration']
+
+# config_files = ['nested_MIC_brain_2D_DNA_ADMMLim']
+# config_files = ['nested_MIC_cookie_2D_DNA_ADMMLim']
+# config_files = ['nested_MIC_several_inputs_brain_2D']
 # config_files = [f[:-3] for f in os.listdir('all_config') if os.path.isfile(os.path.join('all_config', f))]
 
 # config_files = ['ADMMLim_configuration']
-# config_files = ['BSREM_configuration']
 
-i=-1
+i=-1+1
+num_meth=0
 for lib_string in config_files:
     i+=1
+    if (i>=nb_computation): # Restart count for new setting
+        i=2
+        num_meth +=1
     # try:
     if (True):
         lib = importlib.import_module('all_config.' + lib_string)
         config = lib.config_func_MIC()
         # config["image"] = tune.grid_search(['image4_0'])
-        # config["image"] = tune.grid_search(['image50_1'])
-        # config["image"] = tune.grid_search(['image50_0'])
-        # if (i > 0):
-        #     config["image"] = tune.grid_search(['image40_1'])
-        # else:
-        config["image"] = tune.grid_search(['image40_1'])
-        # config["image"] = tune.grid_search(['image4_0'])
-        config["image"] = tune.grid_search(['image50_1'])
         # config["image"] = tune.grid_search(['image010_3D'])
-        config["replicates"] = tune.grid_search(list(range(1,6+1)))
-        config["replicates"] = tune.grid_search(list(range(1,40+1)))
+        if 'brain' in lib_string:
+            config["image"] = tune.grid_search(['image50_1'])
+            config["image"] = tune.grid_search(['image40_1'])
+            config["image"] = tune.grid_search(['image50_2'])
+        else:
+            
+            config["image"] = tune.grid_search(['image40_1'])
+            config["image"] = tune.grid_search(['image50_2'])
+            # config["image"] = tune.grid_search(['image50_1'])
+
+        config["image"] = tune.grid_search(['image4_1'])
+        config["image"] = tune.grid_search(['image50_2'])
+        config["replicates"] = tune.grid_search(list(range(1+int(40/nb_computation)*i,1+int(40/nb_computation)*i+int(40/nb_computation))))
+        # config["replicates"] = tune.grid_search(list(range(1+int(20/nb_computation)*i,1+int(20/nb_computation)*i+int(20/nb_computation))))
         config["replicates"] = tune.grid_search(list(range(1,1+1)))
-        # config["replicates"] = tune.grid_search([1])
-        config["tensorboard"] = tune.grid_search([False])
-        config["DIP_early_stopping"] = tune.grid_search([False])
-        config["nb_outer_iteration"] = tune.grid_search([2])
-        # config["replicates"] = tune.grid_search([7,10,15,25,34,38,39])
-        config["max_iter"] = tune.grid_search([100])
+        # if (i==0):
+        #     config["max_iter"] = tune.grid_search([500])
+        # else:
+        #     config["max_iter"] = tune.grid_search([30])
+            # i=-1
+        config["max_iter"] = tune.grid_search([1000])
         # config["post_reco_in_suffix"] = tune.grid_search([False]) # If want to show EMV results which were not on post reconstruction, in DNA init
         # config["read_only_MV_csv"] = tune.grid_search([True])
-        config["ray"] = True
+        config["ray"] = False
+        print(config["method"])
+        print(config["replicates"])
 
         root = os.getcwd()
 
@@ -185,10 +210,6 @@ for lib_string in config_files:
 
             # Launch task
             classTask.runRayTune(config_tmp,root,task)
-            # try:
-            #     classTask.runRayTune(config_tmp,root,task)
-            # except:
-            #     print("raytune crashed")
             #'''
 
         if (task != "post_reco"):
@@ -199,7 +220,7 @@ for lib_string in config_files:
                 if (type(value) == type(config_without_grid_search)):
                     if ("grid_search" in value):
                         config_without_grid_search[key] = value['grid_search']
-                        
+
                         if len(config_without_grid_search[key]) > 1:
                             print(key)
 

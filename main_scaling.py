@@ -16,25 +16,36 @@ from ray import tune
 
 # Configuration dictionnary for general settings parameters (not hyperparameters)
 settings_config = {
-    "image" : tune.grid_search(['image40_0']), # Image from database
+    "image" : tune.grid_search(['image50_2']), # Image from database
+    "image" : tune.grid_search(['image4_1']), # Image from database
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['nested']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "image" : tune.grid_search(['image40_1']), # Image from database
+    "image" : tune.grid_search(['image4_0']), # Image from database
+    
+    
+    "method" : tune.grid_search(['nested_ADMMLim_more_ADMMLim_it_10','nested_APPGML_1it','Gong_skip3_3_my_settings','Gong_CT_1_skip']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['nested_APPGML_1it']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    
+    "method" : tune.grid_search(['Gong_skip3_3_my_settings','Gong_CT_1_skip']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    # "method" : tune.grid_search(['Gong_skip3_3_my_settings']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+
+
+
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
     "debug" : False, # Debug mode = run without raytune and with one iteration
     "ray" : False, # Ray mode = run with raytune if True, to run several settings in parallel
     "tensorboard" : True, # Tensorboard mode = show results in tensorboard
-    "all_images_DIP" : tune.grid_search(['True']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
+    "all_images_DIP" : tune.grid_search(['Last']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
     "experiment" : tune.grid_search([24]),
-    "replicates" : tune.grid_search(list(range(1,100+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
-    "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
+    "replicates" : tune.grid_search(list(range(1,40+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
     "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
     "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMLim)
 }
 # Configuration dictionnary for previous hyperparameters, but fixed to simplify
 fixed_config = {
-    "max_iter" : tune.grid_search([100]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
+    "max_iter" : tune.grid_search([500]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
     "finetuning" : tune.grid_search(['last']),
     "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
@@ -49,32 +60,29 @@ fixed_config = {
     "alpha_EMV" : tune.grid_search([0.1]), # EMV forgetting factor alpha
     "windowSize" : tune.grid_search([50]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "patienceNumber" : tune.grid_search([100]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "recoInNested" : tune.grid_search(["ADMMLim"]), # Which algorithm to use in nested (ADMMLim or APGMAP)
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
     "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
     "rho" : tune.grid_search([0.003,8e-4,0.008,0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    "rho" : tune.grid_search([0,10,20,30,40,50,60,70,80,90,100,110,120,130,300,500,1000]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    "rho" : tune.grid_search([1]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    "adaptive_parameters_DIP" : tune.grid_search(["rho_decay"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
+    "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "adaptive_parameters_DIP" : tune.grid_search(["nothing"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
     "mu_DIP" : tune.grid_search([10]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
-    "tau_DIP" : tune.grid_search([0.92]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
+    "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
     ## network hyperparameters
     "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
     "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
-    # "skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-    # "input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)
     "input" : tune.grid_search(['random']), # Neural network input (random or CT)
+    #"input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMLim - OPTITR hyperparameters
     "nb_outer_iteration": tune.grid_search([30]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
     #"nb_outer_iteration": tune.grid_search([3]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
-    "nb_outer_iteration": tune.grid_search([10]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
+    "nb_outer_iteration": tune.grid_search([3]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
     "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMLim
     "adaptive_parameters" : tune.grid_search(["both"]), # which parameters are adaptive ? Must be set to nothing, alpha, or both (which means alpha and tau)
     "mu_adaptive" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
@@ -110,10 +118,79 @@ file_seed = open(os.getcwd() + "/seed.txt","w+")
 file_seed.write(str(settings_config["random_seed"]["grid_search"][0]))
 file_seed.close()
 
-
 for method in config["method"]['grid_search']:
+
+    '''
+    # Gong reconstruction
+    if (config["method"]["grid_search"][0] == 'Gong' and len(config["method"]["grid_search"]) == 1):
+        print("configuration fiiiiiiiiiiiiiiiiiiile")
+        #config = np.load(root + 'config_DIP.npy',allow_pickle='TRUE').item()
+        from Gong_configuration import config_func_MIC
+        #config = config_func()
+        config = config_func_MIC()
+
+    # nested reconstruction
+    if (config["method"]["grid_search"][0] == 'nested' and len(config["method"]["grid_search"]) == 1):
+        print("configuration fiiiiiiiiiiiiiiiiiiile")
+        from nested_configuration import config_func_MIC
+        #config = config_func()
+        config = config_func_MIC()
+
+    # MLEM reconstruction
+    if (config["method"]["grid_search"][0] == 'MLEM' and len(config["method"]["grid_search"]) == 1):
+        print("configuration fiiiiiiiiiiiiiiiiiiile")
+        from MLEM_configuration import config_func_MIC
+        #config = config_func()
+        config = config_func_MIC()
+
+    # OSEM reconstruction
+    if (config["method"]["grid_search"][0] == 'OSEM' and len(config["method"]["grid_search"]) == 1):
+        print("configuration fiiiiiiiiiiiiiiiiiiile")
+        from OSEM_configuration import config_func_MIC
+        #config = config_func()
+        config = config_func_MIC()
+
+    # BSREM reconstruction
+    if (config["method"]["grid_search"][0] == 'BSREM' and len(config["method"]["grid_search"]) == 1):
+        print("configuration fiiiiiiiiiiiiiiiiiiile")
+        from BSREM_configuration import config_func_MIC
+        #config = config_func()
+        config = config_func_MIC()
+
+    # APGMAP reconstruction
+    if ('APGMAP' in config["method"]["grid_search"][0] and len(config["method"]["grid_search"]) == 1):
+        print("configuration fiiiiiiiiiiiiiiiiiiile")
+        from APGMAP_configuration import config_func_MIC
+        #config = config_func()
+        config = config_func_MIC()
+
+    # ADMMLim reconstruction
+    if (config["method"]["grid_search"][0] == 'ADMMLim' and len(config["method"]["grid_search"]) == 1):
+        print("configuration fiiiiiiiiiiiiiiiiiiile")
+        from ADMMLim_configuration import config_func_MIC
+        #config = config_func()
+        config = config_func_MIC()
+    '''
     config_tmp = dict(config)
     config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
+
+    '''
+    if (method == 'BSREM'):
+        config_tmp["rho"]['grid_search'] = [0.01,0.02,0.03,0.04,0.05]
+
+    if (method == 'Gong'):
+        config_tmp["nb_inner_iteration"]['grid_search'] = [50]
+        #config_tmp["lr"]['grid_search'] = [0.5]
+        #config_tmp["rho"]['grid_search'] = [0.0003]
+        config_tmp["lr"]['grid_search'] = [0.5]
+        config_tmp["rho"]['grid_search'] = [0.0003]
+    elif (method == 'nested'):
+        config_tmp["nb_inner_iteration"]['grid_search'] = [10]
+        #config_tmp["lr"]['grid_search'] = [0.01] # super nested
+        #config_tmp["rho"]['grid_search'] = [0.003] # super nested
+        config_tmp["lr"]['grid_search'] = [0.05]
+        config_tmp["rho"]['grid_search'] = [0.0003]
+    '''
 
     # Choose task to do (move this after raytune !!!)
     if (config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested'):
@@ -124,14 +201,13 @@ for method in config["method"]['grid_search']:
 
     #task = 'full_reco_with_network' # Run Gong or nested ADMM
     #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
-    # task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
-    # task = 'show_results_post_reco'
+    #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
+    #task = 'show_results_post_reco'
     #task = 'show_results'
-    #task = 'show_metrics_results_already_computed'
+    task = 'show_metrics_results_already_computed'
     #task = 'show_metrics_ADMMLim'
     #task = 'show_metrics_nested'
     #task = 'compare_2_methods'
-    task = 'compute_likelihood'
 
     # Local files to import, AFTER CONFIG TO SET RANDOM SEED OR NOT
     if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
@@ -163,9 +239,6 @@ for method in config["method"]['grid_search']:
         config["average_replicates"] = tune.grid_search([True])
         from iResultsADMMLim_VS_APGMAP import iResultsADMMLim_VS_APGMAP
         classTask = iResultsADMMLim_VS_APGMAP(config)
-    elif (task == 'compute_likelihood'): # Compute likelihood with simple CASToR command line just to compute FOMs on given initialization image
-        from iComputeLikelihood_nested import iComputeLikelihood_nested
-        classTask = iComputeLikelihood_nested(config)
 
     # Incompatible parameters (should be written in vGeneral I think)
     if (config["method"]["grid_search"][0] == 'nested' and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
@@ -174,7 +247,7 @@ for method in config["method"]['grid_search']:
         raise ValueError("Only Gong or nested can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
     elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["all_images_DIP"]["grid_search"][0] != "True" and config["DIP_early_stopping"]["grid_search"][0] == "True"):
         raise ValueError("Please set all_images_DIP to True to save all images for nested or Gong reconstruction if using WMV.")
-    elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["rho"]["grid_search"][0] == 0 and task != "post_reco" and task != "show_results_post_reco"):
+    elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["rho"]["grid_search"][0] == 0 and task != "post_reco"):
         raise ValueError("Please set rho > 0 for nested or Gong reconstruction (or set task to post reconstruction).")
     elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["DIP_early_stopping"]["grid_search"][0]):
         raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
@@ -188,36 +261,37 @@ for method in config["method"]['grid_search']:
     os.system("rm -rf " + root + '/data/Algo/' + 'replicates_for_last_run_' + method + '.txt')
 
     # Launch task
-    classTask.runRayTune(config_tmp,root,task)
+    if(task != "show_metrics_results_already_computed"):
+        classTask.runRayTune(config_tmp,root,task)
     #'''
 
-# if (task != "post_reco"):
-#     config_without_grid_search = dict(config)
-#     task = 'show_metrics_results_already_computed_following_step'
+if (task != "post_reco"):
+    config_without_grid_search = dict(config)
+    task = 'show_metrics_results_already_computed_following_step'
 
-#     for key,value in config_without_grid_search.items():
-#         if (type(value) == type(config_without_grid_search)):
-#             if ("grid_search" in value):
-#                 config_without_grid_search[key] = value['grid_search']
+    for key,value in config_without_grid_search.items():
+        if (type(value) == type(config_without_grid_search)):
+            if ("grid_search" in value):
+                config_without_grid_search[key] = value['grid_search']
                 
-#                 if len(config_without_grid_search[key]) > 1:
-#                     print(key)
+                if len(config_without_grid_search[key]) > 1:
+                    print(key)
 
-#                 #if len(config_without_grid_search[key]) == 1:
-#                 if key != 'rho' and key != 'replicates' and key != 'method':
-#                     if key != 'A_AML' and key != 'post_smoothing' and key != 'lr':
-#                         config_without_grid_search[key] = config_without_grid_search[key][0]
+                #if len(config_without_grid_search[key]) == 1:
+                if key != 'rho' and key != 'replicates' and key != 'method':
+                    if key != 'A_AML' and key != 'post_smoothing' and key != 'lr':
+                        config_without_grid_search[key] = config_without_grid_search[key][0]
 
-#     from iFinalCurves import iFinalCurves
-#     classTask = iFinalCurves(config_without_grid_search)
-#     config_without_grid_search["ray"] = False
-#     classTask.config_with_grid_search = config
-#     classTask.runRayTune(config_without_grid_search,root,task)
+    from iFinalCurves import iFinalCurves
+    classTask = iFinalCurves(config_without_grid_search)
+    config_without_grid_search["ray"] = False
+    classTask.config_with_grid_search = config
+    classTask.runRayTune(config_without_grid_search,root,task)
 
-# '''
-# classTask = iResultsADMMLim_VS_APGMAP(config_without_grid_search)
-# config_without_grid_search["ray"] = False
-# classTask.runRayTune(config_without_grid_search,root,task)
-# '''
-# #sys.stdout.close()
-# #sys.stdout=stdoutOrigin
+'''
+classTask = iResultsADMMLim_VS_APGMAP(config_without_grid_search)
+config_without_grid_search["ray"] = False
+classTask.runRayTune(config_without_grid_search,root,task)
+'''
+#sys.stdout.close()
+#sys.stdout=stdoutOrigin
