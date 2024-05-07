@@ -87,7 +87,8 @@ class iResults(vDenoising):
     
         # # Loading MR-like image
         # image_mr = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw',shape=(self.PETImage_shape),type_im='<f')
-        # self.write_image_tensorboard(self.writer,image_atn,"Attenuation map (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # Attenuation map in tensorboard
+        image_mr = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type_im='<f')
+        self.write_image_tensorboard(self.writer,image_mr,"DIP input (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # Attenuation map in tensorboard
 
         '''
         image = self.image_gt
@@ -315,7 +316,7 @@ class iResults(vDenoising):
             # var_x = np.arange(self.patienceNumber + self.epochStar + 1)  # define x axis of EMV     
         
         # Remove first iterations 
-        remove_first_iterations = 0
+        remove_first_iterations = 190
         # remove_first_iterations = 150
         # Remove last iterations
         last_iteration = self.total_nb_iter
@@ -324,12 +325,16 @@ class iResults(vDenoising):
         
         var_x = var_x[remove_first_iterations:last_iteration+1]
         self.VAR_recon = self.VAR_recon[remove_first_iterations:last_iteration+1]
+        log_MV = True
+        if (log_MV):
+            self.VAR_recon = np.log(self.VAR_recon)
         if (not config["read_only_MV_csv"]):
             self.MSE_WMV = self.MSE_WMV[remove_first_iterations:last_iteration+1]
             self.PSNR_WMV = self.PSNR_WMV[remove_first_iterations:last_iteration+1]
             self.SSIM_WMV = self.SSIM_WMV[remove_first_iterations:last_iteration+1]
 
-        plt.plot(var_x, self.VAR_recon, 'r')
+        remove_only_first_iterations_VAR = 250 - remove_first_iterations
+        plt.plot(var_x[remove_only_first_iterations_VAR:], self.VAR_recon[remove_only_first_iterations_VAR:], 'r')
         plt.title('Window Moving Variance,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
         plt.axvline(self.epochStar, c='g')  # plot a vertical line at self.epochStar(detection point)
         # plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
@@ -394,32 +399,40 @@ class iResults(vDenoising):
             # 2.6 plot all the curves together
             fig, ax1 = plt.subplots()
             fig.subplots_adjust(right=0.8, left=0.1, bottom=0.12)
+            ax1.set_yticks([])
             ax2 = ax1.twinx()  # creat other y-axis for different scale
             ax3 = ax1.twinx()  # creat other y-axis for different scale
             ax4 = ax1.twinx()  # creat other y-axis for different scale
             if (config["EMV_or_WMV"] == "WMV"):
                 ax2.spines.right.set_position(("axes", 1.18))
-            p4, = ax4.plot(var_x,self.MSE_WMV, "y", label="MSE")
-            p1, = ax1.plot(var_x,self.PSNR_WMV, label="PSNR")
-            p2, = ax2.plot(var_x, self.VAR_recon, "r", label="WMV, alpha=" + str(self.alpha_EMV))
-            p3, = ax3.plot(var_x,self.SSIM_WMV, "orange", label="SSIM")
+            p2, = ax2.plot(var_x[:-1],self.MSE_WMV[:-1], "y", label="MSE")
+            # p1, = ax1.plot(var_x,self.PSNR_WMV, label="PSNR")
+            p3, = ax3.plot(var_x[:-1],self.SSIM_WMV[:-1], "orange", label="SSIM")
+            p4, = ax4.plot(var_x[remove_only_first_iterations_VAR:], self.VAR_recon[remove_only_first_iterations_VAR:], "r", label=config["EMV_or_WMV"] + ", " + r'$\alpha$' + "=" + str(self.alpha_EMV))
             #ax1.set_xlim(0, self.total_nb_iter-1)
             ax1.set_xlim(0, min(self.epochStar+self.patienceNumber,self.total_nb_iter-1))
-            plt.title('skip : ' + str(config["skip_connections"]) + ' lr=' + str(self.lr))
+            # plt.title('skip : ' + str(config["skip_connections"]) + ' lr=' + str(self.lr))
+            """
             ax1.set_ylabel("Peak Signal-Noise ratio")
-            ax2.set_ylabel("Window-Moving variance")
+            if (log_MV):
+                ax2.set_ylabel("Window-Moving variance (log scale)")
+            else:
+                ax2.set_ylabel("Window-Moving variance")
             ax3.set_ylabel("Structural similarity")
             ax4.yaxis.set_visible(False)
             ax1.yaxis.label.set_color(p1.get_color())
             ax2.yaxis.label.set_color(p2.get_color())
             ax3.yaxis.label.set_color(p3.get_color())
+            """
             tkw = dict(size=3, width=1)
-            ax1.tick_params(axis='y', colors=p1.get_color(), **tkw)
-            ax1.tick_params(axis='x', colors="green", **tkw)
+            # ax1.tick_params(axis='y', colors=p1.get_color(), **tkw)
+            ax1.tick_params(axis='x', **tkw)
             ax2.tick_params(axis='y', colors=p2.get_color(), **tkw)
             ax3.tick_params(axis='y', colors=p3.get_color(), **tkw)
             ax1.tick_params(axis='x', **tkw)
-            ax1.legend(handles=[p1, p3, p2, p4])
+            # ax1.legend(handles=[p1, p3, p2, p4])
+            ax1.legend(handles=[p3, p2, p4],loc="lower left")
+            ax1.set_xlabel("DIP iterations")
             ax1.axvline(self.epochStar, c='g', linewidth=1, ls='--')
             if (config["EMV_or_WMV"] == "WMV"):
                 ax1.axvline(self.windowSize-1, c='g', linewidth=1, ls=':')

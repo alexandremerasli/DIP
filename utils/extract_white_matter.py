@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import skimage.morphology as morph
+from skimage.morphology import disk, erosion
 
 def fijii_np(path,shape,type_im='>u2'):
     """"Transforming raw data to numpy array"""
@@ -22,21 +22,26 @@ def save_img(img,name):
     img.tofile(fp)
     print('Succesfully save in:', name)
 
-root = 'data/Algo/Data/database_v2/image50_1/image50_1.raw'
+# phantom = "image50_1"
+phantom = "image50_2"
+
+root = 'data/Algo/Data/database_v2/' + phantom + '/' + phantom + '.raw'
 
 PETImage_shape = (112,112)
 
 # Read image and MR tumors
 img1_np = fijii_np(root, shape=(PETImage_shape))
-MR_img = fijii_np("data/Algo/Data/database_v2/image50_1/image50_1_mr.raw", shape=(PETImage_shape))
+MR_img = fijii_np("data/Algo/Data/database_v2/" + str(phantom) + "/" + str(phantom) + "_mr.raw", shape=(PETImage_shape))
 # Threshold
 img1_np = np.where(img1_np == 2,1,0)
 img1_np = img1_np.astype(np.float32)
-# Threshold MR to get tumor ROIs
-MR_img = np.where(MR_img == 1400,1,0)
-MR_img = MR_img.astype(np.float32)
-# Remove tumors from thresholded PET image
-img1_np = np.where(MR_img == 1,0,img1_np)
+
+if (phantom == "image50_1"):
+    # Threshold MR to get tumor ROIs
+    MR_img = np.where(MR_img == 1400,1,0)
+    MR_img = MR_img.astype(np.float32)
+    # Remove tumors from thresholded PET image
+    img1_np = np.where(MR_img == 1,0,img1_np)
 
 
 # Show before erosion
@@ -44,9 +49,9 @@ plt.imshow(img1_np,cmap="gray")
 
 # Erosion
 # declare an structuring elment
-selem = morph.disk(2)
+selem = disk(2)
 # apply a scipy morphological operation
-eroded_im = morph.erosion(img1_np, selem)
+eroded_im = erosion(img1_np, selem)
 
 # Show result
 plt.figure()
@@ -54,7 +59,8 @@ plt.imshow(eroded_im,cmap="gray")
 plt.show()
 
 # save_img(img1_np,'/disk/workspace_reco/nested_admm/data/Algo/Data/database_v2/image010_3D/phantom_mask010_3D.raw')
-save_img(eroded_im,"data/Algo/Data/database_v2/image50_1/background_mask50_1.raw")
+save_img(eroded_im,"data/Algo/Data/database_v2/" + phantom + "/background_mask" + phantom[5:] + ".raw")
+save_img(eroded_im,"data/Algo/Data/database_v2/" + phantom + "/white_matter_" + phantom[5:] + ".raw")
 
 
 

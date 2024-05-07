@@ -10,7 +10,7 @@ from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, m
 from numpy import max as max_np
 from numpy import min as min_np
 from pandas import read_table
-from matplotlib.pyplot import imshow, figure, colorbar, savefig, title, gcf, axis, show
+from matplotlib.pyplot import imshow, figure, colorbar, savefig, title, gcf, axis, show, xlabel
 from re import split, findall, compile
 
 import abc
@@ -947,9 +947,10 @@ class vGeneral(abc.ABC):
             cmap_ = "gray_r"
         if (full_contrast):
             imshow(image, cmap=cmap_,vmin=min_np(image),vmax=max_np(image)) # Showing each image with maximum contrast and white is zero (gray_r) 
+            # imshow(image, cmap=cmap_,vmin=0,vmax=1) # Showing all images with same contrast and white is zero (gray_r)
+            imshow(image, cmap=cmap_,vmin=0.06,vmax=0.145) # Showing all images with same contrast and white is zero (gray_r)
         else:
             imshow(image, cmap=cmap_,vmin=min_np(image_gt),vmax=1.25*max_np(image_gt)) # Showing all images with same contrast and white is zero (gray_r)
-        # colorbar()
         axis('off')
         #show()
 
@@ -961,14 +962,23 @@ class vGeneral(abc.ABC):
         #system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
         from textwrap import wrap
         if (MIC_show):
+            cbar = colorbar()
             import matplotlib.pyplot as plt
             plt.tight_layout()
             plt.rcParams['figure.figsize'] = 10, 10
+            import matplotlib
+            font = {'family' : 'normal',
+            'size'   : 14}
+            matplotlib.rc('font', **font)
+            cbar.ax.tick_params(labelsize=20) 
         else:
             colorbar()
             axis('off')
-        savefig(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
 
+        # title("<0.06",fontsize=20)
+        title(">0.14",fontsize=20)
+        savefig(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
+        
         # added line for small title of interest
         suffix = self.suffix_func(self.config,hyperparameters_list = ["lr", "opti_DIP"])
         

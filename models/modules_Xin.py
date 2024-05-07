@@ -19,7 +19,7 @@ from os.path import isfile
 from iWMV import iWMV
 
 from .common import * # for Lipschitz Gaussian controle modules
-# from .swinUNETR.SwinUNetr import * # for SwinUNetr  encoder= swin transformer, decoder = cnn
+from .swinUNETR.SwinUNetr import * # for SwinUNetr  encoder= swin transformer, decoder = cnn
 # from .swinUNET.SwinUNet import * # for SwinUNet  unet architecture with pure swin transformer
 # from .swinIR.swinIR import *  # for SwinIR  replace the bottleneck of unet by swin transformer
 # from .restormer.restormer import * 
@@ -806,30 +806,21 @@ class DIP_skip_add(Full_DIP_backbone):
         return out
 
 
-class Swin_Unetr(pl.LightningModule):
+# class Swin_Unetr(pl.LightningModule):
+class Swin_Unetr(Full_DIP_backbone):
 
-    def __init__(self, param_scale, 
-                 config, suffix):
-        super().__init__()
-        # random_seed = 114514
-        # pl.seed_everything(random_seed)
-        # 训练参数，学习率，迭代次数，图片处理参数，图片储存位置， 图片储存名字， 图片训练次数
-        self.lr = config['lr']
-        self.iter_DIP = config['iters']
-        self.param = param_scale 
-        self.path="data/Algo/image40_1/replicate_1/nested"   
-        self.suffix  = suffix
-        self.repeat = config['repeat']
-        
-        
-        # 网络参数相关,定义model类型， layer数量，以及每层layers的channels数量（列表形式）
-        self.config = config
-        self.model_name = config['model_name']
-        self.depths = config['depths']
-        self.num_heads = config['num_heads']
-        self.embed_dim = config['embed_dim']
-        self.use_v2 = config['use_v2']
-        self.sigma_p = config['sigma_p']
+    def __init__(self, num_heads,embed_dim,unknown_2,kernel_size,skip,num_layer,depths,mode,config_Xin,suffix_Xin,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init):
+        # super().__init__()
+
+        self.embed_dim = embed_dim
+        self.kernel_size = kernel_size
+        self.skip = skip
+        self.num_layers = num_layer
+        self.depths = depths
+        self.mode = mode
+        self.num_heads = num_heads
+        self.sigma_p = 0
+        super().__init__(0,config,suffix,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init)
         self.initialize_network()
         # for m in self.modules():
 		# # 判断是否属于Conv2d
@@ -871,8 +862,7 @@ class Swin_Unetr(pl.LightningModule):
     
 class Swin_Unet(pl.LightningModule):
 
-    def __init__(self, param_scale, 
-                 config, suffix):
+    def __init__(self, unknown_param,embed_dim,unknown_2,kernel_size,skip,num_layer,depths,mode,config_Xin,suffix_Xin,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init):
         super().__init__()
         # random_seed = 114514
         # pl.seed_everything(random_seed)

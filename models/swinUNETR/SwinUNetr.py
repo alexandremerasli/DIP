@@ -294,6 +294,7 @@ class SwinUNETR(nn.Module):
         dec0 = self.decoder2(dec1, enc1)
         out = self.decoder1(dec0, enc0)
         logits = self.out(out)
+        logits = self.out(dec4)
         
         return logits
 

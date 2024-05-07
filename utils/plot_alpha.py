@@ -30,6 +30,11 @@ subfolder = "ADMMLim_TOF_rapide"
 
 folder_path = "/home/meraslia/workspace_reco/nested_admm/data/Algo/image40_0/replicate_9/nested/Block2/config_image=BSREM_it30_rho=0.0003_adapt=both_mu_DI=2_tau_D=100_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/"
 folder_path = "/disk/workspace_reco/nested_admm/data/Algo/image40_0/replicate_9/nested/Block2/config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/"
+
+folder_path = "/home/meraslia/workspace_reco/nested_admm/data/Algo/image40_0/replicate_1/nested/Block2/config_image=BSREM_it30_rho=1_adapt=rho_decay_mu_DI=10_tau_D=0.8_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/"
+folder_path = "/home/meraslia/workspace_reco/nested_admm/data/Algo/image40_0/replicate_1/nested/Block2/config_image=BSREM_it30_rho=0.01_adapt=rho_decay_mu_DI=10_tau_D=0.9_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/"
+# folder_path = "/home/meraslia/workspace_reco/nested_admm/data/Algo/image40_0/replicate_1/nested/Block2/config_image=BSREM_it30_rho=1_adapt=both_mu_DI=10_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/"
+
 subfolder = "adaptive rho"
 
 subsubfolder = subfolder
@@ -38,6 +43,10 @@ finalOuterIter = 99
 alpha_list = np.zeros((finalOuterIter,1))
 relativePrimalResidual_list = np.zeros((finalOuterIter,1))
 relativeDualResidual_list = np.zeros((finalOuterIter,1))
+
+ema_primal = np.zeros((finalOuterIter,1))
+ema_dual = np.zeros((finalOuterIter,1))
+alpha_EMA = 0.1
 
 #'''
 for outer_it in range(1,finalOuterIter+1):
@@ -76,13 +85,31 @@ for outer_it in range(1,finalOuterIter+1):
     relativeDualResidual_list[outer_it - 1] = float(relativeDualResidualRowString)
     print("relativeDualResidual",relativeDualResidual_list[outer_it - 1])
 
+
+
+    ema_primal[outer_it - 1] = (1-alpha_EMA) * ema_primal[outer_it - 2] + alpha_EMA * relativePrimalResidual_list[outer_it - 1]
+    ema_dual[outer_it - 1] = (1-alpha_EMA) * ema_dual[outer_it - 2] + alpha_EMA * relativeDualResidual_list[outer_it - 1]
+
 fig, ax1 = plt.subplots()
+# plt.plot(np.arange(1,finalOuterIter+1),np.log10(500*relativePrimalResidual_list))
 plt.plot(np.arange(1,finalOuterIter+1),np.log10(relativePrimalResidual_list))
 plt.plot(np.arange(1,finalOuterIter+1),np.log10(relativeDualResidual_list))
 plt.legend(["relativePrimalResidual","relativeDualResidual"])
 plt.title("relative residuals for " + subfolder)
 plt.xlabel("it")
 plt.ylabel("relativePrimalResidual (log scale)")
-ax1.set_ylim(-2,3)
+# ax1.set_ylim(-2,3)
 plt.savefig("relativePrimalResidual for " + subfolder + ".png")
+#'''
+
+
+fig, ax2 = plt.subplots()
+plt.plot(np.arange(1,finalOuterIter+1),np.log10(ema_primal))
+plt.plot(np.arange(1,finalOuterIter+1),np.log10(ema_dual))
+plt.legend(["ema_primal","ema_dual"])
+plt.title("EMA relative residuals for " + subfolder)
+plt.xlabel("it")
+plt.ylabel("EMA relativePrimalResidual (log scale)")
+# ax1.set_ylim(-2,3)
+plt.savefig("EMA relativePrimalResidual for " + subfolder + ".png")
 #'''
