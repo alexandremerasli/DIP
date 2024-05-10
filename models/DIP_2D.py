@@ -1,4 +1,4 @@
-from torch import max, abs, optim, load, mean, clone, rand
+from torch import max, abs, optim, load, mean, clone, rand, matmul, Tensor
 from torch.nn import ReplicationPad2d, Conv2d, BatchNorm2d, LeakyReLU, Conv2d, BatchNorm2d, LeakyReLU, Sequential, Upsample, ReLU, MSELoss
 from pytorch_lightning import LightningModule, seed_everything
 from numpy import min as min_np
@@ -16,7 +16,7 @@ from iWMV import iWMV
 
 class DIP_2D(LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init,end_to_end):
         super().__init__()
 
         # Save all the arguments passed to your model in the checkpoint, especially to save learning rate
@@ -116,6 +116,40 @@ class DIP_2D(LightningModule):
         # Monitor lr
         self.mean_inside_list = []
         self.ema_lr = [0, 0]
+
+        # End to end reconstruction : load system matrix A
+        self.end_to_end = end_to_end
+
+        # Define shapes
+        self.subroot_data = self.root + '/data/Algo/' # Directory root
+        self.phantom = self.config["image"]
+        self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+        self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
+        if ("3D" not in self.phantom and self.scanner == "mMR_2D"):
+            self.sinogram_shape = (344,252,1)
+        elif ("3D" not in self.phantom and self.scanner == "mCT_2D"):
+            self.sinogram_shape = (336,336,1)
+        # Load stored system matrix A
+        A = self.fijii_np("data/Algo/final_syst_mat.img",(self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1]),type_im='<f')
+        
+        ##### to be removed
+        # A = self.fijii_np("data/Algo/final_syst_mat.img",(1073741823,1),type_im='<f')
+        # A = zeros((self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1]))
+        # import numpy as np
+        # almost_shape = int(1073741823/(112*112))
+        # A = np.reshape(A[:almost_shape*112*112],(almost_shape,112*112))
+        # # A = np.resize(A,(self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1]))
+        # A_fullsize = zeros((self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1]))
+        # A_fullsize[:85598,:12544] = np.copy(A)
+
+        # x = np.ones((112*112))
+        # Ax_without_norm_atn = np.dot(A_fullsize,x)
+        # self.A_torch = Tensor(A_fullsize)
+
+
+
+        # Convert A to torch tensor
+        self.A_torch = Tensor(A)
 
         '''
         if (config['mlem_sequence'] is None):
@@ -279,6 +313,9 @@ class DIP_2D(LightningModule):
     def DIP_loss(self, out, image_corrupt_torch):
         return MSELoss()(out, image_corrupt_torch) # for DIP and DD
 
+    def DIP_loss_end_to_end(self, A, out, sinogram_corrupt_torch):
+        return MSELoss()(matmul(A,out.ravel()), sinogram_corrupt_torch.ravel())
+
     def training_step(self, train_batch, batch_idx):
         self.num_total_batch += 1
         if (self.num_total_batch == 0):
@@ -291,7 +328,10 @@ class DIP_2D(LightningModule):
             image_net_input_torch, image_corrupt_torch = train_batch[0][self.idx_inside_this_batch,:,:,:,:],train_batch[1][self.idx_inside_this_batch,:,:,:,:]
             out = self.forward(image_net_input_torch)
             # logging using tensorboard logger
-            loss += self.DIP_loss(out, image_corrupt_torch)
+            if (self.end_to_end):
+                loss += self.DIP_loss_end_to_end(self.A_torch, out, image_corrupt_torch)
+            else:
+                loss += self.DIP_loss(out, image_corrupt_torch)
             # print(loss)
             self.logger.experiment.add_scalar('loss', loss,self.current_epoch)
 
@@ -446,6 +486,10 @@ class DIP_2D(LightningModule):
 
             self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
             self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
+            if ("3D" not in self.phantom and self.scanner == "mMR_2D"):
+                self.sinogram_shape = (344,252,1)
+            elif ("3D" not in self.phantom and self.scanner == "mCT_2D"):
+                self.sinogram_shape = (336,336,1)
 
             self.phantom_ROI = self.get_phantom_ROI(self.phantom)
 

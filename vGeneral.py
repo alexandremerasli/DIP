@@ -120,11 +120,21 @@ class vGeneral(abc.ABC):
                         self.suffix = "post_reco" + ' ' + self.suffix
                         self.suffix_metrics = config["task"][:10] + ' ' + self.suffix_metrics
 
+            if ("end_to_end" in config["task"] and "end_to_end" not in self.suffix):
+                self.suffix = "end_to_end" + ' ' + self.suffix
+                self.suffix_metrics = config["task"][:10] + ' ' + self.suffix_metrics
 
             # Define PET input dimensions according to input data dimensions
             self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
             self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
+            # Define sinogram dimensions
+            # self.scanner = "mCT_2D" # to be removed
+            if ("3D" not in self.phantom and self.scanner == "mMR_2D"):
+                self.sinogram_shape = (344,252,1)
+            elif ("3D" not in self.phantom and self.scanner == "mCT_2D"):
+                self.sinogram_shape = (336,336,1)
+            
             # # Define ROIs for image0 phantom, otherwise it is already done in the database
             # if (self.phantom == "image0" or self.phantom == "image2_0" and config["task"] != "show_metrics_results_already_computed"):
             #     self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
@@ -521,7 +531,7 @@ class vGeneral(abc.ABC):
     def input_dim_str_to_list(self,PETImage_shape_str):
         return [int(e.strip()) for e in PETImage_shape_str.split(',')]#[:-1]
 
-    def fijii_np(self,path,shape,type_im=None):
+    def fijii_np_old(self,path,shape,type_im=None):
         """"Transforming raw data to numpy array"""
         if (type_im is None):
             if (self.FLTNB == 'float'):
@@ -534,7 +544,7 @@ class vGeneral(abc.ABC):
         while attempts < 1000:
             attempts += 1
             try:
-                type_im = ('<f')*(type_im=='<f') + ('<d')*(type_im=='<d')
+                # type_im = ('<f')*(type_im=='<f') + ('<d')*(type_im=='<d')
                 file_path=(path)
                 dtype_np = dtype(type_im)
                 with open(file_path, 'rb') as fid:
@@ -548,7 +558,7 @@ class vGeneral(abc.ABC):
                 break
             except:
                 # fid.close()
-                type_im = ('<f')*(type_im=='<d') + ('<d')*(type_im=='<f')
+                # type_im = ('<f')*(type_im=='<d') + ('<d')*(type_im=='<f')
                 file_path=(path)
                 dtype_np = dtype(type_im)
                 with open(file_path, 'rb') as fid:
@@ -592,6 +602,22 @@ class vGeneral(abc.ABC):
             print('exception image: '+ str(e))
         '''
         # print("read from ", path)
+        return image
+    
+    def fijii_np(self,path,shape,type_im='<f'):
+        """"Transforming raw data to numpy array"""
+        if (type_im is None):
+            if (self.FLTNB == 'float'):
+                type_im = '<f'
+            elif (self.FLTNB == 'double'):
+                type_im = '<d'
+
+        file_path=(path)
+        dtype_np = dtype(type_im)
+        with open(file_path, 'rb') as fid:
+            data = fromfile(fid,dtype_np)
+            image = data.reshape(shape)
+                        
         return image
 
     def norm_imag(self,img):
