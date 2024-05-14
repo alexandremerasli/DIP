@@ -74,7 +74,7 @@ class iNestedADMM(vReconstruction):
         if ('nested' in config["method"]):
             # Compute IR for BSREM initialization image
             #IR_ref = 0.25
-            im_BSREM = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d') # loading BSREM initialization image
+            im_BSREM = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<f') # loading BSREM initialization image
             IR_ref = [np.NaN]
             classResults.compute_IR_whole(self.PETImage_shape,im_BSREM,0,IR_ref,self.phantom)
             print("BSREM IR : ",IR_ref[0])

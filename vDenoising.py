@@ -443,7 +443,7 @@ class vDenoising(vGeneral):
             else:
                 file_path = (subroot+'Data/initialization/random_input_3D_' + net + '_' + str(self.PETImage_shape[0]) + '.img')
         elif self.input == "CT":
-            if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
+            if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2" or self.phantom == "image10_1000"):
                 if (os.path.isfile(subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw')): # If MR exists
                     file_path = subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw'
             else:
@@ -463,8 +463,8 @@ class vDenoising(vGeneral):
         if (self.input == 'CT' and self.net != 'DD'):
             type_im = '<f'
         else:
-            type_im = '<d' # random images were generated in double
-            #type_im = None
+            type_im = '<f'
+            # type_im = '<d' # random images were generated in double
 
         im_input = self.fijii_np(file_path, shape=(PETImage_shape),type_im=type_im) # Load input of the DNN (CT image)
         return im_input
