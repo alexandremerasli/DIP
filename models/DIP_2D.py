@@ -1,12 +1,14 @@
-from torch import max, abs, optim, load, mean, clone, rand, matmul, Tensor
+from torch import optim, clone, matmul, Tensor, reshape, cat
 from torch.nn import ReplicationPad2d, Conv2d, BatchNorm2d, LeakyReLU, Conv2d, BatchNorm2d, LeakyReLU, Sequential, Upsample, ReLU, MSELoss
 from pytorch_lightning import LightningModule, seed_everything
 from numpy import min as min_np
 from numpy import max as max_np
 from numpy import mean as mean_np
 from numpy import std as std_np
-from numpy import ones_like, dtype, fromfile, sign, newaxis, copy, zeros, float32
+from numpy import ravel as ravel_np
+from numpy import ones_like, dtype, fromfile, sign, newaxis, copy, zeros, float32, squeeze, where
 from numpy.random import seed, uniform
+
 
 from pathlib import Path
 from os.path import isfile
@@ -120,36 +122,63 @@ class DIP_2D(LightningModule):
         # End to end reconstruction : load system matrix A
         self.end_to_end = end_to_end
 
-        # Define shapes
-        self.subroot_data = self.root + '/data/Algo/' # Directory root
-        self.phantom = self.config["image"]
-        self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
-        self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
-        if ("3D" not in self.phantom and self.scanner == "mMR_2D"):
-            self.sinogram_shape = (344,252,1)
-        elif ("3D" not in self.phantom and self.scanner == "mCT_2D"):
-            self.sinogram_shape = (336,336,1)
-        # Load stored system matrix A
-        A = self.fijii_np("data/Algo/final_syst_mat.img",(self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1]),type_im='<f')
-        
-        ##### to be removed
-        # A = self.fijii_np("data/Algo/final_syst_mat.img",(1073741823,1),type_im='<f')
-        # A = zeros((self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1]))
-        # import numpy as np
-        # almost_shape = int(1073741823/(112*112))
-        # A = np.reshape(A[:almost_shape*112*112],(almost_shape,112*112))
-        # # A = np.resize(A,(self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1]))
-        # A_fullsize = zeros((self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1]))
-        # A_fullsize[:85598,:12544] = np.copy(A)
+        if (self.end_to_end):
+            # Define shapes
+            self.subroot_data = self.root + '/data/Algo/' # Directory root
+            self.phantom = self.config["image"]
+            self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+            self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
+            if ("3D" not in self.phantom and self.scanner == "mMR_2D"):
+                self.sinogram_shape = (344,252,1)
+                self.sinogram_shape_transpose = (252,344,1)
+            elif ("3D" not in self.phantom and self.scanner == "mCT_2D"):
+                self.sinogram_shape = (336,336,1)
+                self.sinogram_shape_transpose = (336,336,1)
+            # Load stored system matrix A
+            A = squeeze(self.fijii_np(self.subroot_data + "/final_syst_mat.img",(self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1],1),type_im='<f'))
+            # Load randoms, scatters, norm and attenuation sinogram
+            self.randoms_sinogram = Tensor(ravel_np(self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + "/simu0_1/simu0_1_rd.s",self.sinogram_shape_transpose,type_im='<f')))
+            self.scatters_sinogram = Tensor(ravel_np(self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + "/simu0_1/simu0_1_sc.s",self.sinogram_shape_transpose,type_im='<f')))
 
-        # x = np.ones((112*112))
-        # Ax_without_norm_atn = np.dot(A_fullsize,x)
-        # self.A_torch = Tensor(A_fullsize)
+            atn = ravel_np(self.fijii_np(self.subroot_data + "Data/database_v2/" + self.phantom + "/simu0_1/simu0_1_at.s",self.sinogram_shape_transpose,type_im='<f'))
+            self.attenuation_sinogram = where(atn==0,0,1/atn)
+            norm = ravel_np(self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + "/simu0_1/simu0_1_nm.s",self.sinogram_shape_transpose,type_im='<f'))
+            self.normalization_sinogram = where(norm==0,0,1/norm)
+            # Define mask (sinogram bins == 0 should not be taken into account in loss computation)
+            self.norm_mask = Tensor(self.normalization_sinogram)
+
+            # Retrieve calibration factor
+            datafile_castor_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "data" + self.phantom[5:] + '_' + str(config["replicates"]) + '/' + "data" + self.phantom[5:] + '_' + str(config["replicates"] ) + '.cdh'
+            # Open the file
+            with open(datafile_castor_path, 'r') as file:
+                lines = file.readlines()
+                # Get the 12th line
+                line_12 = lines[11]
+                # Split the line into words
+                words = line_12.split()
+                # Find the index of the word 'factor:'
+                index = words.index('factor:')
+                # The value of the calibration factor is the next word
+                self.calibration_factor = float(words[index + 1])
+            
+            # Apply all corrections and convert A to torch tensor
+            from numpy import diag
+            for j in range(self.PETImage_shape[0]*self.PETImage_shape[1]):
+                print(j)
+                A[:,j] = 1 / self.calibration_factor * A[:,j] * self.normalization_sinogram * self.attenuation_sinogram
+            self.A_torch = Tensor(A)
+
+            # Put variables on GPU if asked
+            if (config["processing_unit"] == "GPU"):
+                self.randoms_sinogram.to("cuda")
+                self.scatters_sinogram.to("cuda")
+                self.norm_mask.to("cuda")
+                self.A_torch.to("cuda")
 
 
+            # For LBFGS
+            self.counter_inside_epoch = 0
 
-        # Convert A to torch tensor
-        self.A_torch = Tensor(A)
 
         '''
         if (config['mlem_sequence'] is None):
@@ -310,11 +339,47 @@ class DIP_2D(LightningModule):
 
         return out
 
+    # Define the MSE loss function
+    # def mse_loss(self,x,sinogram_corrupt_torch):
+    #     return np.mean((np.dot(self.A_torch.detach().numpy(), x)*ravel_np(self.norm_mask.detach().numpy()) - ravel_np(sinogram_corrupt_torch.detach().numpy())*ravel_np(self.norm_mask.detach().numpy()))**2)
+    #     return np.mean((np.dot(self.A_torch.detach().numpy(), x) - ravel_np(sinogram_corrupt_torch.detach().numpy()))**2)
+
+
     def DIP_loss(self, out, image_corrupt_torch):
         return MSELoss()(out, image_corrupt_torch) # for DIP and DD
 
     def DIP_loss_end_to_end(self, A, out, sinogram_corrupt_torch):
-        return MSELoss()(matmul(A,out.ravel()), sinogram_corrupt_torch.ravel())
+
+
+        # mse_np = self.mse_loss(ravel_np(out.cpu().detach().numpy()),sinogram_corrupt_torch)
+        # print(mse_np)
+
+        # Use calibration factor and add norm and atn sinogram in forward model
+        # Ax_without_norm_atn = 1 / self.calibration_factor * matmul(A,out.ravel())
+        # Ax_without_norm = self.attenuation_sinogram*Ax_without_norm_atn
+        # Ax = self.normalization_sinogram*Ax_without_norm
+
+        Ax = matmul(A,out.ravel())
+        # Concatenate the two halves of vector Ax
+        Ax = cat([Ax[len(Ax)//2:],Ax[:len(Ax)//2]])
+
+        # Ax_reshaped = reshape(Ax,self.sinogram_shape_transpose)
+        # Ax_copy = clone(Ax_reshaped)
+        # Ax_reshaped[int(self.sinogram_shape_transpose[0]/2):,:] = Ax_copy[:int(self.sinogram_shape_transpose[0]/2),:]
+        # Ax_reshaped[:int(self.sinogram_shape_transpose[0]/2),:] = Ax_copy[int(self.sinogram_shape_transpose[0]/2):,:]
+
+        # Ax_reshaped = Ax_reshaped.ravel()
+
+
+        forward_model = Ax + self.randoms_sinogram + self.scatters_sinogram
+        
+        
+        # mse_torch = MSELoss()(matmul(A.cpu(),out.cpu().ravel()),sinogram_corrupt_torch.cpu().ravel())
+        mse_torch = MSELoss()(forward_model.ravel()*self.norm_mask.ravel(), sinogram_corrupt_torch.ravel()*self.norm_mask.ravel()) # Take mask into account
+        return mse_torch
+        # return MSELoss()(matmul(A.cpu(),out.cpu().ravel()), sinogram_corrupt_torch.cpu().ravel())
+        return MSELoss()(matmul(A.cpu(),out.cpu().ravel())*self.norm_mask.ravel(), sinogram_corrupt_torch.cpu().ravel()*self.norm_mask.ravel()) # Take mask into account
+        # return MSELoss()(matmul(A.to("cuda"),out.ravel()), sinogram_corrupt_torch.ravel()) # put on cpu or gpu ? 
 
     def training_step(self, train_batch, batch_idx):
         self.num_total_batch += 1
@@ -332,7 +397,6 @@ class DIP_2D(LightningModule):
                 loss += self.DIP_loss_end_to_end(self.A_torch, out, image_corrupt_torch)
             else:
                 loss += self.DIP_loss(out, image_corrupt_torch)
-            # print(loss)
             self.logger.experiment.add_scalar('loss', loss,self.current_epoch)
 
             try:
@@ -349,7 +413,7 @@ class DIP_2D(LightningModule):
                 # if (self.write_current_img_mode):
                 #     self.write_current_img(out,batch_idx)
                 self.end_epoch = True
-        
+
         try:
             self.out_np_all_inputs[self.num_total_batch,:,:] = out.detach().numpy()[0,0,:,:]
         except:
@@ -365,10 +429,26 @@ class DIP_2D(LightningModule):
 
         
 
+        # For L-BFGS
+        end_epoch_LBFGS = True
+        if (self.opti_DIP == "LBFGS"):
+            end_epoch_LBFGS = False
+            self.SUCCESS = False
+            self.counter_inside_epoch += 1
+            self.log("SUCCESS", int(self.classWMV.SUCCESS))
+            if (self.counter_inside_epoch == 10): # number of max iter in lbfgs opti
+                end_epoch_LBFGS = True
+                self.counter_inside_epoch = 0
+
 
         # Save image over epochs
-        if (self.write_current_img_mode):
-            self.write_current_img(out)
+        if (end_epoch_LBFGS):
+            if (self.write_current_img_mode):
+                self.write_current_img(out)
+                # save sinogram matmul(A,out)
+                # self.save_img(matmul(self.A_torch.cpu(),out.cpu().ravel()).detach().numpy(),self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/sino_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.s')
+                # if (self.current_epoch == 0):
+                    # self.save_img(image_corrupt_torch.cpu().detach().numpy(),self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/y.s')
 
         # Monitor learning rate across iterations
         self.monitor_lr(out,image_corrupt_torch)
@@ -382,9 +462,11 @@ class DIP_2D(LightningModule):
         #     'epoch': self.current_epoch,
         # }, self.checkpoint_simple_path_exp + '/optimizer.pth')
 
+
         # WMV
-        if (self.num_total_batch == self.several_DIP_inputs - 1):
-            self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.scanner)
+        if (end_epoch_LBFGS):
+            if (self.num_total_batch == self.several_DIP_inputs - 1):
+                self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.scanner)
         
         # Increment number of iterations since beginnning of DNA
         if (self.end_epoch): # We looped over all images of the batch
@@ -486,10 +568,6 @@ class DIP_2D(LightningModule):
 
             self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
             self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
-            if ("3D" not in self.phantom and self.scanner == "mMR_2D"):
-                self.sinogram_shape = (344,252,1)
-            elif ("3D" not in self.phantom and self.scanner == "mCT_2D"):
-                self.sinogram_shape = (336,336,1)
 
             self.phantom_ROI = self.get_phantom_ROI(self.phantom)
 
@@ -664,11 +742,11 @@ class DIP_2D(LightningModule):
     
     def fijii_np(self,path,shape,type_im=None):
         """"Transforming raw data to numpy array"""
-        if (type_im is None):
-            if (self.FLTNB == 'float'):
-                type_im = '<f'
-            elif (self.FLTNB == 'double'):
-                type_im = '<d'
+        # if (type_im is None):
+        #     if (self.FLTNB == 'float'):
+        #         type_im = '<f'
+        #     elif (self.FLTNB == 'double'):
+        #         type_im = '<d'
 
         attempts = 0
 

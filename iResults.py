@@ -256,7 +256,7 @@ class iResults(vDenoising):
             if ("3_" not in self.phantom):
                 if ('nested' in config["method"]):
                     # Compute IR for BSREM initialization image
-                    im_BSREM = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d') # loading BSREM initialization image
+                    im_BSREM = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<f') # loading BSREM initialization image
                     self.IR_ref = [np.NaN]
                     self.compute_IR_whole(self.PETImage_shape,im_BSREM,0,self.IR_ref,self.phantom)
                     # Add 1 to number of iterations before stopping criterion
@@ -284,7 +284,7 @@ class iResults(vDenoising):
 
             if ("nested" in config["method"] or "Gong" in config["method"]):
                 if (config["DIP_early_stopping"]):# WMV
-                    if ("post_reco" in config["task"]):
+                    if ("post_reco" in config["task"] or "end_to_end" in config["task"]):
                         # Save computed variance from WMV/EMV in csv
                         with open(self.MV_csv_path(self.alpha_EMV,config), 'w', newline='') as myfile:
                             wr = writer_csv(myfile,delimiter=';')
@@ -316,12 +316,12 @@ class iResults(vDenoising):
             # var_x = np.arange(self.patienceNumber + self.epochStar + 1)  # define x axis of EMV     
         
         # Remove first iterations 
-        remove_first_iterations = 190
+        remove_first_iterations = 0
         # remove_first_iterations = 150
         # Remove last iterations
         last_iteration = self.total_nb_iter
-        last_iteration = 1000
-        last_iteration = self.epochStar + self.patienceNumber
+        # last_iteration = 0
+        # last_iteration = self.epochStar + self.patienceNumber
         
         var_x = var_x[remove_first_iterations:last_iteration+1]
         self.VAR_recon = self.VAR_recon[remove_first_iterations:last_iteration+1]
@@ -333,7 +333,8 @@ class iResults(vDenoising):
             self.PSNR_WMV = self.PSNR_WMV[remove_first_iterations:last_iteration+1]
             self.SSIM_WMV = self.SSIM_WMV[remove_first_iterations:last_iteration+1]
 
-        remove_only_first_iterations_VAR = 250 - remove_first_iterations
+        # remove_only_first_iterations_VAR = 250 - remove_first_iterations
+        remove_only_first_iterations_VAR = 0 - remove_first_iterations
         plt.plot(var_x[remove_only_first_iterations_VAR:], self.VAR_recon[remove_only_first_iterations_VAR:], 'r')
         plt.title('Window Moving Variance,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
         plt.axvline(self.epochStar, c='g')  # plot a vertical line at self.epochStar(detection point)
@@ -494,6 +495,7 @@ class iResults(vDenoising):
             plt.figure()
             if (config["EMV_or_WMV"] == "EMV"):
                 alpha_list = [0.9,0.5,0.1,0.05,0.0251]
+                alpha_list = [0.31]
                 # alpha_list = [0.99,0.5,0.0251]
                 # alpha_list = sorted(alpha_list,reverse=True)
 
@@ -547,22 +549,12 @@ class iResults(vDenoising):
                     if ('post_reco' in config["task"]):
                         try:
                             f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(self.global_it) + '_epoch=' + format(i-self.i_init) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
-
-
-
-                            # out = f_p
-                            # # Descale like at the beginning
-                            # out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"])
-                            # #'''
-                            # # Saving image output
-                            # net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(i) + '.img'
-                            # self.save_img(out_descale, net_outputs_path)
-                            # # Squeeze image by loading it
-                            # out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
-                            # # Saving (now DESCALED) image output
-                            # self.save_img(out_descale, net_outputs_path)
-
-
+                        except:
+                            print("!!!!! failed to read image")
+                            break
+                    elif ('end_to_end' in config["task"]):
+                        try:
+                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(self.global_it) + '_epoch=' + format(i-self.i_init) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
                         except:
                             print("!!!!! failed to read image")
                             break
@@ -624,7 +616,7 @@ class iResults(vDenoising):
                 if ("nested" in config["method"] or "Gong" in config["method"]):
                     # self.run_WMV(f_p,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,i)
                     if(config["DIP_early_stopping"]):# WMV
-                        if ("post_reco" in config["task"]):
+                        if ("post_reco" in config["task"] or "end_to_end" in config["task"]):
                             self.run_WMV(f_p,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,i)
                             if (self.SUCCESS):
                                 return 1

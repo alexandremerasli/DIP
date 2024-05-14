@@ -47,6 +47,9 @@ def class_for_task(config,task):
     elif (task == 'show_results_post_reco'): # Show already computed results over iterations of post reconstruction mode
         from iResults import iResults
         classTask = iResults(config)
+    elif (task == 'show_results_end_to_end'): # Show already computed results over iterations of end to end mode
+        from iResults import iResults
+        classTask = iResults(config)
     elif (task == 'show_metrics_ADMMLim'): # Show ADMMLim FOMs over iterations
         config["task"] = "show_results_post_reco"
         from iMeritsADMMLim import iMeritsADMMLim
@@ -67,7 +70,17 @@ def class_for_task(config,task):
 def choose_task(config):
     # Task to run reconstruction according to the method
     if (config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested'):
-        task = 'full_reco_with_network'
+        if ("end_to_end" in config): # Check if run DNA with end to end mode
+            if (config["end_to_end"]["grid_search"][0]):
+                end_to_end = True
+            else:
+                end_to_end = False
+        else:
+            end_to_end = False
+        if (end_to_end):
+            task = 'end_to_end'
+        else:
+            task = 'full_reco_with_network'
 
     elif ('ADMMLim' in config["method"]["grid_search"][0] or config["method"]["grid_search"][0] == 'MLEM' or config["method"]["grid_search"][0] == 'OPTITR' or config["method"]["grid_search"][0] == 'OSEM' or config["method"]["grid_search"][0] == 'BSREM' or config["method"]["grid_search"][0] == 'AML' or config["method"]["grid_search"][0] == 'APGMAP'):
         task = 'castor_reco'
@@ -76,7 +89,8 @@ def choose_task(config):
     # task = 'full_reco_with_network' # Run Gong or nested ADMM
     # task = 'castor_reco' # Run CASToR reconstruction with given optimizer
     # task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
-    task = 'end_to_end' # Run DNA end to end reconstruction (not working for now)
+    # task = 'end_to_end' # Run DNA end to end reconstruction
+    # task = 'show_results_end_to_end' # Show DNA end to end results (not working for now)
     # task = 'show_results_post_reco'
     # task = 'show_results'
     # task = 'show_metrics_results_already_computed'
@@ -89,7 +103,7 @@ def choose_task(config):
 
 # After PhD
 nb_computation = 1
-config_files = ["nested_MIC_brain_2D_MR3"]
+config_files = ["nested_end_to_end"]
 i=-1
 num_meth=0
 for lib_string in config_files:
@@ -101,10 +115,16 @@ for lib_string in config_files:
     if (True):
         lib = importlib.import_module('all_config.' + lib_string)
         config = lib.config_func_MIC()
+        config["image"] = tune.grid_search(['image10_1000'])
+        config["image"] = tune.grid_search(['image50_1'])
         config["image"] = tune.grid_search(['image40_1'])
         config["replicates"] = tune.grid_search(list(range(1,1+1)))
-        config["max_iter"] = tune.grid_search([700])
+        config["max_iter"] = tune.grid_search([1000])
         config["ray"] = False
+
+
+        # config["post_reco_in_suffix"] = tune.grid_search([False]) # If want to show EMV results which were not on post reconstruction, in DNA init
+        # config["read_only_MV_csv"] = tune.grid_search([True])
 
         root = os.getcwd()
 

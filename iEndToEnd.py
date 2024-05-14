@@ -21,9 +21,9 @@ class iEndToEnd(vDenoising):
         self.sub_iter_DIP_already_done = 0
         vDenoising.initializeSpecific(self,config,root)
         # Loading DIP y_label (corrupted sinogram, prompts)
-        # self.sinogram_corrupt = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "simu0"  + '_' + str(config["replicates"]) + '/simu0_' + str(config["replicates"])+  '_pt.s',shape=(self.sinogram_shape),type_im=np.dtype('int16'))
-        self.sinogram_corrupt = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "simu0"  + '_' + str(config["replicates"]) + '/simu0_' + str(config["replicates"])+  '_pt.s',shape=(336,336,1),type_im=np.dtype('int16'))
-        self.sinogram_corrupt = np.resize(self.sinogram_corrupt,(344,252,1)) # to be removed
+        self.sinogram_corrupt = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "simu0"  + '_' + str(config["replicates"]) + '/simu0_' + str(config["replicates"])+  '_pt.s',shape=self.sinogram_shape_transpose,type_im=np.dtype('int16')).astype(np.float32)
+        # self.sinogram_corrupt = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "simu0"  + '_' + str(config["replicates"]) + '/simu0_' + str(config["replicates"])+  '_pt.s',shape=(336,336,1),type_im=np.dtype('int16'))
+        # self.sinogram_corrupt = np.resize(self.sinogram_corrupt,(344,252,1)) # to be removed
 
         self.net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_epoch=' + format(0) + '.img'
         self.checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
@@ -52,28 +52,28 @@ class iEndToEnd(vDenoising):
         
     def runComputation(self,config,root):
         # Initializing results class
-        # if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):
-        #     from iResults import iResults
-        #     classResults = iResults(config)
-        #     classResults.nb_replicates = self.nb_replicates
-        #     classResults.debug = self.debug
-        #     classResults.fixed_hyperparameters_list = self.fixed_hyperparameters_list
-        #     classResults.hyperparameters_list = self.hyperparameters_list
-        #     classResults.scanner = self.scanner
-        #     if ("3D" not in self.phantom):
-        #         classResults.bkg_ROI = self.bkg_ROI
-        #         classResults.hot_TEP_ROI = self.hot_TEP_ROI
-        #         if (self.phantom == "image50_1"):
-        #             classResults.hot_TEP_ROI_ref = self.hot_TEP_ROI_ref
-        #         classResults.hot_TEP_match_square_ROI = self.hot_TEP_match_square_ROI
-        #         classResults.hot_perfect_match_ROI = self.hot_perfect_match_ROI
-        #         classResults.hot_MR_recon = self.hot_MR_recon
-        #         classResults.hot_ROI = self.hot_ROI
-        #         classResults.cold_ROI = self.cold_ROI
-        #         classResults.cold_inside_ROI = self.cold_inside_ROI
-        #         classResults.cold_edge_ROI = self.cold_edge_ROI
+        if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):
+            from iResults import iResults
+            classResults = iResults(config)
+            classResults.nb_replicates = self.nb_replicates
+            classResults.debug = self.debug
+            classResults.fixed_hyperparameters_list = self.fixed_hyperparameters_list
+            classResults.hyperparameters_list = self.hyperparameters_list
+            classResults.scanner = self.scanner
+            if ("3D" not in self.phantom):
+                classResults.bkg_ROI = self.bkg_ROI
+                classResults.hot_TEP_ROI = self.hot_TEP_ROI
+                if (self.phantom == "image50_1"):
+                    classResults.hot_TEP_ROI_ref = self.hot_TEP_ROI_ref
+                classResults.hot_TEP_match_square_ROI = self.hot_TEP_match_square_ROI
+                classResults.hot_perfect_match_ROI = self.hot_perfect_match_ROI
+                classResults.hot_MR_recon = self.hot_MR_recon
+                classResults.hot_ROI = self.hot_ROI
+                classResults.cold_ROI = self.cold_ROI
+                classResults.cold_inside_ROI = self.cold_inside_ROI
+                classResults.cold_edge_ROI = self.cold_edge_ROI
 
-        #     classResults.initializeSpecific(config,root)
+            classResults.initializeSpecific(config,root)
 
 
 
@@ -88,9 +88,9 @@ class iEndToEnd(vDenoising):
             self.sinogram_corrupt_torch = self.sinogram_corrupt_torch[:,:,:,:,0]
         else: #3D
             self.sinogram_corrupt_torch = self.sinogram_corrupt_torch.view(1,1,self.sinogram_shape[2],self.sinogram_shape[1],self.sinogram_shape[0])
-        # classResults.writeBeginningImages(self.suffix,self.image_net_input)
-        # classResults.writeCorruptedImage(0,self.total_nb_iter,self.sinogram_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
-        # classResults.sinogram_corrupt = self.sinogram_corrupt
+        classResults.writeBeginningImages(self.suffix,self.image_net_input)
+        classResults.writeCorruptedImage(0,self.total_nb_iter,self.sinogram_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
+        classResults.sinogram_corrupt = self.sinogram_corrupt
         # Before training, list all images already saved
         folder_sub_path = self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + str(self.experiment)
         sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if os.path.splitext(filename)[1] == '.img']
@@ -187,26 +187,26 @@ class iEndToEnd(vDenoising):
             # Saving (now DESCALED) image output
             self.save_img(out_descale, net_outputs_path)
 
-            # if ("3D" not in self.phantom):
-            #     if ("post_reco" not in config["task"]):
-            #         # Compute IR metric (different from others with several replicates)
-            #         classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch,classResults.IR_bkg_recon,self.phantom)
-            #         classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[epoch], epoch+1)
-            #         # Compute IR in whole phantom (different from others with several replicates)
-            #         classResults.compute_IR_whole(self.PETImage_shape,out_descale,self.global_it,classResults.IR_whole_recon,self.phantom)
-            #         classResults.writer.add_scalar('Image roughness in the phantom', classResults.IR_whole_recon[self.global_it], self.global_it+1)
-            #     # Write images over epochs
-            # classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
+            if ("3D" not in self.phantom):
+                if ("post_reco" not in config["task"] and "end_to_end" not in config["task"]):
+                    # Compute IR metric (different from others with several replicates)
+                    classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch,classResults.IR_bkg_recon,self.phantom)
+                    classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[epoch], epoch+1)
+                    # Compute IR in whole phantom (different from others with several replicates)
+                    classResults.compute_IR_whole(self.PETImage_shape,out_descale,self.global_it,classResults.IR_whole_recon,self.phantom)
+                    classResults.writer.add_scalar('Image roughness in the phantom', classResults.IR_whole_recon[self.global_it], self.global_it+1)
+                # Write images over epochs
+            classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
 
             if (config["DIP_early_stopping"]):
                 if (model.classWMV.SUCCESS):
                     break
 
-        # if (model.DIP_early_stopping):
-        #     classResults.epochStar = self.epochStar
-        #     classResults.VAR_recon = self.VAR_recon
-        #     classResults.MSE_WMV = self.MSE_WMV
-        #     classResults.PSNR_WMV = self.PSNR_WMV
-        #     classResults.SSIM_WMV = self.SSIM_WMV
-        #     classResults.patienceNumber = self.patienceNumber
-        #     classResults.SUCCESS = self.SUCCESS
+        if (model.DIP_early_stopping):
+            classResults.epochStar = self.epochStar
+            classResults.VAR_recon = self.VAR_recon
+            classResults.MSE_WMV = self.MSE_WMV
+            classResults.PSNR_WMV = self.PSNR_WMV
+            classResults.SSIM_WMV = self.SSIM_WMV
+            classResults.patienceNumber = self.patienceNumber
+            classResults.SUCCESS = self.SUCCESS

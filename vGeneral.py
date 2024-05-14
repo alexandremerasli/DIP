@@ -120,9 +120,9 @@ class vGeneral(abc.ABC):
                         self.suffix = "post_reco" + ' ' + self.suffix
                         self.suffix_metrics = config["task"][:10] + ' ' + self.suffix_metrics
 
-            if ("end_to_end" in config["task"] and "end_to_end" not in self.suffix):
-                self.suffix = "end_to_end" + ' ' + self.suffix
-                self.suffix_metrics = config["task"][:10] + ' ' + self.suffix_metrics
+            # if ("end_to_end" in config["task"] and "end_to_end" not in self.suffix):
+                # self.suffix = "end_to_end" + ' ' + self.suffix
+                # self.suffix_metrics = config["task"][:10] + ' ' + self.suffix_metrics
 
             # Define PET input dimensions according to input data dimensions
             self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
@@ -132,8 +132,10 @@ class vGeneral(abc.ABC):
             # self.scanner = "mCT_2D" # to be removed
             if ("3D" not in self.phantom and self.scanner == "mMR_2D"):
                 self.sinogram_shape = (344,252,1)
+                self.sinogram_shape_transpose = (252,344,1)
             elif ("3D" not in self.phantom and self.scanner == "mCT_2D"):
                 self.sinogram_shape = (336,336,1)
+                self.sinogram_shape_transpose = (336,336,1)
             
             # # Define ROIs for image0 phantom, otherwise it is already done in the database
             # if (self.phantom == "image0" or self.phantom == "image2_0" and config["task"] != "show_metrics_results_already_computed"):
