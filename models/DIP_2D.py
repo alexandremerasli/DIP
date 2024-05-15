@@ -460,7 +460,7 @@ class DIP_2D(LightningModule):
                     # self.save_img(image_corrupt_torch.cpu().detach().numpy(),self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/y.s')
 
         # Monitor learning rate across iterations
-        self.monitor_lr(out,image_corrupt_torch)
+        self.monitor_lr_func(out,image_corrupt_torch)
 
         # # Save state dict
         # from torch import save
@@ -557,10 +557,12 @@ class DIP_2D(LightningModule):
         img.tofile(fp)
         print('Succesfully save in:', name)
 
-    def monitor_lr(self,out,image_corrupt_torch):
+    def monitor_lr_func(self,out,image_corrupt_torch):
         if ("monitor_lr" not in self.config):
-            self.config["monitor_lr"] = False
-        if (self.config["monitor_lr"]):
+            self.monitor_lr = False
+        else:
+            self.monitor_lr = self.config["monitor_lr"]
+        if (self.monitor_lr):
             out_descale_np = self.descale_imag(clone(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
             # try:
             #     # out_descale_np = out_descale.detach().numpy()[0,0,:,:]

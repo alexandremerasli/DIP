@@ -162,6 +162,10 @@ class iFinalCurves(vGeneral):
                 else:
                     self.i_init = 1
 
+                if "end_to_end" in config_tmp[method]:
+                    if config_tmp[method]["end_to_end"]:
+                        self.i_init = 20
+
                 # if ('Gong' in method or 'nested' in method):
                 #     self.i_init = 1 # 0 will take last value as first...
 
@@ -185,14 +189,18 @@ class iFinalCurves(vGeneral):
                     rho_name = "smoothing"
                     other_dim_name = ""
                 elif ("nested" in method or "DIPRecon" in method):
-                    # config_other_dim[method] = config[method]["lr"]
-                    # other_dim_name = "lr"
+                    # For varying rho_1 (manuscript)
                     rho_name = "rho"
                     # config_other_dim[method] = config_tmp[method]["rho"]["grid_search"]
+                    # For varying learning rate (manuscript)
+                    # config_other_dim[method] = config[method]["lr"]
+                    # other_dim_name = "lr"
+                    # For varying number of DIP iterations (manuscript)
+                    # config_other_dim[method] = config_tmp[method]["sub_iter_DIP"]["grid_search"]
+                    # other_dim_name = "sub_it_DIP"
+                    # Other 
                     config_other_dim[method] = config_tmp[method]["tau_DIP"]["grid_search"]
                     other_dim_name = "tau_DIP"
-                    config_other_dim[method] = config_tmp[method]["sub_iter_DIP"]["grid_search"]
-                    other_dim_name = "sub_it_DIP"
                 else:
                     config_other_dim[method] = [""]
                     other_dim_name = ""

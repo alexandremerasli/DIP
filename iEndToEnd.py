@@ -28,6 +28,7 @@ class iEndToEnd(vDenoising):
         self.net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + '_epoch=' + format(0) + '.img'
         self.checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         self.name_run = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        config["sub_iter_DIP"] = config["max_iter"] # Override sub_iter_DIP to max_iter because end to end mode
         self.total_nb_iter = config["sub_iter_DIP"]
 
         ## Variables for WMV ##
@@ -187,7 +188,7 @@ class iEndToEnd(vDenoising):
             self.save_img(out_descale, net_outputs_path)
 
             if ("3D" not in self.phantom):
-                if ("post_reco" not in config["task"] and "end_to_end" not in config["task"]):
+                if ("post_reco" not in config["task"]):
                     # Compute IR metric (different from others with several replicates)
                     classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch,classResults.IR_bkg_recon,self.phantom)
                     classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[epoch], epoch+1)

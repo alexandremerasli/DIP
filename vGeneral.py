@@ -68,7 +68,14 @@ class vGeneral(abc.ABC):
                 self.PSF = True
         else:
             self.PSF = True
-        
+        if ("end_to_end" in config): # Check if run DNA with end to end mode
+            if (config["end_to_end"]):
+                self.end_to_end = True
+            else:
+                self.end_to_end = False
+        else:
+            self.end_to_end = False
+
         # MIC study
         if ("nested" in self.method or "Gong" in self.method or "DIPRecon" in self.method):
             if ("override_SC_init" in config):
@@ -372,6 +379,14 @@ class vGeneral(abc.ABC):
                 config.pop("k_DD", None)
             if (config["method"]['grid_search'][0] == 'MLEM' or config["method"] == 'OPTITR' or config["method"]['grid_search'][0] == 'OSEM' or config["method"]['grid_search'][0] == 'AML'):
                 config.pop("rho", None)
+            if ("nested" in config["method"]['grid_search'][0] or "Gong" in config["method"]['grid_search'][0]):
+                if ("end_to_end" in config):
+                    if (config["end_to_end"]):
+                        config.pop("sub_iter_DIP", None)
+                    else:
+                        config.pop("end_to_end", None)
+                else:
+                    config.pop("end_to_end", None)
             # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMLim in CASToR
             if ('ADMMLim' in config["method"]['grid_search'][0] or "nested" in config["method"]['grid_search'][0]):
                 config["mlem_sequence"]['grid_search'] = [False]
@@ -495,6 +510,8 @@ class vGeneral(abc.ABC):
             else:
                 if (config["post_reco_in_suffix"]):
                     config_copy.pop("sub_iter_DIP", None)
+        if list(config.keys())[-1] == "sub_iter_DIP": # Remove sub_iter_DIP if it is the last key because it comes from an override in iEndToEnd.py
+            config_copy.pop('sub_iter_DIP',None)
         suffix = "config"
         if hyperparameters_list == False:
             for key, value in config_copy.items():
