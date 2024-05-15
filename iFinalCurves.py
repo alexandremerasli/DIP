@@ -747,6 +747,8 @@ class iFinalCurves(vGeneral):
 
                 if ("nested_end_to_end" in method):
                     replicates_legend[fig_nb].append(r'DNA$^{end~to~end}$')
+                if ("DIPRecon_end_to_end" in method):
+                    replicates_legend[fig_nb].append(r'DIPRecon$^{end~to~end}$')
                         
 
     def choose_good_config_file(self,method,config,csv_before_MIC,DIPRecon):
@@ -1177,6 +1179,7 @@ class iFinalCurves(vGeneral):
                 "nested_random_0_skip_10it" : [color_dict_after_MIC["nested_random_skip"][3]],
                 "nested_DD" : [color_dict_after_MIC["nested_random_skip"][4]],
                 "nested_end_to_end" : [color_dict_after_MIC["nested_random_skip"][0]],
+                "DIPRecon_end_to_end" : [color_dict_after_MIC["nested_random_skip"][1]],
                 "DIPRecon_BSREM_stand" : [color_dict_after_MIC["DIPRecon"][0]],
                 "DIPRecon_CT_3_skip" : [color_dict_after_MIC["DIPRecon"][1]],
                 "DIPRecon_CT_2_skip" : [color_dict_after_MIC["DIPRecon"][2]],
@@ -1350,6 +1353,7 @@ class iFinalCurves(vGeneral):
                 "nested_random_0_skip_10it" : [marker_dict["random"][0]],
                 "nested_DD" : [marker_dict["random"][0]],
                 "nested_end_to_end" : [marker_dict["random"][0]],
+                "DIPRecon_end_to_end" : [marker_dict["random"][0]],
                 "nested_MIC_brain_2D" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_cookie_2D_DNA_ADMMLim" : 5*[marker_dict["CT"][0]],
 

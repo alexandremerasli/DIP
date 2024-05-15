@@ -379,7 +379,7 @@ class vGeneral(abc.ABC):
                 config.pop("k_DD", None)
             if (config["method"]['grid_search'][0] == 'MLEM' or config["method"] == 'OPTITR' or config["method"]['grid_search'][0] == 'OSEM' or config["method"]['grid_search'][0] == 'AML'):
                 config.pop("rho", None)
-            if ("nested" in config["method"]['grid_search'][0] or "Gong" in config["method"]['grid_search'][0]):
+            if ("nested" in config["method"]['grid_search'][0] or "Gong" in config["method"]['grid_search'][0] or "DIPRecon" in config["method"]['grid_search'][0]):
                 if ("end_to_end" in config):
                     if (config["end_to_end"]):
                         config.pop("sub_iter_DIP", None)
