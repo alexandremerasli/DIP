@@ -131,7 +131,7 @@ class vDenoising(vGeneral):
         gaussian_distribution = normal(0, it * diffusion_model_like_each_DIP,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).reshape(self.PETImage_shape) # reshaping (for DIP)
         return img + gaussian_distribution
 
-    def train_process(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, suffix, config, finetuning, processing_unit, sub_iter_DIP, method, global_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, experiment, checkpoint_simple_path, name_run, subroot, all_images_DIP,end_to_end=False):
+    def train_process(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, suffix, config, finetuning, processing_unit, sub_iter_DIP, method, global_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, experiment, checkpoint_simple_path, name_run, subroot, all_images_DIP):
         # Implements Dataset
         train_dataset = TensorDataset(image_net_input_torch, image_corrupt_torch) # Put several times the input
         # train_dataset = TensorDataset(*self.several_DIP_inputs*[image_net_input_torch], *self.several_DIP_inputs*[image_corrupt_torch])
@@ -154,87 +154,7 @@ class vDenoising(vGeneral):
             train_dataloader = DataLoader(train_dataset, batch_size=1,num_workers=0,shuffle=True) # Mini batch training
         # train_dataloader = DataLoader(train_dataset, batch_size=1, num_workers=1, persistent_workers=True) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
         # Choose network architecture as model
-        model, model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, self.override_input,end_to_end=end_to_end)
-        # Define path for this global iteration
-        self.checkpoint_simple_path_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment) + '/' + str(self.global_it)
-        Path(self.checkpoint_simple_path_exp+'/').mkdir(parents=True, exist_ok=True)
-        # Define path for previous global iteration
-        checkpoint_simple_path_previous_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment)
-        if (self.global_it != -100): # if not in post reco mode
-            checkpoint_simple_path_previous_exp += '/' + str(self.global_it - 1)
-        else:
-            checkpoint_simple_path_previous_exp += '/' + str(self.global_it)
-
-        # model = self.load_model(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_previous_exp, training=True)
-    
-        # if (self.processing_unit == 'CPU'):
-        #     summary_model = model
-        # else:
-        #     summary_model = model.cuda()
-        # from torchsummary import summary
-        # if (PETImage_shape[2] == 1): # 2D
-        #     summary(model, input_size=(1,PETImage_shape[0],PETImage_shape[1])) # for DIP
-        # else: # 3D
-        #     summary(model, input_size=(1,PETImage_shape[0],PETImage_shape[1],PETImage_shape[2])) # for DIP
-
-        # # Save the original standard output
-        # import sys
-        # original_stdout = sys.stdout 
-
-        # with open('model_summary.txt', 'w') as f:
-        #     sys.stdout = f # Change the standard output to the file we created.
-        #     summary(model, input_size=(1,PETImage_shape[0],PETImage_shape[1])) # for DIP
-        #     sys.stdout = original_stdout # Reset the standard output to its original value
-        
-        # Start training
-        print('Starting optimization, iteration',global_it)
-        trainer = self.create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, global_it, net, checkpoint_simple_path, experiment, self.checkpoint_simple_path_exp, checkpoint_simple_path_previous_exp, config,name=name_run)
-
-        trainer.fit(model, train_dataloader)
-        
-        if (finetuning == "last"):
-            trainer.save_checkpoint(self.checkpoint_simple_path_exp + "/last.ckpt")
-
-        # Copy last checkpoint to file "last.ckpt" or to ES checkpoint 
-        import shutil
-        for file in os.listdir(self.checkpoint_simple_path_exp):
-            if (config["finetuning"] != "ES"):# or self.global_it >= 0):
-                if ("epoch" in file):
-                    shutil.copy(os.path.join(self.checkpoint_simple_path_exp,file),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
-                    os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
-            if (config["finetuning"] == "ES"):
-                if (config["DIP_early_stopping"]):
-                    if (model.epochStar != -1): # if ES point found, save ES ckpt
-                        if (file == "epoch=" + str(model.epochStar) + "-step=" + str((model.epochStar+1)*self.several_DIP_inputs-1) + ".ckpt"):
-                            shutil.copy(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str((model.epochStar+1)*self.several_DIP_inputs-1) + ".ckpt"),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
-                        # os.remove(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str(model.epochStar) + ".ckpt"))
-                        else:
-                            print(os.path.join(self.checkpoint_simple_path_exp,file))
-                            # os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
-                    else: # if ES point not found, save last ckpt
-                        if (file == "epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*self.several_DIP_inputs-1) + ".ckpt"):
-                            shutil.copy(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*self.several_DIP_inputs-1) + ".ckpt"),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
-                            # os.remove(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str(model.epochStar) + ".ckpt"))
-                        else:
-                            # os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
-                            print(os.path.join(self.checkpoint_simple_path_exp,file))
-        if(self.global_it >= 0):
-            if (os.path.isdir(os.path.join(checkpoint_simple_path_previous_exp))):
-                shutil.rmtree(os.path.join(checkpoint_simple_path_previous_exp))
-
-        return model
-    
-
-    def train_process_end_to_end(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, suffix, config, finetuning, processing_unit, sub_iter_DIP, method, global_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, experiment, checkpoint_simple_path, name_run, subroot, all_images_DIP):
-        # Implements Dataset
-        train_dataset = TensorDataset(image_net_input_torch, image_corrupt_torch) # Put several times the input
-        
-        if (config["tau_DIP"] == 200):        
-            train_dataloader = DataLoader(train_dataset, batch_size=1,num_workers=0,shuffle=False) # Mini batch training without shuffle
-        else:
-            train_dataloader = DataLoader(train_dataset, batch_size=1,num_workers=0,shuffle=True) # Mini batch training
-        # Choose network architecture as model
-        model, model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, self.override_input,end_to_end=True)
+        model, model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, self.override_input)
         # Define path for this global iteration
         self.checkpoint_simple_path_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment) + '/' + str(self.global_it)
         Path(self.checkpoint_simple_path_exp+'/').mkdir(parents=True, exist_ok=True)
@@ -624,10 +544,10 @@ class vDenoising(vGeneral):
             self.save_img(out_descale, net_forward_MR)
 
 
-    def choose_net(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, override_input,end_to_end=False):
+    def choose_net(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, override_input):
         if (net == 'DIP'): # Loading DIP architecture
             if(PETImage_shape[2] == 1): # 2D
-                model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init,end_to_end)
+                model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)
                 model_class = DIP_2D
             else: # 3D
                 model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)

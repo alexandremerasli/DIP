@@ -24,18 +24,26 @@ def atoi(text):
 def natural_keys(text):
     return [ atoi(c) for c in split(r'(\d+)', text) ] # APGMAP final curves + resume computation
 
+# phantom = "image10_1000"
+phantom = "image50_1"
+
 PETImage_shape = (112,112)
 sinogram_shape = (344,252)
 sinogram_shape_transpose = (252,344)
-sinogram_norm_path = "data/Algo/Data/database_v2/image10_1000/simu0_1/simu0_1_nm.s"
+sinogram_norm_path = "data/Algo/Data/database_v2/" + phantom + "/simu0_1/simu0_1_nm.s"
 sinogram_norm_np = fijii_np(sinogram_norm_path,sinogram_shape)
 
-root_syst_mat = "data/Algo/mat_syst_folder"
+if ("5" in phantom):
+    root_syst_mat = "data/Algo/mat_syst_folder_2mm"
+else:
+    root_syst_mat = "data/Algo/mat_syst_folder_4mm"
+
 
 syst_mat_disorder_np = np.zeros((sinogram_shape[0]*sinogram_shape[1],PETImage_shape[0]*PETImage_shape[1]),dtype=np.float32)
 final_syst_mat_np = np.zeros((sinogram_shape[0]*sinogram_shape[1],PETImage_shape[0]*PETImage_shape[1]),dtype=np.float32)
 
-sino_without_zero_CASToR = fijii_np("data/Algo/Data/database_v2/image10_1000/simu0_1/Ax_test.s",(68516,1))
+# sino_without_zero_CASToR = fijii_np("data/Algo/Data/database_v2/" + phantom + "/simu0_1/Ax_test.s",(68516,1))
+sino_without_zero_CASToR = fijii_np("data/Algo/image50_1_Ax_it0.s",(68516,1))
 sino_with_zero = np.zeros((sinogram_shape[0]*sinogram_shape[1]))
 
 # Loop over all files in the directory
@@ -65,9 +73,9 @@ plt.title("Ax flip castor")
 plt.imshow(np.reshape(Ax_reshaped,sinogram_shape_transpose),cmap="gray_r")
 plt.colorbar()
 
-y = fijii_np("data/Algo/Data/database_v2/image10_1000/simu0_1/simu0_1_pt.s",sinogram_shape_transpose,type_im=np.dtype('int16'))
-r = fijii_np("data/Algo/Data/database_v2/image10_1000/simu0_1/simu0_1_rd.s",sinogram_shape_transpose)
-s = fijii_np("data/Algo/Data/database_v2/image10_1000/simu0_1/simu0_1_sc.s",sinogram_shape_transpose)
+y = fijii_np("data/Algo/Data/database_v2/" + phantom + "/simu0_1/simu0_1_pt.s",sinogram_shape_transpose,type_im=np.dtype('int16'))
+r = fijii_np("data/Algo/Data/database_v2/" + phantom + "/simu0_1/simu0_1_rd.s",sinogram_shape_transpose)
+s = fijii_np("data/Algo/Data/database_v2/" + phantom + "/simu0_1/simu0_1_sc.s",sinogram_shape_transpose)
 
 
 plt.figure()
@@ -76,6 +84,6 @@ plt.imshow(Ax_reshaped+r+s-y,cmap="gray_r")
 plt.colorbar()
 plt.show()
 
-
+save_img(sino_with_zero.astype(np.float32), "data/Algo/image50_1_Ax_it0_good_size.s")
 # save_img(syst_mat_disorder_np, "data/Algo/final_syst_mat.img")
 print("End")

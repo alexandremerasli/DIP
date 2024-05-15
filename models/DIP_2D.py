@@ -18,7 +18,7 @@ from iWMV import iWMV
 
 class DIP_2D(LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init,end_to_end):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init):
         super().__init__()
 
         # Save all the arguments passed to your model in the checkpoint, especially to save learning rate
@@ -120,8 +120,13 @@ class DIP_2D(LightningModule):
         self.ema_lr = [0, 0]
 
         # End to end reconstruction : load system matrix A
-        self.end_to_end = end_to_end
-
+        if ("end_to_end" in config): # Check if run DNA with end to end mode
+            if (config["end_to_end"]):
+                self.end_to_end = True
+            else:
+                self.end_to_end = False
+        else:
+            self.end_to_end = False
         if (self.end_to_end):
             # Define shapes
             self.subroot_data = self.root + '/data/Algo/' # Directory root
@@ -135,7 +140,12 @@ class DIP_2D(LightningModule):
                 self.sinogram_shape = (336,336,1)
                 self.sinogram_shape_transpose = (336,336,1)
             # Load stored system matrix A
-            A = squeeze(self.fijii_np(self.subroot_data + "/final_syst_mat.img",(self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1],1),type_im='<f'))
+            if ("4" in self.phantom or "10" in self.phantom): # cylindrical phantom are reconstructed with voxels of 4mm
+                A = squeeze(self.fijii_np(self.subroot_data + "/final_syst_mat_vox_4mm.img",(self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1],1),type_im='<f'))
+            elif ("5" in self.phantom): # brain phantom are reconstructed with voxels of 2mm
+                A = squeeze(self.fijii_np(self.subroot_data + "/final_syst_mat_vox_2mm.img",(self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1],1),type_im='<f'))
+            else: # Assuming that other cases are reconstructed with voxels of 2mm
+                A = squeeze(self.fijii_np(self.subroot_data + "/final_syst_mat_vox_2mm.img",(self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1],1),type_im='<f'))
             # Load randoms, scatters, norm and attenuation sinogram
             self.randoms_sinogram = Tensor(ravel_np(self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + "/simu0_1/simu0_1_rd.s",self.sinogram_shape_transpose,type_im='<f')))
             self.scatters_sinogram = Tensor(ravel_np(self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + "/simu0_1/simu0_1_sc.s",self.sinogram_shape_transpose,type_im='<f')))
@@ -162,7 +172,6 @@ class DIP_2D(LightningModule):
                 self.calibration_factor = float(words[index + 1])
             
             # Apply all corrections and convert A to torch tensor
-            from numpy import diag
             for j in range(self.PETImage_shape[0]*self.PETImage_shape[1]):
                 print(j)
                 A[:,j] = 1 / self.calibration_factor * A[:,j] * self.normalization_sinogram * self.attenuation_sinogram
@@ -170,10 +179,10 @@ class DIP_2D(LightningModule):
 
             # Put variables on GPU if asked
             if (config["processing_unit"] == "GPU"):
-                self.randoms_sinogram.to("cuda")
-                self.scatters_sinogram.to("cuda")
-                self.norm_mask.to("cuda")
-                self.A_torch.to("cuda")
+                self.randoms_sinogram = self.randoms_sinogram.to("cuda")
+                self.scatters_sinogram = self.scatters_sinogram.to("cuda")
+                self.norm_mask = self.norm_mask.to("cuda")
+                self.A_torch = self.A_torch.to("cuda")
 
 
             # For LBFGS

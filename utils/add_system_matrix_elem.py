@@ -24,17 +24,24 @@ def atoi(text):
 def natural_keys(text):
     return [ atoi(c) for c in split(r'(\d+)', text) ] # APGMAP final curves + resume computation
 
+phantom = "image50_1"
+phantom = "image40_1"
+phantom = "image10_1000"
+phantom = "image50_20"
 PETImage_shape = (112,112)
 sinogram_shape = (344,252)
-sinogram_norm_path = "data/Algo/Data/database_v2/image10_1000/simu0_1/simu0_1_nm.s"
+sinogram_norm_path = "data/Algo/Data/database_v2/" + phantom + "/simu0_1/simu0_1_nm.s"
 sinogram_norm_np = fijii_np(sinogram_norm_path,sinogram_shape)
 
-root_syst_mat = "data/Algo/mat_syst_folder"
-
+if ("5" in phantom):
+    root_syst_mat = "data/Algo/mat_syst_folder_2mm"
+elif ("40_1" in phantom):
+    root_syst_mat = "data/Algo/mat_syst_folder_4mm"
 syst_mat_disorder_np = np.zeros((sinogram_shape[0]*sinogram_shape[1],PETImage_shape[0]*PETImage_shape[1]),dtype=np.float32)
 
 # Loop over all files in the directory
 root_filename = "matrice_systeme_line_"
+
 img_list = os.listdir(root_syst_mat)
 img_list.sort(key=natural_keys)
 sinogram_bin_without_zeros = -1
@@ -53,6 +60,8 @@ for filename in reversed(img_list):
             print(true_sinogram_bin)
             syst_mat_disorder_np[true_sinogram_bin,:] = np.ravel(fijii_np(os.path.join(root_syst_mat, filename),PETImage_shape))
 
-
-save_img(syst_mat_disorder_np, "data/Algo/final_syst_mat.img")
+if ("5" in phantom):
+    save_img(syst_mat_disorder_np, "data/Algo/final_syst_mat_vox_2mm.img")
+else:
+    save_img(syst_mat_disorder_np, "data/Algo/final_syst_mat_vox_4mm.img")
 print("End")
