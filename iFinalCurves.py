@@ -32,11 +32,14 @@ class iFinalCurves(vGeneral):
         # Number of points in final tradeoff curve for DIP based algorithms
         nb_points_tradeoff_DIP = 25
         # rename_settings = "hyperparameters_paper"
-        rename_settings = "TMI"
         rename_settings = "MIC"
         rename_settings = "hyperparameters_paper"
+        rename_settings = "TMI"
         # Beta used to initialize DNA with BSREM with penalty strength beta
-        if ("50" in self.phantom):
+        if ("50_2_10" in self.phantom):
+            beta_BSREM_for_DNA = 0.2
+            A_shift_ref_APPGML = -10
+        elif ("50" in self.phantom):
             beta_BSREM_for_DNA = 0.5
             A_shift_ref_APPGML = -10
         elif ("40" in self.phantom):
@@ -120,7 +123,7 @@ class iFinalCurves(vGeneral):
             # ROI_list = ['whole']
             # ROI_list = ['cold','cold_inside','cold_edge']
             # ROI_list = ['cold']
-        elif(self.phantom == "image50_2" or self.phantom == "image4_1"):
+        elif("50_2" in self.phantom or self.phantom == "image4_1"):
             ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom']
         for ROI in ROI_list:
             # Plot tradeoff with SSIM (set quantitative_tradeoff is False) or AR (set quantitative_tradeoff to True)
@@ -153,10 +156,13 @@ class iFinalCurves(vGeneral):
                 else:
                     method_without_configuration = method
 
-                if (method == 'ADMMLim'):
-                    self.i_init = 30 # Remove first iterations
-                    self.i_init = 20 # Remove first iterations
-                    self.i_init = 1
+                if ('ADMMLim' in method and 'nested' not in method):
+                    if ("50_2_10" in self.phantom):
+                        self.i_init = 70 # Remove first iterations
+                    else:
+                        self.i_init = 30 # Remove first iterations
+                        self.i_init = 20 # Remove first iterations
+                        self.i_init = 1
                 elif ('DIPRecon' in method):
                     self.i_init = 1
                 else:
@@ -226,7 +232,7 @@ class iFinalCurves(vGeneral):
                         color_dict[key] = len(color_dict[key]) * ['black']
                 else:
                     color_avg = None
-                    if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
+                    if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom):
                         color_avg = color_dict[method_without_configuration][0]    
                     
 
@@ -257,7 +263,7 @@ class iFinalCurves(vGeneral):
                 
                 # Sort suffixes from file by rho and other dim values 
                 sorted_suffixes = list(suffixes[0])
-                if (method != "ADMMLim" and method != "ADMMLim_Bowsher" and "nested" not in method and "APGMAP" not in method and "BSREM" not in method):
+                if ("ADMMLim" not in method and method != "ADMMLim_Bowsher" and "nested" not in method and "APGMAP" not in method and "BSREM" not in method):
                     sorted_suffixes.sort(key=self.natural_keys)
                 else:
                     sorted_suffixes.sort(key=self.natural_keys_ADMMLim)
@@ -495,6 +501,11 @@ class iFinalCurves(vGeneral):
                                     if ('nested_BSREM_stand' in method or "DIPRecon_BSREM_stand" in method):
                                         #plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,idx],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,idx],'o', color='white', label='_nolegend_')
                                         plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,idx],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,idx],marker='X',markersize=10,color='black', label='_nolegend_')                                   
+
+                                    if (self.phantom == "image50_2"):
+                                        plt.xlim([5,55])
+                                        # plt.ylim([5,55])
+                                    
                                     # plt.ylim([3.42e6,3.43e6])
                                     #'''
                                     #if 'cold' in ROI:
@@ -529,14 +540,14 @@ class iFinalCurves(vGeneral):
                         legend_this_ROI = False
                         if (quantitative_tradeoff): # AR
                             if (len(ROI_list) > 2):
-                                if (ROI == ROI_list[2] or ROI == ROI_list[-1] or rename_settings == "MIC"): # if legend is needed only in one ROI
+                                if (ROI == ROI_list[1] or ROI == ROI_list[-1] or rename_settings == "MIC"): # if legend is needed only in one ROI
                                     legend_this_ROI = True
                             else:
                                 legend_this_ROI = True
                             if (legend_this_ROI):
                                 ax[fig_nb].legend(replicates_legend[fig_nb], prop={'size': 12})
                         else: # SSIM
-                            ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
+                            # ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
                             print("SSIM")
 
             # Saving figures locally in png
@@ -559,7 +570,7 @@ class iFinalCurves(vGeneral):
                 if (self.phantom == "image50_1"):
                     if (ROI == "hot_TEP"):
                         ROI = "MR_only"
-                elif (self.phantom == "image50_2"):
+                elif ("50_2" in self.phantom):
                     if (ROI == "hot_TEP"):
                         ROI = "background"
                 if (fig_nb == 0):
@@ -619,7 +630,7 @@ class iFinalCurves(vGeneral):
     def label_method_plot(self,replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings):
         if (self.phantom == "image2_0"):
             replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
-        elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
+        elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom):
             if ("nested" not in method and "DIPRecon" not in method):
                 if (fig_nb != 2):
                     replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
@@ -692,11 +703,26 @@ class iFinalCurves(vGeneral):
                             print("ok")
                         replicates_legend[fig_nb].append(label_name)
                 if (rename_settings == "TMI"):
-                    if ("nested" in method):
+                    if ("nested_MIC_brain_2D_MR3" in method):
                         replicates_legend[fig_nb].append('DNA')
-                    elif ("DIPRecon" in method):
+                    elif ("DIPRecon_MIC_brain_2D_MR3" in method):
                         replicates_legend[fig_nb].append('DIPRecon')
-                        # replicates_legend[fig_nb].append(method)
+                    # Ablation study
+                    elif ("nested_with_ReLU" in method):    
+                        replicates_legend[fig_nb].append('DNA w/ ReLU')
+                    elif ("DIPRecon_without_ReLU" in method):
+                        replicates_legend[fig_nb].append('DIPRecon w/o ReLU')
+                    elif ("nested_init_wReLU_MIC_brain_2D_MR3" in method):    
+                        replicates_legend[fig_nb].append('DNA - init w ReLU')
+                    elif ("DIPRecon_init_woReLU_MIC_brain_2D_MR3" in method):
+                        replicates_legend[fig_nb].append('DIPRecon - init w/o ReLU')
+
+                    # Low count study
+                    elif ("nested_low_count" in method):    
+                        replicates_legend[fig_nb].append('DNA')
+                    elif ("DIPRecon_low_count" in method):
+                        replicates_legend[fig_nb].append('DIPRecon')
+                    # replicates_legend[fig_nb].append(method)
                 elif(rename_settings == "hyperparameters_paper"):
                     # if ("nested_MIC_brain_2D_MR3" in method):
                     #     replicates_legend[fig_nb].append('DNA')
@@ -808,8 +834,10 @@ class iFinalCurves(vGeneral):
             config[method] = config_MIC
             config[method]["method"] = method_name
 
-            if ("50" in self.phantom):
-                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
+            if ("50_2_10" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.5,0.3,0.2,0.1,0.05,0.03,0.01])
+            elif ("50" in self.phantom):
+                config[method]["rho"] = tune.grid_search([3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
             elif ("40" in self.phantom):
                 config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
             elif ("4" in self.phantom):
@@ -831,7 +859,7 @@ class iFinalCurves(vGeneral):
             
             if ("50" in self.phantom):
                 config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
-                config[method]["rho"] = tune.grid_search([2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
+                config[method]["rho"] = tune.grid_search([3,2,1,0.8,0.5,0.3,0.1,0.05,0.03])
             elif ("40" in self.phantom):
                 config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
             elif ("4" in self.phantom):
@@ -841,17 +869,48 @@ class iFinalCurves(vGeneral):
 
             return config[method]
 
-        # APGMAP reconstruction
-        if (method == "APGMAP"):
-            APGMAP_vs_ADMMLim = True
-            from all_config.APGMAP_configuration import config_func_MIC
-            method_name = method
+        # APGMAP reconstruction with Bowsher weights
+        if ('APGMAP_Bowsher' in method):
+            from all_config.APGMAP_Bowsher import config_func_MIC
+            #config[method] = config_func()
+            method_name = "APGMAP"
             import importlib
-            globals().update(importlib.import_module('all_config.' + method + "_configuration").__dict__)
+            globals().update(importlib.import_module('all_config.' + method).__dict__)
             config[method] = config_MIC
             config[method]["method"] = method_name
-
+            
             if ("50" in self.phantom):
+                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
+                config[method]["rho"] = tune.grid_search([1,0.8,0.5,0.3,0.1,0.05])
+                # config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
+                config[method]["A_AML"] = tune.grid_search([-10])
+            elif ("40" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
+                config[method]["A_AML"] = tune.grid_search([-1000])
+            elif ("4" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
+                config[method]["A_AML"] = tune.grid_search([-1000])
+            else:
+                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
+                config[method]["A_AML"] = tune.grid_search([-100])
+
+            return config[method]
+        
+        # APGMAP reconstruction
+        elif ("APGMAP" in method):
+            APGMAP_vs_ADMMLim = True
+            from all_config.APGMAP import config_func_MIC
+            method_name = method
+            import importlib
+            globals().update(importlib.import_module('all_config.' + method).__dict__)
+            config[method] = config_MIC
+            # config[method]["method"] = method_name
+            config[method]["method"] = "APGMAP"
+
+            if ("50_2_10" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.03,0.01,0.005,0.003])
+                config[method]["A_AML"] = tune.grid_search([-10])
+            elif ("50" in self.phantom):
                 config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01,0.005,0.003,0.001,0.0005,0.0003,0.0001])
                 config[method]["A_AML"] = tune.grid_search([-10])
             elif ("40" in self.phantom):
@@ -870,43 +929,44 @@ class iFinalCurves(vGeneral):
 
             return config[method]
         
-        # APGMAP reconstruction with Bowsher weights
-        if (method == 'APGMAP_Bowsher'):
-            from all_config.APGMAP_Bowsher_configuration import config_func_MIC
+        # ADMMLim reconstruction with Bowsher weights
+        if (method == 'ADMMLim_Bowsher'):
+            from all_config.ADMMLim_Bowsher import config_func_MIC
             #config[method] = config_func()
-            method_name = "APGMAP"
+            method_name = "ADMMLim"
             import importlib
-            globals().update(importlib.import_module('all_config.' + method + "_configuration").__dict__)
+            globals().update(importlib.import_module('all_config.' + method).__dict__)
             config[method] = config_MIC
             config[method]["method"] = method_name
             
             if ("50" in self.phantom):
                 config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
-                config[method]["rho"] = tune.grid_search([1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
+                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3])
                 # config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
-                config[method]["A_AML"] = tune.grid_search([-10])
+                # config[method]["rho"] = tune.grid_search([0.01])
             elif ("40" in self.phantom):
                 config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
-                config[method]["A_AML"] = tune.grid_search([-1000])
             elif ("4" in self.phantom):
                 config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
-                config[method]["A_AML"] = tune.grid_search([-1000])
             else:
                 config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
-                config[method]["A_AML"] = tune.grid_search([-100])
 
             return config[method]
 
         # ADMMLim reconstruction
-        if (method == 'ADMMLim'):
-            from all_config.ADMMLim_configuration import config_func_MIC
+        elif ('ADMMLim' in method):
+            from all_config.ADMMLim import config_func_MIC
             method_name = method
             import importlib
-            globals().update(importlib.import_module('all_config.' + method + "_configuration").__dict__)
+            globals().update(importlib.import_module('all_config.' + method).__dict__)
             config[method] = config_MIC
-            config[method]["method"] = method_name
+            # config[method]["method"] = method_name
+            config[method]["method"] = "ADMMLim"
 
-            if ("50" in self.phantom):
+            if ("50_2_10" in self.phantom):
+                config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01,0.005,0.003])
+            elif ("50" in self.phantom):
+                # config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01,0.005,0.003,0.001,0.0005,0.0003,0.0001])
                 config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
             elif ("40" in self.phantom):
                 config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
@@ -914,30 +974,6 @@ class iFinalCurves(vGeneral):
                 config[method]["rho"] = tune.grid_search([0.0001,0.0003,0.0005,0.0007,0.0009,0.001,0.003,0.005,0.007,0.009])
                 config[method]["rho"] = tune.grid_search([1e-6,3e-6,5e-6,1e-5,3e-5,5e-5,0.0001,0.0003,0.0005,0.0007,0.0009])
                 config[method]["rho"] = tune.grid_search([0])
-            else:
-                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
-
-            return config[method]
-
-        # ADMMLim reconstruction with Bowsher weights
-        if (method == 'ADMMLim_Bowsher'):
-            from all_config.ADMMLim_Bowsher_configuration import config_func_MIC
-            #config[method] = config_func()
-            method_name = "ADMMLim"
-            import importlib
-            globals().update(importlib.import_module('all_config.' + method + "_configuration").__dict__)
-            config[method] = config_MIC
-            config[method]["method"] = method_name
-            
-            if ("50" in self.phantom):
-                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
-                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05])
-                # config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
-                # config[method]["rho"] = tune.grid_search([0.01])
-            elif ("40" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
-            elif ("4" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
             else:
                 config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
 
@@ -1129,7 +1165,7 @@ class iFinalCurves(vGeneral):
 
             color_dict = {**color_dict, **color_dict_supp} # Comparison between reconstruction methods
 
-        elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
+        elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom):
             color_dict_after_MIC = {
                 "nested_ADMMLim" : ['cyan','blue','teal','blueviolet','black'],
                 #"nested_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
@@ -1178,8 +1214,10 @@ class iFinalCurves(vGeneral):
                 "nested_random_1_skip_10it" : [color_dict_after_MIC["nested_random_skip"][2]],
                 "nested_random_0_skip_10it" : [color_dict_after_MIC["nested_random_skip"][3]],
                 "nested_DD" : [color_dict_after_MIC["nested_random_skip"][4]],
+
                 "nested_end_to_end" : [color_dict_after_MIC["nested_random_skip"][0]],
                 "DIPRecon_end_to_end" : [color_dict_after_MIC["nested_random_skip"][1]],
+
                 "DIPRecon_BSREM_stand" : [color_dict_after_MIC["DIPRecon"][0]],
                 "DIPRecon_CT_3_skip" : [color_dict_after_MIC["DIPRecon"][1]],
                 "DIPRecon_CT_2_skip" : [color_dict_after_MIC["DIPRecon"][2]],
@@ -1203,7 +1241,20 @@ class iFinalCurves(vGeneral):
                 "ADMMLim" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
                 "OSEM" : ['darkorange'] + 5*['cyan','blue','teal','blueviolet'],
                 "BSREM" : ['grey'] + 5*['cyan','blue','teal','blueviolet'],
-                "BSREM_Bowsher" : ['blueviolet'] + 5*['cyan','blue','teal','grey']
+                "BSREM_Bowsher" : ['blueviolet'] + 5*['cyan','blue','teal','grey'],
+
+
+                "BSREM_low_count" : ['grey'] + 5*['cyan','blue','teal','blueviolet'],
+                "BSREM_Bowsher_low_count" : ['blueviolet'] + 5*['cyan','blue','teal','grey'],
+                "nested_low_count" : ['black','red','pink'],
+                "DIPRecon_low_count" : ['cyan','blue','teal','blueviolet'],
+                "APGMAP_low_count" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "ADMMLim_low_count" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
+
+                "nested_with_ReLU" : [color_dict_after_MIC["nested_CT_skip"][0]],
+                "DIPRecon_without_ReLU" : [color_dict_after_MIC["nested_CT_skip"][1]],
+                "nested_init_wReLU_MIC_brain_2D_MR3" : [color_dict_after_MIC["nested_CT_skip"][2]],
+                "DIPRecon_init_woReLU_MIC_brain_2D_MR3" : [color_dict_after_MIC["nested_CT_skip"][3]],
             }
             
             color_dict_MIC2023_DNA = {
@@ -1306,7 +1357,7 @@ class iFinalCurves(vGeneral):
             }
 
             marker_dict = {**marker_dict, **marker_dict_supp}
-        elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or self.phantom == "image50_2"):
+        elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom):
             marker_dict = {
                 "APPGML_it" : 15*[':'],
                 "APPGML_subsets" : 15*['-'],
@@ -1352,8 +1403,22 @@ class iFinalCurves(vGeneral):
                 "nested_random_1_skip_10it" : [marker_dict["random"][0]],
                 "nested_random_0_skip_10it" : [marker_dict["random"][0]],
                 "nested_DD" : [marker_dict["random"][0]],
+
                 "nested_end_to_end" : [marker_dict["random"][0]],
                 "DIPRecon_end_to_end" : [marker_dict["random"][0]],
+
+                "BSREM_low_count" : [marker_dict["random"][0]],
+                "BSREM_Bowsher_low_count" : [marker_dict["random"][0]],
+                "nested_low_count" : [marker_dict["random"][0]],
+                "DIPRecon_low_count" : [marker_dict["random"][0]],
+                "APGMAP_low_count" : 10*[marker_dict["random"][0]],
+                "ADMMLim_low_count" : 10*[marker_dict["random"][0]],
+                
+                "nested_with_ReLU" : [marker_dict["random"][0]],
+                "DIPRecon_without_ReLU" : [marker_dict["random"][0]],
+                "nested_init_wReLU_MIC_brain_2D_MR3" : [marker_dict["random"][0]],
+                "DIPRecon_init_woReLU_MIC_brain_2D_MR3" : [marker_dict["random"][0]],
+
                 "nested_MIC_brain_2D" : 5*[marker_dict["CT"][0]],
                 "nested_MIC_cookie_2D_DNA_ADMMLim" : 5*[marker_dict["CT"][0]],
 
@@ -1548,14 +1613,30 @@ class iFinalCurves(vGeneral):
                         print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
                         self.nb_replicates[method] -= 1
                         continue
-                    if (i_replicate == 17-1 and rows_csv[6][0] == -100): # ReLU artifact in white matter...
-                        print("remove replicate 17 in loop to load metrics if relu artifact in white matter ?????????????????????,,,????")
-                        self.nb_replicates[method] -= 1
-                        continue                    
-                    if (i_replicate == 7-1 and rows_csv[6][0] == -100): # ReLU artifact in white matter...
-                        print("remove replicate 17 in loop to load metrics if relu artifact in white matter ?????????????????????,,,????")
-                        self.nb_replicates[method] -= 1
-                        continue
+                    if ('nested' in method or "DIPRecon" in method):
+                        # if (i_replicate == 17-1 and rows_csv[6][0] == -100): # ReLU artifact in white matter...
+                        if (i_replicate == 17-1): # ReLU artifact in white matter...
+                            print("remove replicate 17 in loop to load metrics if relu artifact in white matter ?????????????????????,,,????")
+                            self.nb_replicates[method] -= 1
+                            continue                    
+                        # if (i_replicate == 7-1 and rows_csv[6][0] == -100): # ReLU artifact in white matter...
+                        if (i_replicate == 7-1): # ReLU artifact in white matter...
+                            print("remove replicate 7 in loop to load metrics if relu artifact in white matter ?????????????????????,,,????")
+                            self.nb_replicates[method] -= 1
+                            continue
+                        if (i_replicate == 9-1): # bug for now
+                            print("remove replicate 9 in loop to load metrics, BUG FOR NOOOOOOOOOOOOOOOOW")
+                            self.nb_replicates[method] -= 1
+                            continue
+                    # Low count case
+                    if ("DIPRecon" in method or "nested" in method):
+                        # if (i_replicate+1 in [2,4,5,6,10,12,14,15,17,18,19,20]): # No ES points for low count study...
+                        if (i_replicate+1 in [5,6,7,8,12,14,15,18,19]): # No ES points for low count study...
+                            # 6,7,8,12,14,15,18,19 # DIPRecon standardisation
+                        # if (i_replicate+1 in [5,14,19]): # No ES points for low count study...
+                            print("remove replicate " + str(i_replicate) + " in loop to load metrics because different ES points for ablation study ?????????????????????,,,????")
+                            self.nb_replicates[method] -= 1
+                            continue
                 if (rename_settings == "hyperparameters_paper"): # Remove DNA-EMV failing replicates and replace them
                     if (i_replicate == 4-1 and method == "DIPRecon_positive_norm"):
                         print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
@@ -1582,7 +1663,7 @@ class iFinalCurves(vGeneral):
                     cold_GT = 0.5
                     hot_GT = 10
                     bkg_GT = 2
-                elif (self.phantom == "image50_2"):
+                elif ("50_2" in self.phantom):
                     cold_GT = 0.5
                     hot_GT = 10
                     bkg_GT = 2

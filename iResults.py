@@ -700,7 +700,7 @@ class iResults(vDenoising):
         if (self.phantom == "image50_1"):
             hot_TEP_ref_ROI_act = image_recon[self.hot_TEP_ROI_ref==1]
             AR_hot_TEP_recon[i] = 100 * (np.mean(hot_TEP_ROI_act) - np.mean(hot_TEP_ref_ROI_act)) / np.mean(hot_TEP_ref_ROI_act)
-        elif (self.phantom == "image50_2"):
+        elif ("50_2" in self.phantom):
             AR_hot_TEP_recon[i] = 100 * (np.mean(hot_TEP_ROI_act) -2.) / 2.
         else:
             AR_hot_TEP_recon[i] = np.mean(hot_TEP_ROI_act)

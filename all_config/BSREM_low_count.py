@@ -38,17 +38,9 @@ def config_func_MIC():
     # Configuration dictionnary for hyperparameters to tune
     hyperparameters_config = {
         "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
-        "rho" : tune.grid_search([0.01,0.02,0.03,0.04,0.05]), # NUYTS POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        # "rho" : tune.grid_search([0.0125,0.015,0.0175]), # NUYTS POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        "rho" : tune.grid_search([0.1,0.2,0.3,0.4,0.5,0.01,0.02,0.03,0.04,0.05,0.001,0.002,0.003,0.004,0.005]), # NUYTS POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        # "rho" : tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01]), # FDG brain 2D
-        "rho" : tune.grid_search([0.1,0.05,0.03,0.01]), # FDG cookie
-        "rho" : tune.grid_search([0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.1]), # 90Y
-        "rho" : tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.2,0.1,0.05,0.03,0.01]), # 90Y
+        "rho" : tune.grid_search([0.001,0.003,0.005,0.007,0.009,0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.1,0.3,0.5,0.8,1,2,3,5]), # low count FDG
         # "Bowsher" : tune.grid_search([False]), # NUYTS POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        # "rho" : tune.grid_search([0.01,0.02,0.03,0.04,0.05,0.001,0.002,0.003,0.004,0.005,0.1,0.2,0.3,0.4,0.5,1,2,3,4,5]), # NUYTS POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        # "rho" : tune.grid_search([0.5,3]), # NUYTS POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        #"rho" : tune.grid_search([3e-5,5e-5,7e-5,9e-5,2e-4,4e-4,6e-4,8e-4,1e-3]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+        "rho" : tune.grid_search([0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.1,0.3,0.5,0.8,1,2,3,5]), # NUYTS POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         ## network hyperparameters
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
         "sub_iter_DIP" : tune.grid_search([1000]), # Number of epochs in network optimization

@@ -82,6 +82,17 @@ class DIP_2D(LightningModule):
         else:
             self.initDNA = False
 
+        if (self.global_it < 0):
+            if ("initDIPRecon" in self.config):
+                if (self.config["initDIPRecon"]):
+                    self.initDIPRecon = True
+                else:
+                    self.initDIPRecon = False
+            else:
+                self.initDIPRecon = False
+        else:
+            self.initDIPRecon = False
+
         self.override_SC_init = override_SC_init
         if ("dropout" in config):
             self.dropout = config['dropout']
@@ -341,10 +352,9 @@ class DIP_2D(LightningModule):
         else:
             out = self.deep7(out)
 
-        if (self.method == 'Gong'):                
-            if (not self.initDNA):
-                self.write_current_img_task(out,inside=True)
-                out = self.positivity(out)
+        if ((self.method == 'Gong' and not self.initDNA and self.config["mu_DIP"] != 1851221) or (self.method == 'nested' and self.config["mu_DIP"] == 1851221) or (self.method == 'nested' and self.initDIPRecon)): # 1851221 means ReLU ablation study
+            # self.write_current_img_task(out,inside=True) # Write image before ReLU
+            out = self.positivity(out)
 
         return out
 

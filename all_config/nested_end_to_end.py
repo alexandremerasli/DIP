@@ -7,7 +7,7 @@ def config_func_MIC():
         "image" : tune.grid_search(['image4_0']), # Image from database
         "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
         "method" : tune.grid_search(['nested']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-        "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
+        "processing_unit" : tune.grid_search(['GPU']), # CPU or GPU
         "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
         "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
         "debug" : False, # Debug mode = run without raytune and with one iteration
@@ -22,7 +22,7 @@ def config_func_MIC():
     }
     # Configuration dictionnary for previous hyperparameters, but fixed to simplify
     fixed_config = {
-        "max_iter" : tune.grid_search([1000]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
+        "max_iter" : tune.grid_search([450]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
         "nb_subsets" : tune.grid_search([1]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
         "use_u_and_v_nested" : tune.grid_search([False]), # If sinogram u and v from previous global iteration are used to initialize current u and v
         "finetuning" : tune.grid_search(['False']),
@@ -39,7 +39,7 @@ def config_func_MIC():
         "alpha_EMV" : tune.grid_search([0.1]), # EMV forgetting factor alpha
         "windowSize" : tune.grid_search([10,50,100,500]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
         "windowSize" : tune.grid_search([50]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-        "patienceNumber" : tune.grid_search([500]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
+        "patienceNumber" : tune.grid_search([100]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     }
     # Configuration dictionnary for hyperparameters to tune
     hyperparameters_config = {
@@ -54,8 +54,8 @@ def config_func_MIC():
         "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
         ## network hyperparameters
         # "monitor_lr" : tune.grid_search([True]), # Learning rate in network optimization
-        "lr" : tune.grid_search([1]), # Learning rate in network optimization
-        "sub_iter_DIP" : tune.grid_search([5]), # Number of epochs in network optimization
+        "lr" : tune.grid_search([0.1]), # Learning rate in network optimization
+        "sub_iter_DIP" : tune.grid_search([0]), # Number of epochs in network optimization
         "opti_DIP" : tune.grid_search(['LBFGS']), # Optimization algorithm in neural network training (Adam, LBFGS)
         # "skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)

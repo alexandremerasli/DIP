@@ -18,6 +18,8 @@ class iNestedADMM(vReconstruction):
 
         # Initialize f but is not used in first global iteration because rho=0, only to define f_mu_for_penalty
         self.f = np.NaN * np.ones((self.PETImage_shape))
+        if (config["FLTNB"] == "float"):
+            self.f = self.f.astype(np.float32)
         self.f = self.f.reshape(self.PETImage_shape[::-1])
         # Initialize f at step before
         self.f_before = self.f
@@ -289,8 +291,8 @@ class iNestedADMM(vReconstruction):
         
         # During iterations, do not do WMV
         if (self.global_it == i_init + 1 and ((i_init == -1 and not config["unnested_1st_global_iter"]) or (i_init == 0 and config["unnested_1st_global_iter"]))): # TESTCT_random , put back random input
-            # config["DIP_early_stopping"] = False
-            config["DIP_early_stopping"] = True
+            config["DIP_early_stopping"] = False
+            # config["DIP_early_stopping"] = True
             config["finetuning"] = "last" # save NN state at last epoch for next global iteration
             # config["finetuning"] = "ES" # save NN state at last epoch for next global iteration
             if ("3D" not in self.phantom):

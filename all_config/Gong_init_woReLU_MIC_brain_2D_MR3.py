@@ -6,13 +6,13 @@ def config_func_MIC():
     settings_config = {
         "image" : tune.grid_search(['image4_0']), # Image from database
         "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-        "method" : tune.grid_search(['nested']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+        "method" : tune.grid_search(['Gong']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
         "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
         "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
         "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
         "debug" : False, # Debug mode = run without raytune and with one iteration
         "ray" : False, # Ray mode = run with raytune if True, to run several settings in parallel
-        "tensorboard" : False, # Tensorboard mode = show results in tensorboard
+        "tensorboard" : True, # Tensorboard mode = show results in tensorboard
         "all_images_DIP" : tune.grid_search(['True']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
         "experiment" : tune.grid_search([24]),
         "replicates" : tune.grid_search(list(range(1,40+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
@@ -22,7 +22,7 @@ def config_func_MIC():
     }
     # Configuration dictionnary for previous hyperparameters, but fixed to simplify
     fixed_config = {
-        "max_iter" : tune.grid_search([490]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
+        "max_iter" : tune.grid_search([5]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
         "nb_subsets" : tune.grid_search([1]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
         "use_u_and_v_nested" : tune.grid_search([False]), # If sinogram u and v from previous global iteration are used to initialize current u and v
         "finetuning" : tune.grid_search(['ES']),
@@ -39,7 +39,7 @@ def config_func_MIC():
         "alpha_EMV" : tune.grid_search([0.0251]), # EMV forgetting factor alpha
         "windowSize" : tune.grid_search([10,50,100,500]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
         "windowSize" : tune.grid_search([50]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-        "patienceNumber" : tune.grid_search([500]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
+        "patienceNumber" : tune.grid_search([200]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     }
     # Configuration dictionnary for hyperparameters to tune
     hyperparameters_config = {
@@ -53,16 +53,11 @@ def config_func_MIC():
         # "rho" : tune.grid_search([3e-4,3e-5,3e-1,3e-2]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         # "rho" : tune.grid_search([0.3,0.03,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "rho" : tune.grid_search([0.3,0.03,0.003,3e-4]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        "rho" : tune.grid_search([0.3,0.03,0.003,3e-4,3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        "rho" : tune.grid_search([0.3,0.003,3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        "rho" : tune.grid_search([300,10,3,1]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "rho" : tune.grid_search([3,0.3,0.03,0.003,3e-4,3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        "rho" : tune.grid_search([3000,300,30,3e-6,3e-7,3e-8]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-        "rho" : tune.grid_search([0.03,0.3,3e-5]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)    
-        "rho" : tune.grid_search([3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)    
+        "rho" : tune.grid_search([3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         # "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
         "adaptive_parameters_DIP" : tune.grid_search(["nothing"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
-        "mu_DIP" : tune.grid_search([100]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
+        "mu_DIP" : tune.grid_search([10.13123]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
         "tau_DIP" : tune.grid_search([0.95,0.92,0.9,0.8]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
         "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
         ## network hyperparameters
@@ -74,6 +69,7 @@ def config_func_MIC():
         "skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "override_SC_init" : tune.grid_search([True]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+        "initDNA" : tune.grid_search([True]), # For warmstart image denoising, use DNA DIP (which means without ReLU)
         # "dropout" : tune.grid_search([0.1]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "diffusion_model_like" : tune.grid_search([0.01,0.1]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
@@ -89,11 +85,8 @@ def config_func_MIC():
         "k_DD" : tune.grid_search([32]), # k for Deep Decoder
         ## ADMMLim - OPTITR hyperparameters
         "nb_outer_iteration": tune.grid_search([2,10]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
-        "nb_outer_iteration": tune.grid_search([10,30,100]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
-        "nb_outer_iteration": tune.grid_search([10,30,100]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
-        "nb_outer_iteration": tune.grid_search([10,30]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
-        "nb_outer_iteration": tune.grid_search([1,10,30]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
-        "nb_outer_iteration": tune.grid_search([3]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
+        "nb_outer_iteration": tune.grid_search([2]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
+        # "nb_outer_iteration": tune.grid_search([3]), # Number of outer iterations in ADMMLim (and nested) and OPTITR (for Gong)
         "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMLim
         "adaptive_parameters" : tune.grid_search(["both"]), # which parameters are adaptive ? Must be set to nothing, alpha, or both (which means alpha and tau)
         "mu_adaptive" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim

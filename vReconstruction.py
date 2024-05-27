@@ -104,7 +104,7 @@ class vReconstruction(vGeneral):
             output_path = ' -dout ' + path_mlem_init # Output path for CASTOR framework
             dim = ' -dim ' + self.PETImage_shape_str
             if (self.scanner != "mMR_3D"):
-                if (self.phantom != "image50_0" and self.phantom != "image50_1" and self.phantom != "image50_2"):
+                if (self.phantom != "image50_0" and self.phantom != "image50_1" and "50_2" not in self.phantom):
                     vox = ' -vox 4,4,4'
                 else:
                     vox = ' -vox 2,2,2'

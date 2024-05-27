@@ -1,0 +1,42 @@
+
+import os
+import numpy as np
+from PIL import Image
+
+def fijii_np(path,shape,type_im='<f'):
+    """"Transforming raw data to numpy array"""
+    file_path=(path)
+    dtype_np = np.dtype(type_im)
+    with open(file_path, 'rb') as fid:
+        data = np.fromfile(fid,dtype_np)
+        image = data.reshape(shape)
+                    
+    return image
+
+def save_img(img,name):
+    fp=open(name,'wb')
+    img.tofile(fp)
+    print('Succesfully save in:', name)
+
+
+
+def pad_image(image, target_shape):
+    pad_y = (target_shape[0] - image.shape[0]) // 2
+    pad_x = (target_shape[1] - image.shape[1]) // 2
+    padded_image = np.pad(image, ((pad_y, ), (pad_x, )), 'constant')
+    return padded_image.astype(np.float32)
+
+# folder_path = 'data/Algo/Data/database_v2/image50_2'
+short_folder_path = "data/Algo/Data/initialization/image50_2/BSREM_30it_160"
+target_shape = (160, 160)
+
+for replicate in range(1,100+1):
+    folder_path = os.path.join(short_folder_path,"replicate_" + str(replicate))
+    for filename in os.listdir(folder_path):
+        if filename.endswith('.img') or filename.endswith('.raw'):
+            file_path = os.path.join(folder_path, filename)
+            image = fijii_np(file_path, shape=(112, 112))
+            padded_image = pad_image(image, target_shape)
+            # Save the padded image
+            output_path = os.path.join(folder_path, filename)
+            save_img(padded_image,output_path)

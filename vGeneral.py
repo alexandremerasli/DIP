@@ -151,7 +151,7 @@ class vGeneral(abc.ABC):
             #     self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
             # elif (("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
             #     self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
-            # elif ((self.phantom == "image50_1" or self.phantom == "image50_2") and config["task"] != "show_metrics_results_already_computed"):
+            # elif ((self.phantom == "image50_1" or "50_2" in self.phantom) and config["task"] != "show_metrics_results_already_computed"):
             #     self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot_data)
         return config
 
@@ -255,7 +255,7 @@ class vGeneral(abc.ABC):
             self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
         elif (("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
-        elif ((self.phantom == "image50_1" or self.phantom == "image50_2") and config["task"] != "show_metrics_results_already_computed"):
+        elif ((self.phantom == "image50_1" or "50_2" in self.phantom) and config["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot_data)
 
         # Defining ROIs
@@ -272,10 +272,10 @@ class vGeneral(abc.ABC):
 
         self.bkg_ROI = self.fijii_np(bkg_ROI_path, shape=(self.PETImage_shape),type_im='<f')
         
-        if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_1" or self.phantom == "image50_2"):              
+        if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_1" or "50_2" in self.phantom):              
             self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             self.hot_MR_recon = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-            if (self.phantom != "image50_2"):
+            if ("50_2" not in self.phantom):
                 self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             else:
                 self.hot_TEP_match_square_ROI = self.hot_perfect_match_ROI
@@ -342,7 +342,7 @@ class vGeneral(abc.ABC):
                 config.pop("A_AML", None)
             if ('BSREM' in config["method"]['grid_search'][0] or 'nested' in config["method"]['grid_search'][0] or 'Gong' in config["method"]['grid_search'][0] or 'DIPRecon' in config["method"]['grid_search'][0] or 'APGMAP' in config["method"]['grid_search'][0]):
                 config.pop("post_smoothing", None)
-            if ((config["method"]['grid_search'][0] != 'ADMMLim' and config["method"]['grid_search'][0] != 'ADMMLim_Bowsher' and "nested" not in config["method"]['grid_search'][0]) or "APGMAP" in config["recoInNested"]['grid_search'][0]):
+            if ((('ADMMLim' not in config["method"]['grid_search'][0] and 'nested' not in config["method"]['grid_search'][0]) and config["method"]['grid_search'][0] != 'ADMMLim_Bowsher' and "nested" not in config["method"]['grid_search'][0]) or "APGMAP" in config["recoInNested"]['grid_search'][0]):
                 #config.pop("nb_inner_iteration", None)
                 config.pop("alpha", None)
                 config.pop("adaptive_parameters", None)
@@ -502,7 +502,7 @@ class vGeneral(abc.ABC):
         config_copy = dict(config)
         if (NNEPPS==False):
             config_copy.pop('NNEPPS',None)
-        if (config["method"] == "ADMMLim" or config["method"] == "ADMMLim_Bowsher"):
+        if (("ADMMLim" in config["method"] and "nested" not in config["method"]) or config["method"] == "ADMMLim_Bowsher"):
             config_copy.pop('nb_outer_iteration',None)
         elif ("post_reco" in config_copy["task"]):
             if ("post_reco_in_suffix" not in config_copy):
@@ -932,6 +932,8 @@ class vGeneral(abc.ABC):
         # tumor_1b_ROI = self.points_in_circle(0,25,4,PETImage_shape)
         xx,yy = meshgrid(arange(65,72),arange(53,59))
         tumor_1b_ROI = list(map(tuple, dstack([xx.ravel(), yy.ravel()])[0]))
+        for tuple_ in [(72,53),(72,52),(73,51),(74,50),(75,49),(72,58),(43,42),(42,42),(41,42),(40,42),(39,42),(45,43),(44,43),(43,43),(42,43),(45,44),(44,44),(46,66),(46,67),(45,67),(46,66),(44,68),(45,68)]:
+            tumor_1b_ROI.append(tuple_)
 
         tumor_2_MR_ROI = self.points_in_circle(-25,0,8-remove_external_radius,PETImage_shape)
         tumor_2_PET_ROI = self.points_in_circle(-27,0,4,PETImage_shape) # Do not remove external radius to show effect of intermediate setting
@@ -1044,7 +1046,7 @@ class vGeneral(abc.ABC):
         header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data pat
         dim = ' -dim ' + PETImage_shape_str
         if (self.scanner != "mMR_3D"):
-            if (self.phantom != "image50_0" and self.phantom != "image50_1" and self.phantom != "image50_2"):
+            if (self.phantom != "image50_0" and self.phantom != "image50_1" and "50_2" not in self.phantom):
                 vox = ' -vox 4,4,4'
             else:
                 vox = ' -vox 2,2,2'

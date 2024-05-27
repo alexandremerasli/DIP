@@ -516,7 +516,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             # MR only
             center_x_MR_tumor, center_y_MR_tumor = 68,80
             radius_MR_tumor = 5
-        elif (self.phantom == "image50_2"):
+        elif ("50_2" in self.phantom):
             # profile on cerebrospinal fluid
             # center_x_MR_tumor, center_y_MR_tumor = 55,69
             # radius_MR_tumor = 11
@@ -574,7 +574,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         zi_angles = np.zeros((len(angles),2*radius))
         min_len_zi = np.inf
         fig,ax=plt.subplots()
-        if (self.phantom == "image50_2" and self.change_replicates == "TMI"):
+        if ("50_2" in self.phantom and self.change_replicates == "TMI"):
             angles += np.pi / 2
         for i in range(len(angles)):
             angle = angles[i]
