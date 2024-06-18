@@ -25,7 +25,7 @@ def natural_keys(text):
     return [ atoi(c) for c in split(r'(\d+)', text) ] # APGMAP final curves + resume computation
 
 # phantom = "image10_1000"
-phantom = "image50_1"
+phantom = "image40_1"
 
 PETImage_shape = (112,112)
 sinogram_shape = (344,252)
@@ -33,23 +33,40 @@ sinogram_shape_transpose = (252,344)
 sinogram_norm_path = "data/Algo/Data/database_v2/" + phantom + "/simu0_1/simu0_1_nm.s"
 sinogram_norm_np = fijii_np(sinogram_norm_path,sinogram_shape)
 
-if ("5" in phantom):
-    root_syst_mat = "data/Algo/mat_syst_folder_2mm"
-else:
-    root_syst_mat = "data/Algo/mat_syst_folder_4mm"
+# If ACF_sino is True, output is exp(-sinogram)
+ACF_sino = False
+ACF_sino = True
+
+# if ("5" in phantom):
+#     root_syst_mat = "data/Algo/mat_syst_folder_2mm"
+# else:
+#     root_syst_mat = "data/Algo/mat_syst_folder_4mm"
 
 
 syst_mat_disorder_np = np.zeros((sinogram_shape[0]*sinogram_shape[1],PETImage_shape[0]*PETImage_shape[1]),dtype=np.float32)
 final_syst_mat_np = np.zeros((sinogram_shape[0]*sinogram_shape[1],PETImage_shape[0]*PETImage_shape[1]),dtype=np.float32)
 
 # sino_without_zero_CASToR = fijii_np("data/Algo/Data/database_v2/" + phantom + "/simu0_1/Ax_test.s",(68516,1))
-sino_without_zero_CASToR = fijii_np("data/Algo/image50_1_Ax_it0.s",(68516,1))
-sino_with_zero = np.zeros((sinogram_shape[0]*sinogram_shape[1]))
+sino_without_zero_CASToR = fijii_np("/home/MEDECINE/mera1140/sherbrooke_workspace/proj_mu_map/proj_mu_map_Ax.img",(68516,1))
+sino_with_zero = np.zeros((sinogram_shape[0]*sinogram_shape[1]),dtype=np.float32)
+
+# Divide by 10 the attenuation image to be consistent with CASToR units
+# atn_img = 1/10*fijii_np("data/Algo/Data/database_v2/" + phantom + "/" + phantom + "_atn.img",PETImage_shape)
+# save_img(atn_img,"data/Algo/Data/database_v2/" + phantom + "/" + phantom + "_atn_divided_10.img")
+
+# If ACF_sino is True, output is exp(-sinogram)
+if (ACF_sino):
+    # sino_without_zero_CASToR = np.exp(-sino_without_zero_CASToR)
+    sino_without_zero_CASToR = np.exp(sino_without_zero_CASToR)
+
+# Define sinogram which will be full of ones
+# sino_full_ones = np.zeros_like(sino_with_zero,dtype=np.float32)
+
 
 # Loop over all files in the directory
 root_filename = "matrice_systeme_line_"
-img_list = os.listdir(root_syst_mat)
-img_list.sort(key=natural_keys)
+# img_list = os.listdir(root_syst_mat)
+# img_list.sort(key=natural_keys)
 sinogram_bin_without_zeros = -1
 true_sinogram_bin = -1
 for true_sinogram_bin in range(sinogram_shape[0]*sinogram_shape[1]):
@@ -57,6 +74,11 @@ for true_sinogram_bin in range(sinogram_shape[0]*sinogram_shape[1]):
     if (np.squeeze(np.ravel(sinogram_norm_np))[true_sinogram_bin] != 0):
         sinogram_bin_without_zeros += 1
         sino_with_zero[true_sinogram_bin] = sino_without_zero_CASToR[sinogram_bin_without_zeros]
+        # sino_full_ones[true_sinogram_bin] = 1
+
+
+# Create a sinogram full of ones
+# save_img(sino_full_ones,"data/Algo/Data/database_v2/" + phantom + "/" + "sino_ones.s")
 
 plt.figure()
 plt.title("Ax castor")
@@ -82,8 +104,12 @@ plt.figure()
 plt.title("Ax+r+s - y")
 plt.imshow(Ax_reshaped+r+s-y,cmap="gray_r")
 plt.colorbar()
-plt.show()
+# plt.show()
 
-save_img(sino_with_zero.astype(np.float32), "data/Algo/image50_1_Ax_it0_good_size.s")
+if (ACF_sino):
+    filename_to_be_saved = "/home/MEDECINE/mera1140/sherbrooke_workspace/proj_mu_map/proj_mu_map_Ax_good_size_ACF.img"
+else:
+    filename_to_be_saved = "/home/MEDECINE/mera1140/sherbrooke_workspace/proj_mu_map/proj_mu_map_Ax_good_size.img"
+save_img(sino_with_zero.astype(np.float32), filename_to_be_saved)
 # save_img(syst_mat_disorder_np, "data/Algo/final_syst_mat.img")
 print("End")
