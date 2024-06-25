@@ -90,7 +90,7 @@ class iComparison(vReconstruction):
             os.system(self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
             
             """
-            self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')            
+            self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')            
             img = (0.9+self.rho)*self.image_gt
 
             for i in range(self.max_iter):   
@@ -113,24 +113,8 @@ class iComparison(vReconstruction):
         if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):
             from iResults import iResults
             classResults = iResults(config)
-            classResults.nb_replicates = self.nb_replicates
-            classResults.debug = self.debug
-            classResults.rho = self.rho
-            classResults.hyperparameters_list = self.hyperparameters_list
-            classResults.phantom_ROI = self.phantom_ROI
-            classResults.scanner = self.scanner
-            if ("3D" not in self.phantom):
-                classResults.bkg_ROI = self.bkg_ROI
-                classResults.hot_TEP_ROI = self.hot_TEP_ROI
-                if (self.phantom == "image50_1"):
-                    classResults.hot_TEP_ROI_ref = self.hot_TEP_ROI_ref
-                classResults.hot_TEP_match_square_ROI = self.hot_TEP_match_square_ROI
-                classResults.hot_perfect_match_ROI = self.hot_perfect_match_ROI
-                classResults.hot_MR_recon = self.hot_MR_recon
-                classResults.hot_ROI = self.hot_ROI
-                classResults.cold_ROI = self.cold_ROI
-                classResults.cold_inside_ROI = self.cold_inside_ROI
-                classResults.cold_edge_ROI = self.cold_edge_ROI
+            self.assignVariablesFromResults(classResults)
+            self.assignROI(classResults)
             classResults.initializeSpecific(config,root)
             classResults.runComputation(config,root)
 

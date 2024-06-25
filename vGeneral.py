@@ -6,12 +6,13 @@ from os import getcwd, makedirs
 from os.path import exists, isfile
 from functools import partial
 from ray import tune
-from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, mean, std, sum, array, column_stack, transpose, dstack, meshgrid, arange
+from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, mean, std, sum, array, column_stack, transpose, dstack, meshgrid, arange, where, unique, concatenate, setdiff1d, isin, ones, float32
 from numpy import max as max_np
 from numpy import min as min_np
 from pandas import read_table
 from matplotlib.pyplot import imshow, figure, colorbar, savefig, title, gcf, axis, show, xlabel
 from re import split, findall, compile
+from pandas import DataFrame
 
 import abc
 
@@ -137,10 +138,10 @@ class vGeneral(abc.ABC):
 
             # Define sinogram dimensions
             # self.scanner = "mCT_2D" # to be removed
-            if ("3D" not in self.phantom and self.scanner == "mMR_2D"):
+            if (self.simulation and self.scanner == "mMR_2D"):
                 self.sinogram_shape = (344,252,1)
                 self.sinogram_shape_transpose = (252,344,1)
-            elif ("3D" not in self.phantom and self.scanner == "mCT_2D"):
+            elif (self.simulation and self.scanner == "mCT_2D"):
                 self.sinogram_shape = (336,336,1)
                 self.sinogram_shape_transpose = (336,336,1)
             
@@ -237,15 +238,24 @@ class vGeneral(abc.ABC):
             self.scanner = "mMR_3D"
         elif (self.phantom == "image012_3D" or self.phantom == "image013_3D"):
             self.scanner = "mCT_3D"
+        elif (self.phantom == "imageUHR_IEC"):
+            self.scanner = "UHR"
+        
         else:
             self.scanner = "mMR_2D"
+
+        # Define if simulation or not
+        if ("50_" in self.phantom or "4_" in self.phantom or "2_" in self.phantom or "40_" in self.phantom or self.phantom == "imageUHR_IEC"):
+            self.simulation = True
+        else:
+            self.simulation = False
 
         # Define PET input dimensions according to input data dimensions
         self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
         self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
         # # Loading Ground Truth image to compute metrics
-        # self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')            
+        # self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')            
 
 
         # Define ROIs for image0 phantom, otherwise it is already done in the database
@@ -257,10 +267,12 @@ class vGeneral(abc.ABC):
             self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
         elif ((self.phantom == "image50_1" or "50_2" in self.phantom) and config["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot_data)
+        elif ((self.phantom == "imageUHR_IEC")):
+            self.define_ROI_IEC_3D(self.PETImage_shape,self.subroot_data)
 
         # Defining ROIs
         self.phantom_ROI = self.get_phantom_ROI(self.phantom)
-        if ("3D" not in self.phantom):
+        if (self.simulation):
             bkg_ROI_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw'
             cold_ROI_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw'
             if (isfile(bkg_ROI_path) or isfile(cold_ROI_path)):
@@ -272,6 +284,7 @@ class vGeneral(abc.ABC):
 
         self.bkg_ROI = self.fijii_np(bkg_ROI_path, shape=(self.PETImage_shape),type_im='<f')
         
+        # Define hot ROI according to the phantom
         if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_1" or "50_2" in self.phantom):              
             self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             self.hot_MR_recon = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
@@ -289,6 +302,11 @@ class vGeneral(abc.ABC):
                 self.hot_TEP_ROI = self.hot_MR_recon
             else:
                 self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        elif ("UHR_IEC" in self.phantom):
+            self.hot1_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "hot1_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.hot2_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "hot2_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.hot3_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "hot3_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.hot4_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "hot4_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
         else:
             self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             # These ROIs do not exist, so put them equal to hot ROI for the sake of simplicity
@@ -296,13 +314,19 @@ class vGeneral(abc.ABC):
             self.hot_TEP_match_square_ROI = array(self.hot_ROI)
             self.hot_perfect_match_ROI = array(self.hot_ROI)
             self.hot_MR_recon = array(self.hot_ROI)
-        self.cold_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
-        if ("4" in self.phantom):
-            self.cold_inside_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_inside_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-            self.cold_edge_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_edge_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        
+        # Define cold ROI according to the phantom
+        if ("UHR_IEC" in self.phantom):
+            self.cold1_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold1_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.cold2_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold2_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
         else:
-            self.cold_inside_ROI = self.cold_ROI
-            self.cold_edge_ROI = self.cold_ROI
+            self.cold_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
+            if ("4" in self.phantom):
+                self.cold_inside_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_inside_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                self.cold_edge_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_edge_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            else:
+                self.cold_inside_ROI = self.cold_ROI
+                self.cold_edge_ROI = self.cold_ROI
 
     def parametersIncompatibility(self,config,task):
         # Additional variables needing every values in config
@@ -782,27 +806,102 @@ class vGeneral(abc.ABC):
         print('index with NaN value:',len(argwhere(isnan(image))))
         return image
 
-    def points_in_circle(self,center_y,center_x,radius,PETImage_shape,inner_circle=True): # x and y are inverted in an array compared to coordinates
-        liste = [] 
+    def assignROI(self, classResults):
+        if (self.simulation):
+            classResults.bkg_ROI = self.bkg_ROI
+            if ("UHR_IEC" not in self.phantom):
+                classResults.hot_TEP_ROI = self.hot_TEP_ROI
+                if (self.phantom == "image50_1"):
+                    classResults.hot_TEP_ROI_ref = self.hot_TEP_ROI_ref
+                classResults.hot_TEP_match_square_ROI = self.hot_TEP_match_square_ROI
+                classResults.hot_perfect_match_ROI = self.hot_perfect_match_ROI
+                classResults.hot_MR_recon = self.hot_MR_recon
+                classResults.hot_ROI = self.hot_ROI
+                classResults.cold_ROI = self.cold_ROI
+                classResults.cold_inside_ROI = self.cold_inside_ROI
+                classResults.cold_edge_ROI = self.cold_edge_ROI
+            else:
+                classResults.hot1P_ROI = self.hot1_ROI
+                classResults.hot2_ROI = self.hot2_ROI
+                classResults.hot3_ROI = self.hot3_ROI
+                classResults.hot4_ROI = self.hot4_ROI
+                classResults.cold1_ROI = self.cold1_ROI
+                classResults.cold2_ROI = self.cold2_ROI
 
+    def assignVariablesFromResults(self,classResults):
+        classResults.nb_replicates = self.nb_replicates
+        classResults.debug = self.debug
+        if (hasattr(self, 'rho')):
+            classResults.rho = self.rho
+        classResults.fixed_hyperparameters_list = self.fixed_hyperparameters_list
+        classResults.hyperparameters_list = self.hyperparameters_list
+        classResults.phantom_ROI = self.phantom_ROI
+        classResults.scanner = self.scanner
+        classResults.simulation = self.simulation
+
+    def points_in_circle(self,center_x,center_y,center_z,radius,PETImage_shape,inner_circle=True): # x and y are inverted in an array compared to coordinates
+        center_y += int(PETImage_shape[0]/2)
+        center_x += int(PETImage_shape[1]/2)
+        dim_y = PETImage_shape[1]
+        dim_x = PETImage_shape[0]
+        if (len(PETImage_shape) >= 2):
+            center_z += int(PETImage_shape[2]/2)
+            dim_z = PETImage_shape[2]
+        else:
+            dim_z = 1
+
+        if (dim_z == 1):
+            x, y = meshgrid(arange(dim_x), arange(dim_y))
+            mask = (x+0.5-center_x)**2 + (y+0.5-center_y)**2 <= radius**2
+        else:
+            x, y, z = meshgrid(arange(dim_x), arange(dim_y), arange(dim_z))
+            mask = (x+0.5-center_x)**2 + (y+0.5-center_y)**2 + (z+0.5-center_z)**2 <= radius**2
+        liste = argwhere(mask)
+
+        # import matplotlib.pyplot as plt
+        # plt.figure()
+        # plt.imshow(mask)
+        # plt.show()
+        
+        # liste = [] 
+        # for x in range(dim_x):
+        #     for y in range(dim_y):
+        #         for z in range(dim_z):
+        #             if (x+0.5-center_x)**2 + (y+0.5-center_y)**2 <= radius**2:
+        #                 liste.append((x,y,z))
+
+        return liste, mask.astype(float32)
+
+    def points_in_cylinder(self,center_y,center_x,center_z,radius,length,PETImage_shape,inner_circle=True): # x and y are inverted in an array compared to coordinates
         center_x += int(PETImage_shape[0]/2)
         center_y += int(PETImage_shape[1]/2)
-        for x in range(0,PETImage_shape[0]):
-            for y in range(0,PETImage_shape[1]):
-                if (x+0.5-center_x)**2 + (y+0.5-center_y)**2 <= radius**2:
-                    liste.append((x,y))
+        dim_x = PETImage_shape[0]
+        dim_y = PETImage_shape[1]
+        if (len(PETImage_shape) >= 2):
+            center_z += int(PETImage_shape[2]/2)
+            dim_z = PETImage_shape[2]
+        else:
+            dim_z = 1
+            
+        x, y, z = meshgrid(arange(dim_x), arange(dim_y), arange(dim_z))
+        mask_circle = ((x-center_x)**2 + (y-center_y)**2 <= radius**2) & (z-center_z >= -length / 2) & (z-center_z <= length / 2)
+        liste = argwhere(mask_circle)
 
         return liste
 
     def define_ROI_image0(self,PETImage_shape,subroot):
-        phantom_ROI = self.points_in_circle(0/4,0/4,150/4,PETImage_shape)
-        cold_ROI = self.points_in_circle(-40/4,-40/4,40/4-1,PETImage_shape)
-        hot_ROI = self.points_in_circle(50/4,10/4,20/4-1,PETImage_shape)
-            
-        cold_ROI_bkg = self.points_in_circle(-40/4,-40/4,40/4+1,PETImage_shape)
-        hot_ROI_bkg = self.points_in_circle(50/4,10/4,20/4+1,PETImage_shape)
-        phantom_ROI_bkg = self.points_in_circle(0/4,0/4,150/4-1,PETImage_shape)
-        bkg_ROI = list(set(phantom_ROI_bkg) - set(cold_ROI_bkg) - set(hot_ROI_bkg))
+        voxel_size = 4
+
+        phantom_ROI, mask = self.points_in_circle(0/voxel_size, 0/voxel_size, 0/voxel_size, 150/voxel_size, PETImage_shape)
+        cold_ROI, mask = self.points_in_circle(-40/voxel_size, -40/voxel_size, 0/voxel_size, 40/voxel_size-1, PETImage_shape)
+        hot_ROI, mask = self.points_in_circle(50/voxel_size, 10/voxel_size, 0/voxel_size, 20/voxel_size-1, PETImage_shape)
+        cold_ROI_bkg, mask = self.points_in_circle(-40/voxel_size, -40/voxel_size, 0/voxel_size, 40/voxel_size+1, PETImage_shape)
+        hot_ROI_bkg, mask = self.points_in_circle(50/voxel_size, 10/voxel_size, 0/voxel_size, 20/voxel_size+1, PETImage_shape)
+        phantom_ROI_bkg, mask = self.points_in_circle(0/voxel_size, 0/voxel_size, 0/voxel_size, 150/voxel_size-1, PETImage_shape)
+
+        # Create background ROI by removing other ROIs
+        all_defined_ROI = [phantom_ROI_bkg, cold_ROI_bkg, cold_ROI_bkg]
+        bkg_ROI = self.create_bkg(all_defined_ROI, PETImage_shape)
 
         cold_mask = zeros(PETImage_shape, dtype='<f')
         tumor_mask = zeros(PETImage_shape, dtype='<f')
@@ -834,14 +933,18 @@ class vGeneral(abc.ABC):
 
     def define_ROI_image2_3D(self,PETImage_shape,subroot):
 
-        phantom_ROI = self.points_in_circle(0/4,0/4,150/4,PETImage_shape)
-        cold_ROI = self.points_in_circle(-40/4,-40/4,40/4-1,PETImage_shape)
-        hot_ROI = self.points_in_circle(50/4,10/4,20/4-1,PETImage_shape)
-            
-        cold_ROI_bkg = self.points_in_circle(-40/4,-40/4,40/4+1,PETImage_shape)
-        hot_ROI_bkg = self.points_in_circle(50/4,10/4,20/4+1,PETImage_shape)
-        phantom_ROI_bkg = self.points_in_circle(0/4,0/4,150/4-1,PETImage_shape)
-        bkg_ROI = list(set(phantom_ROI_bkg) - set(cold_ROI_bkg) - set(hot_ROI_bkg))
+        voxel_size = 4
+
+        phantom_ROI, mask = self.points_in_circle(0/voxel_size, 0/voxel_size, 0/voxel_size, 150/voxel_size, PETImage_shape)
+        cold_ROI, mask = self.points_in_circle(-40/voxel_size, -40/voxel_size, 0/voxel_size, 40/voxel_size-1, PETImage_shape)
+        hot_ROI, mask = self.points_in_circle(50/voxel_size, 10/voxel_size, 0/voxel_size, 20/voxel_size-1, PETImage_shape)
+        cold_ROI_bkg, mask = self.points_in_circle(-40/voxel_size, -40/voxel_size, 0/voxel_size, 40/voxel_size+1, PETImage_shape)
+        hot_ROI_bkg, mask = self.points_in_circle(50/voxel_size, 10/voxel_size, 0/voxel_size, 20/voxel_size+1, PETImage_shape)
+        phantom_ROI_bkg, mask = self.points_in_circle(0/voxel_size, 0/voxel_size, 0/voxel_size, 150/voxel_size-1, PETImage_shape)
+
+        # Create background ROI by removing other ROIs
+        all_defined_ROI = [phantom_ROI_bkg, cold_ROI_bkg, cold_ROI_bkg]
+        bkg_ROI = self.create_bkg(all_defined_ROI, PETImage_shape)
 
         # Reverse shape for 3D
         PETImage_shape = PETImage_shape[::-1]
@@ -873,40 +976,53 @@ class vGeneral(abc.ABC):
         remove_external_radius = 1 # MIC abstract 2022, 2023
         # remove_external_radius = 3 # ROIs further away from true edges
 
-        # Define ROIs
-        phantom_ROI = self.points_in_circle(0/4,0/4,150/4,PETImage_shape)
-        cold_ROI = self.points_in_circle(-40/4,-40/4,40/4-1,PETImage_shape)
-        cold_inside_ROI = self.points_in_circle(-40/4,-40/4,40/4-3,PETImage_shape)
-        cold_edge_ROI = list(set(cold_ROI) - set(cold_inside_ROI))
-        hot_TEP_ROI = self.points_in_circle(50/4,10/4,20/4-1,PETImage_shape)
-        hot_TEP_match_square_ROI = self.points_in_circle(-20/4,70/4,20/4-1,PETImage_shape)
-        hot_perfect_match_ROI = self.points_in_circle(50/4,90/4,20/4-1,PETImage_shape)
-            
-        cold_ROI_bkg = self.points_in_circle(-40/4,-40/4,40/4+1,PETImage_shape)
-        hot_TEP_ROI_bkg = self.points_in_circle(50/4,10/4,20/4+1,PETImage_shape)
-        hot_TEP_match_square_ROI_bkg = self.points_in_circle(-20/4,70/4,20/4+1,PETImage_shape)
-        hot_perfect_match_ROI_bkg = self.points_in_circle(50/4,90/4,20/4+1,PETImage_shape)
-        phantom_ROI_bkg = self.points_in_circle(0/4,0/4,150/4-1,PETImage_shape)
-        bkg_ROI = list(set(phantom_ROI_bkg) - set(cold_ROI_bkg) - set(hot_TEP_ROI_bkg) - set(hot_TEP_match_square_ROI_bkg) - set(hot_perfect_match_ROI_bkg))
+        voxel_size = 4
 
-        cold_mask = zeros(PETImage_shape, dtype='<f')
-        cold_inside_mask = zeros(PETImage_shape, dtype='<f')
+        # Define ROIs
+        phantom_ROI, phantom_mask = self.points_in_circle(0/voxel_size, 0/voxel_size, 0/voxel_size, 150/voxel_size, PETImage_shape)
+        cold_ROI, cold_mask = self.points_in_circle(-40/voxel_size, -40/voxel_size, 0/voxel_size, 40/voxel_size-1, PETImage_shape)
+        cold_inside_ROI, cold_inside_mask = self.points_in_circle(-40/voxel_size, -40/voxel_size, 0/voxel_size, 40/voxel_size-3, PETImage_shape)
+
+        # Create edges of cold ROI by removing other inside voxels in cold_inside_ROI from cold_ROI
+        cold_edge_ROI = [cold_ROI, cold_inside_ROI]
+        cold_edge_ROI = self.create_bkg(cold_edge_ROI,PETImage_shape)
+        
+        _, tumor_TEP_mask = self.points_in_circle(50/voxel_size, 10/voxel_size, 0/voxel_size, 20/voxel_size-1, PETImage_shape)
+        _, tumor_TEP_match_square_ROI_mask = self.points_in_circle(-20/voxel_size, 70/voxel_size, 0/voxel_size, 20/voxel_size-1, PETImage_shape)
+        _, tumor_perfect_match_ROI_mask = self.points_in_circle(50/voxel_size, 90/voxel_size, 0/voxel_size, 20/voxel_size-1, PETImage_shape)
+
+        cold_ROI_bkg, mask = self.points_in_circle(-40/voxel_size, -40/voxel_size, 0/voxel_size, 40/voxel_size+1, PETImage_shape)
+        hot_TEP_ROI_bkg, mask = self.points_in_circle(50/voxel_size, 10/voxel_size, 0/voxel_size, 20/voxel_size+1, PETImage_shape)
+        hot_TEP_match_square_ROI_bkg, mask = self.points_in_circle(-20/voxel_size, 70/voxel_size, 0/voxel_size, 20/voxel_size+1, PETImage_shape)
+        hot_perfect_match_ROI_bkg, mask = self.points_in_circle(50/voxel_size, 90/voxel_size, 0/voxel_size, 20/voxel_size+1, PETImage_shape)
+        phantom_ROI_bkg, mask = self.points_in_circle(0/voxel_size, 0/voxel_size, 0/voxel_size, 150/voxel_size-1, PETImage_shape)
+
+
+        # Create background ROI by removing other ROIs
+        all_defined_ROI = [phantom_ROI_bkg, cold_ROI_bkg, hot_TEP_ROI_bkg, hot_TEP_match_square_ROI_bkg, hot_perfect_match_ROI_bkg]
+        bkg_ROI = self.create_bkg(all_defined_ROI, PETImage_shape)
+
+        # cold_mask = zeros(PETImage_shape, dtype='<f')
+        # cold_inside_mask = zeros(PETImage_shape, dtype='<f')
         cold_edge_mask = zeros(PETImage_shape, dtype='<f')
-        tumor_TEP_mask = zeros(PETImage_shape, dtype='<f')
-        tumor_TEP_match_square_ROI_mask = zeros(PETImage_shape, dtype='<f')
-        tumor_perfect_match_ROI_mask = zeros(PETImage_shape, dtype='<f')
-        phantom_mask = zeros(PETImage_shape, dtype='<f')
+        # tumor_TEP_mask = zeros(PETImage_shape, dtype='<f')
+        # tumor_TEP_match_square_ROI_mask = zeros(PETImage_shape, dtype='<f')
+        # tumor_perfect_match_ROI_mask = zeros(PETImage_shape, dtype='<f')
+        # phantom_mask = zeros(PETImage_shape, dtype='<f')
         bkg_mask = zeros(PETImage_shape, dtype='<f')
-        tumor_3a_mask_whole = zeros(PETImage_shape, dtype='<f')
+        tumor_3a_mask_whole = zeros(PETImage_shape, dtype=float32)
         tumor_3a_mask_whole[26:40,63:69] = 1
 
-        ROI_list = [cold_ROI, cold_inside_ROI, cold_edge_ROI, hot_TEP_ROI, hot_TEP_match_square_ROI, hot_perfect_match_ROI, phantom_ROI, bkg_ROI]
-        mask_list = [cold_mask, cold_inside_mask, cold_edge_mask, tumor_TEP_mask, tumor_TEP_match_square_ROI_mask, tumor_perfect_match_ROI_mask, phantom_mask, bkg_mask]
+        # ROI_list = [cold_ROI, cold_inside_ROI, cold_edge_ROI, hot_TEP_ROI, hot_TEP_match_square_ROI, hot_perfect_match_ROI, phantom_ROI, bkg_ROI]
+        # mask_list = [cold_mask, cold_inside_mask, cold_edge_mask, tumor_TEP_mask, tumor_TEP_match_square_ROI_mask, tumor_perfect_match_ROI_mask, phantom_mask, bkg_mask]
+        ROI_list = [cold_edge_ROI, bkg_ROI]
+        mask_list = [cold_edge_mask, bkg_mask]
+
         for i in range(len(ROI_list)):
             ROI = ROI_list[i]
             mask = mask_list[i]
             for couple in ROI:
-                mask[couple] = 1
+                mask[tuple(couple)] = 1 # Convert into tuple to avoid bad indexing
 
         # Storing into file instead of defining them at each metrics computation
         self.save_img(cold_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw')
@@ -926,25 +1042,23 @@ class vGeneral(abc.ABC):
         remove_external_radius = 1 # MIC abstract 2022, 2023
         # remove_external_radius = 3 # ROIs further away from true edges
 
-        # Define ROIs
-        tumor_1a_ROI = self.points_in_circle(15,-25,4-remove_external_radius,PETImage_shape)
+        voxel_size = 2
 
-        # tumor_1b_ROI = self.points_in_circle(0,25,4,PETImage_shape)
+        # Define ROIs
+        tumor_1a_ROI, mask = self.points_in_circle(15,-25,0/voxel_size,4-remove_external_radius,PETImage_shape)
+
+        # tumor_1b_ROI, mask = self.points_in_circle(0,25,4,PETImage_shape)
         xx,yy = meshgrid(arange(65,72),arange(53,59))
         tumor_1b_ROI = list(map(tuple, dstack([xx.ravel(), yy.ravel()])[0]))
         for tuple_ in [(72,53),(72,52),(73,51),(74,50),(75,49),(72,58),(43,42),(42,42),(41,42),(40,42),(39,42),(45,43),(44,43),(43,43),(42,43),(45,44),(44,44),(46,66),(46,67),(45,67),(46,66),(44,68),(45,68)]:
             tumor_1b_ROI.append(tuple_)
 
-        tumor_2_MR_ROI = self.points_in_circle(-25,0,8-remove_external_radius,PETImage_shape)
-        tumor_2_PET_ROI = self.points_in_circle(-27,0,4,PETImage_shape) # Do not remove external radius to show effect of intermediate setting
-        # tumor_3a_ROI = self.points_in_circle(25,0,4-remove_external_radius,PETImage_shape)
-        tumor_3a_ROI = self.points_in_circle(13,25,4-remove_external_radius,PETImage_shape)
-        tumor_3a_ROI_whole = self.points_in_circle(13,25,4,PETImage_shape)
-
-        tumor_3a_ref_ROI = self.points_in_circle(-11,25,4-remove_external_radius,PETImage_shape)
-
-
-
+        phantom_ROI, mask = self.points_in_circle(-25, 0, 0/voxel_size, 8 - remove_external_radius, PETImage_shape)
+        tumor_2_MR_ROI = phantom_ROI
+        tumor_2_PET_ROI, mask = self.points_in_circle(-27, 0, 0/voxel_size, 4, PETImage_shape) # Do not remove external radius to show effect of intermediate setting
+        tumor_3a_ROI, mask = self.points_in_circle(13, 25, 0/voxel_size, 4 - remove_external_radius, PETImage_shape)
+        tumor_3a_ROI_whole, mask = self.points_in_circle(13, 25, 0/voxel_size, 4, PETImage_shape)
+        tumor_3a_ref_ROI, mask = self.points_in_circle(-11, 25, 0/voxel_size, 4 - remove_external_radius, PETImage_shape)
         
         tumor_3a_mask = zeros(PETImage_shape, dtype='<f')
         tumor_3a_mask_whole = zeros(PETImage_shape, dtype='<f')
@@ -975,6 +1089,97 @@ class vGeneral(abc.ABC):
             self.save_img(tumor_3a_mask, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask" + self.phantom[5:] + '.raw') # Useless
             self.save_img(tumor_3a_mask_ref, subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_white_matter_ref" + self.phantom[5:] + '.raw')
             # self.save_img(TAKE_FROM_ERODED_WHITE_MATTER_IN_OTHER_FILE, subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw') # Useless for computation, just for constitency with other phantoms
+
+
+    def define_ROI_IEC_3D(self,PETImage_shape,subroot):
+        
+        voxel_size = 1.2
+
+        cold1_ROI, mask = self.points_in_circle(49.54/voxel_size, 28.6/voxel_size, 0/voxel_size, 5/voxel_size-1, PETImage_shape)
+        phantom_ROI = self.points_in_cylinder(0/voxel_size, 0/voxel_size, 0/voxel_size, 105/voxel_size, 180/voxel_size, PETImage_shape)
+        cold2_ROI, mask = self.points_in_circle(0/voxel_size, 57.2/voxel_size, 0/voxel_size, 6.5/voxel_size-1, PETImage_shape)
+        hot1_ROI, mask = self.points_in_circle(-49.54/voxel_size, 28.6/voxel_size, 0/voxel_size, 8.5/voxel_size-1, PETImage_shape)
+        hot2_ROI, mask = self.points_in_circle(-49.54/voxel_size, -28.6/voxel_size, 0/voxel_size, 11/voxel_size-1, PETImage_shape)
+        hot3_ROI, mask = self.points_in_circle(0/voxel_size, -57.2/voxel_size, 0/voxel_size, 14/voxel_size-1, PETImage_shape)
+        hot4_ROI, mask = self.points_in_circle(49.54/voxel_size, -28.6/voxel_size, 0/voxel_size, 18.5/voxel_size-1, PETImage_shape)
+
+        cold1_ROI_bkg, mask = self.points_in_circle(49.54/voxel_size, 28.6/voxel_size, 0/voxel_size, 5/voxel_size+1, PETImage_shape)
+        cold2_ROI_bkg, mask = self.points_in_circle(0/voxel_size, 57.2/voxel_size, 0/voxel_size, 6.5/voxel_size+1, PETImage_shape)
+        hot1_ROI_bkg, mask = self.points_in_circle(-49.54/voxel_size, 28.6/voxel_size, 0/voxel_size, 8.5/voxel_size+1, PETImage_shape)
+        hot2_ROI_bkg, mask = self.points_in_circle(-49.54/voxel_size, -28.6/voxel_size, 0/voxel_size, 11/voxel_size+1, PETImage_shape)
+        hot3_ROI_bkg, mask = self.points_in_circle(0/voxel_size, -57.2/voxel_size, 0/voxel_size, 14/voxel_size+1, PETImage_shape)
+        hot4_ROI_bkg, mask = self.points_in_circle(49.54/voxel_size, -28.6/voxel_size, 0/voxel_size, 18.5/voxel_size+1, PETImage_shape)
+        
+        phantom_ROI_bkg = self.points_in_cylinder(0/voxel_size, 0/voxel_size, 0/voxel_size, 150/voxel_size + 1, 180/voxel_size + 1, PETImage_shape)
+
+        # Create background ROI by removing other ROIs
+        all_defined_ROI = [phantom_ROI_bkg, cold1_ROI_bkg, cold2_ROI_bkg, hot1_ROI_bkg, hot2_ROI_bkg, hot3_ROI_bkg, hot4_ROI_bkg]
+        bkg_ROI = self.create_bkg(all_defined_ROI, PETImage_shape)
+
+        # Create masks for each ROI
+        cold1_mask = zeros(PETImage_shape, dtype='<f')
+        cold2_mask = zeros(PETImage_shape, dtype='<f')
+        hot1_mask = zeros(PETImage_shape, dtype='<f')
+        hot2_mask = zeros(PETImage_shape, dtype='<f')
+        hot3_mask = zeros(PETImage_shape, dtype='<f')
+        hot4_mask = zeros(PETImage_shape, dtype='<f')
+        phantom_mask = zeros(PETImage_shape, dtype='<f')
+        bkg_mask = zeros(PETImage_shape, dtype='<f')
+
+        ROI_list = [cold1_ROI, cold2_ROI, hot1_ROI, hot2_ROI, hot3_ROI, hot4_ROI, phantom_ROI, bkg_ROI]
+        mask_list = [cold1_mask, cold2_mask, hot1_mask, hot2_mask, hot3_mask, hot4_mask, phantom_mask, bkg_mask]
+
+        # Fill mask with one for each ROI
+        for i in range(len(ROI_list)):
+            ROI = ROI_list[i]
+            mask = mask_list[i]
+            # Convert the coordinates in cold1_ROI to NumPy arrays
+            x_coords, y_coords, z_coords = array(ROI).T
+            mask[x_coords, y_coords, z_coords] = 1
+
+        # Storing into file instead of defining them at each metrics computation
+        self.save_img(transpose(phantom_mask,axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + self.phantom[5:] + '.raw')
+        self.save_img(transpose(cold1_mask, axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + "cold1_mask" + self.phantom[5:] + '.raw')
+        self.save_img(transpose(cold2_mask, axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + "cold2_mask" + self.phantom[5:] + '.raw')
+        self.save_img(transpose(hot1_mask, axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + "hot1_mask" + self.phantom[5:] + '.raw')
+        self.save_img(transpose(hot2_mask, axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + "hot2_mask" + self.phantom[5:] + '.raw')
+        self.save_img(transpose(hot3_mask, axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + "hot3_mask" + self.phantom[5:] + '.raw')
+        self.save_img(transpose(hot4_mask, axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + "hot4_mask" + self.phantom[5:] + '.raw')
+        self.save_img(transpose(bkg_mask, axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw')
+        
+        # Define GT phantom
+        self.define_GT_IEC_3D(PETImage_shape,subroot, cold1_mask, cold2_mask, hot1_mask, hot2_mask, hot3_mask, hot4_mask, phantom_mask)
+
+    def define_GT_IEC_3D(self,PETImage_shape,subroot, cold1_mask, cold2_mask, hot1_mask, hot2_mask, hot3_mask, hot4_mask, phantom_mask):
+        image_GT = ones(PETImage_shape, dtype='<f')
+        # Cold regions to 0
+        image_GT = image_GT * (1 - cold1_mask)
+        image_GT = image_GT * (1 - cold2_mask)
+        ### Arbritrary value for background and hot ROIs. Only ratio is known
+        ratio_hot_bkg = 4 # known
+        # Define background
+        image_GT = image_GT * phantom_mask
+        # Define hot regions
+        image_GT = image_GT * (1 - hot1_mask) + ratio_hot_bkg * hot1_mask
+        image_GT = image_GT * (1 - hot2_mask) + ratio_hot_bkg * hot2_mask
+        image_GT = image_GT * (1 - hot3_mask) + ratio_hot_bkg * hot3_mask
+        image_GT = image_GT * (1 - hot4_mask) + ratio_hot_bkg * hot4_mask
+
+        # Storing into file instead of defining them at each metrics computation
+        self.save_img(transpose(image_GT,axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img')
+        self.save_img(transpose(image_GT,axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw')
+
+    def create_bkg(self, all_defined_ROI, PETImage_shape):
+        # Create a DataFrame from the concatenated arrays
+        if (PETImage_shape[2] == 1):
+            df = DataFrame(concatenate(all_defined_ROI, axis=0), columns=['x', 'y'])
+        else:
+            df = DataFrame(concatenate(all_defined_ROI, axis=0), columns=['x', 'y', 'z'])
+        # df = DataFrame(concatenate(all_defined_ROI, axis=0), columns=['x', 'y'])
+        # Remove duplicates from both arrays
+        df_unique = df.drop_duplicates(keep=False)
+        bkg_ROI = df_unique.values
+        return bkg_ROI
 
     def write_image_tensorboard(self,writer,image,name,suffix,image_gt,i=0,full_contrast=False):
         # Creating matplotlib figure with colorbar
@@ -1214,7 +1419,7 @@ class vGeneral(abc.ABC):
             print("No phantom file for this phantom")
             # Loading Ground Truth image to compute metrics
             try:
-                image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')
+                image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
             except:
                 raise ValueError("Please put the header file from CASToR with name of phantom")
             phantom_ROI = ones_like(image_gt)
@@ -1328,7 +1533,7 @@ class vGeneral(abc.ABC):
         addon = "nothing"
         # addon = "remove_ellipse_MR"
         if (addon == "line_edge"):
-            phantom_ROI = self.points_in_circle_edge(0/4,0/4,150/4,self.PETImage_shape)
+            phantom_ROI, mask = self.points_in_circle_edge(0/4,0/4,0/4,150/4,self.PETImage_shape)
             for couple in phantom_ROI:
                 edge_value = config["rho"]
                 self.image_net_input[couple] = edge_value

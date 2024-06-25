@@ -34,7 +34,7 @@ from torch.nn import Parameter
 class Full_DIP_backbone(pl.LightningModule):
 
     def __init__(self, param_scale, 
-                 config_Xin, suffix_Xin, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init):
+                 config_Xin, suffix_Xin, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, simulation, sub_iter_DIP_already_done, override_SC_init):
         super().__init__()
         # random_seed = 114514
         # pl.seed_everything(random_seed)
@@ -139,10 +139,11 @@ class Full_DIP_backbone(pl.LightningModule):
         self.DIP_early_stopping = config["DIP_early_stopping"]
         self.override_input = override_input
         self.scanner = scanner
+        self.simulation = simulation
         
         # Initialize early stopping method if asked for
         if(self.DIP_early_stopping):
-            self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner)
+            self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner,simulation)
 
         self.write_current_img_mode = True
         #self.suffix = self.suffix_func(config,hyperparameters_list)
@@ -357,7 +358,7 @@ class Full_DIP_backbone(pl.LightningModule):
         print('Succesfully save in:', name)
 
 
-    def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner):
+    def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner, simulation):
         self.classWMV = iWMV(config)            
         self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
         self.classWMV.hyperparameters_list = hyperparameters_list
@@ -368,10 +369,11 @@ class Full_DIP_backbone(pl.LightningModule):
         self.classWMV.suffix = suffix
         self.classWMV.global_it = global_it
         self.classWMV.scanner = scanner
+        self.classWMV.simulation = simulation
         # Initialize variables
         self.classWMV.do_everything(config,root)
 
-    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner):
+    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner,simulation):
         if (self.DIP_early_stopping):
             self.SUCCESS = self.classWMV.SUCCESS
             self.log("SUCCESS", int(self.classWMV.SUCCESS))
@@ -400,7 +402,7 @@ class Full_DIP_backbone(pl.LightningModule):
 
             if self.SUCCESS:
                 print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
-                self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner)
+                self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner,simulation)
         
         else:
             self.log("SUCCESS", int(False))

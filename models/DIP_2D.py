@@ -18,7 +18,7 @@ from iWMV import iWMV
 
 class DIP_2D(LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, simulation, sub_iter_DIP_already_done, override_SC_init):
         super().__init__()
 
         # Save all the arguments passed to your model in the checkpoint, especially to save learning rate
@@ -115,10 +115,11 @@ class DIP_2D(LightningModule):
         self.DIP_early_stopping = config["DIP_early_stopping"]
         self.override_input = override_input
         self.scanner = scanner
-        
+        self.simulation = simulation
+
         # Initialize early stopping method if asked for
         if(self.DIP_early_stopping):
-            self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner)
+            self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner, simulation)
 
         self.write_current_img_mode = True
         #self.suffix = self.suffix_func(config,hyperparameters_list)
@@ -144,10 +145,10 @@ class DIP_2D(LightningModule):
             self.phantom = self.config["image"]
             self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
             self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
-            if ("3D" not in self.phantom and self.scanner == "mMR_2D"):
+            if (self.simulation and self.scanner == "mMR_2D"):
                 self.sinogram_shape = (344,252,1)
                 self.sinogram_shape_transpose = (252,344,1)
-            elif ("3D" not in self.phantom and self.scanner == "mCT_2D"):
+            elif (self.simulation and self.scanner == "mCT_2D"):
                 self.sinogram_shape = (336,336,1)
                 self.sinogram_shape_transpose = (336,336,1)
             # Load stored system matrix A
@@ -485,7 +486,7 @@ class DIP_2D(LightningModule):
         # WMV
         if (end_epoch_LBFGS):
             if (self.num_total_batch == self.several_DIP_inputs - 1):
-                self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.scanner)
+                self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.scanner, self.simulation)
         
         # Increment number of iterations since beginnning of DNA
         if (self.end_epoch): # We looped over all images of the batch
@@ -608,7 +609,7 @@ class DIP_2D(LightningModule):
                     print(self.lr)
                     print("chaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaange lrrrrrrrrrrrrrrrrrrrrrrrrrrr")
     
-    def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner):
+    def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner, simulation):
         self.classWMV = iWMV(config)            
         self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
         self.classWMV.hyperparameters_list = hyperparameters_list
@@ -619,10 +620,11 @@ class DIP_2D(LightningModule):
         self.classWMV.suffix = suffix
         self.classWMV.global_it = global_it
         self.classWMV.scanner = scanner
+        self.classWMV.simulation = simulation
         # Initialize variables
         self.classWMV.do_everything(config,root)
 
-    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner):
+    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner, simulation):
         if (self.DIP_early_stopping):
             self.SUCCESS = self.classWMV.SUCCESS
             self.log("SUCCESS", int(self.classWMV.SUCCESS))
@@ -651,7 +653,7 @@ class DIP_2D(LightningModule):
 
             if self.SUCCESS:
                 print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
-                self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner)
+                self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner, simulation)
         
         else:
             self.log("SUCCESS", int(False))
@@ -752,7 +754,7 @@ class DIP_2D(LightningModule):
             print("No phantom file for this phantom")
             # Loading Ground Truth image to compute metrics
             try:
-                image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')
+                image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
             except:
                 raise ValueError("Please put the header file from CASToR with name of phantom")
             phantom_ROI = ones_like(image_gt)

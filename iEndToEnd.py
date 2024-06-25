@@ -56,24 +56,8 @@ class iEndToEnd(vDenoising):
         if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):
             from iResults import iResults
             classResults = iResults(config)
-            classResults.nb_replicates = self.nb_replicates
-            classResults.debug = self.debug
-            classResults.fixed_hyperparameters_list = self.fixed_hyperparameters_list
-            classResults.hyperparameters_list = self.hyperparameters_list
-            classResults.scanner = self.scanner
-            if ("3D" not in self.phantom):
-                classResults.bkg_ROI = self.bkg_ROI
-                classResults.hot_TEP_ROI = self.hot_TEP_ROI
-                if (self.phantom == "image50_1"):
-                    classResults.hot_TEP_ROI_ref = self.hot_TEP_ROI_ref
-                classResults.hot_TEP_match_square_ROI = self.hot_TEP_match_square_ROI
-                classResults.hot_perfect_match_ROI = self.hot_perfect_match_ROI
-                classResults.hot_MR_recon = self.hot_MR_recon
-                classResults.hot_ROI = self.hot_ROI
-                classResults.cold_ROI = self.cold_ROI
-                classResults.cold_inside_ROI = self.cold_inside_ROI
-                classResults.cold_edge_ROI = self.cold_edge_ROI
-
+            self.assignVariablesFromResults(classResults)
+            self.assignROI(classResults)
             classResults.initializeSpecific(config,root)
 
 
@@ -126,7 +110,7 @@ class iEndToEnd(vDenoising):
                 self.total_nb_iter = model.epochStar + self.patienceNumber
 
         # Initialize WMV class
-        model.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,root,self.scanner)
+        model.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,root,self.scanner, self.simulation)
 
         # Iterations to be descaled
         if (self.all_images_DIP == "True"):
@@ -187,7 +171,7 @@ class iEndToEnd(vDenoising):
             # Saving (now DESCALED) image output
             self.save_img(out_descale, net_outputs_path)
 
-            if ("3D" not in self.phantom):
+            if (self.simulation):
                 if ("post_reco" not in config["task"]):
                     # Compute IR metric (different from others with several replicates)
                     classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch,classResults.IR_bkg_recon,self.phantom)

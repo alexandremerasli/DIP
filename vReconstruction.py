@@ -215,7 +215,7 @@ class vReconstruction(vGeneral):
                 os.system(x_reconstruction_command_line)
 
                 """
-                self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')            
+                self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')            
                 img = (0.9+self.rho)*self.image_gt
 
                 for p in range(config["nb_outer_iteration"]):   
@@ -278,7 +278,7 @@ class vReconstruction(vGeneral):
             os.system(x_reconstruction_command_line + ' -oit -1')
 
             """
-            self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')            
+            self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')            
             img = (0.9+self.rho)*self.image_gt
 
             for p in range(config["nb_outer_iteration"]):   
@@ -450,7 +450,7 @@ class vReconstruction(vGeneral):
 
 
         """
-        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')            
+        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')            
         img = (0.9+self.rho)*self.image_gt
 
         for p in range(config["nb_outer_iteration"]):   

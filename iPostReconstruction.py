@@ -24,43 +24,8 @@ class iPostReconstruction(vDenoising):
         self.sub_iter_DIP_already_done = 0
         vDenoising.initializeSpecific(self,config,root)
         # Loading DIP x_label (corrupted image) from block1
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning.img',shape=(self.PETImage_shape),type_im='<d') # ADMMLim for nested
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it10000.img',shape=(self.PETImage_shape),type_im='<d') # ADMMLim for nested
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_blurred_it10000.img',shape=(self.PETImage_shape),type_im='<d') # ADMMLim for nested
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'ADMMLim_it100.img',shape=(self.PETImage_shape),type_im='<d') # ADMMLim for nested
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'initialization/MLEM_it60_REF_cropped.img',shape=(self.PETImage_shape),type_im='<f') # MLEM for Gong
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'initialization/MLEM_it60.img',shape=(self.PETImage_shape),type_im='<d') # MLEM for Gong
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type_im='<d')
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<d')
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'snail_noisy.img',shape=((256,384)),type_im='<f')
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'snail_noisy.img',shape=(self.PETImage_shape),type_im='<f')
         
-        
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'F16_GT_' + str(self.PETImage_shape[0]) + '.img',shape=(self.PETImage_shape),type_im='<f')
-        
-        
-        
-        
-        # self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img',shape=(self.PETImage_shape),type_im='<f')
-        # self.image_corrupt = self.fijii_np('data/Algo/image010_3D/replicate_1/Gong/Block1/config_image=BSREM_it30_rho=3e-08_adapt=nothing_mu_DI=100.1_tau_D=2_lr=0.01_sub_i=600_opti_=Adam_skip_=3_scali=positive_normalization_input=CT_nb_ou=2_mlem_=False/out_eq22/0.img',shape=(self.PETImage_shape),type_im='<f')
-        self.image_corrupt = self.fijii_np('/home/meraslia/Documents/Thèse/Résultats à montrer/2024_01_16/manuscrit hyperparam/artifacts/ADMMLim_4_1_it999.img',shape=(self.PETImage_shape),type_im='<f')
-        # self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/relu_exp_target_1_rois_50.img",shape=(self.PETImage_shape),type_im='<d')
-        # self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<d')
-        
-        
-        
-        
-        # self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/corrupt_400.raw',shape=(self.PETImage_shape),type_im='<d')
-        #self.image_corrupt = self.fijii_np("/home/meraslia/workspace_reco/nested_admm/data/Algo/image4_0/replicate_10/nested/Block2/config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=14_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=1_mlem_=False_A_AML=-100/x_label/24/" + "-1_x_labelconfig_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=14_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=1_mlem_=False_A_AML=-100.img",shape=(self.PETImage_shape))
-        
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'random_1.img',shape=(self.PETImage_shape),type_im='<d')
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_3D_it2.img',shape=(self.PETImage_shape),type_im='<f')
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'BSREM_3D_it30.img',shape=(self.PETImage_shape),type_im='<d')
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/' + 'im_corrupt_beginning_it100.img',shape=(self.PETImage_shape),type_im='<d') # ADMMLim for nested
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'OPTITR_2it.img',shape=(self.PETImage_shape),type_im='<d') # ADMMLim for nested
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + 'image2_3D/image2_3D.img',shape=(self.PETImage_shape),type_im='<f') # ADMMLim for nested
-        #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + 'image0/image0.img',shape=(self.PETImage_shape),type_im='<f') # ADMMLim for nested
+        self.image_corrupt = self.fijii_np("/home/MEDECINE/mera1140/sherbrooke_workspace/wakusuteshon/24_06_07_iecFirstTestAlgoOnUHR/Datasets/MLEM_UHR_sens_scaled/MLEM_UHR_sens_scaled_it20_192.img",shape=(self.PETImage_shape)) # 
         
         
         # modify input with line on the edge of the phantom (DIP input tests)
@@ -98,24 +63,8 @@ class iPostReconstruction(vDenoising):
         if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):
             from iResults import iResults
             classResults = iResults(config)
-            classResults.nb_replicates = self.nb_replicates
-            classResults.debug = self.debug
-            classResults.fixed_hyperparameters_list = self.fixed_hyperparameters_list
-            classResults.hyperparameters_list = self.hyperparameters_list
-            classResults.scanner = self.scanner
-            if ("3D" not in self.phantom):
-                classResults.bkg_ROI = self.bkg_ROI
-                classResults.hot_TEP_ROI = self.hot_TEP_ROI
-                if (self.phantom == "image50_1"):
-                    classResults.hot_TEP_ROI_ref = self.hot_TEP_ROI_ref
-                classResults.hot_TEP_match_square_ROI = self.hot_TEP_match_square_ROI
-                classResults.hot_perfect_match_ROI = self.hot_perfect_match_ROI
-                classResults.hot_MR_recon = self.hot_MR_recon
-                classResults.hot_ROI = self.hot_ROI
-                classResults.cold_ROI = self.cold_ROI
-                classResults.cold_inside_ROI = self.cold_inside_ROI
-                classResults.cold_edge_ROI = self.cold_edge_ROI
-
+            self.assignVariablesFromResults(classResults)
+            self.assignROI(classResults)
             classResults.initializeSpecific(config,root)
 
 
@@ -163,16 +112,6 @@ class iPostReconstruction(vDenoising):
         sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if os.path.splitext(filename)[1] == '.img']
         # Train model using previously trained network (at iteration before)
         model = self.train_process(self.param1_scale_im_corrupt, self.param2_scale_im_corrupt, self.scaling_input, self.suffix,config, self.finetuning, self.processing_unit, self.total_nb_iter, self.method, self.global_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, all_images_DIP = self.all_images_DIP)
-        
-        # if (nb_iter_train > 0):
-        #     model = self.train_process(self.param1_scale_im_corrupt, self.param2_scale_im_corrupt, self.scaling_input, self.suffix,config, self.finetuning, self.processing_unit, nb_iter_train, self.method, self.global_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, all_images_DIP = self.all_images_DIP)
-        # else:
-        #     if(self.PETImage_shape[2] == 1): # 2D 
-        #         raise ValueError("need to select a higher number of iterations, because the " + str(self.total_nb_iter) + " first iterations were already computed")
-        #     else:
-        #         last_iter = -1
-        #         model = self.train_process(self.param1_scale_im_corrupt, self.param2_scale_im_corrupt, self.scaling_input, self.suffix,config, self.finetuning, self.processing_unit, nb_iter_train, self.method, self.global_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot, all_images_DIP = self.all_images_DIP)
-            
 
         ## Variables for WMV ##
         if (model.DIP_early_stopping):
@@ -213,7 +152,7 @@ class iPostReconstruction(vDenoising):
                 self.total_nb_iter = model.epochStar + self.patienceNumber
 
         # Initialize WMV class
-        model.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,root,self.scanner)
+        model.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,root,self.scanner, self.simulation)
 
         # Iterations to be descaled
         if (self.all_images_DIP == "True"):
@@ -274,7 +213,7 @@ class iPostReconstruction(vDenoising):
             # Saving (now DESCALED) image output
             self.save_img(out_descale, net_outputs_path)
 
-            if ("3D" not in self.phantom):
+            if (self.simulation):
                 if ("post_reco" not in config["task"]):
                     # Compute IR metric (different from others with several replicates)
                     classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch,classResults.IR_bkg_recon,self.phantom)

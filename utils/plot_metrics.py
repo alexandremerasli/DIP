@@ -27,7 +27,7 @@ it_list = np.arange(0,nb_it)
 MSE = np.zeros(len(it_list))
 SSIM = np.zeros(len(it_list))
 
-image_gt = fijii_np("data/Algo/Data/database_v2/image50_1/image50_1.raw",(112,112))
+image_gt = fijii_np("data/Algo/Data/database_v2/image50_1/image50_1.img",(112,112))
 phantom_ROI = fijii_np("data/Algo/Data/database_v2/image50_1/phantom_mask50_1.raw",(112,112))
 image_gt_cropped = image_gt * phantom_ROI
 

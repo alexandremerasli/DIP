@@ -63,20 +63,6 @@ class vDenoising(vGeneral):
             # Loading DIP input
             # Creating random image input for DIP while we do not have CT, but need to be removed after
             self.create_input(self.net,self.PETImage_shape,config,self.subroot_data) # to be removed when CT will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
-
-            # Create random image to fit by DIP (test for ML reading group)
-            '''
-            if (self.FLTNB == 'float'):
-                type_im = 'float32'
-            elif (self.FLTNB == 'double'):
-                type_im = 'float64'
-            file_path = (self.subroot_data+'Data/initialization/random_1.img')
-            im_input = np.random.uniform(0,1,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).astype(type_im) # initializing input image with random image (for DIP)
-            im_input = im_input.reshape(self.PETImage_shape) # reshaping (for DIP)
-            self.save_img(im_input,file_path)
-            '''
-
-
             # Loading DIP input (we do not have CT-map, so random image created in block 1)
             self.image_net_input = self.load_input(self.net,self.PETImage_shape,self.subroot_data) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
             # modify input with line on the edge of the phantom, or to remove a region (DIP input tests)
@@ -165,27 +151,6 @@ class vDenoising(vGeneral):
         else:
             checkpoint_simple_path_previous_exp += '/' + str(self.global_it)
 
-        # model = self.load_model(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_previous_exp, training=True)
-    
-        # if (self.processing_unit == 'CPU'):
-        #     summary_model = model
-        # else:
-        #     summary_model = model.cuda()
-        # from torchsummary import summary
-        # if (PETImage_shape[2] == 1): # 2D
-        #     summary(model, input_size=(1,PETImage_shape[0],PETImage_shape[1])) # for DIP
-        # else: # 3D
-        #     summary(model, input_size=(1,PETImage_shape[0],PETImage_shape[1],PETImage_shape[2])) # for DIP
-
-        # # Save the original standard output
-        # import sys
-        # original_stdout = sys.stdout 
-
-        # with open('model_summary.txt', 'w') as f:
-        #     sys.stdout = f # Change the standard output to the file we created.
-        #     summary(model, input_size=(1,PETImage_shape[0],PETImage_shape[1])) # for DIP
-        #     sys.stdout = original_stdout # Reset the standard output to its original value
-        
         # Start training
         print('Starting optimization, iteration',global_it)
         trainer = self.create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, global_it, net, checkpoint_simple_path, experiment, self.checkpoint_simple_path_exp, checkpoint_simple_path_previous_exp, config,name=name_run)
@@ -357,9 +322,13 @@ class vDenoising(vGeneral):
             self.input = "CT"
             #self.input = "random"
 
+        if (self.PETImage_shape[2] == 1):
+            im_2D_or_3D = '2D'
+        else:
+            im_2D_or_3D = '3D'
         if self.input == "random":        
-            if (PETImage_shape[2] == 1):
-                file_path = (subroot+'Data/initialization/random/replicate_' + str(self.replicate) + '/random_input_2D_' + net + '_' + str(self.PETImage_shape[0]) + '.img')
+            if (self.simulation):
+                file_path = (subroot+'Data/initialization/random/replicate_' + str(self.replicate) + '/random_input_' + im_2D_or_3D + '_' + net + '_' + str(self.PETImage_shape[0]) + '.img')
             else:
                 file_path = (subroot+'Data/initialization/random_input_3D_' + net + '_' + str(self.PETImage_shape[0]) + '.img')
         elif self.input == "CT":
@@ -387,6 +356,7 @@ class vDenoising(vGeneral):
             # type_im = '<d' # random images were generated in double
 
         im_input = self.fijii_np(file_path, shape=(PETImage_shape),type_im=type_im) # Load input of the DNN (CT image)
+
         return im_input
 
 
@@ -547,10 +517,10 @@ class vDenoising(vGeneral):
     def choose_net(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, override_input):
         if (net == 'DIP'): # Loading DIP architecture
             if(PETImage_shape[2] == 1): # 2D
-                model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)
+                model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.simulation, self.sub_iter_DIP_already_done, self.override_SC_init)
                 model_class = DIP_2D
             else: # 3D
-                model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)
+                model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.simulation, self.sub_iter_DIP_already_done, self.override_SC_init)
                 model_class = DIP_3D
         elif (net == "DIP_Xin"):
             self.embed_dim = 16

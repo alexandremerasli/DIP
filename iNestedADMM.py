@@ -32,25 +32,8 @@ class iNestedADMM(vReconstruction):
         if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):
             from iResults import iResults
             classResults = iResults(config)
-            classResults.nb_replicates = self.nb_replicates
-            classResults.rho = self.rho
-            classResults.debug = self.debug
-            classResults.hyperparameters_list = self.hyperparameters_list
-            classResults.fixed_hyperparameters_list = self.fixed_hyperparameters_list
-            classResults.scanner = self.scanner
-            classResults.phantom_ROI = self.phantom_ROI
-            if ("3D" not in self.phantom):
-                classResults.bkg_ROI = self.bkg_ROI
-                classResults.hot_TEP_ROI = self.hot_TEP_ROI
-                if (self.phantom == "image50_1"):
-                    classResults.hot_TEP_ROI_ref = self.hot_TEP_ROI_ref
-                classResults.hot_TEP_match_square_ROI = self.hot_TEP_match_square_ROI
-                classResults.hot_perfect_match_ROI = self.hot_perfect_match_ROI
-                classResults.hot_MR_recon = self.hot_MR_recon
-                classResults.hot_ROI = self.hot_ROI
-                classResults.cold_ROI = self.cold_ROI
-                classResults.cold_inside_ROI = self.cold_inside_ROI
-                classResults.cold_edge_ROI = self.cold_edge_ROI
+            self.assignVariablesFromResults(classResults)
+            self.assignROI(classResults)
             classResults.initializeSpecific(config,root)
         
         if (config["unnested_1st_global_iter"]):
@@ -185,7 +168,7 @@ class iNestedADMM(vReconstruction):
                     # Write corrupted image over ADMM iterations
                     classResults.writeCorruptedImage(self.global_it,config["nb_outer_iteration"],self.mu,self.suffix,pet_algo="mmmmmuuuuuuu")
                     print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))
-                if ("3D" not in self.phantom):
+                if (self.simulation):
                     # Compute IR metric (different from others with several replicates)
                     classResults.compute_IR_bkg(self.PETImage_shape,self.f,self.global_it,classResults.IR_bkg_recon,self.phantom)
                     classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[self.global_it], self.global_it+1)
@@ -295,7 +278,7 @@ class iNestedADMM(vReconstruction):
             # config["DIP_early_stopping"] = True
             config["finetuning"] = "last" # save NN state at last epoch for next global iteration
             # config["finetuning"] = "ES" # save NN state at last epoch for next global iteration
-            if ("3D" not in self.phantom):
+            if (self.simulation):
                 config["all_images_DIP"] = "Last" # Only save last image to save space
                 # config["all_images_DIP"] = "True" # Save all images for 3D to understand DIP behavior
             else:

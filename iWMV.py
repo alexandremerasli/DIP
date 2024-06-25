@@ -1,5 +1,5 @@
 from torch import from_numpy
-from numpy import inf, zeros, float64, squeeze, newaxis, ones_like, amax, amin, mean, ones, NaN
+from numpy import inf, zeros, float64, squeeze, newaxis, ones_like, amax, amin, mean, ones, NaN, transpose
 from numpy.linalg import norm
 
 # Local files to import
@@ -39,12 +39,12 @@ class iWMV(vGeneral):
         #self.queueQ = array((self.windowSize,self.PETImage_shape))
 
         #Loading Ground Truth image to compute metrics
-        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')
+        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
         if config["FLTNB"] == "double":
             self.image_gt = self.image_gt.astype(float64)
 
         # Load phantom ROI
-        if (self.PETImage_shape[2] == 1): # 2D
+        if (self.simulation): # 2D
             self.phantom_ROI = self.get_phantom_ROI(self.phantom)
         else: # 3D
             if (self.phantom == "image010_3D"): # ROI was defined by thresholding PET BSREM
@@ -66,13 +66,12 @@ class iWMV(vGeneral):
                 out = out[:,:,newaxis]
             else: # 3D
                 # out = out.reshape(out.shape[::-1])
-                import numpy as np
-                out = np.transpose(out,axes=(1,2,0))
-                image_gt_reversed = np.transpose(self.image_gt,axes=(1,2,0))
-                phantom_ROI_reversed = np.transpose(self.phantom_ROI,axes=(1,2,0))
+                out = transpose(out,axes=(1,2,0))
+                image_gt_reversed = transpose(self.image_gt,axes=(1,2,0))
+                phantom_ROI_reversed = transpose(self.phantom_ROI,axes=(1,2,0))
             
             # Crop image to inside phantom if 2D simulations
-            if (self.PETImage_shape[2] == 1): # 2D    
+            if (self.simulation): # 2D    
                 out_cropped = out * self.phantom_ROI
                 image_gt_cropped = self.image_gt * self.phantom_ROI
             else:
