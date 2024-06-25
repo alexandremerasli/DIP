@@ -72,7 +72,13 @@ class vReconstruction(vGeneral):
                         self.tau_max = config["tau_max"]
                     else:
                         self.tau_max = np.NaN
-        self.image_init_path_without_extension = config["image_init_path_without_extension"]
+        if ("image_init_path_without_extension" in config):
+            if (not config["image_init_path_without_extension"]):
+                self.image_init_path_without_extension = '1_im_value_cropped'
+            else:
+                self.image_init_path_without_extension = config["image_init_path_without_extension"]
+        else: # Default is to use PSF
+            self.image_init_path_without_extension = '1_im_value_cropped'
         self.tensorboard = config["tensorboard"]
 
         # Initialize and save mu variable from ADMM
@@ -84,41 +90,20 @@ class vReconstruction(vGeneral):
                 self.mu = self.mu.reshape(self.PETImage_shape[::-1])
             self.save_img(self.mu,self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(-1) + self.suffix + '.img')
 
-        #'''
         # Launch short MLEM reconstruction
         self.launch_quick_mlem(config)
-        #'''
+
     
     def launch_quick_mlem(self,config):
         path_mlem_init = self.subroot_data + 'Data/MLEM_reco_for_init_hdr/' + self.phantom
         my_file = Path(path_mlem_init + '/' + self.phantom + '_it1.img')
         if (not my_file.is_file()):
-            print("self.nb_replicates",self.nb_replicates)
-            # if (self.nb_replicates == 1):
-            #     header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[5:] + '/data' + self.phantom[5:] + '.cdh' # PET data path
-            # else:
-            #     header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[5:] + '_' + str(config["replicates"]) + '/data' + self.phantom[5:] + '_' + str(config["replicates"]) + '.cdh' # PET data path
-            header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[5:] + '_' + str(config["replicates"]) + '/data' + self.phantom[5:] + '_' + str(config["replicates"]) + '.cdh' # PET data path
-            executable = 'castor-recon'
-            optimizer = 'MLEM'
-            output_path = ' -dout ' + path_mlem_init # Output path for CASTOR framework
-            dim = ' -dim ' + self.PETImage_shape_str
-            if (self.scanner != "mMR_3D"):
-                if (self.phantom != "image50_0" and self.phantom != "image50_1" and "50_2" not in self.phantom):
-                    vox = ' -vox 4,4,4'
-                else:
-                    vox = ' -vox 2,2,2'
-            else:
-                vox = ' -vox 1.04313,1.04313,2.03125'
-                vox = ' -vox 2.08626,2.08626,2.03125'
-                # vox = ' -vox 1,1,2.03125'
-            vb = ' -vb 3'
             it = ' -it 1:1'
-            opti = ' -opti ' + optimizer
-            th = ' -th ' + str(self.nb_threads) # must be set to 1 for ADMMLim, as multithreading does not work for now with ADMMLim optimizer
-            print(executable + dim + vox + output_path + header_file + vb + it + opti + th)
-            os.system(executable + dim + vox + output_path + header_file + vb + it + opti + th) # + ' -fov-out 95')
-
+            output_path = ' -dout ' + self.subroot_data + 'Data/MLEM_reco_for_init_hdr/' + self.phantom
+            initialimage = ''
+            castor_command_line = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate,mlem_quick=True) + self.castor_opti_and_penalty("MLEM", self.penalty, self.rho) + it + output_path + initialimage
+            print(castor_command_line)
+            os.system(castor_command_line)
 
     def castor_reconstruction(self,writer, i, i_init, subroot, nb_outer_iteration, experiment, config, method, phantom, replicate, suffix, image_gt, f, mu, PETImage_shape, PETImage_shape_str, alpha, image_init_path_without_extension):
         start_time_block1 = time.time()
@@ -214,15 +199,6 @@ class vReconstruction(vGeneral):
                 # os.system(x_reconstruction_command_line + ' -oit -1')
                 os.system(x_reconstruction_command_line)
 
-                """
-                self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')            
-                img = (0.9+self.rho)*self.image_gt
-
-                for p in range(config["nb_outer_iteration"]):   
-                    img[:p,:,:] = 0 
-                    self.save_img(img,subroot_output_path + "/during_eq22" + "/" + str(i) + "_it" + str(p+1) + ".img")
-                """
-
                 if (mlem_sequence):
                     x = self.fijii_np(full_output_path_i + '_it30.img', shape=(PETImage_shape))
                 else:
@@ -276,15 +252,6 @@ class vReconstruction(vGeneral):
                 x_reconstruction_command_line = "castor-recon -dim 112,112,1 -vox 4,4,4 -df /home/meraslia/workspace_reco/nested_admm/data/Algo/Data/database_v2/image2_0/data2_0/data2_0.cdh -vb 3 -th 1 -proj incrementalSiddon -opti-fom -conv gaussian,4,1,3.5::psf -opti MLEM -fout /home/meraslia/workspace_reco/nested_admm/data/Algo/image2_0/replicate_1/Gong/Block1/config_rho=0.003_adapt=rho_mu_DI=2_tau_D=100_lr=0.01_sub_i=300_opti_=Adam_skip_=3_scali=positive_normalization_input=random_mlem_=False/during_eq22/0 -it 60:1" # Gong does MLEM 60 it at the beginning, but we will do OPTITR after to be more coherent # TESTTEST
             print(x_reconstruction_command_line + ' -oit -1')
             os.system(x_reconstruction_command_line + ' -oit -1')
-
-            """
-            self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')            
-            img = (0.9+self.rho)*self.image_gt
-
-            for p in range(config["nb_outer_iteration"]):   
-                img[:p,:,:] = 0 
-                self.save_img(img,subroot_output_path + "/during_eq22" + "/" + str(i) + "_it" + str(p+1) + ".img")
-            """
 
             if (mlem_sequence):
                 x = self.fijii_np(full_output_path_i + '_it30.img', shape=(PETImage_shape))
@@ -378,15 +345,6 @@ class vReconstruction(vGeneral):
                         elif (self.FLTNB == 'double'):
                             self.alpha = np.float64(second_line)
 
-                        ''' # Previous tau is not useful to resume computation even in both adaptive mode
-                        f.readline() # Read third line to get fourth one (adaptive tau value)
-                        fourth_line = f.readline()
-                        if (self.FLTNB == 'float'):       
-                            self.tau = np.float32(fourth_line)
-                        elif (self.FLTNB == 'double'):
-                            self.tau = np.float64(fourth_line)
-                        '''
-
             #'''
             else:
                 it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
@@ -448,16 +406,6 @@ class vReconstruction(vGeneral):
         print(x_reconstruction_command_line)
         self.compute_x_v_u_ADMM(x_reconstruction_command_line, subdir, i, self.phantom, subroot_output_path, self.subroot_data, self.method, it_name = config["nb_outer_iteration"])
 
-
-        """
-        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')            
-        img = (0.9+self.rho)*self.image_gt
-
-        for p in range(config["nb_outer_iteration"]):   
-            img[:p,:,:] = 0 
-            self.save_img(img,folder_sub_path + "/during_eq22" + "/" + str(i) + "_it" + str(p+1) + ".img")
-        """
-
         if (self.adaptive_parameters != "nothing"):
             #'''
             # -- AdaptiveAlpha ---- AdaptiveAlpha ---- AdaptiveAlpha ---- AdaptiveAlpha ---- AdaptiveAlpha ---- AdaptiveAlpha --
@@ -493,14 +441,5 @@ class vReconstruction(vGeneral):
             #'''
         else:
             finalOuterIter = config["nb_outer_iteration"]
-        
-        '''
-        if ("nested" in self.method and self.tensorboard and finalOuterIter > 1):
-            for k in range(1,finalOuterIter,max(finalOuterIter//10,1)):
-                x = self.fijii_np(full_output_path_i + '_it' + str(k) + '.img', shape=(self.PETImage_shape))
-                self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations",self.suffix,500, 0+k+i*config["nb_outer_iteration"]) # Showing all corrupted images with same contrast to compare them together
-                self.write_image_tensorboard(writer,x,"x in ADMM1 over iterations(FULL CONTRAST)",self.suffix,500, 0+k+i*config["nb_outer_iteration"],full_contrast=True) # Showing all corrupted images with same contrast to compare them together
-            return x
-        '''
         x = self.fijii_np(full_output_path_i + '_it' + str(finalOuterIter) + '.img', shape=(self.PETImage_shape))
         return x

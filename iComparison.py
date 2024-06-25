@@ -52,16 +52,6 @@ class iComparison(vReconstruction):
             else:
                 initialimage = ''
                 it = ' -it ' + str(self.max_iter) + ':' + str(config["nb_subsets"])
-        
-            '''
-            if (self.method == "APGMAP"):
-                initialimage += " -multimodal " + self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.hdr' # Try to shift only cold region, but heavy artifacts
-                #initialimage += " -multimodal " + self.subroot_data + 'Data/initialization/' + "1_im_value_cropped" + '.hdr' # This is the same as not giving a multimodal region
-            '''
-            '''
-            initialimage = ''
-            it = ' -it ' + str(self.max_iter) + ':' + str(config["nb_subsets"])
-            '''
 
             if (self.method == "APGMAP"):
                 # Write shift A in config
@@ -88,15 +78,6 @@ class iComparison(vReconstruction):
             print("CASToR command line : ")
             print(self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
             os.system(self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
-            
-            """
-            self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')            
-            img = (0.9+self.rho)*self.image_gt
-
-            for i in range(self.max_iter):   
-                img[:i,:,:] = 0 
-                self.save_img(img,"/home/meraslia/workspace_reco/nested_admm/data/Algo/image2_3D/replicate_1/APGMAP/" + self.suffix + "/APGMAP_it" + str(i+1) + ".img")
-            """
 
         # NNEPPS
         if ('ADMMLim' in self.method):

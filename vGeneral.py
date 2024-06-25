@@ -67,7 +67,7 @@ class vGeneral(abc.ABC):
                 self.PSF = False
             else:
                 self.PSF = True
-        else:
+        else: # Default is to use PSF
             self.PSF = True
         if ("end_to_end" in config): # Check if run DNA with end to end mode
             if (config["end_to_end"]):
@@ -1242,35 +1242,89 @@ class vGeneral(abc.ABC):
         # Adding this figure to tensorboard
         writer.add_figure(name,gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
 
-    def castor_common_command_line(self, subroot, PETImage_shape_str, phantom, replicates, post_smoothing=0):
-        executable = 'castor-recon'
-        # if (self.nb_replicates == 1):
-        #     header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '/data' + phantom[5:] + '.cdh' # PET data path
-        # else:
-        #     header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data path
-        header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data pat
-        dim = ' -dim ' + PETImage_shape_str
-        if (self.scanner != "mMR_3D"):
-            if (self.phantom != "image50_0" and self.phantom != "image50_1" and "50_2" not in self.phantom):
-                vox = ' -vox 4,4,4'
-            else:
-                vox = ' -vox 2,2,2'
-        else:
-            vox = ' -vox 1.04313,1.04313,2.03125'
-            vox = ' -vox 2.08626,2.08626,2.03125'
-            # vox = ' -vox 1,1,2.03125'
-        vb = ' -vb 3'
-        th = ' -th ' + str(self.nb_threads) # must be set to 1 for ADMMLim, as multithreading does not work for now with ADMMLim optimizer
-        proj = ' -proj incrementalSiddon'
-        if ("1" in PETImage_shape_str.split(',')): # 2D
-            psf = ' -conv gaussian,4,1,3.5::psf'
-        else: # 3D
-            if (self.scanner == "mMR_3D"):
-                psf = ' -conv gaussian,4.5,4.5,3.5::psf' # isotropic psf in simulated phantoms
-            else:
-                psf = ' -conv gaussian,4,4,3.5::psf' # isotropic psf in simulated phantoms
+    # def castor_common_command_line(self, subroot, PETImage_shape_str, phantom, replicates, post_smoothing=0):
+    #     executable = 'castor-recon'
+    #     header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data pat
+    #     dim = ' -dim ' + PETImage_shape_str
+    #     vb = ' -vb 3'
+    #     th = ' -th ' + str(self.nb_threads)
+    #     if (self.scanner == "UHR"):
+    #         vox = ' -vox 1.2,1.2,1.2'
+    #         proj = ' -proj distanceDriven'
+    #         psf = ''
+    #         sensitivity = " -sensitivity " + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[5:] + '_' + str(config["replicates"]) + '/sensitivity' + self.phantom[5:] + '_' + str(config["replicates"]) + '.cdh'
+    #     else:
+    #         sensitivity = "" # No sensitivity for histogram data 
+    #         if (self.scanner != "mMR_3D"):
+    #             proj = ' -proj incrementalSiddon'
+    #             if (self.phantom != "image50_0" and self.phantom != "image50_1" and "50_2" not in self.phantom):
+    #                 vox = ' -vox 4,4,4'
+    #             else:
+    #                 vox = ' -vox 2,2,2'
+    #         else:
+    #             vox = ' -vox 2.08626,2.08626,2.03125'
+    #             if ("1" in PETImage_shape_str.split(',')): # 2D
+    #                 psf = ' -conv gaussian,4,1,3.5::psf'
+    #             else: # 3D
+    #                 if (self.scanner == "mMR_3D"):
+    #                     psf = ' -conv gaussian,4.5,4.5,3.5::psf' # isotropic psf in simulated phantoms
+    #                 else:
+    #                     psf = ' -conv gaussian,4,4,3.5::psf' # isotropic psf in simulated phantoms
 
-        # Remove PSF if post smoothing negative (for test without PSF)
+    #     # No PSF if it was not asked by user
+    #     if (not self.PSF):
+    #         psf = ''
+
+
+    #     if (post_smoothing != 0):
+    #         if ("1" in PETImage_shape_str.split(',')): # 2D
+    #             conv = ' -conv gaussian,' + str(post_smoothing) + ',1,3.5::post'
+    #         else: # 3D
+    #             conv = ' -conv gaussian,' + str(post_smoothing) + ',' + str(post_smoothing) + ',3.5::post' # isotropic post smoothing
+    #     else:
+    #         conv = ''
+    #     # Computing likelihood
+    #     if (self.castor_foms):
+    #         opti_like = ' -opti-fom'
+    #     else:
+    #         opti_like = ''
+
+    #     return executable + dim + vox + header_file + vb + th + proj + opti_like + psf + conv + sensitivity
+    
+
+    def castor_common_command_line(self, subroot, PETImage_shape_str, phantom, replicates, post_smoothing=0,mlem_quick=False):
+        executable = 'castor-recon'
+        dim = ' -dim ' + PETImage_shape_str
+        vb = ' -vb 3'
+        th = ' -th ' + str(self.nb_threads)
+        if (not mlem_quick):
+            header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data pat
+        else:
+            header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[5:] + '_' + str(self.config["replicates"]) + '/data' + self.phantom[5:] + '_' + str(self.config["replicates"]) + '.cdh' # PET data path
+        if (self.scanner == "UHR"):
+            vox = ' -vox 1.2,1.2,1.2'
+            proj = ' -proj distanceDriven'
+            psf = ''
+            sensitivity = " -sens " + self.subroot_data + 'Data/database_v2/' + self.phantom + '/sensitivity' + self.phantom[5:] + '_' + str(self.config["replicates"]) + '.hdr'
+        else:
+            sensitivity = "" # No sensitivity for histogram data 
+            if (self.scanner != "mMR_3D"):
+                proj = ' -proj incrementalSiddon'
+                if (self.phantom != "image50_0" and self.phantom != "image50_1" and "50_2" not in self.phantom):
+                    vox = ' -vox 4,4,4'
+                else:
+                    vox = ' -vox 2,2,2'
+            else:
+                vox = ' -vox 2.08626,2.08626,2.03125'
+                if ("1" in PETImage_shape_str.split(',')): # 2D
+                    psf = ' -conv gaussian,4,1,3.5::psf'
+                else: # 3D
+                    if (self.scanner == "mMR_3D"):
+                        psf = ' -conv gaussian,4.5,4.5,3.5::psf' # isotropic psf in simulated phantoms
+                    else:
+                        psf = ' -conv gaussian,4,4,3.5::psf' # isotropic psf in simulated phantoms
+
+        # No PSF if it was not asked by user
         if (not self.PSF):
             psf = ''
 
@@ -1288,7 +1342,7 @@ class vGeneral(abc.ABC):
         else:
             opti_like = ''
 
-        return executable + dim + vox + header_file + vb + th + proj + opti_like + psf + conv
+        return executable + dim + vox + header_file + vb + th + proj + opti_like + psf + conv + sensitivity
 
     def castor_opti_and_penalty(self, method, penalty, rho, i=None, unnested_1st_global_iter=None):
         if (method == 'MLEM'):
