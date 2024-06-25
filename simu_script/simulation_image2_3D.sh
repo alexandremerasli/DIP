@@ -20,11 +20,11 @@ let "nb_counts=1500000*$dim3/2" # low statistics
 # Choosing directory to work on
 if [[ $1 = 'biograph' ]]
 then
-mkdir -p simu_biograph_3D
-cd simu_biograph_3D
+mkdir -p simu_script/simu_biograph_3D
+cd simu_script/simu_biograph_3D
 else
-mkdir -p simu_mmr_3D
-cd simu_mmr_3D
+mkdir -p simu_script/simu_mmr_3D
+cd simu_script/simu_mmr_3D
 fi
 
 
@@ -99,28 +99,28 @@ for ((replicate_id=1;replicate_id<=nb_replicates;replicate_id++)); do
     ###############################################################################################
     ##	Copy to DIP used directories
     ################################################################################################
-    mkdir -p ../data/Algo/Data/database_v2/image2_3D
+    mkdir -p ../../data/Algo/Data/database_v2/image2_3D
 
     # Copying previously computed masks 
-    #cp -nr ../data/Algo/Data/database_v2/image2_3D_1replicate/* ../data/Algo/Data/database_v2/image2_3D
+    #cp -nr ../../data/Algo/Data/database_v2/image2_3D_1replicate/* ../../data/Algo/Data/database_v2/image2_3D
 
     # Copying phantoms
-    #cp image2_3D* ../data/Algo/Data/database_v2/image2_3D
-    cp image2_3D.img ../data/Algo/Data/database_v2/image2_3D/image2_3D.raw
-    cp image2_3D.hdr ../data/Algo/Data/database_v2/image2_3D/image2_3D.hdr
-    cp image2_3D_atn.img ../data/Algo/Data/database_v2/image2_3D/image2_3D_atn.raw
-    cp image2_3D_atn.hdr ../data/Algo/Data/database_v2/image2_3D/image2_3D_atn.hdr
+    #cp image2_3D* ../../data/Algo/Data/database_v2/image2_3D
+    cp image2_3D.img ../../data/Algo/Data/database_v2/image2_3D/image2_3D.raw
+    cp image2_3D.hdr ../../data/Algo/Data/database_v2/image2_3D/image2_3D.hdr
+    cp image2_3D_atn.img ../../data/Algo/Data/database_v2/image2_3D/image2_3D_atn.raw
+    cp image2_3D_atn.hdr ../../data/Algo/Data/database_v2/image2_3D/image2_3D_atn.hdr
     if [ $nb_replicates -gt 1 ]
     then
     exit 1
     # Copying datafile, cmap and sinograms
-    cp -r data2_3D_${replicate_id}/ ../data/Algo/Data/database_v2/image2_3D
-    cp -r cmap2_3D/ ../data/Algo/Data/database_v2/image2_3D
-    cp -r simu2_3D_${replicate_id}/ ../data/Algo/Data/database_v2/image2_3D
+    cp -r data2_3D_${replicate_id}/ ../../data/Algo/Data/database_v2/image2_3D
+    cp -r cmap2_3D/ ../../data/Algo/Data/database_v2/image2_3D
+    cp -r simu2_3D_${replicate_id}/ ../../data/Algo/Data/database_v2/image2_3D
     fi
 done
 
 
 # Copying datafile and sinograms if 1 replicate in Python
-cp -r data2_3D/ ../data/Algo/Data/database_v2/image2_3D
-cp -r simu2_3D/ ../data/Algo/Data/database_v2/image2_3D
+cp -r data2_3D/ ../../data/Algo/Data/database_v2/image2_3D
+cp -r simu2_3D/ ../../data/Algo/Data/database_v2/image2_3D

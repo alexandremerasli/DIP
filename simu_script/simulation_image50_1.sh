@@ -14,8 +14,8 @@ nb_counts=10000000 # FDG MIC statistics
 random_fraction=0.4 # FDG random fraction
 
 # Choosing directory to work on
-mkdir -p simu_mmr_brain_tumors
-cd simu_mmr_brain_tumors
+mkdir -p simu_script/simu_mmr_brain_tumors
+cd simu_script/simu_mmr_brain_tumors
 
 ## Etape 0: Creation du fantôme (activite) et de la carte d'attenuation
 # Create activity phantom
@@ -65,21 +65,21 @@ for ((replicate_id=1;replicate_id<=nb_replicates;replicate_id++)); do
     ###############################################################################################
     ##	Copy to DIP used directories
     ################################################################################################
-    mkdir -p ../data/Algo/Data/database_v2/image50_1
+    mkdir -p ../../data/Algo/Data/database_v2/image50_1
 
     # Copying previously computed masks 
-    #cp -nr ../data/Algo/Data/database_v2/image50_1_1replicate/* ../data/Algo/Data/database_v2/image50_1
+    #cp -nr ../../data/Algo/Data/database_v2/image50_1_1replicate/* ../../data/Algo/Data/database_v2/image50_1
 
     # Copying phantoms
-    #cp image50_1* ../data/Algo/Data/database_v2/image50_1
-    cp image50_1.img ../data/Algo/Data/database_v2/image50_1/image50_1.raw
-    cp image50_1.hdr ../data/Algo/Data/database_v2/image50_1/image50_1.hdr
-    cp image50_1_atn.img ../data/Algo/Data/database_v2/image50_1/image50_1_atn.raw
-    cp image50_1_atn.hdr ../data/Algo/Data/database_v2/image50_1/image50_1_atn.hdr
-    cp image50_1_mr.img ../data/Algo/Data/database_v2/image50_1/image50_1_mr.raw
-    cp image50_1_mr.hdr ../data/Algo/Data/database_v2/image50_1/image50_1_mr.hdr
+    #cp image50_1* ../../data/Algo/Data/database_v2/image50_1
+    cp image50_1.img ../../data/Algo/Data/database_v2/image50_1/image50_1.raw
+    cp image50_1.hdr ../../data/Algo/Data/database_v2/image50_1/image50_1.hdr
+    cp image50_1_atn.img ../../data/Algo/Data/database_v2/image50_1/image50_1_atn.raw
+    cp image50_1_atn.hdr ../../data/Algo/Data/database_v2/image50_1/image50_1_atn.hdr
+    cp image50_1_mr.img ../../data/Algo/Data/database_v2/image50_1/image50_1_mr.raw
+    cp image50_1_mr.hdr ../../data/Algo/Data/database_v2/image50_1/image50_1_mr.hdr
     # Copying datafile, cmap and sinograms
-    cp -r data50_1_${replicate_id}/ ../data/Algo/Data/database_v2/image50_1
-    cp -r cmap0/ ../data/Algo/Data/database_v2/image50_1
-    cp -r simu0_${replicate_id}/ ../data/Algo/Data/database_v2/image50_1
+    cp -r data50_1_${replicate_id}/ ../../data/Algo/Data/database_v2/image50_1
+    cp -r cmap0/ ../../data/Algo/Data/database_v2/image50_1
+    cp -r simu0_${replicate_id}/ ../../data/Algo/Data/database_v2/image50_1
 done
