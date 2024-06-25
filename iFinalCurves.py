@@ -8,6 +8,7 @@ from csv import reader as reader_csv
 import re
 from ray import tune
 import os
+import sys
 
 # Local files to import
 from vGeneral import vGeneral
@@ -22,6 +23,12 @@ class iFinalCurves(vGeneral):
         # show the plots in python or not !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     def runComputation(self,config_all_methods,root):
+        # Add configuration folders to path to import them
+        subfolder_config = "PhD" # PhD settings
+        subfolder_config = "LM" # List-Mode (LM) settings
+        sys.path.append(os.path.join('all_config',subfolder_config))  # Add the parent directory of config files to the Python path
+                
+
         method_list = config_all_methods["method"]
 
         MIC_config = True
@@ -190,9 +197,9 @@ class iFinalCurves(vGeneral):
                 if ("APGMAP" in method or method == "AML"):
                     config_other_dim[method] = config[method]["A_AML"]
                     other_dim_name = "A"
-                elif (method == "MLEM" or method == "OSEM"):
+                elif (method == "MLEM" or "OSEM" in method):
                     config_other_dim[method] = config[method]["post_smoothing"]
-                    rho_name = "smoothing"
+                    rho_name = "post_smoothing"
                     other_dim_name = ""
                 elif ("nested" in method or "DIPRecon" in method):
                     # For varying rho_1 (manuscript)
@@ -403,7 +410,10 @@ class iFinalCurves(vGeneral):
                                 if ((('nested' in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1 or config_other_dim[method] == [""]):
                                     idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                 else:
-                                    idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
+                                    if ("MLEM" in method or "OSEM" in method):
+                                        idx_good_rho_color = config_other_dim[method].index(config[method][rho_name][other_dim_idx])
+                                    else:
+                                        idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
                                 ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])
                                 if (variance_plot):
                                     # ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
@@ -418,7 +428,10 @@ class iFinalCurves(vGeneral):
                                 if ((('nested' in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1 or config_other_dim[method] == [""]):
                                     idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                 else:
-                                    idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
+                                    if ("MLEM" in method or "OSEM" in method):
+                                        idx_good_rho_color = config_other_dim[method].index(config[method][rho_name][other_dim_idx])
+                                    else:
+                                        idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
                                 ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])
                                 # Plot dashed line for target value, according to ROI
                                 if (ROI != "whole"):
@@ -781,7 +794,7 @@ class iFinalCurves(vGeneral):
         # Gong reconstruction
         if (csv_before_MIC and 'DIPRecon' in method):
             #config[method] = np.load(root + 'config_DIP.npy',allow_pickle='TRUE').item()
-            from all_config.Gong_configuration import config_func_MIC
+            from all_config.PhD.Gong_configuration import config_func_MIC
             #config[method] = config_func()
             if (csv_before_MIC):
                 if ('stand' in method):
@@ -794,7 +807,7 @@ class iFinalCurves(vGeneral):
                     else:
                         raise ValueError("stand norm DIPRecon")
             else:
-                from all_config.Gong_configuration import config_func_MIC
+                from all_config.PhD.Gong_configuration import config_func_MIC
                 config[method] = config_func_MIC()
                 # method_name = "DIPRecon"
                 method_name = "Gong"
@@ -805,7 +818,7 @@ class iFinalCurves(vGeneral):
         # nested reconstruction
         if ('nested' in method):
             if(csv_before_MIC):
-                from all_config.nested_configuration import config_func_MIC
+                from all_config.PhD.nested_configuration import config_func_MIC
                 #config[method] = config_func()
                 if ('ADMMLim' in method):
                     config[method]["max_iter"] = {'grid_search': [99]}
@@ -816,21 +829,21 @@ class iFinalCurves(vGeneral):
 
         # MLEM reconstruction
         if (method == 'MLEM'):
-            from all_config.MLEM_configuration import config_func_MIC
+            from all_config.PhD.MLEM_configuration import config_func_MIC
             #config[method] = config_func()
 
         # OSEM reconstruction
         if (method == 'OSEM'):
-            from all_config.OSEM_configuration import config_func_MIC
+            from all_config.PhD.OSEM_configuration import config_func_MIC
             #config[method] = config_func()
 
         # BSREM reconstruction
         if (method == 'BSREM'):
-            from all_config.BSREM_configuration import config_func_MIC
+            from all_config.PhD.BSREM_configuration import config_func_MIC
             #config[method] = config_func()
             method_name = method
             import importlib
-            globals().update(importlib.import_module('all_config.' + method + "_configuration").__dict__)
+            globals().update(importlib.import_module('all_config.PhD.' + method + "_configuration").__dict__)
             config[method] = config_MIC
             config[method]["method"] = method_name
 
@@ -849,11 +862,11 @@ class iFinalCurves(vGeneral):
 
         # BSREM reconstruction with Bowsher weights
         if (method == 'BSREM_Bowsher'):
-            from all_config.BSREM_Bowsher_configuration import config_func_MIC
+            from all_config.PhD.BSREM_Bowsher_configuration import config_func_MIC
             #config[method] = config_func()
             method_name = "BSREM"
             import importlib
-            globals().update(importlib.import_module('all_config.' + method + "_configuration").__dict__)
+            globals().update(importlib.import_module('all_config.PhD.' + method + "_configuration").__dict__)
             config[method] = config_MIC
             config[method]["method"] = method_name
             
@@ -871,11 +884,11 @@ class iFinalCurves(vGeneral):
 
         # APGMAP reconstruction with Bowsher weights
         if ('APGMAP_Bowsher' in method):
-            from all_config.APGMAP_Bowsher import config_func_MIC
+            from all_config.PhD.APGMAP_Bowsher import config_func_MIC
             #config[method] = config_func()
             method_name = "APGMAP"
             import importlib
-            globals().update(importlib.import_module('all_config.' + method).__dict__)
+            globals().update(importlib.import_module('all_config.PhD.' + method).__dict__)
             config[method] = config_MIC
             config[method]["method"] = method_name
             
@@ -899,10 +912,10 @@ class iFinalCurves(vGeneral):
         # APGMAP reconstruction
         elif ("APGMAP" in method):
             APGMAP_vs_ADMMLim = True
-            from all_config.APGMAP import config_func_MIC
+            from all_config.PhD.APGMAP import config_func_MIC
             method_name = method
             import importlib
-            globals().update(importlib.import_module('all_config.' + method).__dict__)
+            globals().update(importlib.import_module('all_config.PhD.' + method).__dict__)
             config[method] = config_MIC
             # config[method]["method"] = method_name
             config[method]["method"] = "APGMAP"
@@ -931,11 +944,11 @@ class iFinalCurves(vGeneral):
         
         # ADMMLim reconstruction with Bowsher weights
         if (method == 'ADMMLim_Bowsher'):
-            from all_config.ADMMLim_Bowsher import config_func_MIC
+            from all_config.PhD.ADMMLim_Bowsher import config_func_MIC
             #config[method] = config_func()
             method_name = "ADMMLim"
             import importlib
-            globals().update(importlib.import_module('all_config.' + method).__dict__)
+            globals().update(importlib.import_module('all_config.PhD.' + method).__dict__)
             config[method] = config_MIC
             config[method]["method"] = method_name
             
@@ -955,10 +968,10 @@ class iFinalCurves(vGeneral):
 
         # ADMMLim reconstruction
         elif ('ADMMLim' in method):
-            from all_config.ADMMLim import config_func_MIC
+            from all_config.PhD.ADMMLim import config_func_MIC
             method_name = method
             import importlib
-            globals().update(importlib.import_module('all_config.' + method).__dict__)
+            globals().update(importlib.import_module('all_config.PhD.' + method).__dict__)
             config[method] = config_MIC
             # config[method]["method"] = method_name
             config[method]["method"] = "ADMMLim"
@@ -981,138 +994,138 @@ class iFinalCurves(vGeneral):
 
         # nested reconstruction
         if ('nested_ADMMLim_u_v' in method):
-            from all_config.nested_ADMMLim_u_v_configuration import config_func_MIC
+            from all_config.PhD.nested_ADMMLim_u_v_configuration import config_func_MIC
             method_name = "nested"
             
         # nested reconstruction
         if ('nested_ADMMLim_more_ADMMLim_it_10' in method):
-            from all_config.nested_ADMMLim_more_ADMMLim_it_10_configuration import config_func_MIC
+            from all_config.PhD.nested_ADMMLim_more_ADMMLim_it_10_configuration import config_func_MIC
             method_name = "nested"
 
         # nested reconstruction
         if (method == 'nested_ADMMLim_more_ADMMLim_it_30'):
-            from all_config.nested_ADMMLim_more_ADMMLim_it_30_configuration import config_func_MIC
+            from all_config.PhD.nested_ADMMLim_more_ADMMLim_it_30_configuration import config_func_MIC
             method_name = "nested"
 
         # nested reconstruction
         if (method == 'nested_ADMMLim_more_ADMMLim_it_80'):
-            from all_config.nested_ADMMLim_more_ADMMLim_it_80_configuration import config_func_MIC
+            from all_config.PhD.nested_ADMMLim_more_ADMMLim_it_80_configuration import config_func_MIC
             method_name = "nested"
 
         # nested reconstruction
         if ('nested_APPGML_4subsets' in method):
             APGMAP_vs_ADMMLim = True
-            from all_config.nested_APPGML_4subsets_configuration import config_func_MIC
+            from all_config.PhD.nested_APPGML_4subsets_configuration import config_func_MIC
             method_name = "nested"
 
         # nested reconstruction
         if (method == 'nested_APPGML_14subsets'):
-            from all_config.nested_APPGML_14subsets_configuration import config_func_MIC
+            from all_config.PhD.nested_APPGML_14subsets_configuration import config_func_MIC
             method_name = "nested"
         
         # nested reconstruction
         if (method == 'nested_APPGML_28subsets'):
-            from all_config.nested_APPGML_28subsets_configuration import config_func_MIC
+            from all_config.PhD.nested_APPGML_28subsets_configuration import config_func_MIC
             method_name = "nested"
 
         # nested reconstruction
         if (method == 'nested_APPGML_1it' or method == 'nested_APPGML_1subset'):
-            from all_config.nested_APPGML_1it_configuration import config_func_MIC
+            from all_config.PhD.nested_APPGML_1it_configuration import config_func_MIC
             method_name = "nested"
 
         # nested reconstruction
         if ('nested_APPGML_4it' in method):
             APGMAP_vs_ADMMLim = True
-            from all_config.nested_APPGML_4it_configuration import config_func_MIC
+            from all_config.PhD.nested_APPGML_4it_configuration import config_func_MIC
             method_name = "nested"
 
         # nested reconstruction
         if (method == 'nested_APPGML_14it'):
-            from all_config.nested_APPGML_14it_configuration import config_func_MIC
+            from all_config.PhD.nested_APPGML_14it_configuration import config_func_MIC
             method_name = "nested"
         
         # nested reconstruction
         if (method == 'nested_APPGML_28it'):
-            from all_config.nested_APPGML_28it_configuration import config_func_MIC
+            from all_config.PhD.nested_APPGML_28it_configuration import config_func_MIC
             method_name = "nested"
 
         # # nested reconstruction
         # if (method == 'nested_CT_0_skip_3it'):
-        #     from all_config.nested_CT_0_skip_3it import config_func_MIC
+        #     from all_config.PhD.nested_CT_0_skip_3it import config_func_MIC
         #     method_name = "nested"
 
         # # nested reconstruction
         # if (method == 'nested_CT_1_skip_3it'):
-        #     from all_config.nested_CT_1_skip_3it import config_func_MIC
+        #     from all_config.PhD.nested_CT_1_skip_3it import config_func_MIC
         #     method_name = "nested"
 
         # # nested reconstruction
         # if (method == 'nested_CT_2_skip_3it'):
-        #     from all_config.nested_CT_2_skip_3it import config_func_MIC
+        #     from all_config.PhD.nested_CT_2_skip_3it import config_func_MIC
         #     method_name = "nested"
 
         # # nested reconstruction
         # if (method == 'nested_CT_3_skip_3it'):
-        #     from all_config.nested_CT_3_skip_3it import config_func_MIC
+        #     from all_config.PhD.nested_CT_3_skip_3it import config_func_MIC
         #     method_name = "nested"
 
         # # nested reconstruction
         # if (method == 'nested_CT_0_skip_10it'):
-        #     from all_config.nested_CT_0_skip_10it import config_func_MIC
+        #     from all_config.PhD.nested_CT_0_skip_10it import config_func_MIC
         #     method_name = "nested"
 
         # # nested reconstruction
         # if (method == 'nested_CT_1_skip_10it'):
-        #     from all_config.nested_CT_1_skip_10it import config_func_MIC
+        #     from all_config.PhD.nested_CT_1_skip_10it import config_func_MIC
         #     method_name = "nested"
 
         # # nested reconstruction
         # if (method == 'nested_CT_2_skip_10it'):
-        #     from all_config.nested_CT_2_skip_10it import config_func_MIC
+        #     from all_config.PhD.nested_CT_2_skip_10it import config_func_MIC
         #     method_name = "nested"
 
         # # nested reconstruction
         # if (method == 'nested_CT_3_skip_10it'):
-        #     from all_config.nested_CT_3_skip_10it import config_func_MIC
+        #     from all_config.PhD.nested_CT_3_skip_10it import config_func_MIC
         #     method_name = "nested"
 
         # nested reconstruction
         if ('nested_random' in method or 'nested_CT' in method or 'nested_DD' in method):
-            # from all_config.nested_random_3_skip_10it import config_func_MIC
-            # import_str = "from all_config." + method + " import config_func_MIC"
+            # from all_config.PhD.nested_random_3_skip_10it import config_func_MIC
+            # import_str = "from all_config.PhD." + method + " import config_func_MIC"
             # exec(import_str,globals())
             import importlib
-            globals().update(importlib.import_module('all_config.' + method).__dict__) 
+            globals().update(importlib.import_module('all_config.PhD.' + method).__dict__) 
             method_name = "nested"
 
         # # Gong reconstruction
         # if (method == 'DIPRecon_CT_1_skip'):
-        #     from all_config.Gong_CT_1_skip import config_func_MIC
+        #     from all_config.PhD.Gong_CT_1_skip import config_func_MIC
         #     method_name = "Gong"
 
         # # Gong reconstruction
         # if (method == 'DIPRecon_CT_2_skip'):
-        #     from all_config.Gong_CT_2_skip import config_func_MIC
+        #     from all_config.PhD.Gong_CT_2_skip import config_func_MIC
         #     method_name = "Gong"
 
         # # Gong reconstruction
         # if (method == 'DIPRecon_CT_3_skip'):
-        #     from all_config.Gong_CT_3_skip import config_func_MIC
+        #     from all_config.PhD.Gong_CT_3_skip import config_func_MIC
         #     method_name = "Gong"
 
         # DIPRecon reconstruction
         if ('DIPRecon_' in method):
-            # from all_config.nested_random_3_skip_10it import config_func_MIC
-            # import_str = "from all_config." + method + " import config_func_MIC"
+            # from all_config.PhD.nested_random_3_skip_10it import config_func_MIC
+            # import_str = "from all_config.PhD." + method + " import config_func_MIC"
             # exec(import_str,globals())
             import importlib
-            globals().update(importlib.import_module('all_config.' + 'Gong' + method[8:]).__dict__) 
+            globals().update(importlib.import_module('all_config.PhD.' + 'Gong' + method[8:]).__dict__) 
             method_name = "Gong"
 
         try:
             config[method] = config_func_MIC()
             if 'DIPRecon' in method:
-                globals().update(importlib.import_module('all_config.' + 'Gong' + method[8:]).__dict__)
+                globals().update(importlib.import_module('all_config.PhD.' + 'Gong' + method[8:]).__dict__)
                 method_name = "Gong"
             elif 'nested' in method:
                 method_name = "nested"
@@ -1131,13 +1144,16 @@ class iFinalCurves(vGeneral):
         except:
             import importlib
             if 'DIPRecon' in method:
-                globals().update(importlib.import_module('all_config.' + 'Gong' + method[8:]).__dict__)
+                globals().update(importlib.import_module('all_config.PhD.' + 'Gong' + method[8:]).__dict__)
                 method_name = "Gong"
             elif 'nested' in method:
-                globals().update(importlib.import_module('all_config.' + method).__dict__)
+                globals().update(importlib.import_module('all_config.PhD.' + method).__dict__)
                 method_name = "nested"
+            elif ("OSEM" in method):
+                globals().update(importlib.import_module(method).__dict__)
+                method_name = "MLEM"
             else:
-                globals().update(importlib.import_module('all_config.' + method).__dict__)
+                globals().update(importlib.import_module(method).__dict__)
                 method_name = method
             config[method] = config_MIC
         config[method]["method"] = method_name
@@ -1329,13 +1345,13 @@ class iFinalCurves(vGeneral):
 
                 "nested_image4_1_MR3_several_rhos" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "nested_image4_1_MR3_all_EMV" : ['lime'],
-
-                
-
             }
 
+            color_dict_LM = {
+                "LM_OSEM" : ["orange"],
+            }
 
-            color_dict = {**color_dict_after_MIC, **color_dict_add_tests, **color_dict_TMI_DNA, **color_dict_MIC2023_DNA} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
+            color_dict = {**color_dict_after_MIC, **color_dict_add_tests, **color_dict_TMI_DNA, **color_dict_MIC2023_DNA, **color_dict_LM} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
 
         if (self.phantom == "image2_0"):                    
             marker_dict = {
@@ -1492,7 +1508,12 @@ class iFinalCurves(vGeneral):
                 "nested_image4_1_MR3_several_rhos" : 5*[marker_dict["DIPRecon"][0]],
                 "nested_image4_1_MR3_all_EMV" : 5*[marker_dict["DIPRecon"][0]],
             }
-            marker_dict = {**marker_dict, **marker_dict_supp}
+
+            marker_dict_LM = {
+                "LM_OSEM" : 15*['-'],
+            }
+
+            marker_dict = {**marker_dict, **marker_dict_supp, **marker_dict_LM}
 
         return marker_dict, color_dict
 

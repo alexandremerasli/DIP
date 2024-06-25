@@ -401,7 +401,7 @@ class vGeneral(abc.ABC):
             elif (config["net"]['grid_search'][0] != "DD_AE"): # not a Deep Decoder based architecture, so remove k and d
                 config.pop("d_DD", None)
                 config.pop("k_DD", None)
-            if (config["method"]['grid_search'][0] == 'MLEM' or config["method"] == 'OPTITR' or config["method"]['grid_search'][0] == 'OSEM' or config["method"]['grid_search'][0] == 'AML'):
+            if (config["method"]['grid_search'][0] == 'MLEM' or config["method"] == 'OPTITR' or 'OSEM' in config["method"]['grid_search'][0] or config["method"]['grid_search'][0] == 'AML'):
                 config.pop("rho", None)
             if ("nested" in config["method"]['grid_search'][0] or "Gong" in config["method"]['grid_search'][0] or "DIPRecon" in config["method"]['grid_search'][0]):
                 if ("end_to_end" in config):

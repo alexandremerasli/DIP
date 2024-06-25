@@ -81,15 +81,16 @@ class iResults(vDenoising):
         if config["FLTNB"] == "double":
             self.image_gt = self.image_gt.astype(np.float64)
 
-        if (config["input"] == "CT"):
-            # # Loading attenuation map
-            # image_atn = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type_im='<f')
-            # self.write_image_tensorboard(self.writer,image_atn,"Attenuation map (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # Attenuation map in tensorboard
-    
-            # # Loading MR-like image
-            # image_mr = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw',shape=(self.PETImage_shape),type_im='<f')
-            image_mr = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type_im='<f')
-            self.write_image_tensorboard(self.writer,image_mr,"DIP input (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # Attenuation map in tensorboard
+        if ("nested" in config["method"] or "Gong" in config["method"]):
+            if (config["input"] == "CT"):
+                # # Loading attenuation map
+                # image_atn = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type_im='<f')
+                # self.write_image_tensorboard(self.writer,image_atn,"Attenuation map (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # Attenuation map in tensorboard
+        
+                # # Loading MR-like image
+                # image_mr = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw',shape=(self.PETImage_shape),type_im='<f')
+                image_mr = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type_im='<f')
+                self.write_image_tensorboard(self.writer,image_mr,"DIP input (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # Attenuation map in tensorboard
 
         '''
         image = self.image_gt
