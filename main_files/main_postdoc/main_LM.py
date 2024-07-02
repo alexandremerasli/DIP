@@ -29,7 +29,7 @@ def uncompatible_parameters(config):
         raise ValueError("Debug mode must is used without ray")
     elif (task == "post_reco" and config["DIP_early_stopping"]["grid_search"][0] == True and config["all_images_DIP"]["grid_search"][0] == "False"):
         raise ValueError("post reco mode need to save all images if ES")
-    elif (config["sub_iter_DIP"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0] or config["sub_iter_DIP_initial_and_final"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0]):
+    elif ((config["sub_iter_DIP_initial_and_final"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0]) or (config["sub_iter_DIP_initial_and_final"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0] and config["DIP_early_stopping_when"]["grid_search"][0] == "all")):
         raise ValueError("Please set patienceNumber higher than sub_iter_DIP")
 
 def class_for_task(config,task):
@@ -110,7 +110,7 @@ for lib_string in config_files:
         config["image"] = tune.grid_search(['imageUHR_IEC'])
         config["image"] = tune.grid_search(['image40_1'])
         config["replicates"] = tune.grid_search(list(range(1,1+1)))
-        config["max_iter"] = tune.grid_search([200])
+        config["max_iter"] = tune.grid_search([30])
         config["ray"] = False
 
         root = os.getcwd()

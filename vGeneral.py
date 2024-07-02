@@ -1299,15 +1299,16 @@ class vGeneral(abc.ABC):
                     vox = ' -vox 2,2,2'
             else:
                 vox = ' -vox 2.08626,2.08626,2.03125'
-                if ("1" in PETImage_shape_str.split(',')): # 2D
-                    psf = ' -conv gaussian,4,1,3.5::psf'
-                else: # 3D
-                    if (self.scanner == "mMR_3D"):
-                        psf = ' -conv gaussian,4.5,4.5,3.5::psf' # isotropic psf in simulated phantoms
-                    else:
-                        psf = ' -conv gaussian,4,4,3.5::psf' # isotropic psf in simulated phantoms
+            # Set PSF from scanner usual settings
+            if ("1" in PETImage_shape_str.split(',')): # 2D
+                psf = ' -conv gaussian,4,1,3.5::psf'
+            else: # 3D
+                if (self.scanner == "mMR_3D"):
+                    psf = ' -conv gaussian,4.5,4.5,3.5::psf' # isotropic psf in simulated phantoms
+                else:
+                    psf = ' -conv gaussian,4,4,3.5::psf' # isotropic psf in simulated phantoms
 
-        # No PSF if it was not asked by user
+        # Do not set PSF if it was not asked by user
         if (not self.PSF):
             psf = ''
 
