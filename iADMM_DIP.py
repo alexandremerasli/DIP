@@ -74,7 +74,8 @@ class iADMM_DIP(vReconstruction):
             classDenoising.name_run = ""
             # Train network at current global iteration
             classDenoising.sub_iter_DIP = config["sub_iter_DIP"] + self.sub_iter_DIP_already_done
-            classDenoising.sub_iter_DIP_initial_and_final = config["sub_iter_DIP_initial_and_final"]
+            classDenoising.sub_iter_DIP_initial_and_final = config["sub_iter_DIP_initial_and_final"] # User defined maximum number of initial DIP iterations
+            # classDenoising.sub_iter_DIP_initial_and_final = config["DIP_it_if_no_ES_found"] + config["patienceNumber"] # Maximum number of initial DIP iterations is set to DIP_it_if_no_ES_found + patienceNumber
             classDenoising.global_it = self.global_it
             # Launch denoising task
             print("Denoising in reconstruction")
@@ -187,6 +188,8 @@ class iADMM_DIP(vReconstruction):
                     self.DIP_early_stopping = False
                     self.finetuning = "last" # save NN state at last epoch for next global iteration
             
+            self.all_images_DIP_when = config["all_images_DIP_when"]
+
             if self.all_images_DIP_when == "True" or self.all_images_DIP_when == "True_init":
                 self.all_images_DIP = "True"
             elif self.all_images_DIP_when == "Unique":
@@ -194,8 +197,9 @@ class iADMM_DIP(vReconstruction):
             elif self.all_images_DIP_when == "False":
                 self.all_images_DIP = "False"
             else:
-                raise ValueError("Please set all_images_DIP_when to True, True_init, Last or False")            # Initialize vDenoising object
+                raise ValueError("Please set all_images_DIP_when to True, True_init, Last or False")
             
+            # Initialize vDenoising object
             classDenoising = vDenoising(config,self.global_it)
             # Put CT as input (mu_DIP = 200 is for random only)
             if (not (i_init == 0 and config["unnested_1st_global_iter"])):
@@ -223,6 +227,7 @@ class iADMM_DIP(vReconstruction):
             classDenoising.method = self.method
             classDenoising.scanner = self.scanner
             classDenoising.simulation = self.simulation
+            classDenoising.all_images_DIP = self.all_images_DIP
             classDenoising.initializeGeneralVariables(config,root)
         
         # During iterations, do not do WMV
@@ -244,6 +249,9 @@ class iADMM_DIP(vReconstruction):
                 self.all_images_DIP = "False"
             else:
                 raise ValueError("Please set all_images_DIP_when to True, True_init, Last or False")
+            
+            classDenoising.all_images_DIP = self.all_images_DIP
+
         
             # Put back original input
             if (self.net == "DIP"):

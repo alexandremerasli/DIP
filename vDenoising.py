@@ -215,7 +215,7 @@ class vDenoising(vGeneral):
 
         print("global_it",global_it)
         if (global_it == -1): # or global_it == self.max_iter - 1): # Number of initial and final iterations are overrided here
-            print(str(self.sub_iter_DIP_initial_and_final) + " initial iterations for Gong")
+            print(str(self.sub_iter_DIP_initial_and_final) + " initial iterations")
             self.sub_iter_DIP = self.sub_iter_DIP_initial_and_final
             sub_iter_DIP = self.sub_iter_DIP
 

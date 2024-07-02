@@ -47,7 +47,8 @@ class DIP_2D(LightningModule):
         self.lr = config['lr']
         self.opti_DIP = config['opti_DIP']
         if (global_it == -1):
-            self.sub_iter_DIP = config['sub_iter_DIP_initial_and_final']
+            self.sub_iter_DIP = config["sub_iter_DIP_initial_and_final"] # User defined maximum number of initial DIP iterations
+            # self.sub_iter_DIP = config["DIP_it_if_no_ES_found"] + config["patienceNumber"] # Maximum number of initial DIP iterations is set to DIP_it_if_no_ES_found + patienceNumber
         else:
             self.sub_iter_DIP = config['sub_iter_DIP']
         self.skip = config['skip_connections']

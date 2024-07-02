@@ -52,20 +52,20 @@ class vGeneral(abc.ABC):
         # self.finetuning = config["finetuning"]
         self.finetuning = "ES" # Initialize finetuning to ES, will be overrided when necessary depending on ES strategy
         
-        if config["all_images_DIP_when"] == "True":
-            self.all_images_DIP_when = "True"
-            self.all_images_DIP = "True"
-        elif (config["all_images_DIP_when"] == "True_init"):
-            self.all_images_DIP_when = "True_init"
-            self.all_images_DIP = "Unique"
-        elif (config["all_images_DIP_when"] == "Unique"):
-            self.all_images_DIP_when = "Unique"
-            self.all_images_DIP = "Unique"
-        elif config["all_images_DIP_when"] == "False":
-            self.all_images_DIP_when = "False"
-            self.all_images_DIP = "False"
-        else:
-            raise ValueError("Please put one value for all_images_DIP_when in config variable")
+        # if config["all_images_DIP_when"] == "True":
+        #     self.all_images_DIP_when = "True"
+        #     self.all_images_DIP = "True"
+        # elif (config["all_images_DIP_when"] == "True_init"):
+        #     self.all_images_DIP_when = "True_init"
+        #     self.all_images_DIP = "True"
+        # elif (config["all_images_DIP_when"] == "Unique"):
+        #     self.all_images_DIP_when = "Unique"
+        #     self.all_images_DIP = "Unique"
+        # elif config["all_images_DIP_when"] == "False":
+        #     self.all_images_DIP_when = "False"
+        #     self.all_images_DIP = "False"
+        # else:
+        #     raise ValueError("Please put one value for all_images_DIP_when in config variable")
 
         self.phantom = config["image"]
         self.net = config["net"]
@@ -1537,7 +1537,8 @@ class vGeneral(abc.ABC):
                     if (config["post_reco_in_suffix"]):
                         self.total_nb_iter = config["sub_iter_DIP"]
                     else:
-                        self.total_nb_iter = config["sub_iter_DIP_initial_and_final"]
+                        self.total_nb_iter = config["sub_iter_DIP_initial_and_final"] # User defined maximum number of initial DIP iterations
+                        # self.total_nb_iter = config["DIP_it_if_no_ES_found"] + config["patienceNumber"] # Maximum number of initial DIP iterations is set to DIP_it_if_no_ES_found + patienceNumber
             else:
                 try:
                     if (stopping_criterion):
