@@ -19,8 +19,8 @@ def uncompatible_parameters(config):
         raise ValueError("nested must be launched with rho > 0")
     elif ((config["method"]["grid_search"][0] != 'Gong' and config["method"]["grid_search"][0] != 'nested') and task == "post_reco"):
         raise ValueError("Only Gong or nested can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
-    elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["all_images_DIP"]["grid_search"][0] != "True" and config["DIP_early_stopping"]["grid_search"][0] == "True"):
-        raise ValueError("Please set all_images_DIP to True to save all images for nested or Gong reconstruction if using WMV.")
+    # elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["all_images_DIP"]["grid_search"][0] != "True" and config["DIP_early_stopping"]["grid_search"][0] == "True"):
+    #     raise ValueError("Please set all_images_DIP to True to save all images for nested or Gong reconstruction if using WMV.")
     elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["rho"]["grid_search"][0] == 0 and task != "post_reco"):
         raise ValueError("Please set rho > 0 for nested or Gong reconstruction (or set task to post reconstruction).")
     elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["EMV_or_WMV"]["grid_search"][0] == "WMV"):
@@ -29,11 +29,13 @@ def uncompatible_parameters(config):
         raise ValueError("Debug mode must is used without ray")
     elif (task == "post_reco" and config["DIP_early_stopping"]["grid_search"][0] == True and config["all_images_DIP"]["grid_search"][0] == "False"):
         raise ValueError("post reco mode need to save all images if ES")
+    elif (config["sub_iter_DIP"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0] or config["sub_iter_DIP_initial_and_final"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0]):
+        raise ValueError("Please set patienceNumber higher than sub_iter_DIP")
 
 def class_for_task(config,task):
-    if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
-        from iNestedADMM import iNestedADMM
-        classTask = iNestedADMM(config)
+    if (task == 'full_reco_with_network'): # Run Gong or DNA
+        from iADMM_DIP import iADMM_DIP
+        classTask = iADMM_DIP(config)
         # raise ValueError("needs hyperparameters_config")
     elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
         from iComparison import iComparison
@@ -52,8 +54,8 @@ def class_for_task(config,task):
         from iMeritsADMMLim import iMeritsADMMLim
         classTask = iMeritsADMMLim(config)
     elif (task == 'show_metrics_nested'): # Show nested or Gong FOMs over iterations
-        from iMeritsNested import iMeritsNested
-        classTask = iMeritsNested(config)
+        from iMeritsDIP_ADMM import iMeritsDIP_ADMM
+        classTask = iMeritsDIP_ADMM(config)
     # elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
     #     from iResultsAlreadyComputed import iResultsAlreadyComputed
     #     classTask = iResultsAlreadyComputed(config)
@@ -73,7 +75,7 @@ def choose_task(config):
         task = 'castor_reco'
 
     # Override task here if needed
-    # task = 'full_reco_with_network' # Run Gong or nested ADMM
+    # task = 'full_reco_with_network' # Run Gong or DNA
     # task = 'castor_reco' # Run CASToR reconstruction with given optimizer
     # task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
     # task = 'show_results_post_reco'
@@ -87,8 +89,9 @@ def choose_task(config):
     return task
 
 nb_computation = 1
-config_files = ["my_LM_DIPRecon"]
 config_files = ["LM_OSEM"]
+config_files = ["my_LM_DIPRecon"]
+config_files = ["test_debug"]
 
 i=-1
 num_meth=0
@@ -107,7 +110,7 @@ for lib_string in config_files:
         config["image"] = tune.grid_search(['imageUHR_IEC'])
         config["image"] = tune.grid_search(['image40_1'])
         config["replicates"] = tune.grid_search(list(range(1,1+1)))
-        config["max_iter"] = tune.grid_search([20])
+        config["max_iter"] = tune.grid_search([200])
         config["ray"] = False
 
         root = os.getcwd()

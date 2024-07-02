@@ -25,7 +25,7 @@ settings_config = {
     "debug" : False, # Debug mode = run without raytune and with one iteration
     "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
     "tensorboard" : True, # Tensorboard mode = show results in tensorboard
-    "all_images_DIP" : tune.grid_search(['True']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Last" (store only last image)
+    "all_images_DIP" : tune.grid_search(['True']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Unique" (store only last image)
     "experiment" : tune.grid_search([24]),
     "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
     "replicates" : tune.grid_search([2]), # List of desired replicates. list(range(1,n+1)) means n replicates
@@ -115,19 +115,19 @@ file_seed.write(str(settings_config["random_seed"]["grid_search"][0]))
 file_seed.close()
 
 # Local files to import, AFTER CONFIG TO SET RANDOM SEED OR NOT
-from iNestedADMM import iNestedADMM
+from iADMM_DIP import iADMM_DIP
 from iComparison import iComparison
 from iPostReconstruction import iPostReconstruction
 from iResults import iResults
 from iMeritsADMMLim import iMeritsADMMLim
-from iMeritsNested import iMeritsNested
+from iMeritsDIP_ADMM import iMeritsDIP_ADMM
 from iResultsAlreadyComputed import iResultsAlreadyComputed
 from iResultsADMMLim_VS_APGMAP import iResultsADMMLim_VS_APGMAP
 from iFinalCurves import iFinalCurves
 
 for method in config["method"]['grid_search']:
     # Choose task to do
-    #task = 'full_reco_with_network' # Run Gong or nested ADMM
+    #task = 'full_reco_with_network' # Run Gong or DNA
     #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
     task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
     #task = 'show_results_post_reco'
@@ -203,8 +203,8 @@ for method in config["method"]['grid_search']:
 
 
     # Choose class to run according to task
-    if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
-        classTask = iNestedADMM(hyperparameters_config)
+    if (task == 'full_reco_with_network'): # Run Gong or DNA
+        classTask = iADMM_DIP(hyperparameters_config)
     elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
         classTask = iComparison(config)
     elif (task == 'post_reco'): # Run network denoising after a given reconstructed image im_corrupt
@@ -217,7 +217,7 @@ for method in config["method"]['grid_search']:
     elif (task == 'show_metrics_ADMMLim'): # Show ADMMLim FOMs over iterations
         classTask = iMeritsADMMLim(config)
     elif (task == 'show_metrics_nested'): # Show nested or Gong FOMs over iterations
-        classTask = iMeritsNested(config)
+        classTask = iMeritsDIP_ADMM(config)
     elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
         classTask = iResultsAlreadyComputed(config)
     elif (task == 'compare_2_methods'): # Show already computed results averaging over replicates

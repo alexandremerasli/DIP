@@ -5,7 +5,7 @@ from numpy.linalg import norm
 # Local files to import
 from vGeneral import vGeneral
 
-class iWMV(vGeneral):
+class iMovingVariance(vGeneral):
     def __init__(self, config):
         # super().__init__(config)
         print("init")
@@ -25,6 +25,7 @@ class iWMV(vGeneral):
         self.PSNR_WMV = []
         self.SSIM_WMV = []
         self.SUCCESS = False
+        self.DIP_it_if_no_ES_found = config["DIP_it_if_no_ES_found"]
         
 
         self.EMV_or_WMV = config["EMV_or_WMV"]
@@ -55,9 +56,9 @@ class iWMV(vGeneral):
     def runComputation(self,config,root):
         pass
 
-    def WMV(self,out,epoch,sub_iter_DIP,queueQ,SUCCESS,VAR_min,stagnate,descale=True,MV_csv=NaN,current_DIP_iteration=0):
+    def WMV(self,out,epoch,sub_iter_DIP,queueQ,SUCCESS,VAR_min,stagnate,descale=True,MV_value_csv=NaN,current_DIP_iteration=0, MV_metrics_already_stored_in_csv=False):
         
-        if (out != "MV_metrics_already_in_csv"):
+        if (not MV_metrics_already_stored_in_csv):
             # Descale, squeeze image and add 3D dimension to 1 (ok for 2D images)
             if (descale):
                 out = self.descale_imag(from_numpy(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
@@ -114,7 +115,7 @@ class iWMV(vGeneral):
         if (self.EMV_or_WMV == "WMV"):
             #'''
             #####################################  Window Moving Variance  #############################################
-            if (out != "MV_metrics_already_in_csv"):
+            if (not MV_metrics_already_stored_in_csv):
                 queueQ.append(out_cropped.flatten()) # Add last computed image to last element in queueQ from window
                 if (len(queueQ) == self.windowSize):
                     # Compute mean for this window
@@ -143,18 +144,18 @@ class iWMV(vGeneral):
             #     if (epoch < self.windowSize):
             #         self.WMV = 0
             #     else:
-            #         self.WMV = MV_csv
+            #         self.WMV = MV_value_csv
             #'''
         else:
             #'''
             #####################################  Exponential Moving Variance  #############################################
-            if (out != "MV_metrics_already_in_csv"):
+            if (not MV_metrics_already_stored_in_csv):
                 # Compute variance for this window
                 self.EMV = (1-self.alpha_EMV) * (self.EMV + self.alpha_EMV * norm(out_cropped - self.EMA)**2)
                 # Compute EMA to be used in next window
                 self.EMA = (1-self.alpha_EMV) * self.EMA + self.alpha_EMV * out_cropped
             else:
-                self.EMV = MV_csv
+                self.EMV = MV_value_csv
             # Check if current variance is smaller than minimum previously computed variance, else count number of iterations since this minimum
             if self.EMV < VAR_min and not SUCCESS:
                 VAR_min = self.EMV
@@ -163,13 +164,14 @@ class iWMV(vGeneral):
             else:
                 stagnate += 1
             # ES point has been found
-            if stagnate == self.patienceNumber:
+            if (stagnate == self.patienceNumber) and (self.epochStar > 0):
                 SUCCESS = True
-            if (out != "MV_metrics_already_in_csv"):
+            if (not MV_metrics_already_stored_in_csv):
                 self.VAR_recon.append(self.EMV) # Store current variance to plot variance curve after
             #'''
 
-        if SUCCESS:
+        # Wait one iteration after SUCCESS to save ES point
+        if self.SUCCESS:
             import matplotlib.pyplot as plt
             import numpy as np
             if (not self.SUCCESS):
@@ -178,26 +180,39 @@ class iWMV(vGeneral):
                 plt.ylabel("EMV (log scale)")
                 plt.xlabel("DIP Iterations")
                 plt.savefig(self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/EMV_global_' + str(self.global_it) + '.png')
-            self.SUCCESS = SUCCESS
             # Open output corresponding to epoch star
-            net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
-            out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f')
+            net_output_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
+            # Open ckpt corresponding to epoch star
+            ckpt_path = self.subroot+'Block2/' + self.suffix + '/checkpoint/' + format(self.experiment) + '/' + str(self.global_it) + '/epoch=' + format(self.epochStar) + '-step=' + format(self.epochStar) + '.ckpt'
+            
+            self.save_DIP_output(ckpt_path, net_output_path)
+            
+            out = self.fijii_np(net_output_path,shape=(self.PETImage_shape),type_im='<f')
             
             # Descale like at the beginning
             out = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
             #out = self.descale_imag(from_numpy(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
 
             # Saving ES point image
-            net_outputs_path = self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/ES_out_' + self.net +  str(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
-            self.save_img(out, net_outputs_path)
+            net_output_path = self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/ES_out_' + self.net +  str(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
+            self.save_img(out, net_output_path)
             print("#### WMV ########################################################")
             print("                 ES point found, epoch* =", self.epochStar)
             print("#################################################################")
+        
+        if SUCCESS and (epoch != sub_iter_DIP - 1):
+            self.SUCCESS = SUCCESS
         else:
-            if (epoch == sub_iter_DIP): # No ES was found, so set it back to intiial value
-                # self.epochStar = -1
+            if (epoch == sub_iter_DIP - 1): # No ES was found, so set it to user defined value
+                # self.epochStar = current_DIP_iteration - self.patienceNumber
+                self.epochStar = self.DIP_it_if_no_ES_found - 1
                 print(self.epochStar)
-            if (current_DIP_iteration == sub_iter_DIP): # No ES was found, so set it back to intiial value
-                self.epochStar = -1
-
+            
+                # Open output corresponding to epoch star
+                net_output_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
+                # Open ckpt corresponding to epoch star
+                ckpt_path = self.subroot+'Block2/' + self.suffix + '/checkpoint/' + format(self.experiment) + '/' + str(self.global_it) + '/epoch=' + format(self.epochStar) + '-step=' + format(self.epochStar) + '.ckpt'
+                
+                self.save_DIP_output(ckpt_path, net_output_path)
+            
         return SUCCESS, VAR_min, stagnate

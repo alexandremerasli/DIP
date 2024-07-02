@@ -27,8 +27,8 @@ class vReconstruction(vGeneral):
     def initializeSpecific(self,config,root, *args, **kwargs):
         self.createDirectoryAndConfigFile(config)
         # Delete previous ckpt files from previous runs
-        # if (config["finetuning"] == "ES"):
-        #     os.system("rm -rf " + self.subroot+'Block2/' + self.suffix + '/checkpoint/'+format(self.experiment) + "*")
+        # if (self.finetuning == "ES"):
+        os.system("rm -rf " + self.subroot+'Block2/' + self.suffix + '/checkpoint/'+format(self.experiment) + "*")
 
 
         # Specific hyperparameters for reconstruction module (Do it here to have raytune config hyperparameters selection)

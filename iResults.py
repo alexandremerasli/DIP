@@ -18,7 +18,7 @@ from csv import reader as reader_csv
 # Local files to import
 #from vGeneral import vGeneral
 from vDenoising import vDenoising
-from iWMV import iWMV
+from iMovingVariance import iMovingVariance
 
 class iResults(vDenoising):
     def __init__(self,config, *args, **kwargs):
@@ -33,7 +33,7 @@ class iResults(vDenoising):
             self.d_DD = config["d_DD"]
             self.k_DD = config["k_DD"]
         # if ("nested" in config["method"] or "Gong" in config["method"]):
-        #     self.DIP_early_stopping = config["DIP_early_stopping"]
+        #     self.DIP_early_stopping = self.DIP_early_stopping
         #vDenoising.initializeSpecific(self,config,root)
         # Initialize early stopping method if asked for
         if ("nested" in config["method"] or "Gong" in config["method"]):
@@ -52,7 +52,7 @@ class iResults(vDenoising):
                     self.global_it = -1
             else:
                 self.global_it = -100
-            if (config["DIP_early_stopping"]):# and "show_results_post_reco" in config["task"]):
+            if (self.DIP_early_stopping):# and "show_results_post_reco" in config["task"]):
                 self.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,root,self.scanner, self.simulation)
                 self.lr = config['lr']
 
@@ -191,7 +191,7 @@ class iResults(vDenoising):
 
     def writeCorruptedImage(self,i,max_iter,x_label,suffix,pet_algo,iteration_name='iterations'):
         if (self.tensorboard):
-            if (self.all_images_DIP == "Last"):
+            if (self.all_images_DIP == "Unique"):
                 self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name,suffix,self.image_gt,i) # Showing all corrupted images with same contrast to compare them together
                 self.write_image_tensorboard(self.writer,x_label,"Corrupted image (x_label) over " + pet_algo + " " + iteration_name + " (FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each corrupted image with contrast = 1
             else:       
@@ -206,7 +206,7 @@ class iResults(vDenoising):
 
         if (self.tensorboard):
             # Write image over ADMM iterations
-            if (self.all_images_DIP == "Last"):
+            if (self.all_images_DIP == "Unique"):
                 self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
                 self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
                 self.write_image_tensorboard(self.writer,f*self.phantom_ROI,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST CROPPED)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1
@@ -221,7 +221,7 @@ class iResults(vDenoising):
             if (config["read_only_MV_csv"]):
                 read_only_MV_csv = True
                 if ("nested" in config["method"] or "Gong" in config["method"]):
-                    if(config["DIP_early_stopping"]):# WMV
+                    if(self.DIP_early_stopping):# WMV
                         self.WMV_plot(config)
                     self.MV_several_alphas_plot(config)
             else:
@@ -254,7 +254,7 @@ class iResults(vDenoising):
             self.f = np.zeros(self.PETImage_shape,dtype=type_im)
             f_p = np.zeros(self.PETImage_shape,dtype=type_im)
 
-            # Nested ADMM stopping criterion
+            # DNA stopping criterion
             if ("3_" not in self.phantom):
                 if ('nested' in config["method"]):
                     # Compute IR for BSREM initialization image
@@ -285,7 +285,7 @@ class iResults(vDenoising):
             print("loop over")
 
             if ("nested" in config["method"] or "Gong" in config["method"]):
-                if (config["DIP_early_stopping"]):# WMV
+                if (self.DIP_early_stopping):# WMV
                     if ("post_reco" in config["task"] or "end_to_end" in config["task"]):
                         # Save computed variance from WMV/EMV in csv
                         with open(self.MV_csv_path(self.alpha_EMV,config), 'w', newline='') as myfile:
@@ -303,7 +303,7 @@ class iResults(vDenoising):
 
             for i in range(self.i_init,self.total_nb_iter+self.i_init):
             # for i in range(self.i_init,4444):
-                if (self.run_WMV("MV_metrics_already_in_csv",self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,self.simulation,i)):
+                if (self.run_WMV(None,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,self.simulation,i,MV_metrics_already_stored_in_csv=True)):
                     print("ES point found, break loop")
                     break
         
@@ -590,10 +590,10 @@ class iResults(vDenoising):
                     self.compute_IR_bkg(self.PETImage_shape,f_p,int((i-self.i_init)),self.IR_bkg_recon,self.phantom)
                     self.compute_IR_whole(self.PETImage_shape,f_p,int((i-self.i_init)),self.IR_whole_recon,self.phantom)
 
-                    # # Nested ADMM stopping criterion
+                    # # DNA stopping criterion
                     # if('nested' in config["method"]):
                     #     if (self.IR_whole_recon[int((i-self.i_init))]> self.IR_ref[0]): # > 1.604):# > self.IR_ref[0]):
-                    #         print("Nested ADMM stopping criterion reached")
+                    #         print("DNA stopping criterion reached")
                     #         self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
                     #         stopping_criterion_file = open(self.path_stopping_criterion, "w")
                     #         stopping_criterion_file.write("stopping iteration :" + "\n")
@@ -617,7 +617,7 @@ class iResults(vDenoising):
                 # WMV
                 if ("nested" in config["method"] or "Gong" in config["method"]):
                     # self.run_WMV(f_p,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,self.simulation,i)
-                    if(config["DIP_early_stopping"]):# WMV
+                    if(self.DIP_early_stopping):# WMV
                         if ("post_reco" in config["task"] or "end_to_end" in config["task"]):
                             self.run_WMV(f_p,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,self.simulation,i)
                             if (self.SUCCESS):
@@ -794,8 +794,8 @@ class iResults(vDenoising):
             #writer.add_scalar('Image roughness in the background (best : 0)', IR_bkg_recon[i], i)
 
 
-    def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner, simulation):
-        self.classWMV = iWMV(config)            
+    def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner, simulation, image_net_input=None):
+        self.classWMV = iMovingVariance(config)            
         self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
         self.classWMV.hyperparameters_list = hyperparameters_list
         self.classWMV.debug = debug
@@ -806,18 +806,19 @@ class iResults(vDenoising):
         self.classWMV.global_it = global_it
         self.classWMV.scanner = scanner
         self.classWMV.simulation = simulation
+        self.classWMV.image_net_input = image_net_input
         # Initialize variables
         self.classWMV.do_everything(config,root)
 
-    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner,simulation,i):
-        if (config["DIP_early_stopping"]):
+    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner,simulation,i, MV_metrics_already_stored_in_csv=False):
+        if (self.DIP_early_stopping):
             self.SUCCESS = self.classWMV.SUCCESS
 
             if (config["read_only_MV_csv"]):
-                MV_csv = self.VAR_recon[i]
+                MV_value_csv = self.VAR_recon[i]
             else:
-                MV_csv = np.NaN
-            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out,i,config["sub_iter_DIP"],self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate,descale=False,MV_csv=MV_csv)
+                MV_value_csv = np.NaN
+            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out,i,config["sub_iter_DIP"],self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate,descale=False,MV_value_csv=MV_value_csv, MV_metrics_already_stored_in_csv=MV_metrics_already_stored_in_csv)
             if (not config["read_only_MV_csv"]):
                 self.VAR_recon = self.classWMV.VAR_recon
                 self.MSE_WMV = self.classWMV.MSE_WMV
@@ -833,7 +834,4 @@ class iResults(vDenoising):
             if self.SUCCESS: # Will be true 1 epoch after self.classWMV.SUCCESS becomes True
                 print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
                 return 1
-                # self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner, simulation)
             return 0
-        # else:
-        #     self.log("SUCCESS", int(False))

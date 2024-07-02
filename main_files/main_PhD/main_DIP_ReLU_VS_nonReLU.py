@@ -28,9 +28,9 @@ def uncompatible_parameters(config):
         raise ValueError("post reco mode need to save all images if ES")
 
 def class_for_task(config,task):
-    if (task == 'full_reco_with_network'): # Run Gong or nested ADMM
-        from iNestedADMM import iNestedADMM
-        classTask = iNestedADMM(config)
+    if (task == 'full_reco_with_network'): # Run Gong or DNA
+        from iADMM_DIP import iADMM_DIP
+        classTask = iADMM_DIP(config)
         # raise ValueError("needs hyperparameters_config")
     elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
         from iComparison import iComparison
@@ -49,8 +49,8 @@ def class_for_task(config,task):
         from iMeritsADMMLim import iMeritsADMMLim
         classTask = iMeritsADMMLim(config)
     elif (task == 'show_metrics_nested'): # Show nested or Gong FOMs over iterations
-        from iMeritsNested import iMeritsNested
-        classTask = iMeritsNested(config)
+        from iMeritsDIP_ADMM import iMeritsDIP_ADMM
+        classTask = iMeritsDIP_ADMM(config)
     # elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
     #     from iResultsAlreadyComputed import iResultsAlreadyComputed
     #     classTask = iResultsAlreadyComputed(config)
@@ -70,7 +70,7 @@ def choose_task(config):
         task = 'castor_reco'
 
     # Override task here if needed
-    # task = 'full_reco_with_network' # Run Gong or nested ADMM
+    # task = 'full_reco_with_network' # Run Gong or DNA
     # task = 'castor_reco' # Run CASToR reconstruction with given optimizer
     task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
     task = 'show_results_post_reco'

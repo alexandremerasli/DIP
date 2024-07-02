@@ -10,7 +10,7 @@ import os
 # Local files to import
 from vGeneral import vGeneral
 
-class iMeritsNested(vGeneral):
+class iMeritsDIP_ADMM(vGeneral):
     def __init__(self,config, *args, **kwargs):
         print("__init__")
 

@@ -49,8 +49,24 @@ class vGeneral(abc.ABC):
         """General variables"""
 
         # Initialize some parameters from config
-        self.finetuning = config["finetuning"]
-        self.all_images_DIP = config["all_images_DIP"]
+        # self.finetuning = config["finetuning"]
+        self.finetuning = "ES" # Initialize finetuning to ES, will be overrided when necessary depending on ES strategy
+        
+        if config["all_images_DIP_when"] == "True":
+            self.all_images_DIP_when = "True"
+            self.all_images_DIP = "True"
+        elif (config["all_images_DIP_when"] == "True_init"):
+            self.all_images_DIP_when = "True_init"
+            self.all_images_DIP = "Unique"
+        elif (config["all_images_DIP_when"] == "Unique"):
+            self.all_images_DIP_when = "Unique"
+            self.all_images_DIP = "Unique"
+        elif config["all_images_DIP_when"] == "False":
+            self.all_images_DIP_when = "False"
+            self.all_images_DIP = "False"
+        else:
+            raise ValueError("Please put one value for all_images_DIP_when in config variable")
+
         self.phantom = config["image"]
         self.net = config["net"]
         self.method = config["method"]
@@ -110,6 +126,19 @@ class vGeneral(abc.ABC):
             # Override number of DIP sub iterations if several inputs
             # if ("results" not in config["task"]):
             # config["sub_iter_DIP"] = int(config["sub_iter_DIP"] / self.several_DIP_inputs)
+
+            if ("DIP_early_stopping_when" in config):
+                if (config["DIP_early_stopping_when"] == "init"):
+                    self.DIP_early_stopping_when = "init"
+                    self.DIP_early_stopping = True
+                elif (config["DIP_early_stopping_when"] == "all"):
+                    self.DIP_early_stopping_when = "all"
+                    self.DIP_early_stopping = True
+                elif (config["DIP_early_stopping_when"] == "nothing"):
+                    self.DIP_early_stopping_when = "nothing"
+                    self.DIP_early_stopping = False
+            else:
+                self.DIP_early_stopping = False
 
         self.subroot_data = root + '/data/Algo/' # Directory root
         
@@ -838,6 +867,10 @@ class vGeneral(abc.ABC):
         classResults.phantom_ROI = self.phantom_ROI
         classResults.scanner = self.scanner
         classResults.simulation = self.simulation
+        if (hasattr(self, 'image_net_input')):
+            classResults.image_net_input = self.image_net_input
+        if ("nested" in self.method or "Gong" in self.method):
+            classResults.DIP_early_stopping = self.DIP_early_stopping
 
     def points_in_circle(self,center_x,center_y,center_z,radius,PETImage_shape,inner_circle=True): # x and y are inverted in an array compared to coordinates
         center_y += int(PETImage_shape[0]/2)
@@ -1242,56 +1275,6 @@ class vGeneral(abc.ABC):
         # Adding this figure to tensorboard
         writer.add_figure(name,gcf(),global_step=i,close=True)# for videos, using slider to change image with global_step
 
-    # def castor_common_command_line(self, subroot, PETImage_shape_str, phantom, replicates, post_smoothing=0):
-    #     executable = 'castor-recon'
-    #     header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data pat
-    #     dim = ' -dim ' + PETImage_shape_str
-    #     vb = ' -vb 3'
-    #     th = ' -th ' + str(self.nb_threads)
-    #     if (self.scanner == "UHR"):
-    #         vox = ' -vox 1.2,1.2,1.2'
-    #         proj = ' -proj distanceDriven'
-    #         psf = ''
-    #         sensitivity = " -sensitivity " + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[5:] + '_' + str(config["replicates"]) + '/sensitivity' + self.phantom[5:] + '_' + str(config["replicates"]) + '.cdh'
-    #     else:
-    #         sensitivity = "" # No sensitivity for histogram data 
-    #         if (self.scanner != "mMR_3D"):
-    #             proj = ' -proj incrementalSiddon'
-    #             if (self.phantom != "image50_0" and self.phantom != "image50_1" and "50_2" not in self.phantom):
-    #                 vox = ' -vox 4,4,4'
-    #             else:
-    #                 vox = ' -vox 2,2,2'
-    #         else:
-    #             vox = ' -vox 2.08626,2.08626,2.03125'
-    #             if ("1" in PETImage_shape_str.split(',')): # 2D
-    #                 psf = ' -conv gaussian,4,1,3.5::psf'
-    #             else: # 3D
-    #                 if (self.scanner == "mMR_3D"):
-    #                     psf = ' -conv gaussian,4.5,4.5,3.5::psf' # isotropic psf in simulated phantoms
-    #                 else:
-    #                     psf = ' -conv gaussian,4,4,3.5::psf' # isotropic psf in simulated phantoms
-
-    #     # No PSF if it was not asked by user
-    #     if (not self.PSF):
-    #         psf = ''
-
-
-    #     if (post_smoothing != 0):
-    #         if ("1" in PETImage_shape_str.split(',')): # 2D
-    #             conv = ' -conv gaussian,' + str(post_smoothing) + ',1,3.5::post'
-    #         else: # 3D
-    #             conv = ' -conv gaussian,' + str(post_smoothing) + ',' + str(post_smoothing) + ',3.5::post' # isotropic post smoothing
-    #     else:
-    #         conv = ''
-    #     # Computing likelihood
-    #     if (self.castor_foms):
-    #         opti_like = ' -opti-fom'
-    #     else:
-    #         opti_like = ''
-
-    #     return executable + dim + vox + header_file + vb + th + proj + opti_like + psf + conv + sensitivity
-    
-
     def castor_common_command_line(self, subroot, PETImage_shape_str, phantom, replicates, post_smoothing=0,mlem_quick=False):
         executable = 'castor-recon'
         dim = ' -dim ' + PETImage_shape_str
@@ -1617,3 +1600,12 @@ class vGeneral(abc.ABC):
             if (hasattr(self,"likelihoods_alpha")):
                 self.likelihoods_alpha.append(likelihood)
             self.likelihoods.append(likelihood)
+
+    def save_DIP_output(self, ckpt_path, net_output_path):
+        # Load ckpt file with pytorch ligthning and return the output of DIP network
+        model = self.model_class.load_from_checkpoint(ckpt_path)
+        # Get the output
+        output = model(self.image_net_input_torch)
+        image_net_output = squeeze(output.detach().numpy())
+        # Save the output
+        self.save_img(image_net_output, net_output_path)

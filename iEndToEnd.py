@@ -118,13 +118,13 @@ class iEndToEnd(vDenoising):
         elif (self.all_images_DIP == "False"):
             #epoch_values = np.arange(0,self.total_nb_iter,max(self.total_nb_iter//10,1))
             epoch_values = np.arange(last_iter+self.total_nb_iter//10,self.total_nb_iter+self.total_nb_iter//10,max((self.total_nb_iter-last_iter+1)//10,1)) - 1
-        elif (self.all_images_DIP == "Last"):
+        elif (self.all_images_DIP == "Unique"):
             epoch_values = np.array([self.total_nb_iter-1])
 
 
         # Write descaled images in files
         for epoch in epoch_values:
-            if (self.all_images_DIP == "Last"):
+            if (self.all_images_DIP == "Unique"):
                 net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + "/ES_out_" + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
             else:
                 net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
@@ -182,7 +182,7 @@ class iEndToEnd(vDenoising):
                 # Write images over epochs
             classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
 
-            if (config["DIP_early_stopping"]):
+            if (self.DIP_early_stopping):
                 if (model.classWMV.SUCCESS):
                     break
 

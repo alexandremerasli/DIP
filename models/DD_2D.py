@@ -8,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 import os
 
 # Local files to import
-from iWMV import iWMV
+from iMovingVariance import iMovingVariance
 class DD_2D(pl.LightningModule):
 
     def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, last_iter):
@@ -46,7 +46,7 @@ class DD_2D(pl.LightningModule):
 
 
         self.DIP_early_stopping = config["DIP_early_stopping"]
-        self.classWMV = iWMV(config)
+        self.classWMV = iMovingVariance(config)
         if(self.DIP_early_stopping):
             
             self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
@@ -136,6 +136,8 @@ class DD_2D(pl.LightningModule):
 
             if self.SUCCESS:
                 print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
+        else:
+            self.SUCCESS = False
 
         loss = self.DIP_loss(out, image_corrupt_torch)
 
@@ -162,7 +164,7 @@ class DD_2D(pl.LightningModule):
                 self.write_current_img_task(out)
         elif (self.all_images_DIP == "True"):
             self.write_current_img_task(out)
-        elif (self.all_images_DIP == "Last"):
+        elif (self.all_images_DIP == "Unique"):
             if (self.current_epoch == self.sub_iter_DIP - 1):
                 self.write_current_img_task(out)
 

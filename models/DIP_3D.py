@@ -7,11 +7,11 @@ from numpy import inf, copy
 import os
 
 # Local files to import
-from iWMV import iWMV
+from iMovingVariance import iMovingVariance
 
 class DIP_3D(pl.LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, simulation, sub_iter_DIP_already_done, override_SC_init):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, simulation, sub_iter_DIP_already_done, override_SC_init, DIP_early_stopping):
         super().__init__()
 
         #'''
@@ -56,7 +56,7 @@ class DIP_3D(pl.LightningModule):
         self.SUCCESS = False
         self.stagnate = 0
         '''
-        self.DIP_early_stopping = config["DIP_early_stopping"]
+        self.DIP_early_stopping = DIP_early_stopping
         self.override_input = override_input
         self.scanner = scanner
         self.simulation = simulation
@@ -291,7 +291,7 @@ class DIP_3D(pl.LightningModule):
                 self.write_current_img_task(out)
         elif (self.all_images_DIP == "True"):
             self.write_current_img_task(out)
-        elif (self.all_images_DIP == "Last"):
+        elif (self.all_images_DIP == "Unique"):
             if (self.current_epoch == self.sub_iter_DIP + self.sub_iter_DIP_already_done_before_training - 1):
                 self.write_current_img_task(out)
 
@@ -326,7 +326,7 @@ class DIP_3D(pl.LightningModule):
         print('Succesfully save in:', name)
 
     def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner, simulation):
-        self.classWMV = iWMV(config)            
+        self.classWMV = iMovingVariance(config)            
         self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
         self.classWMV.hyperparameters_list = hyperparameters_list
         self.classWMV.debug = debug

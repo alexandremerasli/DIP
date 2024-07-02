@@ -9,6 +9,7 @@ import re
 from ray import tune
 import os
 import sys
+import importlib
 
 # Local files to import
 from vGeneral import vGeneral
@@ -24,10 +25,9 @@ class iFinalCurves(vGeneral):
 
     def runComputation(self,config_all_methods,root):
         # Add configuration folders to path to import them
-        subfolder_config = "PhD" # PhD settings
-        subfolder_config = "LM" # List-Mode (LM) settings
-        sys.path.append(os.path.join('all_config',subfolder_config))  # Add the parent directory of config files to the Python path
-                
+        for subfolder_config in ["PhD","LM"]:
+            sys.path.append(os.path.join('all_config',subfolder_config))  # Add the parent directory of config files to the Python path
+
 
         method_list = config_all_methods["method"]
 
@@ -790,372 +790,24 @@ class iFinalCurves(vGeneral):
                     replicates_legend[fig_nb].append(r'DIPRecon$^{end~to~end}$')
                         
 
-    def choose_good_config_file(self,method,config,csv_before_MIC,DIPRecon):
-        # Gong reconstruction
-        if (csv_before_MIC and 'DIPRecon' in method):
-            #config[method] = np.load(root + 'config_DIP.npy',allow_pickle='TRUE').item()
-            from all_config.PhD.Gong_configuration import config_func_MIC
-            #config[method] = config_func()
-            if (csv_before_MIC):
-                if ('stand' in method):
-                    config[method]["scaling"] = {'grid_search': ["standardization"]}
-                elif ('norm' in method):
-                    config[method]["scaling"] = {'grid_search': ["positive_normalization"]}
-                else:
-                    if (DIPRecon):
-                        config[method]["scaling"] = {'grid_search': ["standardization"]}
-                    else:
-                        raise ValueError("stand norm DIPRecon")
-            else:
-                from all_config.PhD.Gong_configuration import config_func_MIC
-                config[method] = config_func_MIC()
-                # method_name = "DIPRecon"
-                method_name = "Gong"
-
-            #method_name = "DIPRecon"
+    def choose_good_config_file(self,method,config,csv_before_MIC,DIPRecon):        
+        lib = importlib.import_module(method)
+        if ('nested_' in method):
+            method_name = "nested"
+        elif ('DIPRecon_' in method):
             method_name = "Gong"
-            
-        # nested reconstruction
-        if ('nested' in method):
-            if(csv_before_MIC):
-                from all_config.PhD.nested_configuration import config_func_MIC
-                #config[method] = config_func()
-                if ('ADMMLim' in method):
-                    config[method]["max_iter"] = {'grid_search': [99]}
-                elif ('BSREM' in method):
-                    config[method]["max_iter"] = {'grid_search': [300]}
-
-                method_name = "nested"
-
-        # MLEM reconstruction
-        if (method == 'MLEM'):
-            from all_config.PhD.MLEM_configuration import config_func_MIC
-            #config[method] = config_func()
-
-        # OSEM reconstruction
-        if (method == 'OSEM'):
-            from all_config.PhD.OSEM_configuration import config_func_MIC
-            #config[method] = config_func()
-
-        # BSREM reconstruction
-        if (method == 'BSREM'):
-            from all_config.PhD.BSREM_configuration import config_func_MIC
-            #config[method] = config_func()
-            method_name = method
-            import importlib
-            globals().update(importlib.import_module('all_config.PhD.' + method + "_configuration").__dict__)
-            config[method] = config_MIC
-            config[method]["method"] = method_name
-
-            if ("50_2_10" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.5,0.3,0.2,0.1,0.05,0.03,0.01])
-            elif ("50" in self.phantom):
-                config[method]["rho"] = tune.grid_search([3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
-            elif ("40" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
-            elif ("4" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
-            else:
-                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
-
-            return config[method]
-
-        # BSREM reconstruction with Bowsher weights
-        if (method == 'BSREM_Bowsher'):
-            from all_config.PhD.BSREM_Bowsher_configuration import config_func_MIC
-            #config[method] = config_func()
+        elif ("OSEM" in method):
+            method_name = "MLEM"
+        elif ("BSREM" in method):
             method_name = "BSREM"
-            import importlib
-            globals().update(importlib.import_module('all_config.PhD.' + method + "_configuration").__dict__)
-            config[method] = config_MIC
-            config[method]["method"] = method_name
-            
-            if ("50" in self.phantom):
-                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
-                config[method]["rho"] = tune.grid_search([3,2,1,0.8,0.5,0.3,0.1,0.05,0.03])
-            elif ("40" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
-            elif ("4" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
-            else:
-                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
-
-            return config[method]
-
-        # APGMAP reconstruction with Bowsher weights
-        if ('APGMAP_Bowsher' in method):
-            from all_config.PhD.APGMAP_Bowsher import config_func_MIC
-            #config[method] = config_func()
-            method_name = "APGMAP"
-            import importlib
-            globals().update(importlib.import_module('all_config.PhD.' + method).__dict__)
-            config[method] = config_MIC
-            config[method]["method"] = method_name
-            
-            if ("50" in self.phantom):
-                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
-                config[method]["rho"] = tune.grid_search([1,0.8,0.5,0.3,0.1,0.05])
-                # config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
-                config[method]["A_AML"] = tune.grid_search([-10])
-            elif ("40" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
-                config[method]["A_AML"] = tune.grid_search([-1000])
-            elif ("4" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
-                config[method]["A_AML"] = tune.grid_search([-1000])
-            else:
-                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
-                config[method]["A_AML"] = tune.grid_search([-100])
-
-            return config[method]
-        
-        # APGMAP reconstruction
         elif ("APGMAP" in method):
-            APGMAP_vs_ADMMLim = True
-            from all_config.PhD.APGMAP import config_func_MIC
-            method_name = method
-            import importlib
-            globals().update(importlib.import_module('all_config.PhD.' + method).__dict__)
-            config[method] = config_MIC
-            # config[method]["method"] = method_name
-            config[method]["method"] = "APGMAP"
-
-            if ("50_2_10" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.03,0.01,0.005,0.003])
-                config[method]["A_AML"] = tune.grid_search([-10])
-            elif ("50" in self.phantom):
-                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01,0.005,0.003,0.001,0.0005,0.0003,0.0001])
-                config[method]["A_AML"] = tune.grid_search([-10])
-            elif ("40" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
-                config[method]["A_AML"] = tune.grid_search([-1000])
-            elif ("4" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.0001,0.0003,0.0005,0.0007,0.0009,0.001,0.003,0.005,0.007,0.009])
-                config[method]["rho"] = tune.grid_search([0.0001,0.0003,0.0005,0.0007,0.0009])
-                config[method]["rho"] = tune.grid_search([1e-6,3e-6,5e-6,1e-5,3e-5,5e-5,0.0001,0.0003,0.0005,0.0007,0.0009])
-
-                config[method]["A_AML"] = tune.grid_search([-1000])
-                config[method]["A_AML"] = tune.grid_search([-1000,-100,-10])
-            else:
-                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
-                config[method]["A_AML"] = tune.grid_search([-100])
-
-            return config[method]
-        
-        # ADMMLim reconstruction with Bowsher weights
-        if (method == 'ADMMLim_Bowsher'):
-            from all_config.PhD.ADMMLim_Bowsher import config_func_MIC
-            #config[method] = config_func()
+            method_name = "APGMAP"
+        elif ("ADMMLim" in method):
             method_name = "ADMMLim"
-            import importlib
-            globals().update(importlib.import_module('all_config.PhD.' + method).__dict__)
-            config[method] = config_MIC
-            config[method]["method"] = method_name
-            
-            if ("50" in self.phantom):
-                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
-                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3])
-                # config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
-                # config[method]["rho"] = tune.grid_search([0.01])
-            elif ("40" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
-            elif ("4" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
-            else:
-                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
-
-            return config[method]
-
-        # ADMMLim reconstruction
-        elif ('ADMMLim' in method):
-            from all_config.PhD.ADMMLim import config_func_MIC
-            method_name = method
-            import importlib
-            globals().update(importlib.import_module('all_config.PhD.' + method).__dict__)
-            config[method] = config_MIC
-            # config[method]["method"] = method_name
-            config[method]["method"] = "ADMMLim"
-
-            if ("50_2_10" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01,0.005,0.003])
-            elif ("50" in self.phantom):
-                # config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01,0.005,0.003,0.001,0.0005,0.0003,0.0001])
-                config[method]["rho"] = tune.grid_search([5,3,2,1,0.8,0.5,0.3,0.1,0.05,0.03,0.01])
-            elif ("40" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.1,0.05,0.03,0.01])
-            elif ("4" in self.phantom):
-                config[method]["rho"] = tune.grid_search([0.0001,0.0003,0.0005,0.0007,0.0009,0.001,0.003,0.005,0.007,0.009])
-                config[method]["rho"] = tune.grid_search([1e-6,3e-6,5e-6,1e-5,3e-5,5e-5,0.0001,0.0003,0.0005,0.0007,0.0009])
-                config[method]["rho"] = tune.grid_search([0])
-            else:
-                config[method]["rho"] = tune.grid_search([0.01,0.02,0.03,0.04,0.05])
-
-            return config[method]
-
-        # nested reconstruction
-        if ('nested_ADMMLim_u_v' in method):
-            from all_config.PhD.nested_ADMMLim_u_v_configuration import config_func_MIC
-            method_name = "nested"
-            
-        # nested reconstruction
-        if ('nested_ADMMLim_more_ADMMLim_it_10' in method):
-            from all_config.PhD.nested_ADMMLim_more_ADMMLim_it_10_configuration import config_func_MIC
-            method_name = "nested"
-
-        # nested reconstruction
-        if (method == 'nested_ADMMLim_more_ADMMLim_it_30'):
-            from all_config.PhD.nested_ADMMLim_more_ADMMLim_it_30_configuration import config_func_MIC
-            method_name = "nested"
-
-        # nested reconstruction
-        if (method == 'nested_ADMMLim_more_ADMMLim_it_80'):
-            from all_config.PhD.nested_ADMMLim_more_ADMMLim_it_80_configuration import config_func_MIC
-            method_name = "nested"
-
-        # nested reconstruction
-        if ('nested_APPGML_4subsets' in method):
-            APGMAP_vs_ADMMLim = True
-            from all_config.PhD.nested_APPGML_4subsets_configuration import config_func_MIC
-            method_name = "nested"
-
-        # nested reconstruction
-        if (method == 'nested_APPGML_14subsets'):
-            from all_config.PhD.nested_APPGML_14subsets_configuration import config_func_MIC
-            method_name = "nested"
+        else:
+            method_name = method            
         
-        # nested reconstruction
-        if (method == 'nested_APPGML_28subsets'):
-            from all_config.PhD.nested_APPGML_28subsets_configuration import config_func_MIC
-            method_name = "nested"
-
-        # nested reconstruction
-        if (method == 'nested_APPGML_1it' or method == 'nested_APPGML_1subset'):
-            from all_config.PhD.nested_APPGML_1it_configuration import config_func_MIC
-            method_name = "nested"
-
-        # nested reconstruction
-        if ('nested_APPGML_4it' in method):
-            APGMAP_vs_ADMMLim = True
-            from all_config.PhD.nested_APPGML_4it_configuration import config_func_MIC
-            method_name = "nested"
-
-        # nested reconstruction
-        if (method == 'nested_APPGML_14it'):
-            from all_config.PhD.nested_APPGML_14it_configuration import config_func_MIC
-            method_name = "nested"
-        
-        # nested reconstruction
-        if (method == 'nested_APPGML_28it'):
-            from all_config.PhD.nested_APPGML_28it_configuration import config_func_MIC
-            method_name = "nested"
-
-        # # nested reconstruction
-        # if (method == 'nested_CT_0_skip_3it'):
-        #     from all_config.PhD.nested_CT_0_skip_3it import config_func_MIC
-        #     method_name = "nested"
-
-        # # nested reconstruction
-        # if (method == 'nested_CT_1_skip_3it'):
-        #     from all_config.PhD.nested_CT_1_skip_3it import config_func_MIC
-        #     method_name = "nested"
-
-        # # nested reconstruction
-        # if (method == 'nested_CT_2_skip_3it'):
-        #     from all_config.PhD.nested_CT_2_skip_3it import config_func_MIC
-        #     method_name = "nested"
-
-        # # nested reconstruction
-        # if (method == 'nested_CT_3_skip_3it'):
-        #     from all_config.PhD.nested_CT_3_skip_3it import config_func_MIC
-        #     method_name = "nested"
-
-        # # nested reconstruction
-        # if (method == 'nested_CT_0_skip_10it'):
-        #     from all_config.PhD.nested_CT_0_skip_10it import config_func_MIC
-        #     method_name = "nested"
-
-        # # nested reconstruction
-        # if (method == 'nested_CT_1_skip_10it'):
-        #     from all_config.PhD.nested_CT_1_skip_10it import config_func_MIC
-        #     method_name = "nested"
-
-        # # nested reconstruction
-        # if (method == 'nested_CT_2_skip_10it'):
-        #     from all_config.PhD.nested_CT_2_skip_10it import config_func_MIC
-        #     method_name = "nested"
-
-        # # nested reconstruction
-        # if (method == 'nested_CT_3_skip_10it'):
-        #     from all_config.PhD.nested_CT_3_skip_10it import config_func_MIC
-        #     method_name = "nested"
-
-        # nested reconstruction
-        if ('nested_random' in method or 'nested_CT' in method or 'nested_DD' in method):
-            # from all_config.PhD.nested_random_3_skip_10it import config_func_MIC
-            # import_str = "from all_config.PhD." + method + " import config_func_MIC"
-            # exec(import_str,globals())
-            import importlib
-            globals().update(importlib.import_module('all_config.PhD.' + method).__dict__) 
-            method_name = "nested"
-
-        # # Gong reconstruction
-        # if (method == 'DIPRecon_CT_1_skip'):
-        #     from all_config.PhD.Gong_CT_1_skip import config_func_MIC
-        #     method_name = "Gong"
-
-        # # Gong reconstruction
-        # if (method == 'DIPRecon_CT_2_skip'):
-        #     from all_config.PhD.Gong_CT_2_skip import config_func_MIC
-        #     method_name = "Gong"
-
-        # # Gong reconstruction
-        # if (method == 'DIPRecon_CT_3_skip'):
-        #     from all_config.PhD.Gong_CT_3_skip import config_func_MIC
-        #     method_name = "Gong"
-
-        # DIPRecon reconstruction
-        if ('DIPRecon_' in method):
-            # from all_config.PhD.nested_random_3_skip_10it import config_func_MIC
-            # import_str = "from all_config.PhD." + method + " import config_func_MIC"
-            # exec(import_str,globals())
-            import importlib
-            globals().update(importlib.import_module('all_config.PhD.' + 'Gong' + method[8:]).__dict__) 
-            method_name = "Gong"
-
-        try:
-            config[method] = config_func_MIC()
-            if 'DIPRecon' in method:
-                globals().update(importlib.import_module('all_config.PhD.' + 'Gong' + method[8:]).__dict__)
-                method_name = "Gong"
-            elif 'nested' in method:
-                method_name = "nested"
-            elif ("OSEM" in method):
-                method_name = "MLEM"
-            else:
-                method_name = method
-        # try:
-        #     config[method] = config_func_MIC()
-        #     method_name = method
-        #     if ("OSEM" in method):
-        #         method_name = "MLEM"
-        # except:
-        #     import importlib
-        #     if 'Gong' in method:
-        except:
-            import importlib
-            if 'DIPRecon' in method:
-                globals().update(importlib.import_module('all_config.PhD.' + 'Gong' + method[8:]).__dict__)
-                method_name = "Gong"
-            elif 'nested' in method:
-                globals().update(importlib.import_module('all_config.PhD.' + method).__dict__)
-                method_name = "nested"
-            elif ("OSEM" in method):
-                globals().update(importlib.import_module(method).__dict__)
-                method_name = "MLEM"
-            else:
-                globals().update(importlib.import_module(method).__dict__)
-                method_name = method
-            config[method] = config_MIC
+        config[method] = lib.config_func_MIC()
         config[method]["method"] = method_name
 
         return config[method]
