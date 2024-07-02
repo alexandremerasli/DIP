@@ -384,7 +384,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
 
 
 
-        # if ("nested" in self.method or "Gong" in self.method or "ADMMLim" in self.method):
+        # if ("nested" in self.method or "DNA" in self.method or "Gong" in self.method or "DIPRecon" in self.method or "ADMMLim" in self.method):
         #     print("ok")
         # else:
         #     i_init = self.total_nb_iter

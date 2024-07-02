@@ -63,7 +63,7 @@ class iFinalCurves(vGeneral):
         # Convert Gong to DIPRecon
         DIPRecon = False
         for i in range(len(method_list)):
-            if "Gong" in method_list[i]:
+            if "Gong" in method or "DIPRecon" in method_list[i]:
                 method_list[i] = method_list[i].replace("Gong","DIPRecon")
                 if method_list[i] == "DIPRecon":
                     DIPRecon = True
@@ -201,7 +201,7 @@ class iFinalCurves(vGeneral):
                     config_other_dim[method] = config[method]["post_smoothing"]
                     rho_name = "post_smoothing"
                     other_dim_name = ""
-                elif ("nested" in method or "DIPRecon" in method):
+                elif ("nested" in method or "DNA" in method or "DIPRecon" in method):
                     # For varying rho_1 (manuscript)
                     rho_name = "rho"
                     # config_other_dim[method] = config_tmp[method]["rho"]["grid_search"]
@@ -270,7 +270,7 @@ class iFinalCurves(vGeneral):
                 
                 # Sort suffixes from file by rho and other dim values 
                 sorted_suffixes = list(suffixes[0])
-                if ("ADMMLim" not in method and method != "ADMMLim_Bowsher" and "nested" not in method and "APGMAP" not in method and "BSREM" not in method):
+                if ("ADMMLim" not in method and method != "ADMMLim_Bowsher" and "nested" not in method and "DNA" not in method and "APGMAP" not in method and "BSREM" not in method):
                     sorted_suffixes.sort(key=self.natural_keys)
                 else:
                     sorted_suffixes.sort(key=self.natural_keys_ADMMLim)
@@ -329,7 +329,7 @@ class iFinalCurves(vGeneral):
                     if (fig_nb == 0):
                         reg[fig_nb] = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
                     elif (fig_nb == 2):
-                        if ("nested" not in method and "DIPRecon" not in method):
+                        if ("nested" not in method and "DNA" not in method and "DIPRecon" not in method):
                             reg[fig_nb] = np.zeros((nb_rho[method]*nb_other_dim[method]))
                         else:
                             reg[fig_nb] = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
@@ -371,7 +371,7 @@ class iFinalCurves(vGeneral):
                     if (fig_nb == 2): # Plot tradeoff curves at convergence
                         for rho_idx in range(nb_rho[method]):
                             for other_dim_idx in range(nb_other_dim[method]):
-                                if ("nested" not in method and "DIPRecon" not in method):
+                                if ("nested" not in method and "DNA" not in method and "DIPRecon" not in method):
                                     reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx] = self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][:,-1],metrics_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][:,-1])
                                 else:
                                     for it in range(len(IR_final[case_mini[rho_idx]])):
@@ -469,7 +469,7 @@ class iFinalCurves(vGeneral):
                             #'''                        
                     #'''
                     if (fig_nb == 2):
-                        if ("nested" not in method and "DIPRecon" not in method):
+                        if ("nested" not in method and "DNA" not in method and "DIPRecon" not in method):
                             # if ("APGMAP" in method):
                             #     for other_dim_idx in range(nb_other_dim[method]):
                             # else:
@@ -644,7 +644,7 @@ class iFinalCurves(vGeneral):
         if (self.phantom == "image2_0"):
             replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
         elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom):
-            if ("nested" not in method and "DIPRecon" not in method):
+            if ("nested" not in method and "DNA" not in method and "DIPRecon" not in method):
                 if (fig_nb != 2):
                     replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                 else:
@@ -774,7 +774,7 @@ class iFinalCurves(vGeneral):
                     elif ("DIPRecon_positive_norm" in method):
                         replicates_legend[fig_nb].append(r'DIPRecon$^{positive~norm}$')
                     else:
-                        if ("nested" in method):
+                        if ("nested" in method or "DNA" in method):
                             # replicates_legend[fig_nb].append('DNA' + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                             replicates_legend[fig_nb].append(method + (": " + rho_name + " = " + str(config[method]["rho"][rho_idx]))*(rho_name!=""))
                             # replicates_legend[fig_nb].append('DNA-APPGML' + (": " + r'$\rho_1$' + " = " + str(config[method]["rho"][rho_idx]))*(rho_name!=""))
@@ -1302,7 +1302,7 @@ class iFinalCurves(vGeneral):
                             self.nb_replicates[method] -= 1
                             continue
                     # Low count case
-                    if ("DIPRecon" in method or "nested" in method):
+                    if ("DIPRecon" in method or "nested" in method or "DNA" in method):
                         # if (i_replicate+1 in [2,4,5,6,10,12,14,15,17,18,19,20]): # No ES points for low count study...
                         if (i_replicate+1 in [5,6,7,8,12,14,15,18,19]): # No ES points for low count study...
                             # 6,7,8,12,14,15,18,19 # DIPRecon standardisation

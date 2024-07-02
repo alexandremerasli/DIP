@@ -94,7 +94,7 @@ class vGeneral(abc.ABC):
             self.end_to_end = False
 
         # MIC study
-        if ("nested" in self.method or "Gong" in self.method or "DIPRecon" in self.method):
+        if ("nested" in self.method or "DNA" in self.method or "Gong" in self.method or "DIPRecon" in self.method or "DIPRecon" in self.method):
             if ("override_SC_init" in config):
                 self.override_SC_init = config['override_SC_init']
             else:
@@ -393,9 +393,9 @@ class vGeneral(abc.ABC):
         if (len(config["method"]['grid_search']) == 1):
             if (config["method"]['grid_search'][0] != "AML" and "APGMAP" not in config["method"]['grid_search'][0] and "APGMAP" not in config["recoInNested"]['grid_search'][0]):
                 config.pop("A_AML", None)
-            if ('BSREM' in config["method"]['grid_search'][0] or 'nested' in config["method"]['grid_search'][0] or 'Gong' in config["method"]['grid_search'][0] or 'DIPRecon' in config["method"]['grid_search'][0] or 'APGMAP' in config["method"]['grid_search'][0]):
+            if ('BSREM' in config["method"]['grid_search'][0] or 'nested' in config["method"]['grid_search'][0] or 'DNA' in config["method"]['grid_search'][0] or 'Gong' in config["method"]['grid_search'][0] or 'DIPRecon' in config["method"]['grid_search'][0] or 'APGMAP' in config["method"]['grid_search'][0]):
                 config.pop("post_smoothing", None)
-            if ((('ADMMLim' not in config["method"]['grid_search'][0] and 'nested' not in config["method"]['grid_search'][0]) and config["method"]['grid_search'][0] != 'ADMMLim_Bowsher' and "nested" not in config["method"]['grid_search'][0]) or "APGMAP" in config["recoInNested"]['grid_search'][0]):
+            if ((('ADMMLim' not in config["method"]['grid_search'][0] and 'nested' not in config["method"]['grid_search'][0]) and config["method"]['grid_search'][0] != 'ADMMLim_Bowsher' and "nested" not in config["method"] and "DNA" not in config["method"]['grid_search'][0]) or "APGMAP" in config["recoInNested"]['grid_search'][0]):
                 #config.pop("nb_inner_iteration", None)
                 config.pop("alpha", None)
                 config.pop("adaptive_parameters", None)
@@ -405,14 +405,14 @@ class vGeneral(abc.ABC):
                 config.pop("stoppingCriterionValue", None)
                 config.pop("saveSinogramsUAndV", None)
                 #config.pop("xi", None)
-            elif ((config["method"]['grid_search'][0] == 'ADMMLim' or config["method"]['grid_search'][0] == 'ADMMLim_Bowsher' or "nested" in config["method"]['grid_search'][0]) and config["adaptive_parameters"]['grid_search'][0] == "nothing"):
+            elif ((config["method"]['grid_search'][0] == 'ADMMLim' or config["method"]['grid_search'][0] == 'ADMMLim_Bowsher' or "nested" in config["method"] or "DNA" in config["method"]['grid_search'][0]) and config["adaptive_parameters"]['grid_search'][0] == "nothing"):
                 config.pop("mu_adaptive", None)
                 config.pop("tau", None)
                 config.pop("tau_max", None)
                 config.pop("xi", None)
-            if ('ADMMLim' not in config["method"]['grid_search'][0] and "nested" not in config["method"]['grid_search'][0] and "Gong" not in config["method"]['grid_search'][0]  and "DIPRecon" not in config["method"]['grid_search'][0]):
+            if ('ADMMLim' not in config["method"]['grid_search'][0] and "nested" not in config["method"] and "DNA" not in config["method"]['grid_search'][0] and "Gong" not in config["method"] and "DIPRecon" not in config["method"]['grid_search'][0]  and "DIPRecon" not in config["method"]['grid_search'][0]):
                 config.pop("nb_outer_iteration", None)
-            if ("nested" not in config["method"]['grid_search'][0] and "Gong" not in config["method"]['grid_search'][0]  and "DIPRecon" not in config["method"]['grid_search'][0] and task != "post_reco"):
+            if ("nested" not in config["method"] and "DNA" not in config["method"]['grid_search'][0] and "Gong" not in config["method"] and "DIPRecon" not in config["method"]['grid_search'][0]  and "DIPRecon" not in config["method"]['grid_search'][0] and task != "post_reco"):
                 config.pop("lr", None)
                 config.pop("sub_iter_DIP", None)
                 config.pop("opti_DIP", None)
@@ -432,7 +432,7 @@ class vGeneral(abc.ABC):
                 config.pop("k_DD", None)
             if (config["method"]['grid_search'][0] == 'MLEM' or config["method"] == 'OPTITR' or 'OSEM' in config["method"]['grid_search'][0] or config["method"]['grid_search'][0] == 'AML'):
                 config.pop("rho", None)
-            if ("nested" in config["method"]['grid_search'][0] or "Gong" in config["method"]['grid_search'][0] or "DIPRecon" in config["method"]['grid_search'][0]):
+            if ("nested" in config["method"] or "DNA" in config["method"]['grid_search'][0] or "Gong" in config["method"] or "DIPRecon" in config["method"]['grid_search'][0] or "DIPRecon" in config["method"]['grid_search'][0]):
                 if ("end_to_end" in config):
                     if (config["end_to_end"]):
                         config.pop("sub_iter_DIP", None)
@@ -441,7 +441,7 @@ class vGeneral(abc.ABC):
                 else:
                     config.pop("end_to_end", None)
             # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMLim in CASToR
-            if ('ADMMLim' in config["method"]['grid_search'][0] or "nested" in config["method"]['grid_search'][0]):
+            if ('ADMMLim' in config["method"]['grid_search'][0] or "nested" in config["method"] or "DNA" in config["method"]['grid_search'][0]):
                 config["mlem_sequence"]['grid_search'] = [False]
         else:
             if ('results' not in task):
@@ -555,7 +555,7 @@ class vGeneral(abc.ABC):
         config_copy = dict(config)
         if (NNEPPS==False):
             config_copy.pop('NNEPPS',None)
-        if (("ADMMLim" in config["method"] and "nested" not in config["method"]) or config["method"] == "ADMMLim_Bowsher"):
+        if (("ADMMLim" in config["method"] and "nested" not in config["method"] and "DNA" not in config["method"]) or config["method"] == "ADMMLim_Bowsher"):
             config_copy.pop('nb_outer_iteration',None)
         elif ("post_reco" in config_copy["task"]):
             if ("post_reco_in_suffix" not in config_copy):
@@ -869,7 +869,7 @@ class vGeneral(abc.ABC):
         classResults.simulation = self.simulation
         if (hasattr(self, 'image_net_input')):
             classResults.image_net_input = self.image_net_input
-        if ("nested" in self.method or "Gong" in self.method):
+        if ("nested" in self.method or "DNA" in self.method or "Gong" in self.method or "DIPRecon" in self.method):
             classResults.DIP_early_stopping = self.DIP_early_stopping
 
     def points_in_circle(self,center_x,center_y,center_z,radius,PETImage_shape,inner_circle=True): # x and y are inverted in an array compared to coordinates

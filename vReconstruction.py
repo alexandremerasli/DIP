@@ -82,7 +82,7 @@ class vReconstruction(vGeneral):
         self.tensorboard = config["tensorboard"]
 
         # Initialize and save mu variable from ADMM
-        if ("nested" in self.method or "Gong" in self.method):
+        if ("nested" in self.method or "DNA" in self.method or "Gong" in self.method or "DIPRecon" in self.method):
             self.mu = 0* np.ones((self.PETImage_shape))
             if config["FLTNB"] == "float":
                 self.mu = self.mu.astype(np.float32)
@@ -304,14 +304,14 @@ class vReconstruction(vGeneral):
         self.write_hdr(subroot,[i],subdir,phantom,'v_it' + str(it_name),subroot_output_path=subroot_output_path,matrix_type='sino')
 
     def ADMMLim_general(self, config, i, subdir, subroot_output_path,writer=None,image_gt=None, i_init=0):
-        if ("nested" in self.method):
+        if ("nested" in self.method or "DNA" in self.method):
             self.post_smoothing = 0
         castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing)
 
         base_name_i = format(i)
         full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
 
-        if ("nested" in self.method):
+        if ("nested" in self.method or "DNA" in self.method):
             folder_sub_path = os.path.join(self.subroot,"Block1",self.suffix)
         else:
             folder_sub_path = os.path.join(self.subroot,self.suffix)
@@ -354,7 +354,7 @@ class vReconstruction(vGeneral):
                 # initialimage = self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img'
 
         # Initialization image if nested according to global iteration
-        if ("nested" in self.method):
+        if ("nested" in self.method or "DNA" in self.method):
             it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
             if (not config["use_u_and_v_nested"] or (i == i_init+1)):
                 u_for_additional_data = ''

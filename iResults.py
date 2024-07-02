@@ -32,11 +32,11 @@ class iResults(vDenoising):
         if (config["net"] == "DD" or config["net"] == "DD_AE"):
             self.d_DD = config["d_DD"]
             self.k_DD = config["k_DD"]
-        # if ("nested" in config["method"] or "Gong" in config["method"]):
+        # if ("nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]):
         #     self.DIP_early_stopping = self.DIP_early_stopping
         #vDenoising.initializeSpecific(self,config,root)
         # Initialize early stopping method if asked for
-        if ("nested" in config["method"] or "Gong" in config["method"]):
+        if ("nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]):
             if ("3_" not in self.phantom):
                 try:
                     self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/' + config["image_init_path_without_extension"] + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<f')
@@ -66,7 +66,7 @@ class iResults(vDenoising):
         self.defineTotalNbIter_beta_rho(config["method"], config, config["task"],stopping_criterion=MIC_study) # Compute metrics for every iterations, stopping_criterion will be used in final curves
 
         # Define variables for MV early stopping algorithms
-        if ("nested" in config["method"] or "Gong" in config["method"]):
+        if ("nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]):
             if config["EMV_or_WMV"] == "EMV":
                 self.alpha_EMV = config["alpha_EMV"]
             else:
@@ -81,7 +81,7 @@ class iResults(vDenoising):
         if config["FLTNB"] == "double":
             self.image_gt = self.image_gt.astype(np.float64)
 
-        if ("nested" in config["method"] or "Gong" in config["method"]):
+        if ("nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]):
             if (config["input"] == "CT"):
                 # # Loading attenuation map
                 # image_atn = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type_im='<f')
@@ -220,7 +220,7 @@ class iResults(vDenoising):
         if ("read_only_MV_csv" in config):
             if (config["read_only_MV_csv"]):
                 read_only_MV_csv = True
-                if ("nested" in config["method"] or "Gong" in config["method"]):
+                if ("nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]):
                     if(self.DIP_early_stopping):# WMV
                         self.WMV_plot(config)
                     self.MV_several_alphas_plot(config)
@@ -284,7 +284,7 @@ class iResults(vDenoising):
 
             print("loop over")
 
-            if ("nested" in config["method"] or "Gong" in config["method"]):
+            if ("nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]):
                 if (self.DIP_early_stopping):# WMV
                     if ("post_reco" in config["task"] or "end_to_end" in config["task"]):
                         # Save computed variance from WMV/EMV in csv
@@ -615,7 +615,7 @@ class iResults(vDenoising):
                     self.f = f_p
             
                 # WMV
-                if ("nested" in config["method"] or "Gong" in config["method"]):
+                if ("nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]):
                     # self.run_WMV(f_p,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,self.simulation,i)
                     if(self.DIP_early_stopping):# WMV
                         if ("post_reco" in config["task"] or "end_to_end" in config["task"]):
@@ -728,7 +728,7 @@ class iResults(vDenoising):
 
         # Mean in whole denoised image
         # mean_inside_recon[i] = np.mean(image_recon) / np.mean(image_gt)
-        if ("nested" in self.method or "Gong" in self.method):
+        if ("nested" in self.method or "DNA" in self.method or "Gong" in self.method or "DIPRecon" in self.method):
             mean_inside_recon[i] = np.mean(image_recon * self.phantom_ROI) / np.mean(self.image_corrupt * self.phantom_ROI)
         
         # Likelihood from fake CASToR reconstruction just to compute likelihood of initialization image        
