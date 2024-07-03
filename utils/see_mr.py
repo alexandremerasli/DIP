@@ -25,16 +25,17 @@ def save_img(img,name):
     img.tofile(fp)
     print('Succesfully save in:', name)
 
-root = 'data/Algo/image010_3D/mr_axial_resampled.raw'
-root = 'data/Algo/image010_3D/mr_interpolated.img'
-# root = 'data/Algo/image010_3D/pet.raw'
+subroot = "data/Algo/"
+subsubroot = 'image010_3D/mr_axial_resampled.raw'
+subsubroot = 'image010_3D/mr_interpolated.img'
+# subsubroot = 'image010_3D/pet.raw'
 PETImage_shape = (230,150,127)
 PETImage_shape = (230,127,150)
 
-img1_np = fijii_np(root, shape=(PETImage_shape))
+img1_np = fijii_np(subroot + subsubroot, shape=(PETImage_shape))
 
 plt.imshow(img1_np[:,:,100],cmap="gray")
 plt.show()
 print("ok")
 
-# save_img(np.transpose(img1_np,axes=(1,2,0)),'data/Algo/image010_3D/mr_interpolated_resampled.raw')
+# save_img(np.transpose(img1_np,axes=(1,2,0)),subroot + 'image010_3D/mr_interpolated_resampled.raw')

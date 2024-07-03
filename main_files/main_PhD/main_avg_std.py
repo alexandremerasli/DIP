@@ -12,6 +12,7 @@ from ray import tune
 import importlib
 
 def uncompatible_parameters(config):
+    method = config["method"]["grid_search"][0]
     if (method == "DNA" and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
         raise ValueError("DNA must be launched with rho > 0")
     elif ((method != "DIPRecon" and method != "DNA") and task == "post_reco"):
@@ -63,6 +64,7 @@ def class_for_task(config,task):
 
 def choose_task(config):
     # Task to run reconstruction according to the method
+    method = config["method"]["grid_search"][0]
     if (method == "DIPRecon" or method == "DNA"):
         task = 'full_reco_with_network'
 
@@ -93,16 +95,16 @@ def choose_task(config):
 # config_files = ["DNA_APPGML_1it_configuration']
 # config_files = ["DNA_ADMMLim_more_ADMMLim_it_30_configuration']
 # config_files = ['OSEM_configuration']
-config_files = 8*["DNA_MIC_dropout']
-config_files = ["DNA_MIC_dropout']
-config_files = ["DNA_MIC_cookie_2D']
-config_files = ["DNA_MIC_brain_2D']
+config_files = 8*["DNA_MIC_dropout"]
+config_files = ["DNA_MIC_dropout"]
+config_files = ["DNA_MIC_cookie_2D"]
+config_files = ["DNA_MIC_brain_2D"]
 config_files = ["DNA_MIC_brain_2D_diff5_SC1"]
-config_files = ["DNA_MIC_APPGML_brain_2D']
-config_files = ["DNA_MIC_brain_2D_intermediate0',"DNA_MIC_brain_2D_intermediate1',"DNA_MIC_brain_2D_intermediate2']
-config_files = ["DNA_MIC_APPGML_brain_2D']
+config_files = ["DNA_MIC_APPGML_brain_2D"]
+config_files = ["DNA_MIC_brain_2D_intermediate0","DNA_MIC_brain_2D_intermediate1","DNA_MIC_brain_2D_intermediate2"]
+config_files = ["DNA_MIC_APPGML_brain_2D"]
 config_files = ["DNA_MIC_brain_2D_random"]
-config_files = ["DNA_MIC_brain_2D_diff1']
+config_files = ["DNA_MIC_brain_2D_diff1"]
 config_files = ["DNA_MIC_brain_2D_diff5"]
 
 # TMI paper
@@ -112,8 +114,8 @@ nb_computation = 4
 # config_files = ['DIPRecon_initDNA_MIC_brain_2D_MR3']
 # config_files = ['DIPRecon_MIC_brain_2D_MR3']
 # config_files = ['DIPRecon_skip3_3_my_settings',"DNA_ADMMLim_more_ADMMLim_it_10_configuration']
-# config_files = nb_computation*['DIPRecon_image4_1_MR3',"DNA_image4_1_MR3']
-config_files = ["DNA_image4_1_MR3','DIPRecon_image4_1_MR3',"DNA_image4_1_MR3']
+# config_files = nb_computation*['DIPRecon_image4_1_MR3',"DNA_image4_1_MR3"]
+config_files = ["DNA_image4_1_MR3","DIPRecon_image4_1_MR3","DNA_image4_1_MR3"]
 
 # config_files = ["DNA_APPGML_MIC_brain_2D_MR3']
 config_files = ["DNA_MIC_brain_2D_MR3"]
@@ -180,11 +182,10 @@ for lib_string in config_files:
         # config["post_reco_in_suffix"] = tune.grid_search([False]) # If want to show EMV results which were not on post reconstruction, in DNA init
         # config["read_only_MV_csv"] = tune.grid_search([True])
         config["ray"] = False
-        print(self.method)
-        print(config["replicates"])
 
         root = os.getcwd()
-
+        subroot = "/data/Algo/"
+        
         # Write random seed in a file to get it in network architectures
         os.system("rm -rf " + os.getcwd() +"/seed.txt")
         file_seed = open(os.getcwd() + "/seed.txt","w+")
@@ -205,8 +206,8 @@ for lib_string in config_files:
             uncompatible_parameters(config)
 
             #'''
-            os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + method + '.txt')
-            os.system("rm -rf " + root + '/data/Algo/' + 'replicates_for_last_run_' + method + '.txt')
+            os.system("rm -rf " + root + subroot + 'suffixes_for_last_run_' + method + '.txt')
+            os.system("rm -rf " + root + subroot + 'replicates_for_last_run_' + method + '.txt')
 
             # Launch task
             classTask.runRayTune(config_tmp,root,task)

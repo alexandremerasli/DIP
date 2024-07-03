@@ -59,7 +59,8 @@ class Full_DIP_backbone(pl.LightningModule):
 
         self.iter_DIP = config["sub_iter_DIP"]  # Number of iterations
         self.param = param_scale  # Scaling parameter for normalisation
-        self.path="data/Algo/image40_1/replicate_1/DNA"  # Path to save images
+        self.subroot = "data/Algo/"
+        self.path=self.subroot + "/image40_1/replicate_1/DNA"  # Path to save images
         self.suffix = suffix  # Suffix for experiment name
         self.repeat = 1  # Repetition count number of times to repeat (random seed)
         
@@ -143,7 +144,7 @@ class Full_DIP_backbone(pl.LightningModule):
         
         # Initialize early stopping method if asked for
         if(self.DIP_early_stopping):
-            self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner,simulation)
+            self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner,simulation)
 
         self.write_current_img_mode = True
         #self.suffix = self.suffix_func(config,hyperparameters_list)
@@ -283,7 +284,7 @@ class Full_DIP_backbone(pl.LightningModule):
 
         # WMV
         if (self.num_total_batch == self.several_DIP_inputs - 1):
-            self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.scanner)
+            self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.subroot,self.scanner)
         
         # Increment number of iterations since beginnning of DNA
         if (self.end_epoch): # We looped over all images of the batch
@@ -373,7 +374,7 @@ class Full_DIP_backbone(pl.LightningModule):
         # Initialize variables
         self.classWMV.do_everything(config,root)
 
-    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner,simulation):
+    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner,simulation):
         if (self.DIP_early_stopping):
             self.SUCCESS = self.classWMV.SUCCESS
             self.log("SUCCESS", int(self.classWMV.SUCCESS))
@@ -402,7 +403,7 @@ class Full_DIP_backbone(pl.LightningModule):
 
             if self.SUCCESS:
                 print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
-                self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner,simulation)
+                self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner,simulation)
         
         else:
             self.log("SUCCESS", int(False))
@@ -872,7 +873,8 @@ class Swin_Unet(pl.LightningModule):
         self.lr = config['lr']
         self.iter_DIP = config['iters']
         self.param = param_scale 
-        self.path="data/Algo/image40_1/replicate_1/DNA"   
+        self.subroot = "data/Algo/"
+        self.path = self.subroot + "/image40_1/replicate_1/DNA"   
         self.suffix  = suffix
         self.repeat = config['repeat']
         
@@ -935,7 +937,8 @@ class Swin_IR(pl.LightningModule):
         self.lr = config['lr']
         self.iter_DIP = config['iters']
         self.param = param_scale 
-        self.path="data/Algo/image40_1/replicate_1/DNA"   
+        self.subroot = "data/Algo/"
+        self.path=self.subroot + "/image40_1/replicate_1/DNA"   
         self.suffix  = suffix
         self.repeat = config['repeat']
         
@@ -997,7 +1000,8 @@ class restormer(pl.LightningModule):
         self.lr = config['lr']
         self.iter_DIP = config['iters']
         self.param = param_scale 
-        self.path="data/Algo/image40_1/replicate_1/DNA"     
+        self.subroot = "data/Algo/"
+        self.path=self.subroot + "/image40_1/replicate_1/DNA"     
         self.suffix  = suffix
         self.repeat = config['repeat']
         
@@ -1066,7 +1070,8 @@ class spectformer(pl.LightningModule):
         self.lr = config['lr']
         self.iter_DIP = config['iters']
         self.param = param_scale 
-        self.path="data/Algo/image40_1/replicate_1/DNA"   
+        self.subroot = "data/Algo/"
+        self.path=self.subroot + "/image40_1/replicate_1/DNA"   
         self.suffix  = suffix
         self.repeat = config['repeat']
         

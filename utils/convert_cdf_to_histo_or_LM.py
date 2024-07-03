@@ -291,9 +291,10 @@ def write_header_file(filename_to_read, filename_to_write, nb_events, data_mode)
 
 ############ Variables to be customized by the user
 # Path to the histo or LM cdf file
-cdf_path = "/home/MEDECINE/mera1140/sherbrooke_workspace/TestCastor/umd_h12_wRot_act_BTB_1_100_df.Cdf"
-cdf_path = "data/Algo/Data/database_v2/image40_1/data40_1_1/data40_1_1.cdf"
-cdf_path = "data/Algo/Data/database_v2/image40_1/dataLM40_1_1/data40_1_1.cdf"
+subroot = "data/Algo/"
+cdf_path = "../TestCastor/umd_h12_wRot_act_BTB_1_100_df.Cdf"
+cdf_path = subroot + "/Data/database_v2/image40_1/data40_1_1/data40_1_1.cdf"
+cdf_path = subroot + "/Data/database_v2/image40_1/dataLM40_1_1/data40_1_1.cdf"
 
 # Define the number of events (from the header file) and the type of conversion (LM to histo or histo to LM)
 if ("LM" in cdf_path):
@@ -320,7 +321,7 @@ if (remove_histo or remove_LM):
     histo_type_to_remove = ["norm","atn"]
     for i in range(0, len(histo_type_to_remove)):
         histo_type_to_remove_str += histo_type_to_remove[i]
-    cdf_removed_histo_path = "data/Algo/Data/database_v2/image40_1/data_removed_" + histo_type_to_remove_str + "40_1_1/data40_1_1.cdf"
+    cdf_removed_histo_path = subroot + "/Data/database_v2/image40_1/data_removed_" + histo_type_to_remove_str + "40_1_1/data40_1_1.cdf"
 
     # Remove the data from the histo or LM cdf file
     if (remove_histo):
@@ -338,15 +339,15 @@ if (not LM_to_histo):
     read_histo_cdf(cdf_path, data, data_time, data_float, data_ID)
 
     # Compute the number of prompt for each bin of sinogram and store them in data_event_value while writing the data in the LM file
-    nb_LM_events = write_binary_file_from_histo_to_LM(data, data_time, data_float, data_ID, data_event_value,"data/Algo/Data/database_v2/image40_1/dataLM40_1_1/data40_1_1.cdf", nb_events)
-    folder_path = "data/Algo/Data/database_v2/image40_1/dataLM40_1_1/"
+    nb_LM_events = write_binary_file_from_histo_to_LM(data, data_time, data_float, data_ID, data_event_value,subroot + "/Data/database_v2/image40_1/dataLM40_1_1/data40_1_1.cdf", nb_events)
+    folder_path = subroot + "/Data/database_v2/image40_1/dataLM40_1_1/"
     write_binary_file_from_histo_to_norm_for_LM(data, data_float, data_ID, folder_path + "/data_norm40_1_1.cdf", nb_events)
     
     # Write the CASToR header file related to built LM datafile
     write_header_file(cdf_path[:-1] + "h", folder_path + "data40_1_1.cdh", nb_LM_events, 'list-mode')
 
     # Read LM built file
-    cdf_LM_path = "data/Algo/Data/database_v2/image40_1/dataLM40_1_1/data40_1_1.cdf"
+    cdf_LM_path = subroot + "/Data/database_v2/image40_1/dataLM40_1_1/data40_1_1.cdf"
     data_LM, data_time_LM, data_atn_LM, data_random_LM, data_norm_LM, data_event_value_LM, data_scatter_LM, data_float_LM, data_ID1_LM, data_ID2_LM, data_ID_LM = define_data(not LM_to_histo)
     read_LM_cdf(cdf_LM_path, data_LM, data_time_LM, data_float_LM, data_ID_LM)
 
@@ -379,7 +380,7 @@ if (LM_to_histo):
     # Write the data in the histo file
     nb_histo_events = len(data_event_value)
     from pathlib import Path
-    folder_path = "data/Algo/Data/database_v2/image40_1/datahisto40_1_1/"
+    folder_path = subroot + "/Data/database_v2/image40_1/datahisto40_1_1/"
     Path(folder_path).mkdir(parents=True, exist_ok=True) # path to store the histo datafile
     write_binary_file_from_LM_to_histo(data, data_time, data_float, data_ID, folder_path + "data40_1_1.cdf", nb_histo_events)
     nb_events_without_0_LOR = len(data_event_value.nonzero()[0])

@@ -56,7 +56,7 @@ fixed_config = {
 }
 # Configuration dictionnary for hyperparameters to tune
 hyperparameters_config = {
-    "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
+    "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
     "rho" : tune.grid_search([0.003,8e-4,0.008,0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)
     "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)
     "adaptive_parameters_DIP" : tune.grid_search(["nothing"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
@@ -104,6 +104,7 @@ split_config = {
 config = {**settings_config, **fixed_config, **hyperparameters_config, **split_config}
 
 root = os.getcwd()
+subroot = "/data/Algo/"
 
 # write random seed in a file to get it in network architectures
 os.system("rm -rf " + os.getcwd() +"/seed.txt")
@@ -250,8 +251,8 @@ for method in config["method"]['grid_search']:
         raise ValueError("post reco mode need to save all images if ES")
 
     #'''
-    os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + method + '.txt')
-    os.system("rm -rf " + root + '/data/Algo/' + 'replicates_for_last_run_' + method + '.txt')
+    os.system("rm -rf " + root + subroot + 'suffixes_for_last_run_' + method + '.txt')
+    os.system("rm -rf " + root + subroot + 'replicates_for_last_run_' + method + '.txt')
 
     # Launch task
     if(task != "show_metrics_results_already_computed"):

@@ -24,7 +24,6 @@ class iMovingVariance(vGeneral):
         self.MSE_WMV = []
         self.PSNR_WMV = []
         self.SSIM_WMV = []
-        self.SUCCESS = False
         self.DIP_it_if_no_ES_found = config["DIP_it_if_no_ES_found"]
         
 
@@ -40,7 +39,7 @@ class iMovingVariance(vGeneral):
         #self.queueQ = array((self.windowSize,self.PETImage_shape))
 
         #Loading Ground Truth image to compute metrics
-        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
+        self.image_gt = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
         if config["FLTNB"] == "double":
             self.image_gt = self.image_gt.astype(float64)
 
@@ -179,11 +178,11 @@ class iMovingVariance(vGeneral):
                 plt.legend()
                 plt.ylabel("EMV (log scale)")
                 plt.xlabel("DIP Iterations")
-                plt.savefig(self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/EMV_global_' + str(self.global_it) + '.png')
+                plt.savefig(self.subroot_phantom + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/EMV_global_' + str(self.global_it) + '.png')
             # Open output corresponding to epoch star
-            net_output_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
+            net_output_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
             # Open ckpt corresponding to epoch star
-            ckpt_path = self.subroot+'Block2/' + self.suffix + '/checkpoint/' + format(self.experiment) + '/' + str(self.global_it) + '/epoch=' + format(self.epochStar) + '-step=' + format(self.epochStar) + '.ckpt'
+            ckpt_path = self.subroot_phantom+'Block2/' + self.suffix + '/checkpoint/' + format(self.experiment) + '/' + str(self.global_it) + '/epoch=' + format(self.epochStar) + '-step=' + format(self.epochStar) + '.ckpt'
             
             self.save_DIP_output(ckpt_path, net_output_path)
             
@@ -194,7 +193,7 @@ class iMovingVariance(vGeneral):
             #out = self.descale_imag(from_numpy(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
 
             # Saving ES point image
-            net_output_path = self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/ES_out_' + self.net +  str(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
+            net_output_path = self.subroot_phantom + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/ES_out_' + self.net +  str(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
             self.save_img(out, net_output_path)
             print("#### WMV ########################################################")
             print("                 ES point found, epoch* =", self.epochStar)
@@ -209,10 +208,51 @@ class iMovingVariance(vGeneral):
                 print(self.epochStar)
             
                 # Open output corresponding to epoch star
-                net_output_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
+                net_output_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
                 # Open ckpt corresponding to epoch star
-                ckpt_path = self.subroot+'Block2/' + self.suffix + '/checkpoint/' + format(self.experiment) + '/' + str(self.global_it) + '/epoch=' + format(self.epochStar) + '-step=' + format(self.epochStar) + '.ckpt'
+                ckpt_path = self.subroot_phantom+'Block2/' + self.suffix + '/checkpoint/' + format(self.experiment) + '/' + str(self.global_it) + '/epoch=' + format(self.epochStar) + '-step=' + format(self.epochStar) + '.ckpt'
                 
                 self.save_DIP_output(ckpt_path, net_output_path)
             
         return SUCCESS, VAR_min, stagnate
+    
+    def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, subroot, scanner, simulation, image_net_input=None):          
+        self.subroot = subroot
+        self.fixed_hyperparameters_list = fixed_hyperparameters_list
+        self.hyperparameters_list = hyperparameters_list
+        self.debug = debug
+        self.param1_scale_im_corrupt = param1_scale_im_corrupt
+        self.param2_scale_im_corrupt = param2_scale_im_corrupt
+        self.scaling_input = scaling_input
+        self.suffix = suffix
+        self.global_it = global_it
+        self.scanner = scanner
+        self.simulation = simulation
+        self.image_net_input = image_net_input
+        # Initialize variables
+        self.do_everything(config,root)
+
+    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner,simulation,i, MV_metrics_already_stored_in_csv=False):
+        if (self.DIP_early_stopping):
+
+            if (config["read_only_MV_csv"]):
+                MV_value_csv = self.VAR_recon[i]
+            else:
+                MV_value_csv = NaN
+            self.SUCCESS,self.VAR_min,self.stagnate = self.WMV(out,i,config["sub_iter_DIP"],self.queueQ,self.SUCCESS,self.VAR_min,self.stagnate,descale=False,MV_value_csv=MV_value_csv, MV_metrics_already_stored_in_csv=MV_metrics_already_stored_in_csv)
+            if (not config["read_only_MV_csv"]):
+                self.VAR_recon = self.VAR_recon
+                self.MSE_WMV = self.MSE_WMV
+                self.PSNR_WMV = self.PSNR_WMV
+                self.SSIM_WMV = self.SSIM_WMV
+            self.epochStar = self.epochStar
+            if config["EMV_or_WMV"] == "EMV":
+                self.alpha_EMV = self.alpha_EMV
+            else:
+                self.windowSize = self.windowSize
+            self.patienceNumber = self.patienceNumber
+
+            if self.SUCCESS: # Will be true 1 epoch after self.SUCCESS becomes True
+                print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
+                return 1
+            return 0

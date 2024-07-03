@@ -28,15 +28,18 @@ phantom = "image50_1"
 phantom = "image40_1"
 phantom = "image10_1000"
 phantom = "image50_20"
+
+subroot = "data/Algo/"
+
 PETImage_shape = (112,112)
 sinogram_shape = (344,252)
-sinogram_norm_path = "data/Algo/Data/database_v2/" + phantom + "/simu0_1/simu0_1_nm.s"
+sinogram_norm_path = subroot + "/Data/database_v2/" + phantom + "/simu0_1/simu0_1_nm.s"
 sinogram_norm_np = fijii_np(sinogram_norm_path,sinogram_shape)
 
 if ("5" in phantom):
-    root_syst_mat = "data/Algo/mat_syst_folder_2mm"
+    root_syst_mat = subroot + "/mat_syst_folder_2mm"
 elif ("40_1" in phantom):
-    root_syst_mat = "data/Algo/mat_syst_folder_4mm"
+    root_syst_mat = subroot + "/mat_syst_folder_4mm"
 syst_mat_disorder_np = np.zeros((sinogram_shape[0]*sinogram_shape[1],PETImage_shape[0]*PETImage_shape[1]),dtype=np.float32)
 
 # Loop over all files in the directory
@@ -61,7 +64,7 @@ for filename in reversed(img_list):
             syst_mat_disorder_np[true_sinogram_bin,:] = np.ravel(fijii_np(os.path.join(root_syst_mat, filename),PETImage_shape))
 
 if ("5" in phantom):
-    save_img(syst_mat_disorder_np, "data/Algo/final_syst_mat_vox_2mm.img")
+    save_img(syst_mat_disorder_np, subroot + "/final_syst_mat_vox_2mm.img")
 else:
-    save_img(syst_mat_disorder_np, "data/Algo/final_syst_mat_vox_4mm.img")
+    save_img(syst_mat_disorder_np, subroot + "/final_syst_mat_vox_4mm.img")
 print("End")

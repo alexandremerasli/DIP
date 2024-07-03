@@ -20,13 +20,13 @@ class iMeritsADMMLim(vGeneral):
         self.nb_inner_iteration = config["nb_inner_iteration"]
         #self.adaptive_parameters == config["adaptive_parameters"]
 
-        self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-        self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-        self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        self.bkg_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        self.hot_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        self.cold_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
         self.phantom_ROI = self.get_phantom_ROI(self.phantom)
 
         #Loading Ground Truth image to compute metrics
-        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
+        self.image_gt = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
         if config["FLTNB"] == "double":
             self.image_gt = self.image_gt.astype(np.float64)
 
@@ -35,7 +35,7 @@ class iMeritsADMMLim(vGeneral):
         self.REPLICATES = True  # as we use variable 'replicates' above, set it to True
         self._3NORMS = True  # defaut:True
         self._2R = True  # defaut:True
-        self.fomSavingPath = self.subroot + 'Images/tmp/'
+        self.fomSavingPath = self.subroot_phantom + 'Images/tmp/'
 
         option = 1  # Now, only option 0 and 1 are useful, option 2, 3 and 4 should be ignored
         #            0            1              2              3                 4
@@ -61,8 +61,8 @@ class iMeritsADMMLim(vGeneral):
                 duplicate += '_rep' + str(self.replicate)
             outer_iters = self.outers
             tuners = alpha0s
-            fp = open(self.subroot + self.suffix + '/adaptiveProcess' + str(duplicate) + '.log', mode='w+')
-            fp = open(self.subroot + self.suffix + '/adaptiveProcess' + str(duplicate) + '.log', mode='w+')
+            fp = open(self.subroot_phantom + self.suffix + '/adaptiveProcess' + str(duplicate) + '.log', mode='w+')
+            fp = open(self.subroot_phantom + self.suffix + '/adaptiveProcess' + str(duplicate) + '.log', mode='w+')
 
         self.likelihoods_alpha = []
 
@@ -71,7 +71,7 @@ class iMeritsADMMLim(vGeneral):
             self.likelihoods = []
             if self.nb_inner_iteration == 1:
                 logfile_name = '0.log'
-            path_log = self.subroot + self.suffix + '/' + logfile_name
+            path_log = self.subroot_phantom + self.suffix + '/' + logfile_name
             self.extract_likelihood_from_log(path_log)
 
             self.PLOT(outer_iters, self.likelihoods, tuners, nbTuners, figNum=6,
@@ -112,11 +112,11 @@ class iMeritsADMMLim(vGeneral):
                 #uName = '0_' + str(outer_iter) + '_u.img'
 
                 logfile_name = '0_adaptive_it' + str(outer_iter) + '.log'
-                path_txt = self.subroot + self.suffix + '/' + logfile_name
+                path_txt = self.subroot_phantom + self.suffix + '/' + logfile_name
                 coeff_alpha = self.getValueFromLogRow(path_txt, 0)/self.getValueFromLogRow(path_txt, 4)
 
 
-                imagePath = self.subroot + self.suffix + '/' + imageName
+                imagePath = self.subroot_phantom + self.suffix + '/' + imageName
                 IR, MSE, CRC, MA = self.computeThose4(imagePath)
                 IR_bkgs.append(IR)
                 MSEs.append(MSE)
@@ -124,12 +124,12 @@ class iMeritsADMMLim(vGeneral):
                 MA_colds.append(MA)
 
                 Xnorms.append(self.computeNorm(imagePath))
-                #Vnorms.append(self.computeNorm(self.subroot + self.suffix + '/'+vName))
-                #u_norm = self.computeNorm(self.subroot + self.suffix + '/'+uName)
+                #Vnorms.append(self.computeNorm(self.subroot_phantom + self.suffix + '/'+vName))
+                #u_norm = self.computeNorm(self.subroot_phantom + self.suffix + '/'+uName)
                 #Unorms.append(u_norm)
                 #U_unscaled_norms.append(u_norm * coeff_alpha)
                 coeff_alphas.append(coeff_alpha)
-                #averageUs.append(computeAverage(self.subroot + self.suffix + '/'+uName))
+                #averageUs.append(computeAverage(self.subroot_phantom + self.suffix + '/'+uName))
 
             self.PLOT(outer_iters, IR_bkgs, tuners, nbTuners, figNum=2,
                 Xlabel='Outer iteration',
@@ -231,7 +231,7 @@ class iMeritsADMMLim(vGeneral):
                 else:
                     replicatesPath = ''
                 logfile_name = '0_adaptive_it' + str(outer_iter) + '.log'
-                path_txt = self.subroot + self.suffix + '/' + logfile_name
+                path_txt = self.subroot_phantom + self.suffix + '/' + logfile_name
 
                 # get adaptive alpha
                 adaptiveAlphas.append(self.getValueFromLogRow(path_txt, 0))

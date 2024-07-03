@@ -28,7 +28,7 @@ class vReconstruction(vGeneral):
         self.createDirectoryAndConfigFile(config)
         # Delete previous ckpt files from previous runs
         # if (self.finetuning == "ES"):
-        os.system("rm -rf " + self.subroot+'Block2/' + self.suffix + '/checkpoint/'+format(self.experiment) + "*")
+        os.system("rm -rf " + self.subroot_phantom+'Block2/' + self.suffix + '/checkpoint/'+format(self.experiment) + "*")
 
 
         # Specific hyperparameters for reconstruction module (Do it here to have raytune config hyperparameters selection)
@@ -88,20 +88,20 @@ class vReconstruction(vGeneral):
                 self.mu = self.mu.astype(np.float32)
             if (self.PETImage_shape[2] > 1):
                 self.mu = self.mu.reshape(self.PETImage_shape[::-1])
-            self.save_img(self.mu,self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(-1) + self.suffix + '.img')
+            self.save_img(self.mu,self.subroot_phantom+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(-1) + self.suffix + '.img')
 
         # Launch short MLEM reconstruction
         self.launch_quick_mlem(config)
 
     
     def launch_quick_mlem(self,config):
-        path_mlem_init = self.subroot_data + 'Data/MLEM_reco_for_init_hdr/' + self.phantom
+        path_mlem_init = self.subroot + 'Data/MLEM_reco_for_init_hdr/' + self.phantom
         my_file = Path(path_mlem_init + '/' + self.phantom + '_it1.img')
         if (not my_file.is_file()):
             it = ' -it 1:1'
-            output_path = ' -dout ' + self.subroot_data + 'Data/MLEM_reco_for_init_hdr/' + self.phantom
+            output_path = ' -dout ' + self.subroot + 'Data/MLEM_reco_for_init_hdr/' + self.phantom
             initialimage = ''
-            castor_command_line = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate,mlem_quick=True) + self.castor_opti_and_penalty("MLEM", self.penalty, self.rho) + it + output_path + initialimage
+            castor_command_line = self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate,mlem_quick=True) + self.castor_opti_and_penalty("MLEM", self.penalty, self.rho) + it + output_path + initialimage
             print(castor_command_line)
             os.system(castor_command_line)
 
@@ -112,15 +112,15 @@ class vReconstruction(vGeneral):
         # Save image f-mu in .img and .hdr format - block 1
 
         if (i == i_init and i_init > 0 and config["unnested_1st_global_iter"]):   # choose initial image for CASToR reconstruction
-            f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + '_FINAL.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
-            mu = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(i-1) + self.suffix + '.img',shape=(self.PETImage_shape)) # loading mu
+            f = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + '_FINAL.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+            mu = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(i-1) + self.suffix + '.img',shape=(self.PETImage_shape)) # loading mu
         elif (i == 0 and config["unnested_1st_global_iter"]):
-            f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + '_FINAL.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+            f = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + '_FINAL.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
         
         subroot_output_path = (subroot + 'Block1/' + suffix)
         path_before_eq_22 = (subroot_output_path + '/before_eq22/')
         self.save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
-        self.write_hdr(self.subroot_data,[i],'before_eq22',phantom,'f_mu',subroot_output_path)
+        self.write_hdr(self.subroot,[i],'before_eq22',phantom,'f_mu',subroot_output_path)
         f_mu_for_penalty_path = subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr' # Will be removed if first global iteration and unnested_1st_global_iter (rho == 0)
         subdir = 'during_eq22'
 
@@ -128,7 +128,7 @@ class vReconstruction(vGeneral):
         if ((self.rho == 0) or (i==-1 and not self.unnested_1st_global_iter)): # For first iteration, put rho to zero
             f_mu_for_penalty_path = ''
         # Write f_mu path in config
-        text_file = open(self.subroot + 'Block1/' + self.suffix  + '/' + 'QUAD.conf', "w")
+        text_file = open(self.subroot_phantom + 'Block1/' + self.suffix  + '/' + 'QUAD.conf', "w")
         text_file.write("# Path to target image (default is uniform image with zeros)" + "\n")
         text_file.write("target image path : " + f_mu_for_penalty_path + "\n")
         text_file.close()
@@ -150,13 +150,13 @@ class vReconstruction(vGeneral):
                 # Write shift A in config
                 # Read lines in config file
                 try:
-                    with open(self.subroot + 'Block1/' + self.suffix  + '/' + 'APPGML.conf', 'r') as read_config_file:
+                    with open(self.subroot_phantom + 'Block1/' + self.suffix  + '/' + 'APPGML.conf', 'r') as read_config_file:
                         data = read_config_file.readlines()
                 except:
-                    with open(self.subroot + 'Block1/' + self.suffix  + '/' + 'APPGML.conf', "w") as write_config_file:
-                        with open(self.subroot_data + 'APPGML_no_replicate.conf', "r") as read_config_file:
+                    with open(self.subroot_phantom + 'Block1/' + self.suffix  + '/' + 'APPGML.conf', "w") as write_config_file:
+                        with open(self.subroot + 'APPGML_no_replicate.conf', "r") as read_config_file:
                             write_config_file.write(read_config_file.read())
-                    with open(self.subroot + 'Block1/' + self.suffix  + '/' + 'APPGML.conf', 'r') as read_config_file:
+                    with open(self.subroot_phantom + 'Block1/' + self.suffix  + '/' + 'APPGML.conf', 'r') as read_config_file:
                         data = read_config_file.readlines()
                     # Change the line with shift
                 for line_idx in range (len(data)):
@@ -164,29 +164,29 @@ class vReconstruction(vGeneral):
                     if line.startswith("bound"):
                         data[line_idx] = "bound: " + str(self.A_AML) + "\n"
                 # Write everything back
-                with open(self.subroot + 'Block1/' + self.suffix  + '/' + 'APPGML.conf', "w") as write_config_file:
+                with open(self.subroot_phantom + 'Block1/' + self.suffix  + '/' + 'APPGML.conf', "w") as write_config_file:
                     write_config_file.writelines(data)
                 # Define command line to run OPTITR with CASToR
-                castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i, self.unnested_1st_global_iter)
+                castor_command_line_x = self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i, self.unnested_1st_global_iter)
                 # Initialize image
                 
                 if (i == 0 and not config["unnested_1st_global_iter"]):   # choose initial image for CASToR reconstruction
-                    initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # DIPRecon initializes to DIP output at pre iteratio
-                    #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + config["f_init"] + '.hdr' # enable to avoid pre iteration
+                    initialimage = ' -img ' + self.subroot_phantom + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # DIPRecon initializes to DIP output at pre iteratio
+                    #initialimage = ' -img ' + self.subroot + 'Data/initialization/' + config["f_init"] + '.hdr' # enable to avoid pre iteration
                 elif (i == 0 and config["unnested_1st_global_iter"]):
-                    #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-                    initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
+                    #initialimage = ' -img ' + self.subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
+                    initialimage = ' -img ' + self.subroot + 'Data/initialization/' + '1_im_value_cropped.hdr'
                 else:
                     #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_' + format(config["nb_outer_iteration"]) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'
                     # Trying to initialize OPTITR
-                    #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
-                    #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
+                    #initialimage = ' -img ' + self.subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
+                    #initialimage = ' -img ' + self.subroot + 'Data/initialization/' + '1_im_value_cropped.hdr'
                     if (i == 1 and config["unnested_1st_global_iter"]):
                         initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config["nb_outer_iteration"]) + '.hdr'    
-                        initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr'
+                        initialimage = ' -img ' + self.subroot_phantom + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr'
                         #import matplotlib.pyplot as plt
                         #plt.imshow()
-                        #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + config["f_init"] + '.hdr' 
+                        #initialimage = ' -img ' + self.subroot + 'Data/initialization/' + config["f_init"] + '.hdr' 
                     else:
                         initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config["nb_outer_iteration"]) + '.hdr'    
                     
@@ -220,26 +220,26 @@ class vReconstruction(vGeneral):
                 #it = ' -it ' + str(nb_outer_iteration) + ':' + str(config["nb_subsets"]) # Only 2 iterations (DIPRecon) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
 
             # Define command line to run OPTITR with CASToR
-            castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i, self.unnested_1st_global_iter)
+            castor_command_line_x = self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i, self.unnested_1st_global_iter)
             # Initialize image
             
             if (i == 0 and not config["unnested_1st_global_iter"]):   # choose initial image for CASToR reconstruction
-                initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # DIPRecon initializes to DIP output at pre iteratio
-                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + config["f_init"] + '.hdr' # enable to avoid pre iteration
+                initialimage = ' -img ' + self.subroot_phantom + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # DIPRecon initializes to DIP output at pre iteratio
+                #initialimage = ' -img ' + self.subroot + 'Data/initialization/' + config["f_init"] + '.hdr' # enable to avoid pre iteration
             elif (i == 0 and config["unnested_1st_global_iter"]):
-                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-                initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
+                #initialimage = ' -img ' + self.subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
+                initialimage = ' -img ' + self.subroot + 'Data/initialization/' + '1_im_value_cropped.hdr'
             else:
                 #initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_' + format(config["nb_outer_iteration"]) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'
                 # Trying to initialize OPTITR
-                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
-                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
+                #initialimage = ' -img ' + self.subroot + 'Data/initialization/' + 'BSREM_it30_REF_cropped.hdr'
+                #initialimage = ' -img ' + self.subroot + 'Data/initialization/' + '1_im_value_cropped.hdr'
                 if (i == 1 and config["unnested_1st_global_iter"]):
                     initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config["nb_outer_iteration"]) + '.hdr'    
-                    initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr'
+                    initialimage = ' -img ' + self.subroot_phantom + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr'
                     #import matplotlib.pyplot as plt
                     #plt.imshow()
-                    #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + config["f_init"] + '.hdr' 
+                    #initialimage = ' -img ' + self.subroot + 'Data/initialization/' + config["f_init"] + '.hdr' 
                 else:
                     initialimage = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config["nb_outer_iteration"]) + '.hdr'    
                 
@@ -289,7 +289,7 @@ class vReconstruction(vGeneral):
             os.system(x_reconstruction_command_line)
         # Change iteration name for header if stopping criterion reached
         try:
-            path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
+            path_stopping_criterion = self.subroot_phantom + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
             with open(path_stopping_criterion) as f:
                 first_line = f.readline() # Read first line to get second one
                 it_name = int(f.readline().rstrip())
@@ -302,15 +302,15 @@ class vReconstruction(vGeneral):
     def ADMMLim_general(self, config, i, subdir, subroot_output_path,writer=None,image_gt=None, i_init=0):
         if ("DNA" in self.method):
             self.post_smoothing = 0
-        castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing)
+        castor_command_line_x = self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing)
 
         base_name_i = format(i)
         full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
 
         if ("DNA" in self.method):
-            folder_sub_path = os.path.join(self.subroot,"Block1",self.suffix)
+            folder_sub_path = os.path.join(self.subroot_phantom,"Block1",self.suffix)
         else:
-            folder_sub_path = os.path.join(self.subroot,self.suffix)
+            folder_sub_path = os.path.join(self.subroot_phantom,self.suffix)
         sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if (os.path.splitext(filename)[1] == '.hdr' and "u" not in filename and "v" not in filename)]
         # sorted_files = [] # To not continue previous computation, restart from scratch
         #''' Continue previous computation if ADMMLim have already been launched with these settings
@@ -327,9 +327,9 @@ class vReconstruction(vGeneral):
 
                 # Write u and v hdr files for last computed iteration if they do not exist
                 if (not os.path.isfile(u_path)):
-                    self.write_hdr(self.subroot,[0],subdir,self.phantom,'u_it' + str(last_iter),subroot_output_path=subroot_output_path,matrix_type='sino')
+                    self.write_hdr(self.subroot_phantom,[0],subdir,self.phantom,'u_it' + str(last_iter),subroot_output_path=subroot_output_path,matrix_type='sino')
                 if (not os.path.isfile(v_path)):
-                    self.write_hdr(self.subroot,[0],subdir,self.phantom,'v_it' + str(last_iter),subroot_output_path=subroot_output_path,matrix_type='sino')
+                    self.write_hdr(self.subroot_phantom,[0],subdir,self.phantom,'v_it' + str(last_iter),subroot_output_path=subroot_output_path,matrix_type='sino')
 
                 if (self.adaptive_parameters != "nothing"):
                     last_log_file = os.path.join(folder_sub_path,"0_adaptive_it" + str(last_iter) + ".log")
@@ -347,7 +347,7 @@ class vReconstruction(vGeneral):
                 u_for_additional_data = ''
                 v_for_additional_data = ''
                 initialimage = ''
-                # initialimage = self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img'
+                # initialimage = self.subroot + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img'
 
         # Initialization image if DNA according to global iteration
         if ("DNA" in self.method):
@@ -363,17 +363,17 @@ class vReconstruction(vGeneral):
                 v_for_additional_data = ',' + v_path
 
             if (i == 0 and not config["unnested_1st_global_iter"]):   # choose initial image for CASToR reconstruction
-                initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # DIPRecon initializes to DIP output at pre iteratio
-                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + config["f_init"] + '.hdr' # enable to avoid pre iteration
+                initialimage = ' -img ' + self.subroot_phantom + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # DIPRecon initializes to DIP output at pre iteratio
+                #initialimage = ' -img ' + self.subroot + 'Data/initialization/' + config["f_init"] + '.hdr' # enable to avoid pre iteration
                 #initialimage = ''
             elif (i == 0 and config["unnested_1st_global_iter"]):
-                #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
-                # initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
-                initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # DIPRecon initializes to DIP output at pre iteratio
+                #initialimage = ' -img ' + self.subroot + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
+                # initialimage = ' -img ' + self.subroot + 'Data/initialization/' + '1_im_value_cropped.hdr'
+                initialimage = ' -img ' + self.subroot_phantom + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # DIPRecon initializes to DIP output at pre iteratio
             else: # Last image for next global iteration
                 if (i == 1 and ((i_init == -1 and not config["unnested_1st_global_iter"]) or (i_init == 0 and config["unnested_1st_global_iter"])) and config["unnested_1st_global_iter"]):
                     initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
-                    initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr'
+                    initialimage = ' -img ' + self.subroot_phantom + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr'
                 else:
                     initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
 
@@ -400,7 +400,7 @@ class vReconstruction(vGeneral):
                                         + conv # we need f-mu so that ADMM optimizer works, even if we will not use it...
 
         print(x_reconstruction_command_line)
-        self.compute_x_v_u_ADMM(x_reconstruction_command_line, subdir, i, self.phantom, subroot_output_path, self.subroot_data, self.method, it_name = config["nb_outer_iteration"])
+        self.compute_x_v_u_ADMM(x_reconstruction_command_line, subdir, i, self.phantom, subroot_output_path, self.subroot, self.method, it_name = config["nb_outer_iteration"])
 
         if (self.adaptive_parameters != "nothing"):
             #'''

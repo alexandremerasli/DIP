@@ -20,6 +20,8 @@ def save_img(img,name):
     fp=open(name,'wb')
     img.tofile(fp)
 
+subroot = "data/Algo/"
+
 # 1st step : Insert raw to nifti to be read by 3D slicer
 step = "insert_raw_to_nifti"
 # nifti_not_extracted_yet = True # Override this boolean to True when nifti from DICOM are not extracted yet
@@ -48,21 +50,21 @@ if (step == "insert_raw_to_nifti"):
 
     if (nifti_not_extracted_yet):
         # Create folder for PET nifti data to be created
-        nifti_PET_to_be_created_path = "data/Algo/Data/database_v2/Alexandre_FDG_Hatem/" + short_PET_path
+        nifti_PET_to_be_created_path = subroot + "/Data/database_v2/Alexandre_FDG_Hatem/" + short_PET_path
         Path(nifti_PET_to_be_created_path).mkdir(parents=True, exist_ok=True)
         # Convert DICOM to nifti
-        dicom2nifti.convert_dir.convert_directory("data/Algo/Data/database_v2/Alexandre_FDG_Hatem/CRANE_PETETMUMAP/patient_fdg/CRANE_MR-PET_CRANE_20230517_143125_322000/_HEAD_PETACQUISITION_AC_IMAGES_30003",nifti_PET_to_be_created_path)
+        dicom2nifti.convert_dir.convert_directory(subroot + "/Data/database_v2/Alexandre_FDG_Hatem/CRANE_PETETMUMAP/patient_fdg/CRANE_MR-PET_CRANE_20230517_143125_322000/_HEAD_PETACQUISITION_AC_IMAGES_30003",nifti_PET_to_be_created_path)
     else:
         # Open nifti image with DICOM information, and put CASToR pixel size
-        irm_imagej_nii = nib.load("data/Algo/Data/database_v2/Alexandre_FDG_Hatem/" + short_PET_path)
+        irm_imagej_nii = nib.load(subroot + "/Data/database_v2/Alexandre_FDG_Hatem/" + short_PET_path)
         # irm_imagej_nii.header["pixdim"] = [-1.,        1.04313*2,   1.04313*2 ,  2.031254,  1.,        1.,        1. ,       1.,      ]
         irm_imagej_nii.header["pixdim"] = [-1.,        1.,          1. ,         2.031254,  1.,        1.,        1. ,       1.,      ]
         # Open raw image from CASToR reconstruction (launch CASToR with same FOV as DICOM image)
-        irm_imagej_np = fijii_np("data/Algo/Data/database_v2/Alexandre_FDG_Hatem/MLEM_it2.img",shape=PET_shape,type_im='<f4')
+        irm_imagej_np = fijii_np(subroot + "/Data/database_v2/Alexandre_FDG_Hatem/MLEM_it2.img",shape=PET_shape,type_im='<f4')
         irm_imagej_np = np.transpose(irm_imagej_np,axes=(2,1,0))[:,::-1,::-1]
         # Save nifti image with good DICOM information and CASToR image
         new_img = nib.Nifti1Image(irm_imagej_np, irm_imagej_nii.affine, irm_imagej_nii.header)
-        nib.save(new_img,"data/Algo/Data/database_v2/Alexandre_FDG_Hatem/pet_mlem.nii")
+        nib.save(new_img,subroot + "/Data/database_v2/Alexandre_FDG_Hatem/pet_mlem.nii")
 
 
         if (check_orientation_dicom_vs_raw):
@@ -79,17 +81,17 @@ if (step == "insert_raw_to_nifti"):
 
     if (nifti_not_extracted_yet):
         # Create folder for MRI nifti data to be created
-        nifti_MR_to_be_created_path = "data/Algo/Data/database_v2/Alexandre_FDG_Hatem/resampled_imagej_dicom_orientation.nii"
+        nifti_MR_to_be_created_path = subroot + "/Data/database_v2/Alexandre_FDG_Hatem/resampled_imagej_dicom_orientation.nii"
         Path(nifti_MR_to_be_created_path).mkdir(parents=True, exist_ok=True)
         # Convert DICOM to nifti (MR image need to be resampled with imageJ to PET CASToR pixel size !!!)
-        dicom2nifti.convert_dir.convert_directory("data/Algo/Data/database_v2/Alexandre_FDG_Hatem/crane t1/",nifti_MR_to_be_created_path)
+        dicom2nifti.convert_dir.convert_directory(subroot + "/Data/database_v2/Alexandre_FDG_Hatem/crane t1/",nifti_MR_to_be_created_path)
     else:
         # Open nifti image with DICOM information, and put PET pixel size
-        irm_imagej_nii = nib.load("data/Algo/Data/database_v2/Alexandre_FDG_Hatem/resampled_imagej_dicom_orientation.nii")
+        irm_imagej_nii = nib.load(subroot + "/Data/database_v2/Alexandre_FDG_Hatem/resampled_imagej_dicom_orientation.nii")
         # irm_imagej_nii.header["pixdim"] = [-1.,        1.04313*2,   1.04313*2 ,  2.031254,  1.,        1.,        1. ,       1.,      ]
         irm_imagej_nii.header["pixdim"] = [-1.,        1.,          1. ,         2.031254,  1.,        1.,        1. ,       1.,      ]
         # Open raw image (DICOM saved with ImageJ. MR raw could be read with ImageJ with 16-bit unsigned, and big-endian byte order)
-        irm_imagej_np = fijii_np("data/Algo/Data/database_v2/Alexandre_FDG_Hatem/resampled_imagej_dicom_orientation.raw",shape=MR_resampled_shape,type_im='>u2')
+        irm_imagej_np = fijii_np(subroot + "/Data/database_v2/Alexandre_FDG_Hatem/resampled_imagej_dicom_orientation.raw",shape=MR_resampled_shape,type_im='>u2')
         # Transpose the image and reverse each necessary dimension until having the images matching (set boolean check_orientation_dicom_vs_raw to True)
         # irm_imagej_np = np.transpose(irm_imagej_np,axes=(0,2,1))[:,::-1,::-1]
         irm_imagej_np = np.transpose(irm_imagej_np,axes=(0,2,1))[:,::-1,::-1]
@@ -98,7 +100,7 @@ if (step == "insert_raw_to_nifti"):
         # irm_imagej_np = np.transpose(irm_imagej_np,axes=(1,2,0))[::-1,::-1,:]
         # Save nifti image with good DICOM information and reasmpled image from ImageJ
         new_img = nib.Nifti1Image(irm_imagej_np, irm_imagej_nii.affine, irm_imagej_nii.header)
-        nib.save(new_img,"data/Algo/Data/database_v2/Alexandre_FDG_Hatem/resampled_imagej_good_hdr_dicom_orientation.nii")
+        nib.save(new_img,subroot + "/Data/database_v2/Alexandre_FDG_Hatem/resampled_imagej_good_hdr_dicom_orientation.nii")
 
         if (check_orientation_dicom_vs_raw):
             common_slice = 80
@@ -113,16 +115,16 @@ if (step == "insert_raw_to_nifti"):
 elif (step == "extract_raw_from_nifti"):
     ### Extract raw from nifti (output of slicer) ###
 
-    irm_slicer_nii = nib.load("data/Algo/Data/database_v2/Alexandre_FDG_Hatem/Output.nii")
-    save_img(np.transpose(np.array(irm_slicer_nii.dataobj[:,::-1,::-1]).astype(np.float32),axes=(2,1,0)),"data/Algo/image010_3D/mri_for_pet_CASToR.img")
+    irm_slicer_nii = nib.load(subroot + "/Data/database_v2/Alexandre_FDG_Hatem/Output.nii")
+    save_img(np.transpose(np.array(irm_slicer_nii.dataobj[:,::-1,::-1]).astype(np.float32),axes=(2,1,0)),subroot + "/image010_3D/mri_for_pet_CASToR.img")
 elif (step == "check_registration"):
     ### Check registration ###
 
     # Load the image
-    # mri_for_pet_CASToR = fijii_np("data/Algo/Data/database_v2/Alexandre_FDG_Hatem/resampled_imagej_dicom_orientation.raw",shape=MR_resampled_shape,type_im='>u2')
+    # mri_for_pet_CASToR = fijii_np(subroot + "/Data/database_v2/Alexandre_FDG_Hatem/resampled_imagej_dicom_orientation.raw",shape=MR_resampled_shape,type_im='>u2')
     # mri_for_pet_CASToR = mri_for_pet_CASToR.astype(np.float64)
-    mri_for_pet_CASToR = fijii_np("data/Algo/image010_3D/mri_for_pet_CASToR.img",shape=PET_shape,type_im='<f4')
-    pet_CASToR = fijii_np("data/Algo/Data/database_v2/Alexandre_FDG_Hatem/MLEM_it2.img",shape=PET_shape,type_im='<f4')
+    mri_for_pet_CASToR = fijii_np(subroot + "/image010_3D/mri_for_pet_CASToR.img",shape=PET_shape,type_im='<f4')
+    pet_CASToR = fijii_np(subroot + "/Data/database_v2/Alexandre_FDG_Hatem/MLEM_it2.img",shape=PET_shape,type_im='<f4')
 
 
 

@@ -53,8 +53,8 @@ class iADMM_DIP(vReconstruction):
             ####################    Block 1 - Reconstruction with CASToR (tomographic reconstruction part of ADMM)    ####################
             if (self.global_it != i_init or config["unnested_1st_global_iter"]): # DIPRecon or DNA after pre iteration
                 #if (self.global_it == i_init + 1 and config["unnested_1st_global_iter"] == False): # enable to avoid pre iteration
-                #    self.f = self.fijii_np(self.subroot_data + 'Data/initialization/' + config["f_init"] + '.img',shape=(self.PETImage_shape),type_im='<f') # enable to avoid pre iteration
-                self.x_label, self.x = self.castor_reconstruction(classResults.writer, self.global_it, i_init, self.subroot, config["nb_outer_iteration"], self.experiment, config, self.method, self.phantom, self.replicate, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
+                #    self.f = self.fijii_np(self.subroot + 'Data/initialization/' + config["f_init"] + '.img',shape=(self.PETImage_shape),type_im='<f') # enable to avoid pre iteration
+                self.x_label, self.x = self.castor_reconstruction(classResults.writer, self.global_it, i_init, self.subroot_phantom, config["nb_outer_iteration"], self.experiment, config, self.method, self.phantom, self.replicate, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
                 # Write corrupted image over ADMM iterations
                 classResults.writeCorruptedImage(self.global_it,config["nb_outer_iteration"],self.x_label,self.suffix,pet_algo=self.method)
 
@@ -65,12 +65,12 @@ class iADMM_DIP(vReconstruction):
             # Initialize vDenoising object if pre iteration
             classDenoising = self.initializeSettingsForCurrentIteration(config,i_init,root,classDenoising)
             # Loading DIP x_label (corrupted image) from block1
-            classDenoising.image_corrupt = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(self.global_it) +'_x_label' + self.suffix + '.img',shape=(self.PETImage_shape))
+            classDenoising.image_corrupt = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(self.global_it) +'_x_label' + self.suffix + '.img',shape=(self.PETImage_shape))
             if ("scaling_all_init" in config):
                 if (config["scaling_all_init"]):
-                    classDenoising.image_corrupt_init = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(-1) +'_x_label' + self.suffix + '.img',shape=(self.PETImage_shape))
-            classDenoising.net_outputs_path = self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + '' + format(self.global_it) + self.suffix + '.img'
-            classDenoising.checkpoint_simple_path = self.subroot+'Block2/' + self.suffix + '/checkpoint/'
+                    classDenoising.image_corrupt_init = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(-1) +'_x_label' + self.suffix + '.img',shape=(self.PETImage_shape))
+            classDenoising.net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + '' + format(self.global_it) + self.suffix + '.img'
+            classDenoising.checkpoint_simple_path = self.subroot_phantom+'Block2/' + self.suffix + '/checkpoint/'
             classDenoising.name_run = ""
             # Train network at current global iteration
             classDenoising.sub_iter_DIP = config["sub_iter_DIP"] + self.sub_iter_DIP_already_done
@@ -103,25 +103,25 @@ class iADMM_DIP(vReconstruction):
             if (self.several_DIP_inputs == 1):
                 if (self.global_it == i_init):
                     if (classDenoising.SUCCESS):
-                        self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - classDenoising.patienceNumber - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                        self.f = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - classDenoising.patienceNumber - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
                     else:
-                        self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(config["DIP_it_if_no_ES_found"] - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                        self.f = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(config["DIP_it_if_no_ES_found"] - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
                 else:
-                    self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                    self.f = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
             else: # MIC study : save DIP output with MR input (when using several DIP inputs)
                 if (self.global_it == i_init):
                     if (classDenoising.SUCCESS):
-                        self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - classDenoising.patienceNumber - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                        self.f = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - classDenoising.patienceNumber - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
                     else:
-                        self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                        self.f = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
                 else:
-                    self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '_batchidx=MR_forward.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
-            self.save_img(self.f,self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_FINAL" + '.img')
-            subroot_output_path = (self.subroot + 'Block2/' + self.suffix)
+                    self.f = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '_batchidx=MR_forward.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+            self.save_img(self.f,self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_FINAL" + '.img')
+            subroot_output_path = (self.subroot_phantom + 'Block2/' + self.suffix)
             # Write header with float precision because output of network is a float image
             original_FLTNB = self.FLTNB
             self.FLTNB = 'float'
-            self.write_hdr(self.subroot,[self.global_it],'out_cnn/' + str(self.experiment),self.phantom,'FINAL',subroot_output_path,additional_name='out_' + self.net)
+            self.write_hdr(self.subroot_phantom,[self.global_it],'out_cnn/' + str(self.experiment),self.phantom,'FINAL',subroot_output_path,additional_name='out_' + self.net)
             self.FLTNB = original_FLTNB
             
             ####################    Block 3 - mu update    ####################
@@ -132,7 +132,7 @@ class iADMM_DIP(vReconstruction):
             if (self.global_it != i_init or config["unnested_1st_global_iter"]): # DIPRecon after pre iteration
                 if (self.global_it > i_init or ((i_init > -1 and not config["unnested_1st_global_iter"]) or (i_init > 0 and config["unnested_1st_global_iter"]))): # at first iteration if rho == 0, let mu to 0 to be equivalent to DIPRecon settings
                     self.mu = self.x_label - self.f
-                    self.save_img(self.mu,self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(self.global_it) + self.suffix + '.img') # saving mu
+                    self.save_img(self.mu,self.subroot_phantom+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(self.global_it) + self.suffix + '.img') # saving mu
                     # Write corrupted image over ADMM iterations
                     classResults.writeCorruptedImage(self.global_it,config["nb_outer_iteration"],self.mu,self.suffix,pet_algo="mmmmmuuuuuuu")
                     print("--- %s seconds - outer_iteration ---" % (time.time() - start_time_outer_iter))
@@ -158,7 +158,7 @@ class iADMM_DIP(vReconstruction):
                     if (self.global_it > 10):
                         if (self.IR_bkg_smoothed > 0.5):
                             print("DNA stopping criterion reached")
-                            self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
+                            self.path_stopping_criterion = self.subroot_phantom + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
                             stopping_criterion_file = open(self.path_stopping_criterion, "w")
                             stopping_criterion_file.write("stopping iteration :" + "\n")
                             stopping_criterion_file.write(str(self.global_it) + "\n")
@@ -166,7 +166,7 @@ class iADMM_DIP(vReconstruction):
                             break
 
         # Saving final image output
-        self.save_img(self.f, self.subroot+'Images/out_final/final_out' + self.suffix + '.img')
+        self.save_img(self.f, self.subroot_phantom+'Images/out_final/final_out' + self.suffix + '.img')
 
         ## Averaging for VAE
         if (classDenoising.net == 'DIP_VAE'):
@@ -174,8 +174,8 @@ class iADMM_DIP(vReconstruction):
 
     def saveLabel(self,config,i_init):
         if (self.global_it == i_init and not config["unnested_1st_global_iter"]): # DIPRecon or DNA at pre iteration -> only pre train the network
-            x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/' + config["image_init_path_without_extension"] + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<f')
-            self.save_img(x_label,self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
+            x_label = self.fijii_np(self.subroot + 'Data/initialization/' + self.phantom + '/' + config["image_init_path_without_extension"] + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<f')
+            self.save_img(x_label,self.subroot_phantom+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
 
     def initializeSettingsForCurrentIteration(self,config,i_init,root,classDenoising):
         # If pre or last iteration, do WMV and initialize vDenoising object if pre iteration
@@ -228,6 +228,7 @@ class iADMM_DIP(vReconstruction):
             classDenoising.scanner = self.scanner
             classDenoising.simulation = self.simulation
             classDenoising.all_images_DIP = self.all_images_DIP
+            classDenoising.subroot = self.subroot
             classDenoising.initializeGeneralVariables(config,root)
         
         # During iterations, do not do WMV

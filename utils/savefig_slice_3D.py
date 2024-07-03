@@ -33,7 +33,9 @@ def save_img(img,name):
     img.tofile(fp)
     print('Succesfully save in:', name)
 
-root = 'data/Algo/image010_3D/replicate_1/DNA_TMI/'
+
+subroot = "data/Algo/"
+subsubroot = 'image010_3D/replicate_1/DNA_TMI/'
 PETImage_shape = (172,172,127)
 
 
@@ -54,7 +56,7 @@ image_name_list = [image_name_DIPRecon]
 
 for image_name in image_name_list:
     print(image_name)
-    img1_np = fijii_np(root + image_name + ".img", shape=(PETImage_shape))
+    img1_np = fijii_np(subroot + subsubroot + image_name + ".img", shape=(PETImage_shape))
 
     plt.figure()
     if (image_name != image_name_MR):
@@ -65,4 +67,4 @@ for image_name in image_name_list:
     plt.axis("off")
     # plt.show()
 
-    plt.savefig(root + image_name + "_slice_" + str(num_slice) + ".png")
+    plt.savefig(subroot + subsubroot + image_name + "_slice_" + str(num_slice) + ".png")

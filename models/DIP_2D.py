@@ -65,8 +65,8 @@ class DIP_2D(LightningModule):
         self.hyperparameters_list = hyperparameters_list
         self.scaling_input = scaling_input
         self.debug = debug
-        self.subroot = subroot
         self.root = root
+        self.subroot = root + subroot
         self.config = config
         self.experiment = config["experiment"]
         self.image_net_input_torch = image_net_input_torch
@@ -121,7 +121,8 @@ class DIP_2D(LightningModule):
 
         # Initialize early stopping method if asked for
         if(self.DIP_early_stopping):
-            self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner, simulation, image_net_input_torch)
+            self.classMV = iMovingVariance(config)
+            self.classMV.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner, simulation, image_net_input_torch)
 
         self.write_current_img_mode = True
         #self.suffix = self.suffix_func(config,hyperparameters_list)
@@ -143,9 +144,9 @@ class DIP_2D(LightningModule):
             self.end_to_end = False
         if (self.end_to_end):
             # Define shapes
-            self.subroot_data = self.root + '/data/Algo/' # Directory root
+            self.subroot = self.root + '/data/Algo/' # Directory root
             self.phantom = self.config["image"]
-            self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+            self.PETImage_shape_str = self.read_input_dim(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
             self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
             if (self.simulation and self.scanner == "mMR_2D"):
                 self.sinogram_shape = (344,252,1)
@@ -155,24 +156,24 @@ class DIP_2D(LightningModule):
                 self.sinogram_shape_transpose = (336,336,1)
             # Load stored system matrix A
             if ("4" in self.phantom or "10" in self.phantom): # cylindrical phantom are reconstructed with voxels of 4mm
-                A = squeeze(self.fijii_np(self.subroot_data + "/final_syst_mat_vox_4mm.img",(self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1],1),type_im='<f'))
+                A = squeeze(self.fijii_np(self.subroot + "/final_syst_mat_vox_4mm.img",(self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1],1),type_im='<f'))
             elif ("5" in self.phantom): # brain phantom are reconstructed with voxels of 2mm
-                A = squeeze(self.fijii_np(self.subroot_data + "/final_syst_mat_vox_2mm.img",(self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1],1),type_im='<f'))
+                A = squeeze(self.fijii_np(self.subroot + "/final_syst_mat_vox_2mm.img",(self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1],1),type_im='<f'))
             else: # Assuming that other cases are reconstructed with voxels of 2mm
-                A = squeeze(self.fijii_np(self.subroot_data + "/final_syst_mat_vox_2mm.img",(self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1],1),type_im='<f'))
+                A = squeeze(self.fijii_np(self.subroot + "/final_syst_mat_vox_2mm.img",(self.sinogram_shape[0]*self.sinogram_shape[1],self.PETImage_shape[0]*self.PETImage_shape[1],1),type_im='<f'))
             # Load randoms, scatters, norm and attenuation sinogram
-            self.randoms_sinogram = Tensor(ravel_np(self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + "/simu0_1/simu0_1_rd.s",self.sinogram_shape_transpose,type_im='<f')))
-            self.scatters_sinogram = Tensor(ravel_np(self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + "/simu0_1/simu0_1_sc.s",self.sinogram_shape_transpose,type_im='<f')))
+            self.randoms_sinogram = Tensor(ravel_np(self.fijii_np(self.subroot + "/Data/database_v2/" + self.phantom + "/simu0_1/simu0_1_rd.s",self.sinogram_shape_transpose,type_im='<f')))
+            self.scatters_sinogram = Tensor(ravel_np(self.fijii_np(self.subroot + "/Data/database_v2/" + self.phantom + "/simu0_1/simu0_1_sc.s",self.sinogram_shape_transpose,type_im='<f')))
 
-            atn = ravel_np(self.fijii_np(self.subroot_data + "Data/database_v2/" + self.phantom + "/simu0_1/simu0_1_at.s",self.sinogram_shape_transpose,type_im='<f'))
+            atn = ravel_np(self.fijii_np(self.subroot + "Data/database_v2/" + self.phantom + "/simu0_1/simu0_1_at.s",self.sinogram_shape_transpose,type_im='<f'))
             self.attenuation_sinogram = where(atn==0,0,1/atn)
-            norm = ravel_np(self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + "/simu0_1/simu0_1_nm.s",self.sinogram_shape_transpose,type_im='<f'))
+            norm = ravel_np(self.fijii_np(self.subroot + "/Data/database_v2/" + self.phantom + "/simu0_1/simu0_1_nm.s",self.sinogram_shape_transpose,type_im='<f'))
             self.normalization_sinogram = where(norm==0,0,1/norm)
             # Define mask (sinogram bins == 0 should not be taken into account in loss computation)
             self.norm_mask = Tensor(self.normalization_sinogram)
 
             # Retrieve calibration factor
-            datafile_castor_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "data" + self.phantom[5:] + '_' + str(config["replicates"]) + '/' + "data" + self.phantom[5:] + '_' + str(config["replicates"] ) + '.cdh'
+            datafile_castor_path = self.subroot+'Data/database_v2/' + self.phantom + '/' + "data" + self.phantom[5:] + '_' + str(config["replicates"]) + '/' + "data" + self.phantom[5:] + '_' + str(config["replicates"] ) + '.cdh'
             # Open the file
             with open(datafile_castor_path, 'r') as file:
                 lines = file.readlines()
@@ -440,7 +441,9 @@ class DIP_2D(LightningModule):
         if (self.DIP_early_stopping):
             if (end_epoch_LBFGS):
                 if (self.num_total_batch == self.several_DIP_inputs - 1):
-                    self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.scanner, self.simulation)
+                    self.SUCCESS = self.classMV.SUCCESS
+                    self.log("SUCCESS", int(self.SUCCESS))
+                    self.classMV.run_WMV(out.detach().numpy(),self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.subroot,self.scanner, self.simulation, self.current_epoch)
             
         # Increment number of iterations since beginnning of DNA
         if (self.end_epoch): # We looped over all images of the batch
@@ -450,11 +453,11 @@ class DIP_2D(LightningModule):
             if (self.num_total_batch == self.several_DIP_inputs - 1):
                 if ((self.current_epoch == self.sub_iter_DIP + self.sub_iter_DIP_already_done_before_training - 1)):
                     batch_idx = "MR_forward"
-                    self.save_img(self.out_np_all_inputs[0,:,:], self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+                    self.save_img(self.out_np_all_inputs[0,:,:], self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                 if (self.DIP_early_stopping):
                     if (self.SUCCESS):
                         batch_idx = "MR_forward"
-                        self.save_img(self.out_np_all_inputs[0,:,:], self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+                        self.save_img(self.out_np_all_inputs[0,:,:], self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
         if (self.end_epoch):
             self.num_total_batch = -1
             self.end_epoch = False
@@ -496,9 +499,9 @@ class DIP_2D(LightningModule):
         print("self.current_epoch",self.current_epoch)
         if (inside):
             print("save before ReLU here")
-            # self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/beforeReLU_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+            # self.save_img(out_np, self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/beforeReLU_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
         else:
-            self.save_img(self.out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+            self.save_img(self.out_np, self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
         config_copy = dict(config)
@@ -526,10 +529,10 @@ class DIP_2D(LightningModule):
 
             image_corrupt_np = self.descale_imag(image_corrupt_torch,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
 
-            self.subroot_data = self.root + '/data/Algo/' # Directory root
+            # self.subroot = self.root + '/data/Algo/' # Directory root
             self.phantom = self.config["image"]
 
-            self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+            self.PETImage_shape_str = self.read_input_dim(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
             self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
             self.phantom_ROI = self.get_phantom_ROI(self.phantom)
@@ -550,56 +553,56 @@ class DIP_2D(LightningModule):
                     print(self.lr)
                     print("chaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaange lrrrrrrrrrrrrrrrrrrrrrrrrrrr")
     
-    def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner, simulation, image_net_input_torch):
-        self.classWMV = iMovingVariance(config)            
-        self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
-        self.classWMV.hyperparameters_list = hyperparameters_list
-        self.classWMV.debug = debug
-        self.classWMV.param1_scale_im_corrupt = param1_scale_im_corrupt
-        self.classWMV.param2_scale_im_corrupt = param2_scale_im_corrupt
-        self.classWMV.scaling_input = scaling_input
-        self.classWMV.suffix = suffix
-        self.classWMV.global_it = global_it
-        self.classWMV.scanner = scanner
-        self.classWMV.simulation = simulation
-        self.classWMV.image_net_input_torch = image_net_input_torch
-        self.classWMV.model_class = DIP_2D
-        # Initialize variables
-        self.classWMV.do_everything(config,root)
+    # def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner, simulation, image_net_input_torch):
+    #     self.classWMV = iMovingVariance(config)            
+    #     self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
+    #     self.classWMV.hyperparameters_list = hyperparameters_list
+    #     self.classWMV.debug = debug
+    #     self.classWMV.param1_scale_im_corrupt = param1_scale_im_corrupt
+    #     self.classWMV.param2_scale_im_corrupt = param2_scale_im_corrupt
+    #     self.classWMV.scaling_input = scaling_input
+    #     self.classWMV.suffix = suffix
+    #     self.classWMV.global_it = global_it
+    #     self.classWMV.scanner = scanner
+    #     self.classWMV.simulation = simulation
+    #     self.classWMV.image_net_input_torch = image_net_input_torch
+    #     self.classWMV.model_class = DIP_2D
+    #     # Initialize variables
+    #     self.classWMV.do_everything(config,root)
 
-    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner, simulation):
-        if (self.DIP_early_stopping):
-            self.SUCCESS = self.classWMV.SUCCESS
-            self.log("SUCCESS", int(self.classWMV.SUCCESS))
+    # def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner, simulation):
+    #     if (self.DIP_early_stopping):
+    #         self.SUCCESS = self.classWMV.SUCCESS
+    #         self.log("SUCCESS", int(self.classWMV.SUCCESS))
 
-            try:
-                out_np = out.detach().numpy()[0,0,:,:]
-            except:
-                out_np = out.cpu().detach().numpy()[0,0,:,:]
+    #         try:
+    #             out_np = out.detach().numpy()[0,0,:,:]
+    #         except:
+    #             out_np = out.cpu().detach().numpy()[0,0,:,:]
 
-            if (len(out_np.shape) == 2): # 2D
-                out_np = out_np[:,:,newaxis]
+    #         if (len(out_np.shape) == 2): # 2D
+    #             out_np = out_np[:,:,newaxis]
 
-            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(copy(out_np),self.current_epoch,self.sub_iter_DIP,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate,current_DIP_iteration = self.sub_iter_DIP_this_global_it)
-            self.VAR_recon = self.classWMV.VAR_recon
-            self.MSE_WMV = self.classWMV.MSE_WMV
-            self.PSNR_WMV = self.classWMV.PSNR_WMV
-            self.SSIM_WMV = self.classWMV.SSIM_WMV
-            self.epochStar = self.classWMV.epochStar
-            '''
-            if self.EMV_or_WMV == "EMV":
-                self.alpha_EMV = self.classWMV.alpha_EMV
-            else:
-                self.windowSize = self.classWMV.windowSize
-            '''
-            self.patienceNumber = self.classWMV.patienceNumber
+    #         self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(copy(out_np),self.current_epoch,self.sub_iter_DIP,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate,current_DIP_iteration = self.sub_iter_DIP_this_global_it)
+    #         self.VAR_recon = self.classWMV.VAR_recon
+    #         self.MSE_WMV = self.classWMV.MSE_WMV
+    #         self.PSNR_WMV = self.classWMV.PSNR_WMV
+    #         self.SSIM_WMV = self.classWMV.SSIM_WMV
+    #         self.epochStar = self.classWMV.epochStar
+    #         '''
+    #         if self.EMV_or_WMV == "EMV":
+    #             self.alpha_EMV = self.classWMV.alpha_EMV
+    #         else:
+    #             self.windowSize = self.classWMV.windowSize
+    #         '''
+    #         self.patienceNumber = self.classWMV.patienceNumber
 
-            if self.SUCCESS:
-                print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
-                self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner, simulation, self.image_net_input_torch)
+    #         if self.SUCCESS:
+    #             print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
+    #             self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner, simulation, self.image_net_input_torch)
         
-        else:
-            self.log("SUCCESS", int(False))
+    #     else:
+    #         self.log("SUCCESS", int(False))
 
     def norm_imag(self,img):
         print("nooooooooorm")
@@ -688,7 +691,7 @@ class DIP_2D(LightningModule):
 
     def get_phantom_ROI(self,image='image0'):
         # Select only phantom ROI, not whole reconstructed image
-        path_phantom_ROI = self.subroot_data+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[5:]) + '.raw'
+        path_phantom_ROI = self.subroot+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[5:]) + '.raw'
         my_file = Path(path_phantom_ROI)
         if (my_file.is_file()):
             phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(self.PETImage_shape),type_im='<f')
@@ -696,12 +699,12 @@ class DIP_2D(LightningModule):
             print("No phantom file for this phantom")
             # Loading Ground Truth image to compute metrics
             try:
-                image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
+                image_gt = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
             except:
                 raise ValueError("Please put the header file from CASToR with name of phantom")
             phantom_ROI = ones_like(image_gt)
             #raise ValueError("No phantom file for this phantom")
-            #phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            #phantom_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             
         return phantom_ROI
     

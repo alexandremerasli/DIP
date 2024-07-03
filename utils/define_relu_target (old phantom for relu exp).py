@@ -14,6 +14,7 @@ def save_img(img,name):
     img.tofile(fp)
     print('Succesfully save in:', name)
 
+subroot = "data/Algo/"
 PETImage_shape = (112,112)
 target = np.zeros((PETImage_shape))
 
@@ -39,10 +40,10 @@ plt.imshow(target,cmap="gray")
 plt.colorbar()
 plt.show()
 
-save_img(target,"data/Algo/Data/relu_exp_target_" + str(nb_rois) + "_rois_50.img")
+save_img(target,subroot + "/Data/relu_exp_target_" + str(nb_rois) + "_rois_50.img")
 
 
 
 PETImage_shape = (3,3)
 target = np.ones((PETImage_shape))
-save_img(target,"data/Algo/Data/database_v2/image_relu_exp/image_relu_exp.raw")
+save_img(target,subroot + "/Data/database_v2/image_relu_exp/image_relu_exp.raw")

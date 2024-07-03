@@ -25,8 +25,9 @@ def save_img(img,name):
 
 # Load MR image
 shape = (112,112)
-img = fijii_np("data/Algo/Data/database_v2/image40_1/image40_1_mr.raw",shape)
-img = fijii_np("data/Algo/Data/database_v2/image50_0/image50_0_mr.raw",shape)
+subroot = "data/Algo/"
+img = fijii_np(subroot + "/Data/database_v2/image40_1/image40_1_mr.raw",shape)
+img = fijii_np(subroot + "/Data/database_v2/image50_0/image50_0_mr.raw",shape)
 conv_img = np.copy(img)
 
 np.random.seed(1)
@@ -51,8 +52,8 @@ if (task == "convolve_cascade"):
         print(np.min(conv_img))
         plt.imshow(conv_img,cmap='gray')
         # plt.imshow(kernel,cmap='gray')
-        # save_img(kernel.astype(np.float32),"data/Algo/Data/kernels_" + str(i) + ".img")
-        # save_img(kernel.astype(np.float32),"data/Algo/Data/conv_img_" + str(i) + ".img")
+        # save_img(kernel.astype(np.float32),subroot + "/Data/kernels_" + str(i) + ".img")
+        # save_img(kernel.astype(np.float32),subroot + "/Data/conv_img_" + str(i) + ".img")
         
         # Histogram of values in the kernel
         # histo = np.histogram(kernel,bins=(2*i+3)**2)
@@ -74,7 +75,7 @@ if (task == "convolve_iteratively"):
         conv_img = signal.convolve2d(np.copy(conv_img), np.copy(kernel), mode='same', boundary='fill', fillvalue=0)
         plt.imshow(conv_img,cmap='gray',vmin=np.min(conv_img),vmax=np.max(conv_img))
         plt.show()
-        save_img(conv_img.astype(np.float32),"data/Algo/Data/conv_" + str(i) + ".img")
+        save_img(conv_img.astype(np.float32),subroot + "/Data/conv_" + str(i) + ".img")
 
 if (task == "convolve_big_kernel"):
     # Convolve MR with big gaussian kernel

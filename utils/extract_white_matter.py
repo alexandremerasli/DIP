@@ -24,14 +24,14 @@ def save_img(img,name):
 
 # phantom = "image50_1"
 phantom = "image50_2"
-
-root = 'data/Algo/Data/database_v2/' + phantom + '/' + phantom + '.raw'
+subroot = "data/Algo/"
+subsubroot = '/Data/database_v2/' + phantom + '/' + phantom + '.raw'
 
 PETImage_shape = (112,112)
 
 # Read image and MR tumors
-img1_np = fijii_np(root, shape=(PETImage_shape))
-MR_img = fijii_np("data/Algo/Data/database_v2/" + str(phantom) + "/" + str(phantom) + "_mr.raw", shape=(PETImage_shape))
+img1_np = fijii_np(subroot + subsubroot, shape=(PETImage_shape))
+MR_img = fijii_np(subroot + "Data/database_v2/" + str(phantom) + "/" + str(phantom) + "_mr.raw", shape=(PETImage_shape))
 # Threshold
 img1_np = np.where(img1_np == 2,1,0)
 img1_np = img1_np.astype(np.float32)
@@ -58,9 +58,9 @@ plt.figure()
 plt.imshow(eroded_im,cmap="gray")
 plt.show()
 
-# save_img(img1_np,'data/Algo/Data/database_v2/image010_3D/phantom_mask010_3D.raw')
-save_img(eroded_im,"data/Algo/Data/database_v2/" + phantom + "/background_mask" + phantom[5:] + ".raw")
-save_img(eroded_im,"data/Algo/Data/database_v2/" + phantom + "/white_matter_" + phantom[5:] + ".raw")
+# save_img(img1_np,subroot + "Data/database_v2/image010_3D/phantom_mask010_3D.raw")
+save_img(eroded_im,subroot + "Data/database_v2/" + phantom + "/background_mask" + phantom[5:] + ".raw")
+save_img(eroded_im,subroot + "Data/database_v2/" + phantom + "/white_matter_" + phantom[5:] + ".raw")
 
 
 
@@ -68,11 +68,11 @@ save_img(eroded_im,"data/Algo/Data/database_v2/" + phantom + "/white_matter_" + 
 
 
 # ###### resize (crop and pad BSREM)
-# to_crop = fijii_np("data/Algo/Data/initialization/image010_3D/BSREM_30it/replicate_1/BSREM_it30.img", shape=(PETImage_shape))
+# to_crop = fijii_np(subroot + "Data/initialization/image010_3D/BSREM_30it/replicate_1/BSREM_it30.img", shape=(PETImage_shape))
 # print(to_crop.shape)
 
 # cropped = np.zeros(((127,172,172)))
 # cropped[:,10:cropped.shape[1]-10,:] = to_crop[:,:,int((232-172)/2):to_crop.shape[2]-int((232-172)/2)]
 
 # print(cropped.shape)
-# save_img(cropped,"data/Algo/Data/initialization/image010_3D/BSREM_30it/replicate_1/BSREM_it30_172_172.img")
+# save_img(cropped,subroot + "Data/initialization/image010_3D/BSREM_30it/replicate_1/BSREM_it30_172_172.img")

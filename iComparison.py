@@ -31,15 +31,15 @@ class iComparison(vReconstruction):
         # castor-recon command line
         if ('ADMMLim' in self.method):
             # Path variables
-            subroot_output_path = (self.subroot + self.suffix)
+            subroot_output_path = (self.subroot_phantom + self.suffix)
             subdir = 'ADMM' + '_' + str(config["nb_threads"])
             subdir = ''
-            f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/1_im_value_cropped.hdr' # Will be removed if first global iteration and unnested_1st_global_iter (rho == 0)
-            #f_mu_for_penalty = ' -multimodal ' + self.subroot_data + 'Data/initialization/BSREM_it30_REF_cropped.hdr' # Test for DIP_ADMM (will be removed if first global iteration and unnested_1st_global_iter (rho == 0))
-            Path(self.subroot + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
+            f_mu_for_penalty = ' -multimodal ' + self.subroot + 'Data/initialization/1_im_value_cropped.hdr' # Will be removed if first global iteration and unnested_1st_global_iter (rho == 0)
+            #f_mu_for_penalty = ' -multimodal ' + self.subroot + 'Data/initialization/BSREM_it30_REF_cropped.hdr' # Test for DIP_ADMM (will be removed if first global iteration and unnested_1st_global_iter (rho == 0))
+            Path(self.subroot_phantom + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
             self.ADMMLim_general(config, 0, subdir, subroot_output_path, f_mu_for_penalty)
         else:
-            folder_sub_path = self.subroot + self.suffix
+            folder_sub_path = self.subroot_phantom + self.suffix
             Path(folder_sub_path).mkdir(parents=True, exist_ok=True) # CASToR path
             output_path = ' -fout ' + folder_sub_path + '/' + self.method # Output path for CASTOR framework
             
@@ -61,7 +61,7 @@ class iComparison(vReconstruction):
                         data = read_config_file.readlines()
                 except:
                     with open(folder_sub_path  + '/' + 'APPGML.conf', "w") as write_config_file:
-                        with open(self.subroot_data + 'APPGML_no_replicate.conf', "r") as read_config_file:
+                        with open(self.subroot + 'APPGML_no_replicate.conf', "r") as read_config_file:
                             write_config_file.write(read_config_file.read())
                     with open(folder_sub_path  + '/' + 'APPGML.conf', 'r') as read_config_file:
                         data = read_config_file.readlines()
@@ -76,8 +76,8 @@ class iComparison(vReconstruction):
 
 
             print("CASToR command line : ")
-            print(self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
-            os.system(self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
+            print(self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
+            os.system(self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
 
         # NNEPPS
         if ('ADMMLim' in self.method):
@@ -106,9 +106,9 @@ class iComparison(vReconstruction):
             i = 0
             subdir = 'ADMM' + '_' + str(config["nb_threads"])
             subdir = ''
-            input_without_extension = self.subroot + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(config["nb_inner_iteration"])
+            input_without_extension = self.subroot_phantom + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(config["nb_inner_iteration"])
         else:
-            input_without_extension = self.subroot + self.suffix + '/' + self.method + '_beta_' + str(self.beta) + '_it' + format(it)
+            input_without_extension = self.subroot_phantom + self.suffix + '/' + self.method + '_beta_' + str(self.beta) + '_it' + format(it)
         
         input = ' -i ' + input_without_extension + '.img'
         output = ' -o ' + input_without_extension + '_NNEPPS' # Without extension !

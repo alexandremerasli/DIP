@@ -60,9 +60,10 @@ def save_img(img,name):
     #print('Succesfully save in:', name)
 
 PETImage_shape = (112,112)
+subroot = "data/Algo/"
 
-# image = fijii_np("data/Algo/Data/database_v2/image40_0/image40_0.raw",(112,112),type_im='<f')
-image = fijii_np("data/Algo/Data/database_v2/image40_0/image40_0_mr.raw",PETImage_shape,type_im='<f')
+# image = fijii_np(subroot + "/Data/database_v2/image40_0/image40_0.raw",(112,112),type_im='<f')
+image = fijii_np(subroot + "/Data/database_v2/image40_0/image40_0_mr.raw",PETImage_shape,type_im='<f')
 phantom_ROI = points_in_circle(0/4,0/4,150/4,PETImage_shape)
 for couple in phantom_ROI:
     image[couple] = 130

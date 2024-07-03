@@ -57,9 +57,10 @@ def laplacian():
     return kernel 
 
 it = 99
-root_MR = 'data/Algo/image40_1/replicate_1/DNA/Block2/config_recoI=APGMAP_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=positive_normalization_input=CT_nb_ou=10_mlem_=False_A_AML=-100/out_cnn/24/out_DIP' + str(it) + '_FINAL.img'
-root_intermediate = 'data/Algo/image40_1/replicate_1/DNA/Block2/config_recoI=APGMAP_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=positive_normalization_input=random_nb_ou=10_mlem_=False_A_AML=-100/out_cnn/24/out_DIP' + str(it) + '_FINAL.img'
-root_random = 'data/Algo/image40_1/replicate_1/DNA/Block2/config_recoI=APGMAP_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=200_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=positive_normalization_input=random_nb_ou=10_mlem_=False_A_AML=-100/out_cnn/24/out_DIP' + str(it) + '_FINAL.img'
+subroot = 'data/Algo/'
+root_MR = subroot + 'image40_1/replicate_1/DNA/Block2/config_recoI=APGMAP_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=positive_normalization_input=CT_nb_ou=10_mlem_=False_A_AML=-100/out_cnn/24/out_DIP' + str(it) + '_FINAL.img'
+root_intermediate = subroot + 'image40_1/replicate_1/DNA/Block2/config_recoI=APGMAP_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=positive_normalization_input=random_nb_ou=10_mlem_=False_A_AML=-100/out_cnn/24/out_DIP' + str(it) + '_FINAL.img'
+root_random = subroot + 'image40_1/replicate_1/DNA/Block2/config_recoI=APGMAP_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=200_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=positive_normalization_input=random_nb_ou=10_mlem_=False_A_AML=-100/out_cnn/24/out_DIP' + str(it) + '_FINAL.img'
 
 PETImage_shape = (112,112)
 

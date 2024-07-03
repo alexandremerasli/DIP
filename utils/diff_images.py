@@ -24,11 +24,11 @@ parser.add_argument('--img2', type=str, dest='img2', help='second image .img')
 
 args = parser.parse_args()
 
-root = 'data/Algo/'
+subroot = "data/Algo/"
 PETImage_shape = (112,112,1)
 same_scale_TMI = True # Save diff image with fixed scale to compare several difference images for TMI ReLU artifacts experiment
 
-image = fijii_np("data/Algo/Data/database_v2/image3_3/image3_3.raw",PETImage_shape)
+image = fijii_np(subroot + "/Data/database_v2/image3_3/image3_3.raw",PETImage_shape)
 img1_np = fijii_np(args.img1, shape=(PETImage_shape))
 print("min 1 = " ,np.min(img1_np))
 print("mean 1 = " ,np.mean(img1_np))
@@ -51,7 +51,7 @@ else:
 plt.title('absolute difference between img1 and img2')
 plt.ylim
 plt.colorbar()
-plt.savefig(root+'diff_img.png')
+plt.savefig(subroot+'diff_img.png')
 
 plt.figure()
 plt.imshow(img1_np / img2_np, cmap='bwr')
@@ -65,7 +65,7 @@ for i in range(img1_np.shape[0]):
 '''
 plt.title('relative difference between img1 and img2')
 plt.colorbar()
-plt.savefig(root+'relative_diff_img.png')
+plt.savefig(subroot+'relative_diff_img.png')
 
 MSE_normed = np.linalg.norm(img1_np - img2_np) / (PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])
 print("MSE : ",MSE_normed)
@@ -76,11 +76,11 @@ plt.figure()
 plt.imshow(img1_np, cmap='gray_r',vmin=np.min(img1_np),vmax=np.max(img1_np))
 plt.title('img1')
 plt.colorbar()
-plt.savefig(root+'img1.png')
+plt.savefig(subroot+'img1.png')
 
 plt.figure()
 #plt.imshow(np.abs(img2_np), cmap='gray_r')
 plt.imshow(img2_np, cmap='gray_r',vmin=np.min(img1_np),vmax=np.max(img1_np))
 plt.title('img2')
 plt.colorbar()
-plt.savefig(root+'img2.png')
+plt.savefig(subroot+'img2.png')

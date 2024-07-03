@@ -21,20 +21,20 @@ parser.add_argument('--img2', type=str, dest='img2', help='second image .img')
 
 args = parser.parse_args()
 
-root = 'data/Algo/'
+subroot = "data/Algo/"
 PETImage_shape = (112,112,1)
 PETImage_shape = (70,70,55)
 PETImage_shape = (200,200,109)
 PETImage_shape = (172,172,127)
 
 
-# args.img1 = "data/Algo/image010_3D/replicate_1/DNA/Block2/config_image=BSREM_it30_rho=0.03_adapt=nothing_mu_DI=50_tau_D=50_lr=0.01_sub_i=300_overr=True_opti_=Adam_skip_=3_scali=standardization_input=CT_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/out_cnn/24/out_DIP-1_FINAL.img"
-# args.img2 = "data/Algo/image010_3D/replicate_1/DNA/Block2/config_image=BSREM_it30_rho=0.03_adapt=nothing_mu_DI=50_tau_D=50_lr=0.01_sub_i=300_overr=True_opti_=Adam_skip_=3_scali=standardization_input=CT_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/out_cnn/24/out_DIP98_FINAL.img"
+# args.img1 = subroot + "/image010_3D/replicate_1/DNA/Block2/config_image=BSREM_it30_rho=0.03_adapt=nothing_mu_DI=50_tau_D=50_lr=0.01_sub_i=300_overr=True_opti_=Adam_skip_=3_scali=standardization_input=CT_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/out_cnn/24/out_DIP-1_FINAL.img"
+# args.img2 = subroot + "/image010_3D/replicate_1/DNA/Block2/config_image=BSREM_it30_rho=0.03_adapt=nothing_mu_DI=50_tau_D=50_lr=0.01_sub_i=300_overr=True_opti_=Adam_skip_=3_scali=standardization_input=CT_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/out_cnn/24/out_DIP98_FINAL.img"
 
-args.img1 = "data/Algo/image010_3D/replicate_1/DNA/Block2/config_image=BSREM_it30_rho=3e-05_adapt=nothing_mu_DI=400_tau_D=2_lr=0.01_sub_i=300_opti_=Adam_skip_=3_scali=standardization_scali=False_input=CT_nb_ou=30_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/out_cnn/24/out_DIP-1_FINAL.img"
-# args.img1 = "data/Algo/image010_3D/replicate_1/DNA/Block1/config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=333_tau_D=2_lr=0.01_sub_i=300_opti_=Adam_skip_=3_scali=standardization_scali=False_input=CT_nb_ou=100_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/during_eq22/0_it2.img"
-args.img2 = "data/Algo/image010_3D/replicate_1/DNA/Block2/config_image=BSREM_it30_rho=3e-05_adapt=nothing_mu_DI=400_tau_D=2_lr=0.01_sub_i=300_opti_=Adam_skip_=3_scali=standardization_scali=False_input=CT_nb_ou=30_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/out_cnn/24/out_DIP79_FINAL.img"
-args.img2 = "data/Algo/image010_3D/replicate_1/MLEM_172_2mm/config_image=BSREM_it30_overr=True_mlem_=False_post_=0/MLEM_it60.img"
+args.img1 = subroot + "/image010_3D/replicate_1/DNA/Block2/config_image=BSREM_it30_rho=3e-05_adapt=nothing_mu_DI=400_tau_D=2_lr=0.01_sub_i=300_opti_=Adam_skip_=3_scali=standardization_scali=False_input=CT_nb_ou=30_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/out_cnn/24/out_DIP-1_FINAL.img"
+# args.img1 = subroot + "/image010_3D/replicate_1/DNA/Block1/config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=333_tau_D=2_lr=0.01_sub_i=300_opti_=Adam_skip_=3_scali=standardization_scali=False_input=CT_nb_ou=100_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/during_eq22/0_it2.img"
+args.img2 = subroot + "/image010_3D/replicate_1/DNA/Block2/config_image=BSREM_it30_rho=3e-05_adapt=nothing_mu_DI=400_tau_D=2_lr=0.01_sub_i=300_opti_=Adam_skip_=3_scali=standardization_scali=False_input=CT_nb_ou=30_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/out_cnn/24/out_DIP79_FINAL.img"
+args.img2 = subroot + "/image010_3D/replicate_1/MLEM_172_2mm/config_image=BSREM_it30_overr=True_mlem_=False_post_=0/MLEM_it60.img"
 
 same_scale_TMI = True # Save diff image with fixed scale to compare several difference images for TMI ReLU artifacts experiment
 
@@ -68,7 +68,7 @@ else:
 plt.title('absolute difference between img1 and img2 (1-2)')
 plt.colorbar()
 plt.axis("off")
-plt.savefig(root+'diff_img.png')
+plt.savefig(subroot+'diff_img.png')
 
 plt.figure()
 plt.imshow(img1_np / img2_np, cmap='bwr')
@@ -84,7 +84,7 @@ for i in range(img1_np.shape[0]):
 #'''
 plt.title('relative difference between img1 and img2')
 plt.colorbar()
-plt.savefig(root+'relative_diff_img.png')
+plt.savefig(subroot+'relative_diff_img.png')
 #'''
 
 MSE_normed = np.linalg.norm(img1_np - img2_np) / (PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])
@@ -99,7 +99,7 @@ plt.imshow(img1_np, cmap='gray_r',vmin=0,vmax=12000)
 # plt.title('img1')
 plt.colorbar()
 plt.axis("off")
-plt.savefig(root+'img1.png')
+plt.savefig(subroot+'img1.png')
 
 plt.figure()
 #plt.imshow(np.abs(img2_np), cmap='gray_r')
@@ -108,4 +108,4 @@ plt.imshow(img2_np, cmap='gray_r',vmin=0,vmax=12000)
 # plt.title('img2')
 plt.colorbar()
 plt.axis("off")
-plt.savefig(root+'img2.png')
+plt.savefig(subroot+'img2.png')

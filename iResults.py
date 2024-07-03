@@ -39,11 +39,11 @@ class iResults(vDenoising):
         if ("DNA" in self.method or "DIPRecon" in self.method):
             if ("3_" not in self.phantom):
                 try:
-                    self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/' + config["image_init_path_without_extension"] + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<f')
+                    self.image_corrupt = self.fijii_np(self.subroot + 'Data/initialization/' + self.phantom + '/' + config["image_init_path_without_extension"] + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<f')
                 except:
-                    self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/' + config["image_init_path_without_extension"] + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<d')
+                    self.image_corrupt = self.fijii_np(self.subroot + 'Data/initialization/' + self.phantom + '/' + config["image_init_path_without_extension"] + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<d')
             else:
-                self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<d')
+                self.image_corrupt = self.fijii_np(self.subroot + "/Data/database_v2/" + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<d')
             image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,config["scaling"]) # Scaling of x_label image
             if ("post_reco_in_suffix" in config):
                 if (config["post_reco_in_suffix"]):
@@ -53,7 +53,9 @@ class iResults(vDenoising):
             else:
                 self.global_it = -100
             if (self.DIP_early_stopping):# and "show_results_post_reco" in config["task"]):
-                self.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,root,self.scanner, self.simulation)
+                from iMovingVariance import iMovingVariance
+                self.classMV = iMovingVariance(config)
+                self.classMV.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,root,self.subroot,self.scanner, self.simulation)
                 self.lr = config['lr']
 
         if ('ADMMLim' in self.method):
@@ -77,52 +79,27 @@ class iResults(vDenoising):
         self.writer = SummaryWriter()
         
         #Loading Ground Truth image to compute metrics
-        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
+        self.image_gt = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
         if config["FLTNB"] == "double":
             self.image_gt = self.image_gt.astype(np.float64)
 
         if ("DNA" in self.method or "DIPRecon" in self.method):
             if (config["input"] == "CT"):
                 # # Loading attenuation map
-                # image_atn = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type_im='<f')
+                # image_atn = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type_im='<f')
                 # self.write_image_tensorboard(self.writer,image_atn,"Attenuation map (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # Attenuation map in tensorboard
         
                 # # Loading MR-like image
-                # image_mr = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw',shape=(self.PETImage_shape),type_im='<f')
-                image_mr = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type_im='<f')
+                # image_mr = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw',shape=(self.PETImage_shape),type_im='<f')
+                image_mr = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type_im='<f')
                 self.write_image_tensorboard(self.writer,image_mr,"DIP input (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # Attenuation map in tensorboard
-
-        '''
-        image = self.image_gt
-        image = image[20,:,:]
-        plt.imshow(image, cmap='gray_r',vmin=0,vmax=np.max(image)) # Showing all images with same contrast
-        plt.colorbar()
-        #os.system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
-        plt.savefig(self.subroot_data + 'Data/database_v2/' + 'image_gt.png')
-        '''
 
         # Defining ROIs
         if (not hasattr(self,"phantom_ROI")):
             if ("3D" not in self.phantom):
                 self.phantom_ROI = self.get_phantom_ROI(self.phantom)
-                # if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1"):
-                #     self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                #     self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                #     self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                #     # This ROIs has already been defined, but is computed for the sake of simplicity
-                #     self.hot_ROI = self.hot_TEP_ROI
-                # else:
-                #     self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                #     # These ROIs do not exist, so put them equal to hot ROI for the sake of simplicity
-                #     self.hot_TEP_ROI = np.array(self.hot_ROI)
-                #     self.hot_TEP_match_square_ROI = np.array(self.hot_ROI)
-                #     self.hot_perfect_match_ROI = np.array(self.hot_ROI)
-                # self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                # self.cold_inside_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_inside_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                # self.cold_edge_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_edge_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-
-                bkg_ROI_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw'
-                cold_ROI_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw'
+                bkg_ROI_path = self.subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw'
+                cold_ROI_path = self.subroot+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw'
                 self.read_ROIs(bkg_ROI_path,cold_ROI_path)
 
         if ("3D" not in self.phantom):
@@ -155,16 +132,13 @@ class iResults(vDenoising):
             self.MA_cold_edge = np.zeros(int(self.total_nb_iter ) + more_it)
 
         if ( "DNA" in self.method or  "DIPRecon" in self.method):
-            #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type_im='<d')
-            #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'random_1.img',shape=(self.PETImage_shape),type_im='<d')
-            #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'F16_GT_' + str(self.PETImage_shape[0]) + '.img',shape=(self.PETImage_shape),type_im='<f')
             if ("3_" not in self.phantom):
                 try:
-                    self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/' + config["image_init_path_without_extension"] + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<f')
+                    self.image_corrupt = self.fijii_np(self.subroot + 'Data/initialization/' + self.phantom + '/' + config["image_init_path_without_extension"] + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<f')
                 except:
-                    self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/' + config["image_init_path_without_extension"] + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<d')
+                    self.image_corrupt = self.fijii_np(self.subroot + 'Data/initialization/' + self.phantom + '/' + config["image_init_path_without_extension"] + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<d')
             else:
-                self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<d')
+                self.image_corrupt = self.fijii_np(self.subroot + "/Data/database_v2/" + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<d')
         
         if ("DIPRecon" in self.method or "DNA" in self.method):
             self.i_init = 0
@@ -229,7 +203,7 @@ class iResults(vDenoising):
                     if (not hasattr(self,"image_net_input")):
                         self.input = config["input"]
                         self.override_input = False
-                        self.image_net_input = self.load_input(self.net,self.PETImage_shape,self.subroot_data) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
+                        self.image_net_input = self.load_input(self.net,self.PETImage_shape,self.subroot) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
 
                         # modify input with line on the edge of the phantom, or to remove a region (DIP input tests)
                         # self.modify_input_line_edge(config)            
@@ -246,7 +220,7 @@ class iResults(vDenoising):
             if ("3_" not in self.phantom):
                 if ("DNA" in self.method):
                     # Compute IR for BSREM initialization image
-                    im_BSREM = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<f') # loading BSREM initialization image
+                    im_BSREM = self.fijii_np(self.subroot + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<f') # loading BSREM initialization image
                     self.IR_ref = [np.NaN]
                     self.compute_IR_whole(self.PETImage_shape,im_BSREM,0,self.IR_ref,self.phantom)
                     # Add 1 to number of iterations before stopping criterion
@@ -331,10 +305,10 @@ class iResults(vDenoising):
         # plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
         plt.axhline(y=np.min(self.VAR_recon), c="black", linewidth=0.5)
         if (config["EMV_or_WMV"] == "WMV"):
-            plt.savefig(self.mkdir(self.subroot + '/self.VAR_recon/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+            plt.savefig(self.mkdir(self.subroot_phantom + '/self.VAR_recon/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
             self.lr) + '-lr' + str(self.lr) + '+self.VAR_recon-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
         else:
-            plt.savefig(self.mkdir(self.subroot + '/self.VAR_recon/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
+            plt.savefig(self.mkdir(self.subroot_phantom + '/self.VAR_recon/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
             self.lr) + '-lr' + str(self.lr) + '+self.VAR_recon-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
 
         # Save WMV in tensorboard
@@ -351,10 +325,10 @@ class iResults(vDenoising):
             # plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
             plt.axhline(y=np.min(self.MSE_WMV), c="black", linewidth=0.5)
             if (config["EMV_or_WMV"] == "WMV"):
-                plt.savefig(self.mkdir(self.subroot + '/self.MSE_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                plt.savefig(self.mkdir(self.subroot_phantom + '/self.MSE_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
                     self.lr) + '-lr' + str(self.lr) + '+self.MSE_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
             else:
-                plt.savefig(self.mkdir(self.subroot + '/self.MSE_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
+                plt.savefig(self.mkdir(self.subroot_phantom + '/self.MSE_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
                 self.lr) + '-lr' + str(self.lr) + '+self.MSE_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
 
             # 2.4 plot PSNR
@@ -365,10 +339,10 @@ class iResults(vDenoising):
             # plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
             plt.axhline(y=np.max(self.PSNR_WMV), c="black", linewidth=0.5)
             if (config["EMV_or_WMV"] == "WMV"):
-                plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                plt.savefig(self.mkdir(self.subroot_phantom + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
                     self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
             else:
-                plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
+                plt.savefig(self.mkdir(self.subroot_phantom + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
                 self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
             #'''
             # 2.5 plot SSIM
@@ -379,10 +353,10 @@ class iResults(vDenoising):
             # plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
             plt.axhline(y=np.max(self.SSIM_WMV), c="black", linewidth=0.5)
             if (config["EMV_or_WMV"] == "WMV"):
-                plt.savefig(self.mkdir(self.subroot + '/self.SSIM_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                plt.savefig(self.mkdir(self.subroot_phantom + '/self.SSIM_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
                     self.lr) + '-lr' + str(self.lr) + '+self.SSIM_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
             else:
-                plt.savefig(self.mkdir(self.subroot + '/self.SSIM_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
+                plt.savefig(self.mkdir(self.subroot_phantom + '/self.SSIM_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
                 self.lr) + '-lr' + str(self.lr) + '+self.SSIM_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
             
             #'''
@@ -434,10 +408,10 @@ class iResults(vDenoising):
                 else:
                     plt.xticks([self.epochStar, self.windowSize-1], ['\n' + str(self.epochStar) + '\nES point', str(self.windowSize)], color='green')
                 
-                plt.savefig(self.mkdir(self.subroot + '/combined/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                plt.savefig(self.mkdir(self.subroot_phantom + '/combined/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
                     self.lr) + '-lr' + str(self.lr) + '+combined-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
             else:
-                plt.savefig(self.mkdir(self.subroot + '/combined/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
+                plt.savefig(self.mkdir(self.subroot_phantom + '/combined/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
                     self.lr) + '-lr' + str(self.lr) + '+combined-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
 
             # 2.4 plot PSNR
@@ -456,10 +430,10 @@ class iResults(vDenoising):
             # plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
             plt.axhline(y=np.max(self.PSNR_WMV), c="black", linewidth=0.5)
             if (config["EMV_or_WMV"] == "WMV"):
-                plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                plt.savefig(self.mkdir(self.subroot_phantom + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
                     self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
             else:
-                plt.savefig(self.mkdir(self.subroot + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
+                plt.savefig(self.mkdir(self.subroot_phantom + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
                 self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
     
     def MV_csv_path(self,alpha_EMV,config):
@@ -516,13 +490,13 @@ class iResults(vDenoising):
                     plt.legend()
                     print("MV min for alpha_EMV=",alpha_EMV,"at it= (10 first removed, after ",1000+remove_first_iterations," also)",", smooth=",str(smooth),np.argmin(self.MV[alpha_idx][10:1000]) + remove_first_iterations)
                 plt.title(str(remove_first_iterations) + " first iterations + " + str(self.total_nb_iter-last_iteration) + " final iterations removed")
-                plt.savefig(self.mkdir(self.subroot + '/several_alphas/' + self.suffix) + '/' + str(
+                plt.savefig(self.mkdir(self.subroot_phantom + '/several_alphas/' + self.suffix) + '/' + str(
                 self.lr) + '-lr' + str(self.lr) + '+several_alphas' '_' + str(alpha_list) + '_' + str(remove_first_iterations) + '_' + str(last_iteration) + '_smooth=' + str(smooth) + '.png')
 
     def loop_on_replicates(self,config,i):
         for p in range(1,self.nb_replicates+1):
             if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
-                self.subroot_p = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
+                self.subroot_p = self.subroot + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
                 self.pet_algo=config["method"]
                 # Take NNEPPS images if NNEPPS is asked for this run
                 if (config["NNEPPS"]):
@@ -582,7 +556,7 @@ class iResults(vDenoising):
                     # if("DNA" in self.method):
                     #     if (self.IR_whole_recon[int((i-self.i_init))]> self.IR_ref[0]): # > 1.604):# > self.IR_ref[0]):
                     #         print("DNA stopping criterion reached")
-                    #         self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
+                    #         self.path_stopping_criterion = self.subroot_phantom + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
                     #         stopping_criterion_file = open(self.path_stopping_criterion, "w")
                     #         stopping_criterion_file.write("stopping iteration :" + "\n")
                     #         stopping_criterion_file.write(str(i) + "\n")
@@ -721,9 +695,9 @@ class iResults(vDenoising):
         
         # Likelihood from fake CASToR reconstruction just to compute likelihood of initialization image        
         if "DNA" in self.self.method or "DIPRecon" in self.config["method"]:
-            folder_sub_path = self.subroot + 'Block2/' + self.suffix
+            folder_sub_path = self.subroot_phantom + 'Block2/' + self.suffix
         else:
-            folder_sub_path = self.subroot + '/' + self.suffix
+            folder_sub_path = self.subroot_phantom + '/' + self.suffix
         if "DNA" in self.self.method or "DIPRecon" in self.config["method"]:
             logfile_name = self.self.method + '_' + str(i-1) + '.log'
         else:
@@ -782,44 +756,4 @@ class iResults(vDenoising):
             #writer.add_scalar('Image roughness in the background (best : 0)', IR_bkg_recon[i], i)
 
 
-    def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner, simulation, image_net_input=None):
-        self.classWMV = iMovingVariance(config)            
-        self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
-        self.classWMV.hyperparameters_list = hyperparameters_list
-        self.classWMV.debug = debug
-        self.classWMV.param1_scale_im_corrupt = param1_scale_im_corrupt
-        self.classWMV.param2_scale_im_corrupt = param2_scale_im_corrupt
-        self.classWMV.scaling_input = scaling_input
-        self.classWMV.suffix = suffix
-        self.classWMV.global_it = global_it
-        self.classWMV.scanner = scanner
-        self.classWMV.simulation = simulation
-        self.classWMV.image_net_input = image_net_input
-        # Initialize variables
-        self.classWMV.do_everything(config,root)
-
-    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner,simulation,i, MV_metrics_already_stored_in_csv=False):
-        if (self.DIP_early_stopping):
-            self.SUCCESS = self.classWMV.SUCCESS
-
-            if (config["read_only_MV_csv"]):
-                MV_value_csv = self.VAR_recon[i]
-            else:
-                MV_value_csv = np.NaN
-            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out,i,config["sub_iter_DIP"],self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate,descale=False,MV_value_csv=MV_value_csv, MV_metrics_already_stored_in_csv=MV_metrics_already_stored_in_csv)
-            if (not config["read_only_MV_csv"]):
-                self.VAR_recon = self.classWMV.VAR_recon
-                self.MSE_WMV = self.classWMV.MSE_WMV
-                self.PSNR_WMV = self.classWMV.PSNR_WMV
-                self.SSIM_WMV = self.classWMV.SSIM_WMV
-            self.epochStar = self.classWMV.epochStar
-            if config["EMV_or_WMV"] == "EMV":
-                self.alpha_EMV = self.classWMV.alpha_EMV
-            else:
-                self.windowSize = self.classWMV.windowSize
-            self.patienceNumber = self.classWMV.patienceNumber
-
-            if self.SUCCESS: # Will be true 1 epoch after self.classWMV.SUCCESS becomes True
-                print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
-                return 1
-            return 0
+    

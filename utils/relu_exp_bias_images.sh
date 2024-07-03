@@ -1,14 +1,15 @@
+subroot="data/Algo/"
 for ((phantom_type=1;phantom_type<=1;phantom_type++)); do
     for num_epoch in {1000,4000,7500,9000}; do
 
         # DIPRecon
-        # python3 utils/diff_images.py --img2 "data/Algo/Data/database_v2/image3_$phantom_type/image3_$phantom_type.raw" --img1 "data/Algo/image3_$phantom_type/replicate_1/DIPRecon/Block2/post_reco config_image=BSREM_it30_rho=0_adapt=nothing_mu_DI=120_tau_D=1.5_lr=0.01_opti_=Adam_skip_=0_scali=nothing_input=CT_nb_ou=3_mlem_=False/out_cnn/24/out_DIP-100_epoch=$num_epoch.img"
-        # mv "data/Algo/diff_img.png" "/home/meraslia/Documents/Thèse/Résultats à montrer/2024_01_16/TMI_paper/relu_exp/bias_img_DIPRecon_3_"$phantom_type"_"$num_epoch"it.png"
-        # mv "data/Algo/diff_img.png" "/home/meraslia/Documents/Thèse/Résultats à montrer/2023_09_13/bias images ReLU exp/automatic/bias_img_DIPRecon_3_"$phantom_type"_"$num_epoch"it.png"
+        # python3 utils/diff_images.py --img2 subroot"/Data/database_v2/image3_$phantom_type/image3_$phantom_type.raw" --img1 subroot"/image3_$phantom_type/replicate_1/DIPRecon/Block2/post_reco config_image=BSREM_it30_rho=0_adapt=nothing_mu_DI=120_tau_D=1.5_lr=0.01_opti_=Adam_skip_=0_scali=nothing_input=CT_nb_ou=3_mlem_=False/out_cnn/24/out_DIP-100_epoch=$num_epoch.img"
+        # mv subroot"/diff_img.png" "/home/meraslia/Documents/Thèse/Résultats à montrer/2024_01_16/TMI_paper/relu_exp/bias_img_DIPRecon_3_"$phantom_type"_"$num_epoch"it.png"
+        # mv subroot"/diff_img.png" "/home/meraslia/Documents/Thèse/Résultats à montrer/2023_09_13/bias images ReLU exp/automatic/bias_img_DIPRecon_3_"$phantom_type"_"$num_epoch"it.png"
         # DNA ADMM
-        python3 utils/diff_images.py --img2 "data/Algo/Data/database_v2/image3_$phantom_type/image3_$phantom_type.raw" --img1 "data/Algo/image3_$phantom_type/replicate_1/DNA/Block2/post_reco config_image=BSREM_it30_rho=0_adapt=nothing_mu_DI=120_tau_D=1.5_lr=0.01_opti_=Adam_skip_=0_scali=nothing_input=CT_nb_ou=3_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=1_mlem_=False/out_cnn/24/out_DIP-100_epoch=$num_epoch.img"
-        mv "data/Algo/diff_img.png" "/home/meraslia/Documents/Thèse/Résultats à montrer/2024_01_16/TMI_paper/relu_exp/bias_img_DNA_3_"$phantom_type"_"$num_epoch"it.png"
-        # mv "data/Algo/diff_img.png" "/home/meraslia/Documents/Thèse/Résultats à montrer/2023_09_13/bias images ReLU exp/automatic/bias_img_DNA_3_"$phantom_type"_"$num_epoch"it.png"
+        python3 utils/diff_images.py --img2 subroot"/Data/database_v2/image3_$phantom_type/image3_$phantom_type.raw" --img1 subroot"/image3_$phantom_type/replicate_1/DNA/Block2/post_reco config_image=BSREM_it30_rho=0_adapt=nothing_mu_DI=120_tau_D=1.5_lr=0.01_opti_=Adam_skip_=0_scali=nothing_input=CT_nb_ou=3_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=1_mlem_=False/out_cnn/24/out_DIP-100_epoch=$num_epoch.img"
+        mv subroot"/diff_img.png" "/home/meraslia/Documents/Thèse/Résultats à montrer/2024_01_16/TMI_paper/relu_exp/bias_img_DNA_3_"$phantom_type"_"$num_epoch"it.png"
+        # mv subroot"/diff_img.png" "/home/meraslia/Documents/Thèse/Résultats à montrer/2023_09_13/bias images ReLU exp/automatic/bias_img_DNA_3_"$phantom_type"_"$num_epoch"it.png"
 
     done
 done

@@ -13,7 +13,7 @@ def config_func_MIC():
         "debug" : False, # Debug mode = run without raytune and with one iteration
         "ray" : False, # Ray mode = run with raytune if True, to run several settings in parallel
         "tensorboard" : False, # Tensorboard mode = show results in tensorboard
-        "all_images_DIP_when" : tune.grid_search(['Unique']), # Option to choose which DIP outputs to save. Can be set to "True" (save all images), "False" (10 images like in tensorboard (quicker, for visualization), "Unique" (store only last image), "True_init" (save all images at initialization and at each iteration) - first DIP denoising
+        "all_images_DIP_when" : tune.grid_search(['True_init']), # Option to choose which DIP outputs to save. Can be set to "True" (save all images), "False" (10 images like in tensorboard (quicker, for visualization), "Unique" (store only last image), "True_init" (save all images at initialization and at each iteration) - first DIP denoising
         "experiment" : tune.grid_search([24]),
         "replicates" : tune.grid_search(list(range(1,40+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
         "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
@@ -42,10 +42,10 @@ def config_func_MIC():
     # Configuration dictionnary for hyperparameters to tune
     hyperparameters_config = {
         "PSF" : tune.grid_search([False]), # Use or not of PSF in the reconstruction algorithm
-        # "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
-        "image_init_path_without_extension" : tune.grid_search(['MLEM_it20']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
+        # "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
+        "image_init_path_without_extension" : tune.grid_search(['MLEM_it20']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
         "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)
-        "mu_DIP" : tune.grid_search([10000]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
+        "mu_DIP" : tune.grid_search([111]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
         "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
         ## network hyperparameters
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization

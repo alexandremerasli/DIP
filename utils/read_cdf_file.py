@@ -85,10 +85,10 @@ def write_binary_file(data,filename):
                 f.write(bytes)
 
 
-
+subroot = "data/Algo/"
 cdf_path = "/home/MEDECINE/mera1140/sherbrooke_workspace/TestCastor/umd_h12_wRot_act_BTB_1_100_df.Cdf"
-cdf_path = "data/Algo/Data/database_v2/image40_1/data40_1_1/data40_1_1.cdf"
-# cdf_path = "data/Algo/Data/database_v2/image40_1/dataTEST40_1_1/data40_1_1.cdf"
+cdf_path = subroot + "/Data/database_v2/image40_1/data40_1_1/data40_1_1.cdf"
+# cdf_path = subroot + "/Data/database_v2/image40_1/dataTEST40_1_1/data40_1_1.cdf"
 nb_events = int(8308200 / 4) # LP2 data
 nb_events = 68516 # simu data
 nb_elem_to_read = 8
@@ -108,7 +108,7 @@ for event in range(nb_events*8):
 # print(data[4:100:8])
 print(data[1:100:8])
 
-write_binary_file(data,"data/Algo/Data/database_v2/image40_1/dataTEST40_1_1/data40_1_1.cdf")
+write_binary_file(data,subroot + "/Data/database_v2/image40_1/dataTEST40_1_1/data40_1_1.cdf")
 
 
 # time 32

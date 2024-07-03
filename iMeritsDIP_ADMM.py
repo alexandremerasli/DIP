@@ -21,13 +21,13 @@ class iMeritsDIP_ADMM(vGeneral):
         self.nb_global_iteration = config["max_iter"]
         #self.adaptive_parameters == config["adaptive_parameters"]
 
-        self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-        self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-        self.cold_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        self.bkg_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        self.hot_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        self.cold_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
         self.phantom_ROI = self.get_phantom_ROI(self.phantom)
 
         #Loading Ground Truth image to compute metrics
-        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
+        self.image_gt = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
         if config["FLTNB"] == "double":
             self.image_gt = self.image_gt.astype(np.float64)
 
@@ -36,7 +36,7 @@ class iMeritsDIP_ADMM(vGeneral):
         self.REPLICATES = True  # as we use variable 'replicates' above, set it to True
         self._3NORMS = False  # defaut:True
         self._2R = False  # defaut:True
-        self.fomSavingPath = self.subroot + 'Images/tmp/' + self.suffix
+        self.fomSavingPath = self.subroot_phantom + 'Images/tmp/' + self.suffix
 
         option = 1  # Now, only option 0 and 1 are useful, option 2, 3 and 4 should be ignored
         #            0            1              2              3                 4
@@ -62,8 +62,8 @@ class iMeritsDIP_ADMM(vGeneral):
                 duplicate += '_rep' + str(self.replicate)
             outer_iters = self.outers
             tuners = alpha0s
-            #fp = open(self.subroot + self.suffix + '/adaptiveProcess' + str(duplicate) + '.log', mode='w+')
-            #fp = open(self.subroot + self.suffix + '/adaptiveProcess' + str(duplicate) + '.log', mode='w+')
+            #fp = open(self.subroot_phantom + self.suffix + '/adaptiveProcess' + str(duplicate) + '.log', mode='w+')
+            #fp = open(self.subroot_phantom + self.suffix + '/adaptiveProcess' + str(duplicate) + '.log', mode='w+')
 
         likelihoods_alpha = []
 
@@ -73,7 +73,7 @@ class iMeritsDIP_ADMM(vGeneral):
 
             if self.nb_inner_iteration == 1:
                 logfile_name = '0.log'
-            path_log = self.subroot + self.suffix + '/' + logfile_name
+            path_log = self.subroot_phantom + self.suffix + '/' + logfile_name
             theLog = pd.read_table(path_log)
 
             fileRows = np.column_stack([theLog[col].str.contains("Log-likelihood", na=False) for col in theLog])
@@ -124,11 +124,11 @@ class iMeritsDIP_ADMM(vGeneral):
                 #uName = '0_' + str(outer_iter) + '_u.img'
 
                 logfile_name = '0_adaptive_it' + str(outer_iter) + '.log'
-                path_txt = self.subroot + self.suffix + '/' + logfile_name
+                path_txt = self.subroot_phantom + self.suffix + '/' + logfile_name
                 coeff_alpha = self.getValueFromLogRow(path_txt, 0)/self.getValueFromLogRow(path_txt, 4)
 
 
-                imagePath = self.subroot + self.suffix + '/' + imageName
+                imagePath = self.subroot_phantom + self.suffix + '/' + imageName
                 IR, MSE, CRC, MA = self.computeThose4(imagePath)
                 IR_bkgs.append(IR)
                 MSEs.append(MSE)
@@ -136,12 +136,12 @@ class iMeritsDIP_ADMM(vGeneral):
                 MA_colds.append(MA)
 
                 Xnorms.append(self.computeNorm(imagePath))
-                #Vnorms.append(self.computeNorm(self.subroot + self.suffix + '/'+vName))
-                #u_norm = self.computeNorm(self.subroot + self.suffix + '/'+uName)
+                #Vnorms.append(self.computeNorm(self.subroot_phantom + self.suffix + '/'+vName))
+                #u_norm = self.computeNorm(self.subroot_phantom + self.suffix + '/'+uName)
                 #Unorms.append(u_norm)
                 #U_unscaled_norms.append(u_norm * coeff_alpha)
                 coeff_alphas.append(coeff_alpha)
-                #averageUs.append(computeAverage(self.subroot + self.suffix + '/'+uName))
+                #averageUs.append(computeAverage(self.subroot_phantom + self.suffix + '/'+uName))
 
             self.PLOT(outer_iters, IR_bkgs, tuners, nbTuners, figNum=2,
                 Xlabel='Outer iteration',
@@ -211,7 +211,7 @@ class iMeritsDIP_ADMM(vGeneral):
             else:
                 replicatesPath = ''
             
-            for fname in os.listdir(self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + str(self.experiment)):    # change directory as needed
+            for fname in os.listdir(self.subroot_phantom + 'Block2/' + self.suffix + '/out_cnn/' + str(self.experiment)):    # change directory as needed
                 if fname.startswith("ES_out_DIP" + str(outer_iter - 1) + "_epoch="):
                     imageName = fname
                     break
@@ -221,11 +221,11 @@ class iMeritsDIP_ADMM(vGeneral):
             #uName = '0_' + str(outer_iter) + '_u.img'
 
             logfile_name = 'adaptive_it' + str(outer_iter) + '.log'
-            path_txt = self.subroot + 'Block2/' + self.suffix + '/' + logfile_name
+            path_txt = self.subroot_phantom + 'Block2/' + self.suffix + '/' + logfile_name
             coeff_alpha = self.getValueFromLogRow(path_txt, 0)/self.getValueFromLogRow(path_txt, 4)
 
 
-            imagePath = self.subroot + 'Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/' + imageName
+            imagePath = self.subroot_phantom + 'Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/' + imageName
             IR, MSE, CRC, MA = self.computeThose4(imagePath)
             IR_bkgs.append(IR)
             MSEs.append(MSE)
@@ -286,7 +286,7 @@ class iMeritsDIP_ADMM(vGeneral):
                 else:
                     replicatesPath = ''
                 logfile_name = 'adaptive_it' + str(global_iter) + '.log'
-                path_txt = self.subroot + 'Block2/' + self.suffix + '/' + logfile_name
+                path_txt = self.subroot_phantom + 'Block2/' + self.suffix + '/' + logfile_name
 
                 # get adaptive alpha
                 adaptiveAlphas.append(self.getValueFromLogRow(path_txt, 0))

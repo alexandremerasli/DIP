@@ -70,7 +70,7 @@ class iFinalCurves(vGeneral):
         for method in method_list: # Loop over methods
             if (MIC_config):
                 # Read config dictionnary for this method in config file
-                config[method] = self.choose_good_config_file(method,config,csv_before_MIC,DIPRecon)
+                config[method] = self.choose_good_config_file(method,config,csv_before_MIC)
             else:
                 config[method]["method"] = method
 
@@ -85,8 +85,8 @@ class iFinalCurves(vGeneral):
             config_tmp[method] = dict(config[method])
             config_tmp[method]["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
             config_tmp[method]["ray"] = True # Activate ray
-            os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + method + '.txt')
-            os.system("rm -rf " + root + '/data/Algo/' + 'replicates_for_last_run_' + method + '.txt')
+            os.system("rm -rf " + root + subroot + 'suffixes_for_last_run_' + method + '.txt')
+            os.system("rm -rf " + root + subroot + 'replicates_for_last_run_' + method + '.txt')
             classTask = iResultsAlreadyComputed(config[method])
             task = 'show_metrics_results_already_computed'
             classTask.runRayTune(config_tmp[method],root,task,only_suffix_replicate_file=True) # Only to write suffix and replicate files
@@ -164,9 +164,9 @@ class iFinalCurves(vGeneral):
                 suffixes = []
                 replicates = []
 
-                with open(root + '/data/Algo' + '/suffixes_for_last_run_' + method + '.txt') as f:
+                with open(root + self.subroot + '/suffixes_for_last_run_' + method + '.txt') as f:
                     suffixes.append(f.readlines())
-                with open(root + '/data/Algo' + '/replicates_for_last_run_' + method + '.txt') as f:
+                with open(root + self.subroot + '/replicates_for_last_run_' + method + '.txt') as f:
                     replicates.append(f.readlines())
                 
                 # Retrieve number of rhos and replicates and other dimension
@@ -582,10 +582,10 @@ class iFinalCurves(vGeneral):
                 #     title += ".png"
                 
                 try:
-                    fig[fig_nb].savefig(self.subroot_data + 'metrics/' + self.phantom + '/' + title, bbox_inches='tight')
+                    fig[fig_nb].savefig(self.subroot + 'metrics/' + self.phantom + '/' + title, bbox_inches='tight')
                 except OSError:
                     print("File name too long, setting a shorter one")
-                    fig[fig_nb].savefig(self.subroot_data + 'metrics/' + self.phantom + '/' + title[-250:], bbox_inches='tight')
+                    fig[fig_nb].savefig(self.subroot + 'metrics/' + self.phantom + '/' + title[-250:], bbox_inches='tight')
 
 
             for method in method_list: # Loop over methods
@@ -769,7 +769,7 @@ class iFinalCurves(vGeneral):
                     replicates_legend[fig_nb].append(r'DIPRecon$^{end~to~end}$')
                         
 
-    def choose_good_config_file(self,method,config,csv_before_MIC,DIPRecon):        
+    def choose_good_config_file(self,method,config,csv_before_MIC):        
         lib = importlib.import_module(method)
         if ('DNA' in method):
             method_name = "DNA"
@@ -1283,12 +1283,12 @@ class iFinalCurves(vGeneral):
             replicate = "replicate_" + str(i_replicate + 1)
 
             
-            self.subroot = self.subroot_data + 'debug/'*self.debug + self.phantom + '/'+ str(replicate) + '/' + config[method]["method"] + '/' # Directory root
+            self.subroot_phantom = self.subroot + 'debug/'*self.debug + self.phantom + '/'+ str(replicate) + '/' + config[method]["method"] + '/' # Directory root
             self.suffix = suffix[:-12] # Remove NNEPPS from suffix
             self.max_iter = config[method]["max_iter"]
             self.defineTotalNbIter_beta_rho(method,config[method],task)
             
-            metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + config[method]["method"] + '/' + suffix + '/' + 'metrics.csv'
+            metrics_file = root + self.subroot + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + config[method]["method"] + '/' + suffix + '/' + 'metrics.csv'
             with open(metrics_file, 'r') as myfile:
                 spamreader = reader_csv(myfile,delimiter=';')
                 rows_csv = list(spamreader)
@@ -1397,7 +1397,7 @@ class iFinalCurves(vGeneral):
                     IR_bkg_recon.append(np.array(rows_csv[7]))
             
             if ("cold_" in ROI):
-                metrics_file = root + '/data/Algo' + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + config[method]["method"] + '/' + suffix + '/' + 'metrics_cold.csv'
+                metrics_file = root + self.subroot + '/metrics/' + config[method]["image"] + '/' + str(replicate) + '/' + config[method]["method"] + '/' + suffix + '/' + 'metrics_cold.csv'
                 with open(metrics_file, 'r') as myfile:
                     spamreader = reader_csv(myfile,delimiter=';')
                     rows_csv = list(spamreader)

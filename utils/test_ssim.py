@@ -44,10 +44,11 @@ def fijii_np(path,shape,type_im=None):
 
 
 #Loading Ground Truth image to compute metrics
-image_gt = fijii_np("/home/meraslia/workspace_reco/nested_admm/data/Algo/Data/database_v2/image4_0/image4_0.raw",shape=((112,112)),type_im='<f')
+subroot = "data/Algo/"
+image_gt = fijii_np(subroot + "Data/database_v2/image4_0/image4_0.raw",shape=((112,112)),type_im='<f')
 
 #Loading corrupted image
-image_corrupted = fijii_np("/home/meraslia/workspace_reco/nested_admm/data/Algo/Data/initialization/image4_0/BSREM_30it/replicate_1/BSREM_it30.img",shape=((112,112)),type_im='<f')
+image_corrupted = fijii_np(subroot + "Data/initialization/image4_0/BSREM_30it/replicate_1/BSREM_it30.img",shape=((112,112)),type_im='<f')
 
 # plt.imshow(image_gt,cmap='gray')
 # plt.show()

@@ -252,7 +252,7 @@ class VAE_DIP_2D(pl.LightningModule):
         from utils.utils_func import save_img
         if ((self.current_epoch%(self.sub_iter_DIP // 10) == 0)):
             out_np = out.detach().numpy()[0,0,:,:]
-            subroot = 'data/Algo/'
+            subroot = "data/Algo/"
             experiment = 24
             save_img(out_np, subroot+'Block2/out_cnn/' + format(experiment) + '/out_' + 'DIP_VAE' + '_post_reco_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
         

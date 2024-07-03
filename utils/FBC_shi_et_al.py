@@ -104,59 +104,60 @@ def fbc_to_csv(iters_path,target_filename,gt,PETImage_shape,sub_iter_DIP):
     # for p in processes:
     #     p.join()
 
-# # Compute FBC from folder of images
-# my_PETImage_shape = (112,112)
-# my_gt = fijii_np("data/Algo/Data/database_v2/image40_1/image40_1.img",my_PETImage_shape)
-# my_corrupt = fijii_np("data/Algo/Data/initialization/image40_1/BSREM_30it/replicate_13/BSREM_it30.img",my_PETImage_shape)
-# lr_list = [0.00001,0.00005,0.0001,0.0005,0.001,0.005,0.01,0.05,0.1,0.5,1,5]
-# lr_list = [0.001]
-# sub_iter_DIP = 5000
-# ref_image_list = [my_gt,my_corrupt]
-# ref_image_names_list = ["gt","corrupt"]
-# for i in range(len(ref_image_list)):
-#     ref_image = ref_image_list[i]
-#     ref_image_name = ref_image_names_list[i]
-#     FBC_video = []
-#     FBC_video_same_scale = []
-# # for ref_image in [my_corrupt]:
-# #     ref_image_name = "corrupt"
-# # for ref_image in [my_gt]:
-# #     ref_image_name = "gt"
-#     for p in range(len(lr_list)):
-#         print("lr =",lr_list[p])
-#         short_subfolder = "data/Algo/image40_1_post_reco_FBC/replicate_13/DNA_bug_ckpt/Block2/FBC_manu"
-#         subfolder = short_subfolder + "/post_reco config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2.5_monit=False_lr=" + str(lr_list[p]) + "_opti_=Adam_skip_=3_scali=normalization_input=CT_nb_ou=2_alpha=1_adapt=both_mu_ad=2_tau=2_tau_m=100_stopp=0.001_saveS=1_mlem_=False/out_cnn/"
-#         # subfolder = short_subfolder + "/post_reco config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2.55_monit=True_lr=" + str(lr_list[p]) + "_opti_=Adam_skip_=3_scali=normalization_input=CT_nb_ou=2_alpha=1_adapt=both_mu_ad=2_tau=2_tau_m=100_stopp=0.001_saveS=1_mlem_=False/out_cnn/"
-#         my_iters_path = subfolder + "24/"
-#         my_FBC_output_path = subfolder + "FBC/"
-#         Path(my_FBC_output_path).mkdir(parents=True, exist_ok=True)
-#         my_output_csv_path = my_FBC_output_path + "FBC_" + str(ref_image_name) + "_" + str(sub_iter_DIP) + "it.csv"
-#         fbc_to_csv(my_iters_path,my_output_csv_path,ref_image,my_PETImage_shape,sub_iter_DIP)
+# Compute FBC from folder of images
+my_PETImage_shape = (112,112)
+subroot = "data/Algo/"
+my_gt = fijii_np(subroot + "/Data/database_v2/image40_1/image40_1.img",my_PETImage_shape)
+my_corrupt = fijii_np(subroot + "/Data/initialization/image40_1/BSREM_30it/replicate_13/BSREM_it30.img",my_PETImage_shape)
+lr_list = [0.00001,0.00005,0.0001,0.0005,0.001,0.005,0.01,0.05,0.1,0.5,1,5]
+lr_list = [0.001]
+sub_iter_DIP = 5000
+ref_image_list = [my_gt,my_corrupt]
+ref_image_names_list = ["gt","corrupt"]
+for i in range(len(ref_image_list)):
+    ref_image = ref_image_list[i]
+    ref_image_name = ref_image_names_list[i]
+    FBC_video = []
+    FBC_video_same_scale = []
+# for ref_image in [my_corrupt]:
+#     ref_image_name = "corrupt"
+# for ref_image in [my_gt]:
+#     ref_image_name = "gt"
+    for p in range(len(lr_list)):
+        print("lr =",lr_list[p])
+        short_subfolder = subroot + "/image40_1_post_reco_FBC/replicate_13/DNA_bug_ckpt/Block2/FBC_manu"
+        subfolder = short_subfolder + "/post_reco config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2.5_monit=False_lr=" + str(lr_list[p]) + "_opti_=Adam_skip_=3_scali=normalization_input=CT_nb_ou=2_alpha=1_adapt=both_mu_ad=2_tau=2_tau_m=100_stopp=0.001_saveS=1_mlem_=False/out_cnn/"
+        # subfolder = short_subfolder + "/post_reco config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2.55_monit=True_lr=" + str(lr_list[p]) + "_opti_=Adam_skip_=3_scali=normalization_input=CT_nb_ou=2_alpha=1_adapt=both_mu_ad=2_tau=2_tau_m=100_stopp=0.001_saveS=1_mlem_=False/out_cnn/"
+        my_iters_path = subfolder + "24/"
+        my_FBC_output_path = subfolder + "FBC/"
+        Path(my_FBC_output_path).mkdir(parents=True, exist_ok=True)
+        my_output_csv_path = my_FBC_output_path + "FBC_" + str(ref_image_name) + "_" + str(sub_iter_DIP) + "it.csv"
+        fbc_to_csv(my_iters_path,my_output_csv_path,ref_image,my_PETImage_shape,sub_iter_DIP)
 
-#         # Plot
-#         df = pd.read_csv(my_output_csv_path)
-#         iterations_csv = df["iteration"]
-#         frequency_band_list = ["lowest","low","medium","high","highest"]
-#         freq_csv = 5*[0]
-#         fig, ax = plt.subplots()
-#         for i in range(len(frequency_band_list)):
-#             freq = frequency_band_list[i]
-#             freq_csv[i] = df[freq]
-#             ax.plot(iterations_csv,freq_csv[i],label=freq)
-#         ax.legend()
-#         ax.set_title("lr = " + str(lr_list[p]))
-#         fig.savefig(my_FBC_output_path + "FBC_plot_" + str(ref_image_name) + "_" + str(sub_iter_DIP) + "it.png")
-#         # plt.show()
-#         ax.set_ylim([0,1])
-#         ax.set_xlabel("Iterations")
-#         ax.set_ylabel("FBC")
-#         fig.savefig(my_FBC_output_path + "FBC_plot_" + str(ref_image_name) + "_" + str(sub_iter_DIP) + "it_same_scale.png")
-#         print("end")
+        # Plot
+        df = pd.read_csv(my_output_csv_path)
+        iterations_csv = df["iteration"]
+        frequency_band_list = ["lowest","low","medium","high","highest"]
+        freq_csv = 5*[0]
+        fig, ax = plt.subplots()
+        for i in range(len(frequency_band_list)):
+            freq = frequency_band_list[i]
+            freq_csv[i] = df[freq]
+            ax.plot(iterations_csv,freq_csv[i],label=freq)
+        ax.legend()
+        ax.set_title("lr = " + str(lr_list[p]))
+        fig.savefig(my_FBC_output_path + "FBC_plot_" + str(ref_image_name) + "_" + str(sub_iter_DIP) + "it.png")
+        # plt.show()
+        ax.set_ylim([0,1])
+        ax.set_xlabel("Iterations")
+        ax.set_ylabel("FBC")
+        fig.savefig(my_FBC_output_path + "FBC_plot_" + str(ref_image_name) + "_" + str(sub_iter_DIP) + "it_same_scale.png")
+        print("end")
 
-#         # Concatenate PNG figures
-#         FBC_video.append(imageio.imread(my_FBC_output_path + "FBC_plot_" + str(ref_image_name) + "_" + str(sub_iter_DIP) + "it.png"))
-#         FBC_video_same_scale.append(imageio.imread(my_FBC_output_path + "FBC_plot_" + str(ref_image_name) + "_" + str(sub_iter_DIP) + "it_same_scale.png"))
+        # Concatenate PNG figures
+        FBC_video.append(imageio.imread(my_FBC_output_path + "FBC_plot_" + str(ref_image_name) + "_" + str(sub_iter_DIP) + "it.png"))
+        FBC_video_same_scale.append(imageio.imread(my_FBC_output_path + "FBC_plot_" + str(ref_image_name) + "_" + str(sub_iter_DIP) + "it_same_scale.png"))
 
-#     # PNG to video
-#     imageio.mimsave(short_subfolder + "FBC_plot_" + str(ref_image_name) + "_" + str(sub_iter_DIP) + "it.avi", FBC_video,fps=1)
-#     imageio.mimsave(short_subfolder + "FBC_plot_" + str(ref_image_name) + "_" + str(sub_iter_DIP) + "it_same_scale.avi", FBC_video_same_scale,fps=1)
+    # PNG to video
+    imageio.mimsave(short_subfolder + "FBC_plot_" + str(ref_image_name) + "_" + str(sub_iter_DIP) + "it.avi", FBC_video,fps=1)
+    imageio.mimsave(short_subfolder + "FBC_plot_" + str(ref_image_name) + "_" + str(sub_iter_DIP) + "it_same_scale.avi", FBC_video_same_scale,fps=1)

@@ -91,7 +91,8 @@ def write_hdr_img(path,filename):
                 else:
                     f1.write(line)
 
-filenames = ['data/Algo/Data/initialization/image010_3D/BSREM_30it/replicate_1/BSREM_it30']
+subroot = 'data/Algo/'
+filenames = [subroot + 'Data/initialization/image010_3D/BSREM_30it/replicate_1/BSREM_it30']
 
 for filename in filenames:
     path = Path(filename)

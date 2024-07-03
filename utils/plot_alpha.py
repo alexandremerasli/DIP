@@ -5,35 +5,35 @@ from os.path import isfile
 import matplotlib.pyplot as plt
 
 folder_path = "/home/meraslia/workspace_reco/test_dynamic_2_type_frame_longer/"
-
+subroot = "data/Algo/"
 
 """
 subfolder = "framebyframe64"
 subsubfolder = "framebyframe641"
 
-#folder_path = "data/Algo/image2_0/replicate_1/"
+#folder_path = subroot + "/image2_0/replicate_1/"
 #subfolder = "ADMMLim_test_1_frame23"
 
-folder_path = "data/Algo/image2_0/replicate_1/"
+folder_path = subroot + "/image2_0/replicate_1/"
 subfolder = "ADMMLim_test_1_frame1"
 
-folder_path = "data/Algo/image2_0/replicate_1/"
+folder_path = subroot + "/image2_0/replicate_1/"
 subfolder = "ADMMLim_test_0.01"
 """
 #subfolder = "framebyframe_all"
 
 
-folder_path = "data/Algo/image00_cylinder/"
+folder_path = subroot + "/image00_cylinder/"
 subfolder = "ADMMLim_TOF_common"
 subfolder = "ADMMLim_TOF_rapide"
 #subfolder = "ADMMLim_TOF_70"
 
-folder_path = "data/Algo/image40_0/replicate_9/DNA/Block2/config_image=BSREM_it30_rho=0.0003_adapt=both_mu_DI=2_tau_D=100_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/"
-folder_path = "data/Algo/image40_0/replicate_9/DNA/Block2/config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/"
+folder_path = subroot + "/image40_0/replicate_9/DNA/Block2/config_image=BSREM_it30_rho=0.0003_adapt=both_mu_DI=2_tau_D=100_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/"
+folder_path = subroot + "/image40_0/replicate_9/DNA/Block2/config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/"
 
-folder_path = "data/Algo/image40_0/replicate_1/DNA/Block2/config_image=BSREM_it30_rho=1_adapt=rho_decay_mu_DI=10_tau_D=0.8_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/"
-folder_path = "data/Algo/image40_0/replicate_1/DNA/Block2/config_image=BSREM_it30_rho=0.01_adapt=rho_decay_mu_DI=10_tau_D=0.9_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/"
-# folder_path = "data/Algo/image40_0/replicate_1/DNA/Block2/config_image=BSREM_it30_rho=1_adapt=both_mu_DI=10_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/"
+folder_path = subroot + "/image40_0/replicate_1/DNA/Block2/config_image=BSREM_it30_rho=1_adapt=rho_decay_mu_DI=10_tau_D=0.8_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/"
+folder_path = subroot + "/image40_0/replicate_1/DNA/Block2/config_image=BSREM_it30_rho=0.01_adapt=rho_decay_mu_DI=10_tau_D=0.9_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/"
+# folder_path = subroot + "/image40_0/replicate_1/DNA/Block2/config_image=BSREM_it30_rho=1_adapt=both_mu_DI=10_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_stopp=0_saveS=0_mlem_=False/"
 
 subfolder = "adaptive rho"
 

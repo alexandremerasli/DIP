@@ -12,6 +12,7 @@ from ray import tune
 import importlib
 
 def uncompatible_parameters(config):
+    method = config["method"]["grid_search"][0]
     if (method == "DNA" and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
         raise ValueError("DNA must be launched with rho > 0")
     elif ((method != "DIPRecon" and method != "DNA") and task == "post_reco"):
@@ -63,6 +64,7 @@ def class_for_task(config,task):
 
 def choose_task(config):
     # Task to run reconstruction according to the method
+    method = config["method"]["grid_search"][0]
     if (method == "DIPRecon" or method == "DNA"):
         task = 'full_reco_with_network'
 
@@ -116,7 +118,8 @@ for lib_string in config_files:
         config["ray"] = False
 
         root = os.getcwd()
-
+        subroot = "/data/Algo/"
+        
         # Write random seed in a file to get it in network architectures
         os.system("rm -rf " + os.getcwd() +"/seed.txt")
         file_seed = open(os.getcwd() + "/seed.txt","w+")
@@ -137,8 +140,8 @@ for lib_string in config_files:
             uncompatible_parameters(config)
 
             #'''
-            os.system("rm -rf " + root + '/data/Algo/' + 'suffixes_for_last_run_' + method + '.txt')
-            os.system("rm -rf " + root + '/data/Algo/' + 'replicates_for_last_run_' + method + '.txt')
+            os.system("rm -rf " + root + subroot + 'suffixes_for_last_run_' + method + '.txt')
+            os.system("rm -rf " + root + subroot + 'replicates_for_last_run_' + method + '.txt')
 
             # Launch task
             classTask.runRayTune(config_tmp,root,task)

@@ -42,8 +42,8 @@ class DIP_3D(pl.LightningModule):
         self.hyperparameters_list = hyperparameters_list
         self.scaling_input = scaling_input
         self.debug = debug
-        self.subroot = subroot
         self.root = root
+        self.subroot = root + subroot
         self.config = config
         self.experiment = config["experiment"]
 
@@ -63,7 +63,7 @@ class DIP_3D(pl.LightningModule):
         
         # Initialize early stopping method if asked for
         if(self.DIP_early_stopping):
-            self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner,simulation)
+            self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner,simulation)
 
         self.write_current_img_mode = True
         #self.suffix = self.suffix_func(config,hyperparameters_list)
@@ -250,7 +250,7 @@ class DIP_3D(pl.LightningModule):
         plt.show()
         '''
         if (self.current_epoch == 0):
-            self.save_img(image_corrupt_torch.cpu().detach().numpy()[0,0,:,:,:],self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/label' + self.scaling_input + '.img')
+            self.save_img(image_corrupt_torch.cpu().detach().numpy()[0,0,:,:,:],self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/label' + self.scaling_input + '.img')
 
         out = self.forward(image_net_input_torch)
         # Save image over epochs
@@ -262,7 +262,7 @@ class DIP_3D(pl.LightningModule):
         self.logger.experiment.add_scalar('loss', loss,self.current_epoch)        
 
         # WMV
-        self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.scanner,self.simulation)
+        self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.subroot,self.scanner,self.simulation)
         
         # Increment number of iterations since beginnning of DNA
         self.sub_iter_DIP_already_done += 1
@@ -307,7 +307,7 @@ class DIP_3D(pl.LightningModule):
         plt.colorbar()
         plt.show()
         '''
-        self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+        self.save_img(out_np, self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
         config_copy = dict(config)
@@ -340,7 +340,7 @@ class DIP_3D(pl.LightningModule):
         # Initialize variables
         self.classWMV.do_everything(config,root)
 
-    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner,simulation):
+    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner,simulation):
         if (self.DIP_early_stopping):
             self.SUCCESS = self.classWMV.SUCCESS
             self.log("SUCCESS", int(self.classWMV.SUCCESS))
@@ -367,7 +367,7 @@ class DIP_3D(pl.LightningModule):
             if self.SUCCESS:
             # if self.classWMV.SUCCESS:
                 print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
-                self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner, simulation)
+                self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner, simulation)
         
         else:
             self.log("SUCCESS", int(False))

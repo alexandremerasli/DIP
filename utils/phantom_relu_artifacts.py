@@ -78,22 +78,23 @@ print("end")
 
 
 # Save phantoms
+subroot = "data/Algo/"
 from pathlib import Path
-Path("data/Algo/Data/database_v2/image3_" + str(case)).mkdir(parents=True, exist_ok=True)
-save_img(PET_phantom,"data/Algo/Data/database_v2/image3_" + str(case) + "/image3_" + str(case) + ".raw")
-save_img(PET_phantom,"data/Algo/Data/database_v2/image3_" + str(case) + "/image3_" + str(case) + ".img")
-save_img(MR_phantom,"data/Algo/Data/database_v2/image3_" + str(case) + "/image3_" + str(case) + "_atn.raw")
-save_img(MR_phantom,"data/Algo/Data/database_v2/image3_" + str(case) + "/image3_" + str(case) + "_atn.img")
+Path(subroot + "/Data/database_v2/image3_" + str(case)).mkdir(parents=True, exist_ok=True)
+save_img(PET_phantom,subroot + "/Data/database_v2/image3_" + str(case) + "/image3_" + str(case) + ".raw")
+save_img(PET_phantom,subroot + "/Data/database_v2/image3_" + str(case) + "/image3_" + str(case) + ".img")
+save_img(MR_phantom,subroot + "/Data/database_v2/image3_" + str(case) + "/image3_" + str(case) + "_atn.raw")
+save_img(MR_phantom,subroot + "/Data/database_v2/image3_" + str(case) + "/image3_" + str(case) + "_atn.img")
 
 
-save_img(inside_ROI_phantom,"data/Algo/Data/database_v2/image3_" + str(case) + "/background_mask3_" + str(case) + ".raw")
-save_img(inside_ROI_phantom,"data/Algo/Data/database_v2/image3_" + str(case) + "/phantom_mask3_" + str(case) + ".raw")
-save_img(cold_hot_ROI_phantom,"data/Algo/Data/database_v2/image3_" + str(case) + "/cold_mask3_" + str(case) + ".raw")
-# save_img(cold_hot_ROI_phantom,"data/Algo/Data/database_v2/image3_" + str(case) + "/tumor_perfect_match_ROI_mask3_" + str(case) + ".raw")
-# save_img(cold_hot_ROI_phantom,"data/Algo/Data/database_v2/image3_" + str(case) + "/tumor_TEP_mask3_" + str(case) + ".raw")
-# save_img(cold_hot_ROI_phantom,"data/Algo/Data/database_v2/image3_" + str(case) + "/tumor_TEP_match_square_ROI_mask3_" + str(case) + ".raw")
-save_img(cold_hot_ROI_phantom,"data/Algo/Data/database_v2/image3_" + str(case) + "/tumor_mask3_" + str(case) + ".raw")
+save_img(inside_ROI_phantom,subroot + "/Data/database_v2/image3_" + str(case) + "/background_mask3_" + str(case) + ".raw")
+save_img(inside_ROI_phantom,subroot + "/Data/database_v2/image3_" + str(case) + "/phantom_mask3_" + str(case) + ".raw")
+save_img(cold_hot_ROI_phantom,subroot + "/Data/database_v2/image3_" + str(case) + "/cold_mask3_" + str(case) + ".raw")
+# save_img(cold_hot_ROI_phantom,subroot + "/Data/database_v2/image3_" + str(case) + "/tumor_perfect_match_ROI_mask3_" + str(case) + ".raw")
+# save_img(cold_hot_ROI_phantom,subroot + "/Data/database_v2/image3_" + str(case) + "/tumor_TEP_mask3_" + str(case) + ".raw")
+# save_img(cold_hot_ROI_phantom,subroot + "/Data/database_v2/image3_" + str(case) + "/tumor_TEP_match_square_ROI_mask3_" + str(case) + ".raw")
+save_img(cold_hot_ROI_phantom,subroot + "/Data/database_v2/image3_" + str(case) + "/tumor_mask3_" + str(case) + ".raw")
 
 # cold edge and cold inside not well defined
-save_img(cold_hot_ROI_phantom,"data/Algo/Data/database_v2/image3_" + str(case) + "/cold_inside_mask3_" + str(case) + ".raw")
-save_img(cold_hot_ROI_phantom,"data/Algo/Data/database_v2/image3_" + str(case) + "/cold_edge_mask3_" + str(case) + ".raw")
+save_img(cold_hot_ROI_phantom,subroot + "/Data/database_v2/image3_" + str(case) + "/cold_inside_mask3_" + str(case) + ".raw")
+save_img(cold_hot_ROI_phantom,subroot + "/Data/database_v2/image3_" + str(case) + "/cold_edge_mask3_" + str(case) + ".raw")

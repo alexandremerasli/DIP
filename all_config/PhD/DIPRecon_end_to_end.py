@@ -45,9 +45,9 @@ def config_func_MIC():
     hyperparameters_config = {
         # "PSF" : tune.grid_search([False]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
         # "recoInDNA" : tune.grid_search(["APGMAP"]), # Which algorithm to use in DNA (ADMMLim or APGMAP)
-        "end_to_end" : tune.grid_search([True]), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
-        "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
-        # "image_init_path_without_extension" : tune.grid_search(['MLEM_it60']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
+        "end_to_end" : tune.grid_search([True]), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
+        "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
+        # "image_init_path_without_extension" : tune.grid_search(['MLEM_it60']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
         "rho" : tune.grid_search([3]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)    
         "adaptive_parameters_DIP" : tune.grid_search(["nothing"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
         "mu_DIP" : tune.grid_search([10.1]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim

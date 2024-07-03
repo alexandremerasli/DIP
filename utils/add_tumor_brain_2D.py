@@ -36,8 +36,9 @@ def points_in_circle(center_y,center_x,radius,PETImage_shape,inner_circle=True):
     return liste
 
 # Read PET and MR brain images (without tumor)
-path_PET = 'data/Algo/Data/database_v2/image50_0/image50_0.raw'
-path_MR = 'data/Algo/Data/database_v2/image50_0/image50_0_mr.raw'
+subroot = 'data/Algo/'
+path_PET = subroot + 'Data/database_v2/image50_0/image50_0.raw'
+path_MR = subroot + 'Data/database_v2/image50_0/image50_0_mr.raw'
 PETImage_shape = (112,112,1)
 img_PET = fijii_np(path_PET, shape=(PETImage_shape))
 img_MR = fijii_np(path_MR, shape=(PETImage_shape))
@@ -85,6 +86,6 @@ plt.imshow(img_MR,cmap="gray")
 plt.figure()
 plt.imshow(img_PET,cmap="gray_r")
 plt.show()
-Path("data/Algo/Data/database_v2/image50_1").mkdir(parents=True, exist_ok=True)
-save_img(img_PET,'data/Algo/Data/database_v2/image50_1/image50_1.raw')
-save_img(img_MR,'data/Algo/Data/database_v2/image50_1/image50_1_mr.raw')
+Path(subroot + "/Data/database_v2/image50_1").mkdir(parents=True, exist_ok=True)
+save_img(img_PET,subroot + 'Data/database_v2/image50_1/image50_1.raw')
+save_img(img_MR,subroot + 'Data/database_v2/image50_1/image50_1_mr.raw')

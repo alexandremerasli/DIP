@@ -46,13 +46,13 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         self.writer = SummaryWriter()
         
         #Loading Ground Truth image to compute metrics
-        self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
+        self.image_gt = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
         if config["FLTNB"] == "double":
             self.image_gt = self.image_gt.astype(np.float64)
 
         # Defining ROIs
-        # self.bkg_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-        # self.phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        # self.bkg_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        # self.phantom_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
         self.phantom_ROI = (self.phantom_ROI).astype(np.int)
         # Metrics arrays
         '''
@@ -160,9 +160,9 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         # lines_angles = self.nb_replicates * []
         # min_len_zi = self.nb_replicates * []
         for p in range(self.nb_replicates,0,-1):
-            self.subroot = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
+            self.subroot_phantom = self.subroot + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
             self.defineTotalNbIter_beta_rho(config, config["task"])
-            self.subroot = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(1) + '/' + self.method + '/' # Directory root
+            self.subroot_phantom = self.subroot + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(1) + '/' + self.method + '/' # Directory root
             p_for_file = p
             i = self.total_nb_iter
             if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
@@ -194,7 +194,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                 #     p_for_file = replicates_replace_list[DIPRecon_failing_replicate_list.index(p)]
             
 
-                self.subroot_p = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p_for_file) + '/' + self.method + '/' # Directory root
+                self.subroot_p = self.subroot + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p_for_file) + '/' + self.method + '/' # Directory root
 
                 # Take NNEPPS images if NNEPPS is asked for this run
                 if (config["NNEPPS"]):
@@ -269,7 +269,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                 # ref_mean = 10
                 self.plot_profile_func(ref_mean,avg_line,avg_line_ref,ax_profile,ax_profile_ref,p)
                 plt.imshow(self.f_p,cmap="gray_r")
-                plt.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'profile_line_on_image' + '_nb_angles=' + str(len(self.angles)) + '_nb_repl=' + str(self.nb_replicates) + '.png')
+                plt.savefig(self.subroot_phantom + 'Images/tmp/' + self.suffix + '/' +  'profile_line_on_image' + '_nb_angles=' + str(len(self.angles)) + '_nb_repl=' + str(self.nb_replicates) + '.png')
                 self.replicates_with_profile.append(p-1)
 
             # break
@@ -285,7 +285,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             #     nb_angles=1
             #     angles = np.linspace(0, (nb_angles - 1) * np.pi / nb_angles, nb_angles)
             #     lines_angles,means,min_len_zi = self.compute_mean(f_list[p-1],(center_x_MR_tumor,center_y_MR_tumor),radius_MR_tumor,angles)
-            #     # self.MR = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw',shape=(self.PETImage_shape),type_im='<f')
+            #     # self.MR = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw',shape=(self.PETImage_shape),type_im='<f')
             #     # lines_angles,means,min_len_zi = self.compute_mean(self.MR,(center_x_MR_tumor,center_y_MR_tumor),radius_MR_tumor,angles)
             #     avg_line[p-1] = np.zeros(min_len_zi)
             #     for angle in range(nb_angles):
@@ -323,8 +323,8 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             ax_profile_ref.legend()
             fig.subplots_adjust(left=0.15, right=0.9, bottom=0.11, top=0.9)
             fig_ref.subplots_adjust(left=0.15, right=0.9, bottom=0.11, top=0.9)
-            fig.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'ax_profile' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + '.png')
-            fig_ref.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'ax_profile_ref' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + '.png')
+            fig.savefig(self.subroot_phantom + 'Images/tmp/' + self.suffix + '/' +  'ax_profile' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + '.png')
+            fig_ref.savefig(self.subroot_phantom + 'Images/tmp/' + self.suffix + '/' +  'ax_profile_ref' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + '.png')
 
         # if len(nan_replicates) > 0:
         #     raise ValueError("naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaan",nan_replicates)
@@ -332,7 +332,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         f /= self.nb_usable_replicates
         f_init_avg /= self.nb_usable_replicates
 
-        Path(self.subroot + 'Images/tmp/' + self.suffix + '/' + 'binary/').mkdir(parents=True, exist_ok=True)
+        Path(self.subroot_phantom + 'Images/tmp/' + self.suffix + '/' + 'binary/').mkdir(parents=True, exist_ok=True)
 
         for p in set(range(self.nb_replicates,0,-1)) - set(nan_replicates):
             print("fffffffffffffffffffffffffff")
@@ -343,7 +343,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             f_var[self.phantom_ROI==1] += (f[self.phantom_ROI==1] - f_list[p-1][self.phantom_ROI==1])**2 / self.nb_usable_replicates
         
         self.write_image_tensorboard(self.writer,np.sqrt(f_var),self.method + " at convergence, std (not normalised) over " + str(self.nb_usable_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,p,full_contrast=True) # std of images at convergence across replicates in tensorboard
-        path_img = self.subroot + 'Images/tmp/' + self.suffix + '/' + 'binary/'
+        path_img = self.subroot_phantom + 'Images/tmp/' + self.suffix + '/' + 'binary/'
         self.save_img(np.sqrt(f_var),path_img + self.method + " at convergence, std (not normalised) over " + str(self.nb_usable_replicates) + " replicates (FULL CONTRAST)" + ".img")
 
         f_var_gt = np.array(f_var)
@@ -368,7 +368,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         self.write_image_tensorboard(self.writer,f_init_avg,self.method + " denoised initialization over " + str(self.nb_usable_replicates) + " replicates (FULL CONTRAST)",self.suffix,self.image_gt,p,full_contrast=True) # denoised initialization across replicates in tensorboard
         
         # Save images as .img
-        path_img = self.subroot + 'Images/tmp/' + self.suffix + '/' + 'binary/'
+        path_img = self.subroot_phantom + 'Images/tmp/' + self.suffix + '/' + 'binary/'
         self.save_img(self.f_p,path_img + self.method + " at convergence, for replicate 1" + ".img")
         self.save_img(f,path_img + self.method + " at convergence, averaged on " + str(self.nb_usable_replicates) + " replicates" + ".img")
         self.save_img(np.sqrt(f_var),path_img + self.method + " at convergence, std over " + str(self.nb_usable_replicates) + " replicates (FULL CONTRAST)" + ".img")
@@ -413,9 +413,9 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         #         #     p_for_file = replicates_replace_list[DIPRecon_failing_replicate_list.index(p)]
                 
         #         p_for_file = p
-        #         self.subroot = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p_for_file) + '/' + self.method + '/' # Directory root
+        #         self.subroot_phantom = self.subroot + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p_for_file) + '/' + self.method + '/' # Directory root
         #         self.defineTotalNbIter_beta_rho(config, config["task"])
-        #         self.subroot = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(1) + '/' + self.method + '/' # Directory root
+        #         self.subroot_phantom = self.subroot + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(1) + '/' + self.method + '/' # Directory root
         #         i_min = self.total_nb_iter
         #         self.IR_bkg_recon = np.zeros(self.total_nb_iter)
         #         IR = 0
@@ -442,7 +442,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         #                     SSIM_min = structural_similarity(np.squeeze(self.image_gt*self.phantom_ROI), np.squeeze(self.f_p*self.phantom_ROI), data_range=(self.f_p*self.phantom_ROI).max() - (self.f_p*self.phantom_ROI).min())
                         
         #                 if (IR < IR_common/100 and IR_prec >= IR_common/100):
-        #                     self.hot_TEP_ROI_ref = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_white_matter_ref" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+        #                     self.hot_TEP_ROI_ref = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_white_matter_ref" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
         #                     ref_mean = np.mean(self.f_p[self.hot_TEP_ROI_ref==1])
         #                     print("IR = ",IR)
         #                     f_avg_same_IR += self.f_p
@@ -499,8 +499,8 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         #             # ax_profile.set_ylim([1.25,2.75])
         #             ax_profile.set_ylim([1,3])
         #             ax_profile_ref.set_ylim([-0.5,0.5])
-        #         fig.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'ax_profile' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + "_IR=" + str(int(round(IR,2)*100)) + '%.png')
-        #         fig_ref.savefig(self.subroot + 'Images/tmp/' + self.suffix + '/' +  'ax_profile_ref' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + "_IR=" + str(int(round(IR,2)*100)) + '%.png')
+        #         fig.savefig(self.subroot_phantom + 'Images/tmp/' + self.suffix + '/' +  'ax_profile' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + "_IR=" + str(int(round(IR,2)*100)) + '%.png')
+        #         fig_ref.savefig(self.subroot_phantom + 'Images/tmp/' + self.suffix + '/' +  'ax_profile_ref' + '_nb_angles=' + str(nb_angles) + '_nb_repl=' + str(self.nb_replicates) + "_IR=" + str(int(round(IR,2)*100)) + '%.png')
 
 
         #     f_avg_same_IR /= self.nb_usable_replicates
@@ -545,7 +545,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         
         lines_angles_ref = (lines_angles - ref_mean) / ref_mean
 
-        # self.MR = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw',shape=(self.PETImage_shape),type_im='<f')
+        # self.MR = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw',shape=(self.PETImage_shape),type_im='<f')
         # lines_angles,means,min_len_zi = self.compute_mean(self.MR,(center_x_MR_tumor,center_y_MR_tumor),radius_MR_tumor,angles)
         avg_line[p-1] = np.zeros(min_len_zi)
         avg_line_ref[p-1] = np.zeros(min_len_zi)
@@ -611,7 +611,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             #self.write_image_tensorboard(self.writer,self.image_APGMAP,"APGMAP at convergence",suffix,self.image_gt,0,full_contrast=True) # APGMAP at convergence in tensorboard
        
     def read_image_method(self,config,beta_string,i_init,p,i):
-        self.subroot_p = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
+        self.subroot_p = self.subroot + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
 
         # Take NNEPPS images if NNEPPS is asked for this run
         if (config["NNEPPS"]):

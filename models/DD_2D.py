@@ -29,7 +29,7 @@ class DD_2D(pl.LightningModule):
         self.method = method
         self.all_images_DIP = all_images_DIP
         self.last_iter = last_iter + 1
-        self.subroot = subroot
+        self.subroot = root + subroot
         self.config = config
         self.experiment = config["experiment"]
         self.suffix = suffix
@@ -184,7 +184,7 @@ class DD_2D(pl.LightningModule):
         plt.show()
         '''
         print(self.last_iter)
-        self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DD' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+        self.save_img(out_np, self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DD' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
 
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
         config_copy = dict(config)

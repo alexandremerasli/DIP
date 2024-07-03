@@ -49,24 +49,7 @@ class vGeneral(abc.ABC):
         """General variables"""
 
         # Initialize some parameters from config
-        # self.finetuning = config["finetuning"]
         self.finetuning = "ES" # Initialize finetuning to ES, will be overrided when necessary depending on ES strategy
-        
-        # if config["all_images_DIP_when"] == "True":
-        #     self.all_images_DIP_when = "True"
-        #     self.all_images_DIP = "True"
-        # elif (config["all_images_DIP_when"] == "True_init"):
-        #     self.all_images_DIP_when = "True_init"
-        #     self.all_images_DIP = "True"
-        # elif (config["all_images_DIP_when"] == "Unique"):
-        #     self.all_images_DIP_when = "Unique"
-        #     self.all_images_DIP = "Unique"
-        # elif config["all_images_DIP_when"] == "False":
-        #     self.all_images_DIP_when = "False"
-        #     self.all_images_DIP = "False"
-        # else:
-        #     raise ValueError("Please put one value for all_images_DIP_when in config variable")
-
         self.phantom = config["image"]
         self.net = config["net"]
         self.method = config["method"]
@@ -140,12 +123,12 @@ class vGeneral(abc.ABC):
             else:
                 self.DIP_early_stopping = False
 
-        self.subroot_data = root + '/data/Algo/' # Directory root
+        # self.subroot = root + self.subroot # Directory root
         
         if (config["task"] != "show_metrics_results_already_computed_following_step"):
             # Initialize useful variables
-            self.subroot = self.subroot_data + 'debug/'*self.debug + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' + self.method + '/' # Directory root
-            self.subroot_metrics = self.subroot_data + 'debug/'*self.debug + 'metrics/' + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' # Directory root for metrics
+            self.subroot_phantom = self.subroot + 'debug/'*self.debug + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' + self.method + '/' # Directory root
+            self.subroot_metrics = self.subroot + 'debug/'*self.debug + 'metrics/' + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' # Directory root for metrics
             self.suffix = self.suffix_func(config) # self.suffix to make difference between raytune runs (different hyperparameters)
             self.suffix_metrics = self.suffix_func(config,NNEPPS=True) # self.suffix with NNEPPS information
             if ("post_reco" in config["task"] and "post_reco" not in self.suffix):
@@ -162,7 +145,7 @@ class vGeneral(abc.ABC):
                 # self.suffix_metrics = config["task"][:10] + ' ' + self.suffix_metrics
 
             # Define PET input dimensions according to input data dimensions
-            self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+            self.PETImage_shape_str = self.read_input_dim(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
             self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
             # Define sinogram dimensions
@@ -176,33 +159,33 @@ class vGeneral(abc.ABC):
             
             # # Define ROIs for image0 phantom, otherwise it is already done in the database
             # if (self.phantom == "image0" or self.phantom == "image2_0" and config["task"] != "show_metrics_results_already_computed"):
-            #     self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
+            #     self.define_ROI_image0(self.PETImage_shape,self.subroot)
             # elif (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
-            #     self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
+            #     self.define_ROI_image2_3D(self.PETImage_shape,self.subroot)
             # elif (("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
-            #     self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
+            #     self.define_ROI_new_phantom(self.PETImage_shape,self.subroot)
             # elif ((self.phantom == "image50_1" or "50_2" in self.phantom) and config["task"] != "show_metrics_results_already_computed"):
-            #     self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot_data)
+            #     self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot)
         return config
 
     def createDirectoryAndConfigFile(self,config):
         if (self.method == 'DNA' or self.method == "DIPRecon"):
-            Path(self.subroot+'Block1/' + self.suffix + '/before_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
-            Path(self.subroot+'Block1/' + self.suffix + '/during_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
-            Path(self.subroot+'Block1/' + self.suffix + '/out_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
+            Path(self.subroot_phantom+'Block1/' + self.suffix + '/before_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
+            Path(self.subroot_phantom+'Block1/' + self.suffix + '/during_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
+            Path(self.subroot_phantom+'Block1/' + self.suffix + '/out_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
 
-            Path(self.subroot+'Images/out_final/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the framework (Last output of the DIP)
+            Path(self.subroot_phantom+'Images/out_final/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the framework (Last output of the DIP)
 
-            Path(self.subroot+'Block2/' + self.suffix + '/checkpoint/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
-            Path(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
-            Path(self.subroot+'Block2/' + self.suffix + '/out_cnn/vae').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
-            Path(self.subroot+'Block2/' + self.suffix + '/out_cnn/cnn_metrics/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # DIP block metrics
-            Path(self.subroot+'Block2/' + self.suffix + '/x_label/'+format(self.experiment) + '/').mkdir(parents=True, exist_ok=True) # x corrupted - folder
-            Path(self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
+            Path(self.subroot_phantom+'Block2/' + self.suffix + '/checkpoint/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
+            Path(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
+            Path(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/vae').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
+            Path(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/cnn_metrics/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # DIP block metrics
+            Path(self.subroot_phantom+'Block2/' + self.suffix + '/x_label/'+format(self.experiment) + '/').mkdir(parents=True, exist_ok=True) # x corrupted - folder
+            Path(self.subroot_phantom+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
 
-        Path(self.subroot_data + 'Data/initialization').mkdir(parents=True, exist_ok=True)
-        Path(self.subroot_data + 'Data/initialization/random').mkdir(parents=True, exist_ok=True)
-        Path(self.subroot_data + 'Data/initialization/pytorch/replicate_' + str(self.replicate)).mkdir(parents=True, exist_ok=True)
+        Path(self.subroot + 'Data/initialization').mkdir(parents=True, exist_ok=True)
+        Path(self.subroot + 'Data/initialization/random').mkdir(parents=True, exist_ok=True)
+        Path(self.subroot + 'Data/initialization/pytorch/replicate_' + str(self.replicate)).mkdir(parents=True, exist_ok=True)
                 
     def runRayTune(self,config,root,task,only_suffix_replicate_file=False):
         # Check parameters incompatibility
@@ -256,7 +239,7 @@ class vGeneral(abc.ABC):
         return config
 
     def initializeBeforeRay(self,config,root):
-        self.subroot_data = root + '/data/Algo/' # Directory root
+        self.subroot = root + '/data/Algo/' # Directory root
         if (config["ray"]):
             self.phantom = config["image"]["grid_search"][0]
         else:
@@ -280,30 +263,30 @@ class vGeneral(abc.ABC):
             self.simulation = False
 
         # Define PET input dimensions according to input data dimensions
-        self.PETImage_shape_str = self.read_input_dim(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+        self.PETImage_shape_str = self.read_input_dim(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
         self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
         # # Loading Ground Truth image to compute metrics
-        # self.image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')            
+        # self.image_gt = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')            
 
 
         # Define ROIs for image0 phantom, otherwise it is already done in the database
         if (self.phantom == "image0" or self.phantom == "image2_0" and config["task"] != "show_metrics_results_already_computed"):
-            self.define_ROI_image0(self.PETImage_shape,self.subroot_data)
+            self.define_ROI_image0(self.PETImage_shape,self.subroot)
         elif (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
-            self.define_ROI_image2_3D(self.PETImage_shape,self.subroot_data)
+            self.define_ROI_image2_3D(self.PETImage_shape,self.subroot)
         elif (("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
-            self.define_ROI_new_phantom(self.PETImage_shape,self.subroot_data)
+            self.define_ROI_new_phantom(self.PETImage_shape,self.subroot)
         elif ((self.phantom == "image50_1" or "50_2" in self.phantom) and config["task"] != "show_metrics_results_already_computed"):
-            self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot_data)
+            self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot)
         elif ((self.phantom == "imageUHR_IEC")):
-            self.define_ROI_IEC_3D(self.PETImage_shape,self.subroot_data)
+            self.define_ROI_IEC_3D(self.PETImage_shape,self.subroot)
 
         # Defining ROIs
         self.phantom_ROI = self.get_phantom_ROI(self.phantom)
         if (self.simulation):
-            bkg_ROI_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw'
-            cold_ROI_path = self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw'
+            bkg_ROI_path = self.subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw'
+            cold_ROI_path = self.subroot+'Data/database_v2/' + self.phantom + '/' + "cold_mask" + self.phantom[5:] + '.raw'
             if (isfile(bkg_ROI_path) or isfile(cold_ROI_path)):
                 self.read_ROIs(bkg_ROI_path,cold_ROI_path)
             else:
@@ -315,29 +298,29 @@ class vGeneral(abc.ABC):
         
         # Define hot ROI according to the phantom
         if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_1" or "50_2" in self.phantom):              
-            self.hot_perfect_match_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-            self.hot_MR_recon = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.hot_perfect_match_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.hot_MR_recon = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             if ("50_2" not in self.phantom):
-                self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                self.hot_TEP_match_square_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_match_square_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             else:
                 self.hot_TEP_match_square_ROI = self.hot_perfect_match_ROI
             # This ROIs has already been defined, but is computed for the sake of simplicity
             self.hot_ROI = self.hot_perfect_match_ROI
             # TEP only tumor (if there is one)
             if (self.phantom == "image50_1"):
-                self.hot_TEP_ROI_ref = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_white_matter_ref" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                self.hot_TEP_ROI_ref = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_white_matter_ref" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             if ("50" in self.phantom):
                 # Use the hot_TEP_ROI to actually store the MR only region
                 self.hot_TEP_ROI = self.hot_MR_recon
             else:
-                self.hot_TEP_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                self.hot_TEP_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_TEP_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
         elif ("UHR_IEC" in self.phantom):
-            self.hot1_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "hot1_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-            self.hot2_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "hot2_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-            self.hot3_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "hot3_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-            self.hot4_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "hot4_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.hot1_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "hot1_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.hot2_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "hot2_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.hot3_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "hot3_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.hot4_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "hot4_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
         else:
-            self.hot_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.hot_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             # These ROIs do not exist, so put them equal to hot ROI for the sake of simplicity
             self.hot_TEP_ROI = array(self.hot_ROI)
             self.hot_TEP_match_square_ROI = array(self.hot_ROI)
@@ -346,13 +329,13 @@ class vGeneral(abc.ABC):
         
         # Define cold ROI according to the phantom
         if ("UHR_IEC" in self.phantom):
-            self.cold1_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold1_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-            self.cold2_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold2_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.cold1_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "cold1_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            self.cold2_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "cold2_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
         else:
             self.cold_ROI = self.fijii_np(cold_ROI_path, shape=(self.PETImage_shape),type_im='<f')
             if ("4" in self.phantom):
-                self.cold_inside_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_inside_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-                self.cold_edge_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + self.phantom + '/' + "cold_edge_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                self.cold_inside_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "cold_inside_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+                self.cold_edge_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "cold_edge_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             else:
                 self.cold_inside_ROI = self.cold_ROI
                 self.cold_edge_ROI = self.cold_ROI
@@ -406,7 +389,7 @@ class vGeneral(abc.ABC):
                 config.pop("stoppingCriterionValue", None)
                 config.pop("saveSinogramsUAndV", None)
                 #config.pop("xi", None)
-            elif ((method == 'ADMMLim' or method == 'ADMMLim_Bowsher' or "DNA" in self.method) and config["adaptive_parameters"]['grid_search'][0] == "nothing"):
+            elif ((method == 'ADMMLim' or method == 'ADMMLim_Bowsher' or "DNA" in method) and config["adaptive_parameters"]['grid_search'][0] == "nothing"):
                 config.pop("mu_adaptive", None)
                 config.pop("tau", None)
                 config.pop("tau_max", None)
@@ -431,7 +414,7 @@ class vGeneral(abc.ABC):
             elif (config["net"]['grid_search'][0] != "DD_AE"): # not a Deep Decoder based architecture, so remove k and d
                 config.pop("d_DD", None)
                 config.pop("k_DD", None)
-            if (method == 'MLEM' or self.method == 'OPTITR' or 'OSEM' in method or method == 'AML'):
+            if (method == 'MLEM' or method == 'OPTITR' or 'OSEM' in method or method == 'AML'):
                 config.pop("rho", None)
             if ("DNA" in method or "DIPRecon" in method):
                 if ("end_to_end" in config):
@@ -442,18 +425,11 @@ class vGeneral(abc.ABC):
                 else:
                     config.pop("end_to_end", None)
             # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMLim in CASToR
-            if ('ADMMLim' in method or "DNA" in self.method):
+            if ('ADMMLim' in method or "DNA" in method):
                 config["mlem_sequence"]['grid_search'] = [False]
         else:
             if ('results' not in task):
                 raise ValueError("Please do not put several methods at the same time for computation.")
-        
-        '''
-        if (task == "show_results" or task == "show_results_replicates"):
-            if (len(config["replicates"]['grid_search']) > 1):
-            # Compute once results because for loop over replicates
-                config["replicates"]['grid_search'] = [1]
-        '''
         
         if (task == "show_results_replicates"):
             # List of beta values
@@ -472,11 +448,11 @@ class vGeneral(abc.ABC):
                 raise ValueError("There must be only one method to average over replicates")
 
     def do_everything(self,config,root,only_suffix_replicate_file = False):
+        self.root = root
+        # self.subroot = root + '/data/Algo/' # Directory root
         if (not only_suffix_replicate_file):
             # Initialize variables
             self.config = config
-            self.root = root
-            self.subroot_data = root + '/data/Algo/' # Directory root
             #if (config["task"] != "show_metrics_results_already_computed_following_step"):
             self.initializeGeneralVariables(config,root)
             self.initializeSpecific(config,root)
@@ -485,15 +461,14 @@ class vGeneral(abc.ABC):
         if (only_suffix_replicate_file and config["task"] != "show_metrics_results_already_computed_following_step"):
             # Initialize general variables
             self.replicate = config["replicates"] # Label of the replicate
-            self.subroot_data = root + '/data/Algo/' # Directory root
             self.suffix_metrics = self.suffix_func(config,NNEPPS=True) # self.suffix with NNEPPS information
 
             # Store suffix to retrieve all suffixes in main.py for metrics
-            text_file = open(self.subroot_data + 'suffixes_for_last_run_' + self.method + '.txt', "a")
+            text_file = open(self.subroot + 'suffixes_for_last_run_' + self.method + '.txt', "a")
             text_file.write(self.suffix_metrics + "\n")
             text_file.close()
             # Store replicate to retrieve all replicates in main.py for metrics
-            text_file = open(self.subroot_data + 'replicates_for_last_run_' + self.method + '.txt', "a")
+            text_file = open(self.subroot + 'replicates_for_last_run_' + self.method + '.txt', "a")
             text_file.write("replicate_" + str(self.replicate) + "\n")
             text_file.close()
 
@@ -524,7 +499,7 @@ class vGeneral(abc.ABC):
                 ref_numbers = format(i)
         ref_numbers = additional_name + ref_numbers
         filename = subroot_output_path + '/'+ subpath + '/' + ref_numbers +'.hdr'
-        with open(self.subroot_data + 'Data/MLEM_reco_for_init_hdr/' + phantom + '/' + phantom + '_it1.hdr') as f:
+        with open(self.subroot + 'Data/MLEM_reco_for_init_hdr/' + phantom + '/' + phantom + '_it1.hdr') as f:
             with open(filename, "w") as f1:
                 for line in f:
                     if line.strip() == ('!name of data file := ' + phantom + '_it1.img'):
@@ -859,6 +834,7 @@ class vGeneral(abc.ABC):
                 classResults.cold2_ROI = self.cold2_ROI
 
     def assignVariablesFromResults(self,classResults):
+        classResults.subroot = self.subroot
         classResults.nb_replicates = self.nb_replicates
         classResults.debug = self.debug
         if (hasattr(self, 'rho')):
@@ -1240,12 +1216,8 @@ class vGeneral(abc.ABC):
         axis('off')
         #show()
 
-        # if (isnan(sum(image))):
-        #     raise ValueError("NaNs detected in image. Stopping computation (" + "replicate_" + str(i) + "/" + suffix + ")")
-
         # Saving this figure locally
-        Path(self.subroot + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
-        #system('rm -rf' + self.subroot + 'Images/tmp/' + suffix + '/*')
+        Path(self.subroot_phantom + 'Images/tmp/' + suffix).mkdir(parents=True, exist_ok=True)
         from textwrap import wrap
         if (MIC_show):
             cbar = colorbar()
@@ -1263,7 +1235,7 @@ class vGeneral(abc.ABC):
 
         # title("<0.06",fontsize=20)
         title(">0.14",fontsize=20)
-        savefig(self.subroot + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
+        savefig(self.subroot_phantom + 'Images/tmp/' + suffix + '/' + name + '_' + str(i) + '.png')
         
         # added line for small title of interest
         suffix = self.suffix_func(self.config,hyperparameters_list = ["lr", "opti_DIP"])
@@ -1284,12 +1256,12 @@ class vGeneral(abc.ABC):
         if (not mlem_quick):
             header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data pat
         else:
-            header_file = ' -df ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[5:] + '_' + str(self.config["replicates"]) + '/data' + self.phantom[5:] + '_' + str(self.config["replicates"]) + '.cdh' # PET data path
+            header_file = ' -df ' + self.subroot + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[5:] + '_' + str(self.config["replicates"]) + '/data' + self.phantom[5:] + '_' + str(self.config["replicates"]) + '.cdh' # PET data path
         if (self.scanner == "UHR"):
             vox = ' -vox 1.2,1.2,1.2'
             proj = ' -proj distanceDriven'
             psf = ''
-            sensitivity = " -sens " + self.subroot_data + 'Data/database_v2/' + self.phantom + '/sensitivity' + self.phantom[5:] + '_' + str(self.config["replicates"]) + '.hdr'
+            sensitivity = " -sens " + self.subroot + 'Data/database_v2/' + self.phantom + '/sensitivity' + self.phantom[5:] + '_' + str(self.config["replicates"]) + '.hdr'
         else:
             sensitivity = "" # No sensitivity for histogram data 
             if (self.scanner != "mMR_3D"):
@@ -1348,7 +1320,7 @@ class vGeneral(abc.ABC):
             penaltyStrength = ''
         elif (method == 'APGMAP'):
             #opti = ' -opti ' + "APPGML" + ',1,1e-10,0.01,-1,' + str(self.A_AML) + ',0' # Multimodal image is only used by APPGML
-            opti = ' -opti ' + "APPGML" + ':' + self.subroot + '/' + self.suffix  + '/' + 'APPGML.conf'
+            opti = ' -opti ' + "APPGML" + ':' + self.subroot_phantom + '/' + self.suffix  + '/' + 'APPGML.conf'
             # Choose penalty config file according to Bowsher weights or not
             penaltyStrength = ' -pnlt-beta ' + str(self.beta)
             if ("Bowsher" in self.config):
@@ -1359,14 +1331,14 @@ class vGeneral(abc.ABC):
             else:
                 Bowsher = False
             if (Bowsher):
-                pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF_Bowsher.conf'
-                pnlt += ' -multimodal ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.hdr'
+                pnlt = ' -pnlt ' + penalty + ':' + self.subroot + method + '_MRF_Bowsher.conf'
+                pnlt += ' -multimodal ' + self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.hdr'
             else:
-                pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
+                pnlt = ' -pnlt ' + penalty + ':' + self.subroot + method + '_MRF.conf'
 
 
         elif (method == 'BSREM'):
-            opti = ' -opti ' + method + ':' + self.subroot_data + method + '.conf'
+            opti = ' -opti ' + method + ':' + self.subroot + method + '.conf'
             # Choose penalty config file according to Bowsher weights or not
             penaltyStrength = ' -pnlt-beta ' + str(self.beta)
             if ("Bowsher" in self.config):
@@ -1377,10 +1349,10 @@ class vGeneral(abc.ABC):
             else:
                 Bowsher = False
             if (Bowsher):
-                pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF_Bowsher.conf'
-                pnlt += ' -multimodal ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.hdr'
+                pnlt = ' -pnlt ' + penalty + ':' + self.subroot + method + '_MRF_Bowsher.conf'
+                pnlt += ' -multimodal ' + self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.hdr'
             else:
-                pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
+                pnlt = ' -pnlt ' + penalty + ':' + self.subroot + method + '_MRF.conf'
         elif ("DNA" in method or 'ADMMLim' in method):
             if (self.recoInDNA == "ADMMLim"):
                 opti = ' -opti ' + 'ADMMLim' + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) + ',' + str(self.tau_max) + ',' + str(self.stoppingCriterionValue) + ',' + str(self.saveSinogramsUAndV)
@@ -1391,7 +1363,7 @@ class vGeneral(abc.ABC):
                         #self.rho = 0
                     method = 'ADMMLim' + method[6:]
                     #pnlt = ' -pnlt QUAD' # Multimodal image is only used by quadratic penalty
-                    pnlt = ' -pnlt ' + "QUAD" + ':' + self.subroot + 'Block1/' + self.suffix  + '/' + 'QUAD.conf'
+                    pnlt = ' -pnlt ' + "QUAD" + ':' + self.subroot_phantom + 'Block1/' + self.suffix  + '/' + 'QUAD.conf'
                 elif ('ADMMLim' in method):
                     pnlt = ' -pnlt ' + penalty
 
@@ -1405,10 +1377,10 @@ class vGeneral(abc.ABC):
                         Bowsher = False
 
                     if (Bowsher):
-                        pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF_Bowsher.conf'
-                        pnlt += ' -multimodal ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.hdr'
+                        pnlt = ' -pnlt ' + penalty + ':' + self.subroot + method + '_MRF_Bowsher.conf'
+                        pnlt += ' -multimodal ' + self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.hdr'
                     elif penalty == "MRF":
-                        pnlt += ':' + self.subroot_data + method + '_MRF.conf'
+                        pnlt += ':' + self.subroot + method + '_MRF.conf'
 
                 penaltyStrength = ' -pnlt-beta ' + str(rho)
             elif (self.recoInDNA == "APGMAP"):
@@ -1416,9 +1388,9 @@ class vGeneral(abc.ABC):
                     rho = 0
                     #self.rho = 0
                 #opti = ' -opti APPGML' + ',1,1e-10,0.01,-1,' + str(self.A_AML) + ',-1' # Do not use a multimodal image for APPGML, so let default multimodal index (-1)
-                opti = ' -opti ' + "APPGML" + ':' + self.subroot + 'Block1/' + self.suffix  + '/' + 'APPGML.conf'
+                opti = ' -opti ' + "APPGML" + ':' + self.subroot_phantom + 'Block1/' + self.suffix  + '/' + 'APPGML.conf'
                 #pnlt = ' -pnlt QUAD,0' # Multimodal image is used only for quadratic penalty, so put multimodal index to 0
-                pnlt = ' -pnlt ' + "QUAD" + ':' + self.subroot + 'Block1/' + self.suffix  + '/' + 'QUAD.conf'
+                pnlt = ' -pnlt ' + "QUAD" + ':' + self.subroot_phantom + 'Block1/' + self.suffix  + '/' + 'QUAD.conf'
                 penaltyStrength = ' -pnlt-beta ' + str(rho)
             
             # For all optimizers, remove penalty if rho == 0
@@ -1430,7 +1402,7 @@ class vGeneral(abc.ABC):
                 rho = 0
                 #self.rho = 0
             opti = ' -opti OPTITR'
-            pnlt = ' -pnlt ' + "QUAD" + ':' + self.subroot + 'Block1/' + self.suffix  + '/' + 'QUAD.conf'            
+            pnlt = ' -pnlt ' + "QUAD" + ':' + self.subroot_phantom + 'Block1/' + self.suffix  + '/' + 'QUAD.conf'            
             penaltyStrength = ' -pnlt-beta ' + str(rho)
         
         # For all optimizers, remove penalty if rho == 0
@@ -1450,7 +1422,7 @@ class vGeneral(abc.ABC):
 
     def get_phantom_ROI(self,image='image0'):
         # Select only phantom ROI, not whole reconstructed image
-        path_phantom_ROI = self.subroot_data+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[5:]) + '.raw'
+        path_phantom_ROI = self.subroot+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[5:]) + '.raw'
         my_file = Path(path_phantom_ROI)
         if (my_file.is_file()):
             phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(self.PETImage_shape),type_im='<f')
@@ -1458,12 +1430,12 @@ class vGeneral(abc.ABC):
             print("No phantom file for this phantom")
             # Loading Ground Truth image to compute metrics
             try:
-                image_gt = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
+                image_gt = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
             except:
                 raise ValueError("Please put the header file from CASToR with name of phantom")
             phantom_ROI = ones_like(image_gt)
             #raise ValueError("No phantom file for this phantom")
-            #phantom_ROI = self.fijii_np(self.subroot_data+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
+            #phantom_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             
         return phantom_ROI
     
@@ -1521,7 +1493,7 @@ class vGeneral(abc.ABC):
     def defineTotalNbIter_beta_rho(self,config,task,stopping_criterion=True):
         if (self.method == 'ADMMLim'):
             try:
-                self.path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
+                self.path_stopping_criterion = self.subroot_phantom + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
                 with open(self.path_stopping_criterion) as f:
                     first_line = f.readline() # Read first line to get second one
                     self.total_nb_iter = min(int(f.readline().rstrip()) - self.i_init, config["nb_outer_iteration"] - self.i_init + 1)
@@ -1544,7 +1516,7 @@ class vGeneral(abc.ABC):
             else:
                 try:
                     if (stopping_criterion):
-                        self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
+                        self.path_stopping_criterion = self.subroot_phantom + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
                         with open(self.path_stopping_criterion) as f:
                             first_line = f.readline() # Read first line to get second one
                             #self.total_nb_iter = min(int(f.readline().rstrip()) - self.i_init, config["nb_outer_iteration"] - self.i_init + 1)
@@ -1612,3 +1584,4 @@ class vGeneral(abc.ABC):
         image_net_output = squeeze(output.detach().numpy())
         # Save the output
         self.save_img(image_net_output, net_output_path)
+    

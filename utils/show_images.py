@@ -80,8 +80,8 @@ def fijii_np(path,shape,type_im='<f'):
     image = data.reshape(shape)
     return image
 
-def show_image(config):
-    root = os.getcwd() + '/data/Algo/'
+def show_image(subroot, config):
+    root = os.getcwd()
     PETImage_shape = (112,112)
 
     if (method == "DIPRecon" or method == "DNA"):
@@ -95,10 +95,10 @@ def show_image(config):
     plt.title('img1')
     plt.colorbar()
     print("image saved")
-    plt.savefig(root+'img1.png')
+    plt.savefig(root + subroot + 'img1.png')
 
-def show_image_path(path):
-    root = os.getcwd() + '/data/Algo/'
+def show_image_path(subroot,path):
+    root = os.getcwd()
     PETImage_shape = (112,112)
     img1_np = fijii_np(path, shape=(PETImage_shape),type_im='<f')
 
@@ -109,7 +109,7 @@ def show_image_path(path):
     plt.title('img1')
     plt.colorbar()
     print("image saved")
-    plt.savefig(root+'img_non_DIPRecon.png')
+    plt.savefig(root + subroot + 'img_non_DIPRecon.png')
 
 
 # Configuration dictionnary for general parameters (not hyperparameters)
@@ -126,7 +126,7 @@ settings_config = {
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
     "finetuning" : tune.grid_search(['last']),
     "experiment" : tune.grid_search([24]),
-    "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from data/algo/Data/initialization)
+    "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
     #"f_init" : tune.grid_search(['1_im_value_cropped']),
     "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
     "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
@@ -180,9 +180,10 @@ for key, value in config_copy.items():
     config_copy[key] = value["grid_search"][0]
 
 method = config_copy["method"]
+subroot = '/data/Algo/'
 
-show_image(config_copy,config_copy)
+show_image(subroot, config_copy,config_copy)
 
-#show_image_path("data/Algo/image0/replicate_1/DIPRecon/Block2/out_cnn/24/out_DIP_post_reco_epoch=99config_rho=0.0003_lr=0.5_sub_i=100_opti_=Adam_skip_=3_scali=nothing_input=CT_sub_i=50_mlem_=False.img")
-#show_image_path("data/Algo/Data/im_corrupt_beginning_10.img")
-show_image_path("data/Algo/Data/database_v2/image0/image0_atn.raw")
+#show_image_path(subroot, subroot + "image0/replicate_1/DIPRecon/Block2/out_cnn/24/out_DIP_post_reco_epoch=99config_rho=0.0003_lr=0.5_sub_i=100_opti_=Adam_skip_=3_scali=nothing_input=CT_sub_i=50_mlem_=False.img")
+#show_image_path(subroot, subroot + "Data/im_corrupt_beginning_10.img")
+show_image_path(subroot, subroot + "Data/database_v2/image0/image0_atn.raw")
