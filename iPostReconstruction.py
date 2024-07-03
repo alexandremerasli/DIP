@@ -44,19 +44,6 @@ class iPostReconstruction(vDenoising):
         self.SUCCESS = False
         self.VAR_recon = []
         '''
-
-    def remove_cold_corrupted(self,config):
-        addon = "remove_cold" # mu_DIP = 5
-        addon = "remove_cold_already_in_corrupt" # mu_DIP = 5
-        if (addon == "remove_cold"):
-            self.image_corrupt[35:59,35:59] = config["mu_DIP"]
-            from pathlib import Path
-            Path("/home/meraslia/workspace_reco/nested_admm/data/Algo/image40_0/replicate_1/" + str(config["mu_DIP"])).mkdir(parents=True, exist_ok=True)
-            self.save_img(self.image_corrupt,"/home/meraslia/workspace_reco/nested_admm/data/Algo/image40_0/replicate_1/" + str(config["mu_DIP"]) + "/corrupt.raw")
-        
-        # import matplotlib.pyplot as plt
-        # plt.imshow(self.image_corrupt,vmin=np.min(self.image_corrupt),vmax=np.max(self.image_corrupt),cmap='gray')
-        # plt.show()
         
     def runComputation(self,config,root):
         # Initializing results class
@@ -81,8 +68,6 @@ class iPostReconstruction(vDenoising):
             #self.image_corrupt = np.transpose(self.image_corrupt,axes=(2,1,0)) #nope
             #self.image_corrupt = self.image_corrupt.reshape(self.image_corrupt.shape[::-1])
             
-            # self.save_img(self.image_corrupt,"/disk/workspace_reco/nested_admm/data/Algo/image2_3D/replicate_1/nested/Block2/post_reco config_image=BSREM_3D_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2_lr=0.0001_sub_i=10_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=3_alpha=1_adapt=tau_mu_ad=2_tau=100_mlem_=False/out_cnn/24/corrupt.raw")
-
             print("ok")
 
 

@@ -54,7 +54,7 @@ class vDenoising(vGeneral):
         if (config["net"] == "DD" or config["net"] == "DD_AE"):
             self.d_DD = config["d_DD"]
             self.k_DD = config["k_DD"]
-        if ( "nested" in config["method"] or "DNA" in config["method"] or  "Gong" in config["method"] or "DIPRecon" in config["method"]):
+        if ( "DNA" in self.method or "DIPRecon" in self.method):
             self.input = config["input"]
             self.scaling_input = config["scaling"]
             # Loading DIP input

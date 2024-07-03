@@ -61,8 +61,8 @@ def save_img(img,name):
 
 PETImage_shape = (112,112)
 
-# image = fijii_np("/home/meraslia/workspace_reco/nested_admm/data/Algo/Data/database_v2/image40_0/image40_0.raw",(112,112),type_im='<f')
-image = fijii_np("/home/meraslia/workspace_reco/nested_admm/data/Algo/Data/database_v2/image40_0/image40_0_mr.raw",PETImage_shape,type_im='<f')
+# image = fijii_np("data/Algo/Data/database_v2/image40_0/image40_0.raw",(112,112),type_im='<f')
+image = fijii_np("data/Algo/Data/database_v2/image40_0/image40_0_mr.raw",PETImage_shape,type_im='<f')
 phantom_ROI = points_in_circle(0/4,0/4,150/4,PETImage_shape)
 for couple in phantom_ROI:
     image[couple] = 130
@@ -86,6 +86,6 @@ for couple in phantom_ROI:
 # cb = fig.colorbar(im, cax=cax)
 # cb.set_label("(AU)",size="large")
 
-# fig.savefig("/home/meraslia/workspace_reco/nested_admm/data/image_mr.png")
+# fig.savefig("data/image_mr.png")
 
-save_img(image,"/home/meraslia/workspace_reco/nested_admm/data/image_mr_white_line.img")
+save_img(image,"data/image_mr_white_line.img")

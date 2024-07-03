@@ -24,7 +24,7 @@ def save_img(img,name):
     print('Succesfully save in:', name)
 
 shape = (112,112,1)
-img = fijii_np("/home/meraslia/workspace_reco/nested_admm/data/Algo/Data/initialization/ADMMLim_it100.img",shape)
+img = fijii_np("data/Algo/Data/initialization/ADMMLim_it100.img",shape)
 
 #plt.imshow(img,cmap="gray")
 #plt.show()
@@ -37,4 +37,4 @@ for i in range(len(l)):
     plt.colorbar(show, ax=axs[i])
 plt.show()
 
-save_img(img_blur,"/home/meraslia/workspace_reco/nested_admm/data/Algo/Data/initialization/ADMMLim_blurred_it10000.img")
+save_img(img_blur,"data/Algo/Data/initialization/ADMMLim_blurred_it10000.img")

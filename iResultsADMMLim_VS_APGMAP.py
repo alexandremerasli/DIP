@@ -34,7 +34,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         #'''
         #vDenoising.initializeSpecific(self,config,root)
 
-        if ('ADMMLim' in config["method"]):
+        if ('ADMMLim' in self.method):
             self.i_init = 30 # Remove first iterations
             self.i_init = 1 # Remove first iterations
         else:
@@ -106,7 +106,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             beta_string = ""
 
         '''
-        if ( "nested" in config["method"] or "DNA" in config["method"] or  "Gong" in config["method"] or "DIPRecon" in config["method"]):
+        if ( "DNA" in self.method or "DIPRecon" in self.method):
             self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
             #self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
         else:
@@ -127,7 +127,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
 
         f_list = self.nb_replicates * [0]
 
-        if ('ADMMLim' in config["method"]):
+        if ('ADMMLim' in self.method):
             i_init = 20
         else:
             i_init = 1
@@ -161,12 +161,12 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         # min_len_zi = self.nb_replicates * []
         for p in range(self.nb_replicates,0,-1):
             self.subroot = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
-            self.defineTotalNbIter_beta_rho(config["method"], config, config["task"])
+            self.defineTotalNbIter_beta_rho(config, config["task"])
             self.subroot = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(1) + '/' + self.method + '/' # Directory root
             p_for_file = p
             i = self.total_nb_iter
             if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
-                # if (self.change_replicates == "TMI"): # Remove Gong failing replicates and replace them
+                # if (self.change_replicates == "TMI"): # Remove DIPRecon failing replicates and replace them
                 #     if (self.phantom == "image40_1"):
                 #         if (self.scaling == "normalization"):
                 #             DIPRecon_failing_replicate_list = list(np.array([19,25,29,36]))
@@ -184,7 +184,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                 # if (p in DIPRecon_failing_replicate_list):
                 #     p_for_file = replicates_replace_list[DIPRecon_failing_replicate_list.index(p)]
 
-                # if (self.change_replicates == "MIC"): # Remove Gong failing replicates and replace them
+                # if (self.change_replicates == "MIC"): # Remove DIPRecon failing replicates and replace them
                 #     if (self.phantom == "image50_1"):
                 #         if (self.scaling == "positive_normalization"):
                 #             DIPRecon_failing_replicate_list = list(np.array([1]))
@@ -201,7 +201,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                     NNEPPS_string = "_NNEPPS"
                 else:
                     NNEPPS_string = ""
-                if ( "Gong" in config["method"] or "DIPRecon" in config["method"] or  "nested" in config["method"] or "DNA" in config["method"]):
+                if ( "DIPRecon" in self.method or  "DNA" in self.method):
                     if ('post_reco' in config["task"]):
                         pet_algo=config["method"]+"to fit"
                         iteration_name="(post reconstruction)"
@@ -221,22 +221,22 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                         f_init_p = self.fijii_np(local_dir+'/'+self.get_first_filename(local_dir),shape=(self.PETImage_shape),type_im='<f') # loading DIP output
                     if config["FLTNB"] == "double":
                         self.f_p.astype(np.float64)
-                elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'OPTITR' or config["method"] == 'OSEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or config["method"] == 'APGMAP'):
+                elif ('ADMMLim' in self.method or self.method == 'MLEM' or self.method == 'OPTITR' or self.method == 'OSEM' or self.method == 'BSREM' or self.method == 'AML' or self.method == 'APGMAP'):
                     pet_algo=config["method"]
                     iteration_name = "iterations"
                     if (hasattr(self,'beta')):
                         iteration_name += beta_string
-                    if ('ADMMLim' in config["method"]):
+                    if ('ADMMLim' in self.method):
                         subdir = 'ADMM' + '_' + str(config["nb_threads"])
                         subdir = ''
                         #self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         #self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it1' + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         #self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_1'  + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0'  + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
-                    #elif (config["method"] == 'BSREM'):
-                    #    self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                    #elif (self.method == 'BSREM'):
+                    #    self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  self.method + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                     else:
-                        self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                        self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  self.method + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
 
                 if (np.isnan(np.sum(self.f_p.astype(float)))):
                     nan_replicates.append(p)
@@ -384,7 +384,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
 
 
 
-        # if ("nested" in self.method or "DNA" in self.method or "Gong" in self.method or "DIPRecon" in self.method or "ADMMLim" in self.method):
+        # if ("DNA" in self.method or "DIPRecon" in self.method or "ADMMLim" in self.method):
         #     print("ok")
         # else:
         #     i_init = self.total_nb_iter
@@ -403,7 +403,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         #     avg_line_ref = self.nb_replicates * [0]
         #     self.replicates_with_profile = []
         #     for p in range(self.nb_replicates,0,-1):
-        #         # if (self.change_replicates == "MIC"): # Remove Gong failing replicates and replace them
+        #         # if (self.change_replicates == "MIC"): # Remove DIPRecon failing replicates and replace them
         #         #     if (self.phantom == "image50_1"):
         #         #         if (self.scaling == "positive_normalization"):
         #         #             DIPRecon_failing_replicate_list = list(np.array([1]))
@@ -414,7 +414,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                 
         #         p_for_file = p
         #         self.subroot = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p_for_file) + '/' + self.method + '/' # Directory root
-        #         self.defineTotalNbIter_beta_rho(config["method"], config, config["task"])
+        #         self.defineTotalNbIter_beta_rho(config, config["task"])
         #         self.subroot = self.subroot_data + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(1) + '/' + self.method + '/' # Directory root
         #         i_min = self.total_nb_iter
         #         self.IR_bkg_recon = np.zeros(self.total_nb_iter)
@@ -618,7 +618,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             NNEPPS_string = "_NNEPPS"
         else:
             NNEPPS_string = ""
-        if ( "Gong" in config["method"] or "DIPRecon" in config["method"] or  "nested" in config["method"] or "DNA" in config["method"]):
+        if ( "DIPRecon" in self.method or  "DNA" in self.method):
             if ('post_reco' in config["task"]):
                 pet_algo=config["method"]+"to fit"
                 iteration_name="(post reconstruction)"
@@ -635,21 +635,21 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                 f_init_p = self.fijii_np(self.subroot_p+'Block1/' + self.suffix + '/before_eq22/' + '0_f_mu.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
             if config["FLTNB"] == "double":
                 self.f_p.astype(np.float64)
-        elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'OPTITR' or config["method"] == 'OSEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or config["method"] == 'APGMAP'):
+        elif ('ADMMLim' in self.method or self.method == 'MLEM' or self.method == 'OPTITR' or self.method == 'OSEM' or self.method == 'BSREM' or self.method == 'AML' or self.method == 'APGMAP'):
             pet_algo=config["method"]
             iteration_name = "iterations"
             if (hasattr(self,'beta')):
                 iteration_name += beta_string
-            if ('ADMMLim' in config["method"]):
+            if ('ADMMLim' in self.method):
                 subdir = 'ADMM' + '_' + str(config["nb_threads"])
                 subdir = ''
                 #self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                 #self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it1' + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                 #self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_1'  + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                 self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0'  + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
-            #elif (config["method"] == 'BSREM'):
-            #    self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+            #elif (self.method == 'BSREM'):
+            #    self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  self.method + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
             else:
-                self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  self.method + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
 
         return 0

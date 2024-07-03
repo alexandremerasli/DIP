@@ -51,7 +51,7 @@ if (step == "insert_raw_to_nifti"):
         nifti_PET_to_be_created_path = "data/Algo/Data/database_v2/Alexandre_FDG_Hatem/" + short_PET_path
         Path(nifti_PET_to_be_created_path).mkdir(parents=True, exist_ok=True)
         # Convert DICOM to nifti
-        dicom2nifti.convert_dir.convert_directory("/disk/workspace_reco/nested_admm/data/Algo/Data/database_v2/Alexandre_FDG_Hatem/CRANE_PETETMUMAP/patient_fdg/CRANE_MR-PET_CRANE_20230517_143125_322000/_HEAD_PETACQUISITION_AC_IMAGES_30003",nifti_PET_to_be_created_path)
+        dicom2nifti.convert_dir.convert_directory("data/Algo/Data/database_v2/Alexandre_FDG_Hatem/CRANE_PETETMUMAP/patient_fdg/CRANE_MR-PET_CRANE_20230517_143125_322000/_HEAD_PETACQUISITION_AC_IMAGES_30003",nifti_PET_to_be_created_path)
     else:
         # Open nifti image with DICOM information, and put CASToR pixel size
         irm_imagej_nii = nib.load("data/Algo/Data/database_v2/Alexandre_FDG_Hatem/" + short_PET_path)
@@ -82,7 +82,7 @@ if (step == "insert_raw_to_nifti"):
         nifti_MR_to_be_created_path = "data/Algo/Data/database_v2/Alexandre_FDG_Hatem/resampled_imagej_dicom_orientation.nii"
         Path(nifti_MR_to_be_created_path).mkdir(parents=True, exist_ok=True)
         # Convert DICOM to nifti (MR image need to be resampled with imageJ to PET CASToR pixel size !!!)
-        dicom2nifti.convert_dir.convert_directory("/disk/workspace_reco/nested_admm/data/Algo/Data/database_v2/Alexandre_FDG_Hatem/crane t1/",nifti_MR_to_be_created_path)
+        dicom2nifti.convert_dir.convert_directory("data/Algo/Data/database_v2/Alexandre_FDG_Hatem/crane t1/",nifti_MR_to_be_created_path)
     else:
         # Open nifti image with DICOM information, and put PET pixel size
         irm_imagej_nii = nib.load("data/Algo/Data/database_v2/Alexandre_FDG_Hatem/resampled_imagej_dicom_orientation.nii")

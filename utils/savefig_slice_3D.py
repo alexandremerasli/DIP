@@ -33,7 +33,7 @@ def save_img(img,name):
     img.tofile(fp)
     print('Succesfully save in:', name)
 
-root = '/disk/workspace_reco/nested_admm/data/Algo/image010_3D/replicate_1/nested_TMI/'
+root = 'data/Algo/image010_3D/replicate_1/DNA_TMI/'
 PETImage_shape = (172,172,127)
 
 

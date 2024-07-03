@@ -102,7 +102,7 @@ class DD_2D(pl.LightningModule):
             out = self.decoder_layers[i](out)
         out = self.last_layers(out)
         #self.write_image_tensorboard(self.writer,out,"TEST (" + 'DD' + "output, FULL CONTRAST)","",0,full_contrast=True) # Showing each image with contrast = 1
-        if (self.method == 'Gong'):
+        if (self.method == "DIPRecon"):
             out = self.positivity(out)
         return out
 

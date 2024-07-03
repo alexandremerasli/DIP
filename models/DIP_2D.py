@@ -355,7 +355,7 @@ class DIP_2D(LightningModule):
         else:
             out = self.deep7(out)
 
-        if ((self.method == 'Gong' and not self.initDNA and self.config["mu_DIP"] != 1851221) or (self.method == 'nested' and self.config["mu_DIP"] == 1851221) or (self.method == 'nested' and self.initDIPRecon)): # 1851221 means ReLU ablation study
+        if ((self.method == "DIPRecon" and not self.initDNA and self.config["mu_DIP"] != 1851221) or (self.method == 'DNA' and self.config["mu_DIP"] == 1851221) or (self.method == 'DNA' and self.initDIPRecon)): # 1851221 means ReLU ablation study
             # self.write_current_img_task(out,inside=True) # Write image before ReLU
             out = self.positivity(out)
 

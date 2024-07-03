@@ -51,12 +51,12 @@ class iADMM_DIP(vReconstruction):
             #    continue # enable to avoid pre iteration
 
             ####################    Block 1 - Reconstruction with CASToR (tomographic reconstruction part of ADMM)    ####################
-            if (self.global_it != i_init or config["unnested_1st_global_iter"]): # Gong or nested after pre iteration
+            if (self.global_it != i_init or config["unnested_1st_global_iter"]): # DIPRecon or DNA after pre iteration
                 #if (self.global_it == i_init + 1 and config["unnested_1st_global_iter"] == False): # enable to avoid pre iteration
                 #    self.f = self.fijii_np(self.subroot_data + 'Data/initialization/' + config["f_init"] + '.img',shape=(self.PETImage_shape),type_im='<f') # enable to avoid pre iteration
                 self.x_label, self.x = self.castor_reconstruction(classResults.writer, self.global_it, i_init, self.subroot, config["nb_outer_iteration"], self.experiment, config, self.method, self.phantom, self.replicate, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
                 # Write corrupted image over ADMM iterations
-                classResults.writeCorruptedImage(self.global_it,config["nb_outer_iteration"],self.x_label,self.suffix,pet_algo=config["method"])
+                classResults.writeCorruptedImage(self.global_it,config["nb_outer_iteration"],self.x_label,self.suffix,pet_algo=self.method)
 
             ####################    Block 2 - CNN    ####################yy
             start_time_block2= time.time()
@@ -129,8 +129,8 @@ class iADMM_DIP(vReconstruction):
             if config["FLTNB"] == "double":
                 self.f = self.f.astype(np.float64)
             # Save mu variable and compute metrics
-            if (self.global_it != i_init or config["unnested_1st_global_iter"]): # Gong after pre iteration
-                if (self.global_it > i_init or ((i_init > -1 and not config["unnested_1st_global_iter"]) or (i_init > 0 and config["unnested_1st_global_iter"]))): # at first iteration if rho == 0, let mu to 0 to be equivalent to Gong settings
+            if (self.global_it != i_init or config["unnested_1st_global_iter"]): # DIPRecon after pre iteration
+                if (self.global_it > i_init or ((i_init > -1 and not config["unnested_1st_global_iter"]) or (i_init > 0 and config["unnested_1st_global_iter"]))): # at first iteration if rho == 0, let mu to 0 to be equivalent to DIPRecon settings
                     self.mu = self.x_label - self.f
                     self.save_img(self.mu,self.subroot+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(self.global_it) + self.suffix + '.img') # saving mu
                     # Write corrupted image over ADMM iterations
@@ -144,10 +144,10 @@ class iADMM_DIP(vReconstruction):
                     classResults.compute_IR_whole(self.PETImage_shape,self.f,self.global_it,classResults.IR_whole_recon,self.phantom)
                     classResults.writer.add_scalar('Image roughness in the phantom', classResults.IR_whole_recon[self.global_it], self.global_it+1)
                 # Write output image and metrics to tensorboard
-                classResults.writeEndImagesAndMetrics(self.global_it,config["nb_outer_iteration"],self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo=config["method"])
+                classResults.writeEndImagesAndMetrics(self.global_it,config["nb_outer_iteration"],self.PETImage_shape,self.f,self.suffix,self.phantom,classDenoising.net,pet_algo=self.method)
 
             # DNA stopping criterion
-            if (self.global_it != i_init or config["unnested_1st_global_iter"]): # Gong after pre iteration
+            if (self.global_it != i_init or config["unnested_1st_global_iter"]): # DIPRecon after pre iteration
                 if (self.phantom == "image50_1"):
                     # if (classResults.IR_bkg_recon[self.global_it] > IR_ref[0]):
                     if hasattr(self,"IR_bkg_smoothed"):
@@ -173,7 +173,7 @@ class iADMM_DIP(vReconstruction):
             print('Need to code back this part with abstract classes')
 
     def saveLabel(self,config,i_init):
-        if (self.global_it == i_init and not config["unnested_1st_global_iter"]): # Gong or nested at pre iteration -> only pre train the network
+        if (self.global_it == i_init and not config["unnested_1st_global_iter"]): # DIPRecon or DNA at pre iteration -> only pre train the network
             x_label = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/' + config["image_init_path_without_extension"] + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<f')
             self.save_img(x_label,self.subroot+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
 

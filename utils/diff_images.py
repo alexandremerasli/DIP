@@ -28,7 +28,7 @@ root = 'data/Algo/'
 PETImage_shape = (112,112,1)
 same_scale_TMI = True # Save diff image with fixed scale to compare several difference images for TMI ReLU artifacts experiment
 
-image = fijii_np("/home/meraslia/workspace_reco/nested_admm/data/Algo/Data/database_v2/image3_3/image3_3.raw",PETImage_shape)
+image = fijii_np("data/Algo/Data/database_v2/image3_3/image3_3.raw",PETImage_shape)
 img1_np = fijii_np(args.img1, shape=(PETImage_shape))
 print("min 1 = " ,np.min(img1_np))
 print("mean 1 = " ,np.mean(img1_np))

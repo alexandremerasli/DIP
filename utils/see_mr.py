@@ -25,9 +25,9 @@ def save_img(img,name):
     img.tofile(fp)
     print('Succesfully save in:', name)
 
-root = '/disk/workspace_reco/nested_admm/data/Algo/image010_3D/mr_axial_resampled.raw'
-root = '/disk/workspace_reco/nested_admm/data/Algo/image010_3D/mr_interpolated.img'
-# root = '/disk/workspace_reco/nested_admm/data/Algo/image010_3D/pet.raw'
+root = 'data/Algo/image010_3D/mr_axial_resampled.raw'
+root = 'data/Algo/image010_3D/mr_interpolated.img'
+# root = 'data/Algo/image010_3D/pet.raw'
 PETImage_shape = (230,150,127)
 PETImage_shape = (230,127,150)
 
@@ -37,4 +37,4 @@ plt.imshow(img1_np[:,:,100],cmap="gray")
 plt.show()
 print("ok")
 
-# save_img(np.transpose(img1_np,axes=(1,2,0)),'/disk/workspace_reco/nested_admm/data/Algo/image010_3D/mr_interpolated_resampled.raw')
+# save_img(np.transpose(img1_np,axes=(1,2,0)),'data/Algo/image010_3D/mr_interpolated_resampled.raw')

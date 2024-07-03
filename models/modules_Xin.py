@@ -59,7 +59,7 @@ class Full_DIP_backbone(pl.LightningModule):
 
         self.iter_DIP = config["sub_iter_DIP"]  # Number of iterations
         self.param = param_scale  # Scaling parameter for normalisation
-        self.path="data/Algo/image40_1/replicate_1/nested"  # Path to save images
+        self.path="data/Algo/image40_1/replicate_1/DNA"  # Path to save images
         self.suffix = suffix  # Suffix for experiment name
         self.repeat = 1  # Repetition count number of times to repeat (random seed)
         
@@ -429,7 +429,7 @@ class Full_DIP_noise_v0(Full_DIP_backbone):
             out = self.encoder_layers[i](out)
         for i in range(len(self.decoder_layers)):
             out = self.decoder_layers[i](out)
-        if (self.method == 'Gong'):
+        if (self.method == "DIPRecon"):
             self.write_current_img_task(out,inside=True)
             out = self.positivity(out)
         return out
@@ -802,7 +802,7 @@ class DIP_skip_add(Full_DIP_backbone):
         self.positivity = nn.ReLU()
     def forward(self, x):
         out = self.unetskipadd(x)
-        if (self.method == 'Gong'):
+        if (self.method == "DIPRecon"):
             self.write_current_img_task(out,inside=True)
             out = self.positivity(out)
         return out
@@ -872,7 +872,7 @@ class Swin_Unet(pl.LightningModule):
         self.lr = config['lr']
         self.iter_DIP = config['iters']
         self.param = param_scale 
-        self.path="data/Algo/image40_1/replicate_1/nested"   
+        self.path="data/Algo/image40_1/replicate_1/DNA"   
         self.suffix  = suffix
         self.repeat = config['repeat']
         
@@ -935,7 +935,7 @@ class Swin_IR(pl.LightningModule):
         self.lr = config['lr']
         self.iter_DIP = config['iters']
         self.param = param_scale 
-        self.path="data/Algo/image40_1/replicate_1/nested"   
+        self.path="data/Algo/image40_1/replicate_1/DNA"   
         self.suffix  = suffix
         self.repeat = config['repeat']
         
@@ -997,7 +997,7 @@ class restormer(pl.LightningModule):
         self.lr = config['lr']
         self.iter_DIP = config['iters']
         self.param = param_scale 
-        self.path="data/Algo/image40_1/replicate_1/nested"     
+        self.path="data/Algo/image40_1/replicate_1/DNA"     
         self.suffix  = suffix
         self.repeat = config['repeat']
         
@@ -1066,7 +1066,7 @@ class spectformer(pl.LightningModule):
         self.lr = config['lr']
         self.iter_DIP = config['iters']
         self.param = param_scale 
-        self.path="data/Algo/image40_1/replicate_1/nested"   
+        self.path="data/Algo/image40_1/replicate_1/DNA"   
         self.suffix  = suffix
         self.repeat = config['repeat']
         

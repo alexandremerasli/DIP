@@ -32,19 +32,19 @@ class vReconstruction(vGeneral):
 
 
         # Specific hyperparameters for reconstruction module (Do it here to have raytune config hyperparameters selection)
-        if (config["method"] != "MLEM" and config["method"] != "OSEM" and config["method"] != "AML" and config["method"] != "OPTITR"):
+        if (self.method != "MLEM" and self.method != "OSEM" and self.method != "AML" and self.method != "OPTITR"):
             self.rho = config["rho"]
         else:
             self.rho = 0
-        if ('ADMMLim' in config["method"] or  "nested" in config["method"] or "DNA" in config["method"] or  "Gong" in config["method"] or "DIPRecon" in config["method"]):
-            if (config["method"] != "ADMMLim"):
+        if ('ADMMLim' in self.method or  "DNA" in self.method or "DIPRecon" in self.method):
+            if (self.method != "ADMMLim"):
                 self.unnested_1st_global_iter = config["unnested_1st_global_iter"]
             else:
                 self.unnested_1st_global_iter = None
-            if ( "Gong" in config["method"] or "DIPRecon" in config["method"]):
+            if ( "DIPRecon" in self.method):
                 self.alpha = None
             else:
-                if (config["recoInNested"] == "ADMMLim"):
+                if (config["recoInDNA"] == "ADMMLim"):
                     if ("stoppingCriterionValue" in config):
                         self.stoppingCriterionValue = config["stoppingCriterionValue"]
                     else:
@@ -82,7 +82,7 @@ class vReconstruction(vGeneral):
         self.tensorboard = config["tensorboard"]
 
         # Initialize and save mu variable from ADMM
-        if ("nested" in self.method or "DNA" in self.method or "Gong" in self.method or "DIPRecon" in self.method):
+        if ("DNA" in self.method or "DIPRecon" in self.method):
             self.mu = 0* np.ones((self.PETImage_shape))
             if config["FLTNB"] == "float":
                 self.mu = self.mu.astype(np.float32)
@@ -133,19 +133,19 @@ class vReconstruction(vGeneral):
         text_file.write("target image path : " + f_mu_for_penalty_path + "\n")
         text_file.close()
         # Initialization
-        self.recoInNested = config["recoInNested"]
-        if (method == 'nested'):
-            if config["recoInNested"] == "ADMMLim":
+        self.recoInDNA = config["recoInDNA"]
+        if (method == 'DNA'):
+            if config["recoInDNA"] == "ADMMLim":
                 x = self.ADMMLim_general(config, i, subdir, subroot_output_path,writer,image_gt, i_init)
-            elif config["recoInNested"] == "APGMAP":
-                print("APGMAP in nested")
+            elif config["recoInDNA"] == "APGMAP":
+                print("APGMAP in DNA")
                 # Choose number of argmax iteration for (second) x computation
                 if (mlem_sequence):
                     #it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, too many subsets for 2D, but maybe ok for 3D
                     it = ' -it 16:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, 2D
                 else: 
                     it = ' -it ' + str(nb_outer_iteration) + ':' + str(config["nb_subsets"]) # Put 28 subsets to be quick
-                    #it = ' -it ' + str(nb_outer_iteration) + ':' + str(config["nb_subsets"]) # Only 2 iterations (Gong) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
+                    #it = ' -it ' + str(nb_outer_iteration) + ':' + str(config["nb_subsets"]) # Only 2 iterations (DIPRecon) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
 
                 # Write shift A in config
                 # Read lines in config file
@@ -171,7 +171,7 @@ class vReconstruction(vGeneral):
                 # Initialize image
                 
                 if (i == 0 and not config["unnested_1st_global_iter"]):   # choose initial image for CASToR reconstruction
-                    initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # Gong initializes to DIP output at pre iteratio
+                    initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # DIPRecon initializes to DIP output at pre iteratio
                     #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + config["f_init"] + '.hdr' # enable to avoid pre iteration
                 elif (i == 0 and config["unnested_1st_global_iter"]):
                     #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
@@ -193,8 +193,6 @@ class vReconstruction(vGeneral):
                 base_name_i = format(i)
                 full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
                 x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_i + it + initialimage
-                if (i == i_init and config["unnested_1st_global_iter"]): # Gong does MLEM 60 it at the beginning, but we will do OPTITR after to be more coherent # TESTTEST
-                    x_reconstruction_command_line = "castor-recon -dim 112,112,1 -vox 4,4,4 -df /home/meraslia/workspace_reco/nested_admm/data/Algo/Data/database_v2/image2_0/data2_0/data2_0.cdh -vb 3 -th 1 -proj incrementalSiddon -opti-fom -conv gaussian,4,1,3.5::psf -opti MLEM -fout /home/meraslia/workspace_reco/nested_admm/data/Algo/image2_0/replicate_1/Gong/Block1/config_rho=0.003_adapt=rho_mu_DI=2_tau_D=100_lr=0.01_sub_i=300_opti_=Adam_skip_=3_scali=positive_normalization_input=random_mlem_=False/during_eq22/0 -it 60:1" # Gong does MLEM 60 it at the beginning, but we will do OPTITR after to be more coherent # TESTTEST
                 print(x_reconstruction_command_line + ' -oit -1')
                 # os.system(x_reconstruction_command_line + ' -oit -1')
                 os.system(x_reconstruction_command_line)
@@ -203,7 +201,7 @@ class vReconstruction(vGeneral):
                     x = self.fijii_np(full_output_path_i + '_it30.img', shape=(PETImage_shape))
                 else:
                     x = self.fijii_np(full_output_path_i + '_it' + str(config["nb_outer_iteration"]) + '.img', shape=(PETImage_shape))
-                    if (i == i_init and config["unnested_1st_global_iter"]): # Gong does MLEM 60 it at the beginning, but we will do OPTITR after to be more coherent # TESTTEST
+                    if (i == i_init and config["unnested_1st_global_iter"]): # DIPRecon does MLEM 60 it at the beginning, but we will do OPTITR after to be more coherent # TESTTEST
                         x = self.fijii_np(full_output_path_i + '_it' + str(60) + '.img', shape=(PETImage_shape))
                 
                 print(full_output_path_i + '_it' + str(config["nb_outer_iteration"]) + '.img')
@@ -211,22 +209,22 @@ class vReconstruction(vGeneral):
                 self.write_image_tensorboard(writer,x,"x after optimization transfer over iterations",suffix,image_gt, i) # Showing all corrupted images with same contrast to compare them together
                 self.write_image_tensorboard(writer,x,"x after optimization transfer over iterations (FULL CONTRAST)",suffix,image_gt, i,full_contrast=True) # Showing all corrupted images with same contrast to compare them together
 
-        elif (method == 'Gong'):
+        elif (method == "DIPRecon"):
 
             # Choose number of argmax iteration for (second) x computation
             if (mlem_sequence):
                 #it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, too many subsets for 2D, but maybe ok for 3D
                 it = ' -it 16:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, 2D
             else:
-                it = ' -it ' + str(nb_outer_iteration) + ':1' # Only 2 iterations (Gong) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
-                #it = ' -it ' + str(nb_outer_iteration) + ':' + str(config["nb_subsets"]) # Only 2 iterations (Gong) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
+                it = ' -it ' + str(nb_outer_iteration) + ':1' # Only 2 iterations (DIPRecon) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
+                #it = ' -it ' + str(nb_outer_iteration) + ':' + str(config["nb_subsets"]) # Only 2 iterations (DIPRecon) to compute argmax, if we estimate it is an enough precise approximation. Only 1 according to conjugate gradient in Lim et al.
 
             # Define command line to run OPTITR with CASToR
             castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i, self.unnested_1st_global_iter)
             # Initialize image
             
             if (i == 0 and not config["unnested_1st_global_iter"]):   # choose initial image for CASToR reconstruction
-                initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # Gong initializes to DIP output at pre iteratio
+                initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # DIPRecon initializes to DIP output at pre iteratio
                 #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + config["f_init"] + '.hdr' # enable to avoid pre iteration
             elif (i == 0 and config["unnested_1st_global_iter"]):
                 #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
@@ -248,8 +246,6 @@ class vReconstruction(vGeneral):
             base_name_i = format(i)
             full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
             x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_i + it + initialimage            
-            if (i == i_init and config["unnested_1st_global_iter"]): # Gong does MLEM 60 it at the beginning, but we will do OPTITR after to be more coherent # TESTTEST
-                x_reconstruction_command_line = "castor-recon -dim 112,112,1 -vox 4,4,4 -df /home/meraslia/workspace_reco/nested_admm/data/Algo/Data/database_v2/image2_0/data2_0/data2_0.cdh -vb 3 -th 1 -proj incrementalSiddon -opti-fom -conv gaussian,4,1,3.5::psf -opti MLEM -fout /home/meraslia/workspace_reco/nested_admm/data/Algo/image2_0/replicate_1/Gong/Block1/config_rho=0.003_adapt=rho_mu_DI=2_tau_D=100_lr=0.01_sub_i=300_opti_=Adam_skip_=3_scali=positive_normalization_input=random_mlem_=False/during_eq22/0 -it 60:1" # Gong does MLEM 60 it at the beginning, but we will do OPTITR after to be more coherent # TESTTEST
             print(x_reconstruction_command_line + ' -oit -1')
             os.system(x_reconstruction_command_line + ' -oit -1')
 
@@ -257,7 +253,7 @@ class vReconstruction(vGeneral):
                 x = self.fijii_np(full_output_path_i + '_it30.img', shape=(PETImage_shape))
             else:
                 x = self.fijii_np(full_output_path_i + '_it' + str(config["nb_outer_iteration"]) + '.img', shape=(PETImage_shape))
-                if (i == i_init and config["unnested_1st_global_iter"]): # Gong does MLEM 60 it at the beginning, but we will do OPTITR after to be more coherent # TESTTEST
+                if (i == i_init and config["unnested_1st_global_iter"]): # DIPRecon does MLEM 60 it at the beginning, but we will do OPTITR after to be more coherent # TESTTEST
                     x = self.fijii_np(full_output_path_i + '_it' + str(60) + '.img', shape=(PETImage_shape))
             
             print(full_output_path_i + '_it' + str(config["nb_outer_iteration"]) + '.img')
@@ -283,7 +279,7 @@ class vReconstruction(vGeneral):
     def compute_x_v_u_ADMM(self,x_reconstruction_command_line,subdir,i,phantom,subroot_output_path,subroot,method, it_name=''):
         # Compute x,u,v
         #os.system(x_reconstruction_command_line + ' -oit 90:' + str(int(self.config["nb_outer_iteration"]*3)))
-        if ("nested" in method or "DNA" in method): # we only need output at last iteration
+        if ("DNA" in self.method): # we only need output at last iteration
             if (self.PETImage_shape[2] == 1): # 2D
                 os.system(x_reconstruction_command_line + ' -oit -1')
             else:
@@ -304,14 +300,14 @@ class vReconstruction(vGeneral):
         self.write_hdr(subroot,[i],subdir,phantom,'v_it' + str(it_name),subroot_output_path=subroot_output_path,matrix_type='sino')
 
     def ADMMLim_general(self, config, i, subdir, subroot_output_path,writer=None,image_gt=None, i_init=0):
-        if ("nested" in self.method or "DNA" in self.method):
+        if ("DNA" in self.method):
             self.post_smoothing = 0
         castor_command_line_x = self.castor_common_command_line(self.subroot_data, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing)
 
         base_name_i = format(i)
         full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
 
-        if ("nested" in self.method or "DNA" in self.method):
+        if ("DNA" in self.method):
             folder_sub_path = os.path.join(self.subroot,"Block1",self.suffix)
         else:
             folder_sub_path = os.path.join(self.subroot,self.suffix)
@@ -353,10 +349,10 @@ class vReconstruction(vGeneral):
                 initialimage = ''
                 # initialimage = self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/BSREM_it30.img'
 
-        # Initialization image if nested according to global iteration
-        if ("nested" in self.method or "DNA" in self.method):
+        # Initialization image if DNA according to global iteration
+        if ("DNA" in self.method):
             it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
-            if (not config["use_u_and_v_nested"] or (i == i_init+1)):
+            if (not config["use_u_and_v_DNA"] or (i == i_init+1)):
                 u_for_additional_data = ''
                 v_for_additional_data = ''
             else:
@@ -367,13 +363,13 @@ class vReconstruction(vGeneral):
                 v_for_additional_data = ',' + v_path
 
             if (i == 0 and not config["unnested_1st_global_iter"]):   # choose initial image for CASToR reconstruction
-                initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # Gong initializes to DIP output at pre iteratio
+                initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # DIPRecon initializes to DIP output at pre iteratio
                 #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + config["f_init"] + '.hdr' # enable to avoid pre iteration
                 #initialimage = ''
             elif (i == 0 and config["unnested_1st_global_iter"]):
                 #initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + image_init_path_without_extension + '.hdr' if image_init_path_without_extension != "" else '' # initializing CASToR PLL reconstruction with image_init or with CASToR default values
                 # initialimage = ' -img ' + self.subroot_data + 'Data/initialization/' + '1_im_value_cropped.hdr'
-                initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # Gong initializes to DIP output at pre iteratio
+                initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # DIPRecon initializes to DIP output at pre iteratio
             else: # Last image for next global iteration
                 if (i == 1 and ((i_init == -1 and not config["unnested_1st_global_iter"]) or (i_init == 0 and config["unnested_1st_global_iter"])) and config["unnested_1st_global_iter"]):
                     initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'

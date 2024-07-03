@@ -21,7 +21,7 @@ def save_img(img,name):
     img.tofile(fp)
     print('Succesfully save in:', name)
 
-# root = '/disk/workspace_reco/nested_admm/data/Algo/Data/database_v2/image010_3D/BSREM_it30.img'
+# root = 'data/Algo/Data/database_v2/image010_3D/BSREM_it30.img'
 root = 'data/Algo/Data/database_v2/image010_3D/image010_3D.img'
 root = 'data/Algo/Data/database_v2/image50_0/image50_0_mr.raw'
 
@@ -43,7 +43,7 @@ plt.imshow(img1_np,cmap="gray")
 plt.show()
 print("ok")
 
-# save_img(img1_np,'/disk/workspace_reco/nested_admm/data/Algo/Data/database_v2/image010_3D/phantom_mask010_3D.raw')
+# save_img(img1_np,'data/Algo/Data/database_v2/image010_3D/phantom_mask010_3D.raw')
 save_img(img1_np,'data/Algo/Data/database_v2/image50_0/phantom_mask50_0.raw')
 
 

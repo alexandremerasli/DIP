@@ -10,18 +10,18 @@ def parametersIncompatibility(config,task=None):
 
     if (method != "AML"):
         config.pop("A_AML", None)
-    if (method == 'BSREM' or method == 'nested' or method == 'Gong'):
+    if (method == 'BSREM' or method == 'DNA' or method == 'DIPRecon'):
         config.pop("post_smoothing", None)
-    if ('ADMMLim' not in method and method != "nested"):
+    if ('ADMMLim' not in method and method != "DNA"):
         config.pop("nb_outer_iteration", None)
         config.pop("alpha", None)
         config.pop("adaptive_parameters", None)
         config.pop("mu_adaptive", None)
         config.pop("tau", None)
         config.pop("xi", None)
-    if ('ADMMLim' not in method and method != "nested" and method != "Gong"):
+    if ('ADMMLim' not in method and method != "DNA" and method != "DIPRecon"):
         config.pop("nb_inner_iteration", None)
-    if (method != "nested" and method != "Gong" and task != "post_reco"):
+    if (method != "DNA" and method != "DIPRecon" and task != "post_reco"):
         config.pop("lr", None)
         config.pop("sub_iter_DIP", None)
         config.pop("opti_DIP", None)
@@ -30,10 +30,10 @@ def parametersIncompatibility(config,task=None):
         config.pop("input", None)
         config.pop("d_DD", None)
         config.pop("k_DD", None)
-    if method == 'Gong':
+    if method == "DIPRecon":
         config["scaling"] = "nothing"
         config["nb_inner_iteration"] = 50
-    if method == 'nested':
+    if method == 'DNA':
         config["scaling"] = "standardization"
         config["nb_inner_iteration"] = 10
     config.pop("d_DD", None)
@@ -61,7 +61,7 @@ def suffix_func(config,NNEPPS=False):
     
 def path_from_config(config,root):
     path = root + 'image0/replicate_1/' + method + '/'
-    if (method == "Gong" or method == "nested"):
+    if (method == "DIPRecon" or method == "DNA"):
         path += 'Block2/out_cnn/24/out_DIP9' + suffix_func(config) + '.img'
         #path += 'Block2/out_cnn/24/out_DIP0' + suffix_func(config) + '.img'
     elif (method == "BSREM"):
@@ -84,7 +84,7 @@ def show_image(config):
     root = os.getcwd() + '/data/Algo/'
     PETImage_shape = (112,112)
 
-    if (method == "Gong" or method == "nested"):
+    if (method == "DIPRecon" or method == "DNA"):
         img1_np = fijii_np(path_from_config(config,root), shape=(PETImage_shape),type_im='<f')
     else:
         img1_np = fijii_np(path_from_config(config,root), shape=(PETImage_shape),type_im='<d')
@@ -109,7 +109,7 @@ def show_image_path(path):
     plt.title('img1')
     plt.colorbar()
     print("image saved")
-    plt.savefig(root+'img_non_Gong.png')
+    plt.savefig(root+'img_non_DIPRecon.png')
 
 
 # Configuration dictionnary for general parameters (not hyperparameters)
@@ -117,12 +117,12 @@ settings_config = {
     "image" : tune.grid_search(['image0']), # Image from database
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-    "method" : tune.grid_search(['BSREM']), # Reconstruction algorithm (nested, Gong, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(['BSREM']), # Reconstruction algorithm (DNA, DIPRecon, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
-    "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and nested)
+    "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and DNA)
     "debug" : False, # Debug mode = run without raytune and with one iteration
-    "max_iter" : tune.grid_search([30]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for nested and Gong
+    "max_iter" : tune.grid_search([30]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for DNA and DIPRecon
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
     "finetuning" : tune.grid_search(['last']),
     "experiment" : tune.grid_search([24]),
@@ -134,8 +134,8 @@ settings_config = {
 }
 # Configuration dictionnary for hyperparameters to tune
 config = {
-    "rho" : tune.grid_search([0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
-    #"rho" : tune.grid_search([0.003,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (nested and Gong)
+    "rho" : tune.grid_search([0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)
+    #"rho" : tune.grid_search([0.003,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)
     ## network hyperparameters
     "lr" : tune.grid_search([0.05]), # Learning rate in network optimization
     "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
@@ -148,7 +148,7 @@ config = {
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMLim - OPTITR hyperparameters
-    "nb_inner_iteration" : tune.grid_search([50]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for Gong)
+    "nb_inner_iteration" : tune.grid_search([50]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for DIPRecon)
     "nb_outer_iteration": tune.grid_search([10]), # Number outer iterations in ADMMLim
     "alpha" : tune.grid_search([0.005]), # alpha (penalty parameter) in ADMMLim
     ## hyperparameters from CASToR algorithms 
@@ -183,6 +183,6 @@ method = config_copy["method"]
 
 show_image(config_copy,config_copy)
 
-#show_image_path("/home/meraslia/workspace_reco/nested_admm/data/Algo/image0/replicate_1/Gong/Block2/out_cnn/24/out_DIP_post_reco_epoch=99config_rho=0.0003_lr=0.5_sub_i=100_opti_=Adam_skip_=3_scali=nothing_input=CT_sub_i=50_mlem_=False.img")
-#show_image_path("/home/meraslia/workspace_reco/nested_admm/data/Algo/Data/im_corrupt_beginning_10.img")
-show_image_path("/home/meraslia/workspace_reco/nested_admm/data/Algo/Data/database_v2/image0/image0_atn.raw")
+#show_image_path("data/Algo/image0/replicate_1/DIPRecon/Block2/out_cnn/24/out_DIP_post_reco_epoch=99config_rho=0.0003_lr=0.5_sub_i=100_opti_=Adam_skip_=3_scali=nothing_input=CT_sub_i=50_mlem_=False.img")
+#show_image_path("data/Algo/Data/im_corrupt_beginning_10.img")
+show_image_path("data/Algo/Data/database_v2/image0/image0_atn.raw")

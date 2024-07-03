@@ -231,7 +231,7 @@ class DIP_3D(pl.LightningModule):
         # Unpad if original 3D dimension was not divisible by 2^3
         out = out[:,:,unpad_3D_half_size:original_3D_dim + unpad_3D_half_size,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size]
 
-        if (self.method == 'Gong'):
+        if (self.method == "DIPRecon"):
             out = self.positivity(out)
 
         return out

@@ -38,19 +38,6 @@ class iEndToEnd(vDenoising):
         self.SUCCESS = False
         self.VAR_recon = []
         
-    def remove_cold_corrupted(self,config):
-        addon = "remove_cold" # mu_DIP = 5
-        addon = "remove_cold_already_in_corrupt" # mu_DIP = 5
-        if (addon == "remove_cold"):
-            self.sinogram_corrupt[35:59,35:59] = config["mu_DIP"]
-            from pathlib import Path
-            Path("/home/meraslia/workspace_reco/nested_admm/data/Algo/image40_0/replicate_1/" + str(config["mu_DIP"])).mkdir(parents=True, exist_ok=True)
-            self.save_img(self.sinogram_corrupt,"/home/meraslia/workspace_reco/nested_admm/data/Algo/image40_0/replicate_1/" + str(config["mu_DIP"]) + "/corrupt.raw")
-        
-        # import matplotlib.pyplot as plt
-        # plt.imshow(self.sinogram_corrupt,vmin=np.min(self.sinogram_corrupt),vmax=np.max(self.sinogram_corrupt),cmap='gray')
-        # plt.show()
-        
     def runComputation(self,config,root):
         # Initializing results class
         if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):

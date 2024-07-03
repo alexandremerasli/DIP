@@ -24,13 +24,13 @@ class iResultsAlreadyComputed(vDenoising):
         self.initializeGeneralVariables(config,root)
         #vDenoising.initializeSpecific(self,config,root)
         
-        if ('ADMMLim' in config["method"]):
+        if ('ADMMLim' in self.method):
             self.i_init = 30 # Remove first iterations
             self.i_init = 1 # Remove first iterations
         else:
             self.i_init = 1
 
-        self.defineTotalNbIter_beta_rho(config["method"], config, config["task"])
+        self.defineTotalNbIter_beta_rho(config, config["task"])
 
         # Create summary writer from tensorboard
         self.writer = SummaryWriter()

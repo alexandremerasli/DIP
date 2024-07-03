@@ -18,7 +18,7 @@ def save_img(img,name):
     img.tofile(fp)
     print('Succesfully save in:', name)
 
-folder_path = "/home/meraslia/workspace_reco/nested_admm/data/Algo/image00_cylinder/"
+folder_path = "data/Algo/image00_cylinder/"
 subfolder = "ADMMLim_TOF_70_0.0002"
 subfolder = "ADMMLim_sans_TOF_70_0.0002"
 #subfolder = "ADMMLim_TOF_70"

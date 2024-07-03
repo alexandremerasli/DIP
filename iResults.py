@@ -32,11 +32,11 @@ class iResults(vDenoising):
         if (config["net"] == "DD" or config["net"] == "DD_AE"):
             self.d_DD = config["d_DD"]
             self.k_DD = config["k_DD"]
-        # if ("nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]):
+        # if ("DNA" in self.method or "DIPRecon" in self.method):
         #     self.DIP_early_stopping = self.DIP_early_stopping
         #vDenoising.initializeSpecific(self,config,root)
         # Initialize early stopping method if asked for
-        if ("nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]):
+        if ("DNA" in self.method or "DIPRecon" in self.method):
             if ("3_" not in self.phantom):
                 try:
                     self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/' + config["image_init_path_without_extension"] + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<f')
@@ -56,17 +56,17 @@ class iResults(vDenoising):
                 self.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,root,self.scanner, self.simulation)
                 self.lr = config['lr']
 
-        if ('ADMMLim' in config["method"]):
+        if ('ADMMLim' in self.method):
             self.i_init = 30 # Remove first iterations
             self.i_init = 1 # Remove first iterations
         else:
             self.i_init = 1
 
         MIC_study = True
-        self.defineTotalNbIter_beta_rho(config["method"], config, config["task"],stopping_criterion=MIC_study) # Compute metrics for every iterations, stopping_criterion will be used in final curves
+        self.defineTotalNbIter_beta_rho(config, config["task"],stopping_criterion=MIC_study) # Compute metrics for every iterations, stopping_criterion will be used in final curves
 
         # Define variables for MV early stopping algorithms
-        if ("nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]):
+        if ("DNA" in self.method or "DIPRecon" in self.method):
             if config["EMV_or_WMV"] == "EMV":
                 self.alpha_EMV = config["alpha_EMV"]
             else:
@@ -81,7 +81,7 @@ class iResults(vDenoising):
         if config["FLTNB"] == "double":
             self.image_gt = self.image_gt.astype(np.float64)
 
-        if ("nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]):
+        if ("DNA" in self.method or "DIPRecon" in self.method):
             if (config["input"] == "CT"):
                 # # Loading attenuation map
                 # image_atn = self.fijii_np(self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type_im='<f')
@@ -154,7 +154,7 @@ class iResults(vDenoising):
             self.MA_cold_inside = np.zeros(int(self.total_nb_iter ) + more_it)
             self.MA_cold_edge = np.zeros(int(self.total_nb_iter ) + more_it)
 
-        if ( 'nested' in self.method or  'Gong' in self.method):
+        if ( "DNA" in self.method or  "DIPRecon" in self.method):
             #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'MLEM_60it/replicate_' + str(self.replicate) + '/MLEM_it60.img',shape=(self.PETImage_shape),type_im='<d')
             #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'random_1.img',shape=(self.PETImage_shape),type_im='<d')
             #self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + 'F16_GT_' + str(self.PETImage_shape[0]) + '.img',shape=(self.PETImage_shape),type_im='<f')
@@ -165,20 +165,8 @@ class iResults(vDenoising):
                     self.image_corrupt = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/' + config["image_init_path_without_extension"] + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<d')
             else:
                 self.image_corrupt = self.fijii_np(self.subroot_data + "/Data/database_v2/" + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<d')
-            
-            #self.image_corrupt = self.fijii_np("/home/meraslia/workspace_reco/nested_admm/data/Algo/image4_0/replicate_10/nested/Block2/config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=14_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=1_mlem_=False_A_AML=-100/x_label/24/" + "-1_x_labelconfig_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=14_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=standardization_input=random_nb_ou=1_mlem_=False_A_AML=-100.img",shape=(self.PETImage_shape))
-
-        # self.image_gt = self.image_gt / np.max(self.image_gt) * 255
-        # self.image_gt = self.image_gt.astype(np.int8)
-        # if (hasattr(self,'image_corrupt')):
-        #     self.image_corrupt = self.image_corrupt / np.max(self.image_corrupt) * 255
-        #     self.image_corrupt = self.image_corrupt.astype(np.int8)
         
-        # PSNR_corrupt = peak_signal_noise_ratio(self.image_gt, self.image_corrupt, data_range=np.amax(self.image_corrupt) - np.amin(self.image_corrupt)) # PSNR with true values
-        # SSIM_corrupt = structural_similarity(np.squeeze(self.image_gt), np.squeeze(self.image_corrupt), data_range=(self.image_corrupt).max() - (self.image_corrupt).min())
-        # from utils.mssim import ssimc
-        # SSIM_corrupt = ssimc(np.squeeze(self.image_gt), np.squeeze(self.image_corrupt),1, 1, 1)
-        if ("Gong" in config["method"] or "DIPRecon" in config["method"] or "nested" in config["method"] or "DNA" in config["method"]):
+        if ("DIPRecon" in self.method or "DNA" in self.method):
             self.i_init = 0
 
     def writeBeginningImages(self,suffix,image_net_input=None,i=0):
@@ -220,7 +208,7 @@ class iResults(vDenoising):
         if ("read_only_MV_csv" in config):
             if (config["read_only_MV_csv"]):
                 read_only_MV_csv = True
-                if ("nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]):
+                if ("DNA" in self.method or "DIPRecon" in self.method):
                     if(self.DIP_early_stopping):# WMV
                         self.WMV_plot(config)
                     self.MV_several_alphas_plot(config)
@@ -232,12 +220,12 @@ class iResults(vDenoising):
             if (hasattr(self,'beta')):
                 self.beta_string = ', beta = ' + str(self.beta)
 
-            if (("nested" in config["method"] or "DNA" in config["method"] or  "Gong" in config["method"] or "DIPRecon" in config["method"]) and "results" not in config["task"]):
+            if (("DNA" in self.method or "DIPRecon" in self.method) and "results" not in config["task"]):
                 self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
                 self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
             else:
                 # self.writeBeginningImages(self.suffix) # Write GT
-                if ("nested" in config["method"] or "DNA" in config["method"] or  "Gong" in config["method"] or "DIPRecon" in config["method"]):
+                if ("DNA" in self.method or "DIPRecon" in self.method):
                     if (not hasattr(self,"image_net_input")):
                         self.input = config["input"]
                         self.override_input = False
@@ -256,7 +244,7 @@ class iResults(vDenoising):
 
             # DNA stopping criterion
             if ("3_" not in self.phantom):
-                if ("nested" in config["method"] or "DNA" in config["method"]):
+                if ("DNA" in self.method):
                     # Compute IR for BSREM initialization image
                     im_BSREM = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<f') # loading BSREM initialization image
                     self.IR_ref = [np.NaN]
@@ -284,7 +272,7 @@ class iResults(vDenoising):
 
             print("loop over")
 
-            if ("nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]):
+            if ("DNA" in self.method or "DIPRecon" in self.method):
                 if (self.DIP_early_stopping):# WMV
                     if ("post_reco" in config["task"] or "end_to_end" in config["task"]):
                         # Save computed variance from WMV/EMV in csv
@@ -541,7 +529,7 @@ class iResults(vDenoising):
                     NNEPPS_string = "_NNEPPS"
                 else:
                     NNEPPS_string = ""
-                if ( "Gong" in config["method"] or "DIPRecon" in config["method"] or  "nested" in config["method"] or "DNA" in config["method"]):
+                if ( "DIPRecon" in self.method or  "DNA" in self.method):
                     if ('post_reco' in config["task"]):
                         self.pet_algo=config["method"]+"to fit"
                         self.iteration_name="(post reconstruction)"
@@ -565,25 +553,25 @@ class iResults(vDenoising):
                     if config["FLTNB"] == "double":
                         f_p = f_p.astype(np.float64)
 
-                elif ('ADMMLim' in config["method"] or config["method"] == 'MLEM' or config["method"] == 'OPTITR' or config["method"] == 'OSEM' or config["method"] == 'BSREM' or config["method"] == 'AML' or 'APGMAP' in config["method"]):
+                elif ('ADMMLim' in self.method or self.method == 'MLEM' or self.method == 'OPTITR' or self.method == 'OSEM' or self.method == 'BSREM' or self.method == 'AML' or 'APGMAP' in self.method):
                     self.pet_algo=config["method"]
                     self.iteration_name = "iterations"
                     if (hasattr(self,'beta')):
                         self.iteration_name += self.beta_string
-                    if ('ADMMLim' in config["method"]):
+                    if ('ADMMLim' in self.method):
                         subdir = 'ADMM' + '_' + str(config["nb_threads"])
                         subdir = ''
                         #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it1' + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_1'  + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0'  + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
-                    #elif (config["method"] == 'BSREM'):
-                    #    f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                    #elif (self.method == 'BSREM'):
+                    #    f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  self.method + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                     else:
-                        if ('APGMAP' in config["method"]):
+                        if ('APGMAP' in self.method):
                             f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  "APGMAP" + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         else:
-                            f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  config["method"] + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                            f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  self.method + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
 
                 # Compute IR metric (different from others with several replicates)
                 if ("3D" not in self.phantom):
@@ -591,7 +579,7 @@ class iResults(vDenoising):
                     self.compute_IR_whole(self.PETImage_shape,f_p,int((i-self.i_init)),self.IR_whole_recon,self.phantom)
 
                     # # DNA stopping criterion
-                    # if("nested" in config["method"] or "DNA" in config["method"]):
+                    # if("DNA" in self.method):
                     #     if (self.IR_whole_recon[int((i-self.i_init))]> self.IR_ref[0]): # > 1.604):# > self.IR_ref[0]):
                     #         print("DNA stopping criterion reached")
                     #         self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
@@ -615,7 +603,7 @@ class iResults(vDenoising):
                     self.f = f_p
             
                 # WMV
-                if ("nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]):
+                if ("DNA" in self.method or "DIPRecon" in self.method):
                     # self.run_WMV(f_p,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,self.simulation,i)
                     if(self.DIP_early_stopping):# WMV
                         if ("post_reco" in config["task"] or "end_to_end" in config["task"]):
@@ -688,7 +676,7 @@ class iResults(vDenoising):
         self.MA_cold_edge[i] = np.mean(cold_edge_ROI_act)
 
         # DIP loss function
-        if ( 'nested' in self.method or  'Gong' in self.method):
+        if ( "DNA" in self.method or  "DIPRecon" in self.method):
             loss_DIP_recon[i] = np.mean((self.image_corrupt * self.phantom_ROI - image_recon_cropped)**2)
 
         # Mean Activity Recovery (ARmean) in hot cylinder calculation (-c 50. 10. 0. 20. 4. 400)
@@ -728,18 +716,18 @@ class iResults(vDenoising):
 
         # Mean in whole denoised image
         # mean_inside_recon[i] = np.mean(image_recon) / np.mean(image_gt)
-        if ("nested" in self.method or "DNA" in self.method or "Gong" in self.method or "DIPRecon" in self.method):
+        if ("DNA" in self.method or "DIPRecon" in self.method):
             mean_inside_recon[i] = np.mean(image_recon * self.phantom_ROI) / np.mean(self.image_corrupt * self.phantom_ROI)
         
         # Likelihood from fake CASToR reconstruction just to compute likelihood of initialization image        
-        if 'nested' in self.config["method"] or 'Gong' in self.config["method"]:
+        if "DNA" in self.self.method or "DIPRecon" in self.config["method"]:
             folder_sub_path = self.subroot + 'Block2/' + self.suffix
         else:
             folder_sub_path = self.subroot + '/' + self.suffix
-        if 'nested' in self.config["method"] or 'Gong' in self.config["method"]:
-            logfile_name = self.config["method"] + '_' + str(i-1) + '.log'
+        if "DNA" in self.self.method or "DIPRecon" in self.config["method"]:
+            logfile_name = self.self.method + '_' + str(i-1) + '.log'
         else:
-            logfile_name = self.config["method"] + '_' + str(i+1) + '.log'
+            logfile_name = self.self.method + '_' + str(i+1) + '.log'
         path_log = folder_sub_path + '/' + logfile_name
         if (isfile(path_log)):
             self.extract_likelihood_from_log(path_log)

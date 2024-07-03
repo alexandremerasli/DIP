@@ -14,7 +14,7 @@ def fijii_np(path,shape,type_im='<f'):
 
 finalOuterIter = 5000
 MSE_normed = np.zeros((finalOuterIter,1))
-root = '/home/meraslia/workspace_reco/nested_admm/data/Algo/image2_0/replicate_1/'
+root = 'data/Algo/image2_0/replicate_1/'
 subfolder1 = 'ADMMLim_test_1_frame1_float'
 subfolder2 = 'ADMMLim_test_48_frame_1_float'
 PETImage_shape = (112,112,1)

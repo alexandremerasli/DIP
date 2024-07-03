@@ -38,7 +38,7 @@ Ablation study (DNA - DIPRecon)
 ### Steps
 
 2. **Run with DIPRecon without ReLU**
-    - Run Python script with config file all_config/Gong_without_ReLU.py (1851221 means no ReLU):
+    - Run Python script with config file all_config/DIPRecon_without_ReLU.py (1851221 means no ReLU):
 
 3. **Add System Matrix Elements for sinogram bins with zero value**
     - Run the `utils/add_system_matrix_elem.py` script.

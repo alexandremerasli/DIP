@@ -58,7 +58,7 @@ plt.figure()
 plt.imshow(eroded_im,cmap="gray")
 plt.show()
 
-# save_img(img1_np,'/disk/workspace_reco/nested_admm/data/Algo/Data/database_v2/image010_3D/phantom_mask010_3D.raw')
+# save_img(img1_np,'data/Algo/Data/database_v2/image010_3D/phantom_mask010_3D.raw')
 save_img(eroded_im,"data/Algo/Data/database_v2/" + phantom + "/background_mask" + phantom[5:] + ".raw")
 save_img(eroded_im,"data/Algo/Data/database_v2/" + phantom + "/white_matter_" + phantom[5:] + ".raw")
 

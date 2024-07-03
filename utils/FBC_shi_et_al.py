@@ -124,7 +124,7 @@ def fbc_to_csv(iters_path,target_filename,gt,PETImage_shape,sub_iter_DIP):
 # #     ref_image_name = "gt"
 #     for p in range(len(lr_list)):
 #         print("lr =",lr_list[p])
-#         short_subfolder = "data/Algo/image40_1_post_reco_FBC/replicate_13/nested_bug_ckpt/Block2/FBC_manu"
+#         short_subfolder = "data/Algo/image40_1_post_reco_FBC/replicate_13/DNA_bug_ckpt/Block2/FBC_manu"
 #         subfolder = short_subfolder + "/post_reco config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2.5_monit=False_lr=" + str(lr_list[p]) + "_opti_=Adam_skip_=3_scali=normalization_input=CT_nb_ou=2_alpha=1_adapt=both_mu_ad=2_tau=2_tau_m=100_stopp=0.001_saveS=1_mlem_=False/out_cnn/"
 #         # subfolder = short_subfolder + "/post_reco config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2.55_monit=True_lr=" + str(lr_list[p]) + "_opti_=Adam_skip_=3_scali=normalization_input=CT_nb_ou=2_alpha=1_adapt=both_mu_ad=2_tau=2_tau_m=100_stopp=0.001_saveS=1_mlem_=False/out_cnn/"
 #         my_iters_path = subfolder + "24/"

@@ -19,7 +19,7 @@ def save_img(img,name):
 nb_it = 2000
 # im_stacked = np.zeros((nb_it,112,112),dtype='<f')
 
-root = "data/Algo/image50_1/replicate_1/nested/Block2/post_reco config_recoI=APGMAP_image=BSREM_it30_rho=3_adapt=nothing_mu_DI=100.1_tau_D=200_lr=0.01_opti_=Adam_skip_=3_overr=True_scali=standardization_input=CT_nb_ou=10_mlem_=False_A_AML=-10/out_cnn/24/"
+root = "data/Algo/image50_1/replicate_1/DNA/Block2/post_reco config_recoI=APGMAP_image=BSREM_it30_rho=3_adapt=nothing_mu_DI=100.1_tau_D=200_lr=0.01_opti_=Adam_skip_=3_overr=True_scali=standardization_input=CT_nb_ou=10_mlem_=False_A_AML=-10/out_cnn/24/"
 
 global_it = 0
 subfolder_list = ["out_DIP-100_epoch="]
@@ -50,11 +50,11 @@ for subfolder in subfolder_list:
 plt.plot(it_list[50:],MSE[50:])
 plt.xlabel("Epochs")
 plt.ylabel("MSE with GT")
-plt.savefig("data/Algo/image50_1/replicate_1/nested/Block2/post_reco config_recoI=APGMAP_image=BSREM_it30_rho=3_adapt=nothing_mu_DI=100.1_tau_D=200_lr=0.01_opti_=Adam_skip_=3_overr=True_scali=standardization_input=CT_nb_ou=10_mlem_=False_A_AML=-10/out_cnn/" + "MSE_GT.png")
+plt.savefig("data/Algo/image50_1/replicate_1/DNA/Block2/post_reco config_recoI=APGMAP_image=BSREM_it30_rho=3_adapt=nothing_mu_DI=100.1_tau_D=200_lr=0.01_opti_=Adam_skip_=3_overr=True_scali=standardization_input=CT_nb_ou=10_mlem_=False_A_AML=-10/out_cnn/" + "MSE_GT.png")
 
 plt.figure()
 # plt.title("SSIM with GT")
 plt.plot(it_list[50:],SSIM[50:])
 plt.xlabel("Epochs")
 plt.ylabel("SSIM with GT")
-plt.savefig("data/Algo/image50_1/replicate_1/nested/Block2/post_reco config_recoI=APGMAP_image=BSREM_it30_rho=3_adapt=nothing_mu_DI=100.1_tau_D=200_lr=0.01_opti_=Adam_skip_=3_overr=True_scali=standardization_input=CT_nb_ou=10_mlem_=False_A_AML=-10/out_cnn/" + "SSIM_GT.png")
+plt.savefig("data/Algo/image50_1/replicate_1/DNA/Block2/post_reco config_recoI=APGMAP_image=BSREM_it30_rho=3_adapt=nothing_mu_DI=100.1_tau_D=200_lr=0.01_opti_=Adam_skip_=3_overr=True_scali=standardization_input=CT_nb_ou=10_mlem_=False_A_AML=-10/out_cnn/" + "SSIM_GT.png")

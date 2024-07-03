@@ -39,7 +39,7 @@ plt.imshow(target,cmap="gray")
 plt.colorbar()
 plt.show()
 
-save_img(target,"/disk/workspace_reco/nested_admm/data/Algo/Data/relu_exp_target_" + str(nb_rois) + "_rois_50.img")
+save_img(target,"data/Algo/Data/relu_exp_target_" + str(nb_rois) + "_rois_50.img")
 
 
 

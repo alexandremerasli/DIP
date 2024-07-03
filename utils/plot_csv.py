@@ -4,7 +4,7 @@ from csv import reader as reader_csv
 
 metrics_file = "VAR_recon_EMV.csv"
 metrics_file = "phantom_VAR_recon_EMV_0.1.csv"
-metrics_file = "VAR_recon_test_nested_phantom.csv"
+metrics_file = "VAR_recon_test_DNA_phantom.csv"
 nb_it = 250
 
 

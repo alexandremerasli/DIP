@@ -94,7 +94,7 @@ class vGeneral(abc.ABC):
             self.end_to_end = False
 
         # MIC study
-        if ("nested" in self.method or "DNA" in self.method or "Gong" in self.method or "DIPRecon" in self.method or "DIPRecon" in self.method):
+        if ("DNA" in self.method or "DIPRecon" in self.method or "DIPRecon" in self.method):
             if ("override_SC_init" in config):
                 self.override_SC_init = config['override_SC_init']
             else:
@@ -186,7 +186,7 @@ class vGeneral(abc.ABC):
         return config
 
     def createDirectoryAndConfigFile(self,config):
-        if (self.method == 'nested' or self.method == 'Gong'):
+        if (self.method == 'DNA' or self.method == "DIPRecon"):
             Path(self.subroot+'Block1/' + self.suffix + '/before_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
             Path(self.subroot+'Block1/' + self.suffix + '/during_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
             Path(self.subroot+'Block1/' + self.suffix + '/out_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
@@ -361,27 +361,28 @@ class vGeneral(abc.ABC):
         # Additional variables needing every values in config
         # Number of replicates         
         self.nb_replicates = config["replicates"]['grid_search'][-1]
+        method = config["method"]['grid_search'][0]
         #if (task == "show_results_replicates" or task == "show_results"):
         #if (task == "compare_2_methods"):
         #    config["replicates"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
 
-        # By default use ADMMLim in nested, not APGMAP
-        if "recoInNested" not in config:
-            config["recoInNested"] = tune.grid_search(["ADMMLim"])
+        # By default use ADMMLim in DNA, not APGMAP
+        if "recoInDNA" not in config:
+            config["recoInDNA"] = tune.grid_search(["ADMMLim"])
 
-        # Do not scale images if network input is uniform of if Gong's method
+        # Do not scale images if network input is uniform of if DIPRecon's method
         if config["input"]['grid_search'] == 'uniform': # Do not standardize or normalize if uniform, otherwise NaNs
             config["scaling"] = "nothing"
         if (len(config["method"]['grid_search']) == 1):
-            if config["method"]['grid_search'][0] == 'Gong':
+            if method == "DIPRecon":
                 #print("Goooooooooooooooooooong_normalization_enforced")
                 #config["scaling"]['grid_search'] = ["normalization"]
                 #config["scaling"]['grid_search'] = ["positive_normalization"]
                 print("Gooooooooong")
 
-        # If ADMMLim (not nested), begin with CASToR default value, which is uniform image of 1
+        # If ADMMLim (not DNA), begin with CASToR default value, which is uniform image of 1
         if (len(config["method"]['grid_search']) == 1):
-            if config["method"]['grid_search'][0] == 'ADMMLim':
+            if method == 'ADMMLim':
                 config["unnested_1st_global_iter"]['grid_search'] = [True]
         
         # Remove NNEPPS=False if True is selected for computation
@@ -391,11 +392,11 @@ class vGeneral(abc.ABC):
 
         # Delete hyperparameters specific to others optimizer 
         if (len(config["method"]['grid_search']) == 1):
-            if (config["method"]['grid_search'][0] != "AML" and "APGMAP" not in config["method"]['grid_search'][0] and "APGMAP" not in config["recoInNested"]['grid_search'][0]):
+            if (method != "AML" and "APGMAP" not in method and "APGMAP" not in config["recoInDNA"]['grid_search'][0]):
                 config.pop("A_AML", None)
-            if ('BSREM' in config["method"]['grid_search'][0] or "nested" in config["method"] or "DNA" in config["method"]['grid_search'][0] or 'DNA' in config["method"]['grid_search'][0] or "Gong" in config["method"] or "DIPRecon" in config["method"]['grid_search'][0] or 'DIPRecon' in config["method"]['grid_search'][0] or 'APGMAP' in config["method"]['grid_search'][0]):
+            if ('BSREM' in method or 'DNA' in method or "DIPRecon" in method or 'APGMAP' in method):
                 config.pop("post_smoothing", None)
-            if ((('ADMMLim' not in config["method"]['grid_search'][0] and 'nested' not in config["method"]['grid_search'][0]) and config["method"]['grid_search'][0] != 'ADMMLim_Bowsher' and "nested" not in config["method"] and "DNA" not in config["method"]['grid_search'][0]) or "APGMAP" in config["recoInNested"]['grid_search'][0]):
+            if ((('ADMMLim' not in method and 'DNA' not in method) and method != 'ADMMLim_Bowsher' and "DNA" not in method) or "APGMAP" in config["recoInDNA"]['grid_search'][0]):
                 #config.pop("nb_inner_iteration", None)
                 config.pop("alpha", None)
                 config.pop("adaptive_parameters", None)
@@ -405,14 +406,14 @@ class vGeneral(abc.ABC):
                 config.pop("stoppingCriterionValue", None)
                 config.pop("saveSinogramsUAndV", None)
                 #config.pop("xi", None)
-            elif ((config["method"]['grid_search'][0] == 'ADMMLim' or config["method"]['grid_search'][0] == 'ADMMLim_Bowsher' or "nested" in config["method"] or "DNA" in config["method"]['grid_search'][0]) and config["adaptive_parameters"]['grid_search'][0] == "nothing"):
+            elif ((method == 'ADMMLim' or method == 'ADMMLim_Bowsher' or "DNA" in self.method) and config["adaptive_parameters"]['grid_search'][0] == "nothing"):
                 config.pop("mu_adaptive", None)
                 config.pop("tau", None)
                 config.pop("tau_max", None)
                 config.pop("xi", None)
-            if ('ADMMLim' not in config["method"]['grid_search'][0] and "nested" not in config["method"] and "DNA" not in config["method"]['grid_search'][0] and "Gong" not in config["method"] and "DIPRecon" not in config["method"]['grid_search'][0]  and "DIPRecon" not in config["method"]['grid_search'][0]):
+            if ('ADMMLim' not in method and "DNA" not in method and "DIPRecon" not in method):
                 config.pop("nb_outer_iteration", None)
-            if ("nested" not in config["method"] and "DNA" not in config["method"]['grid_search'][0] and "Gong" not in config["method"] and "DIPRecon" not in config["method"]['grid_search'][0]  and "DIPRecon" not in config["method"]['grid_search'][0] and task != "post_reco"):
+            if ("DNA" not in method and "DIPRecon" not in method and task != "post_reco"):
                 config.pop("lr", None)
                 config.pop("sub_iter_DIP", None)
                 config.pop("opti_DIP", None)
@@ -430,9 +431,9 @@ class vGeneral(abc.ABC):
             elif (config["net"]['grid_search'][0] != "DD_AE"): # not a Deep Decoder based architecture, so remove k and d
                 config.pop("d_DD", None)
                 config.pop("k_DD", None)
-            if (config["method"]['grid_search'][0] == 'MLEM' or config["method"] == 'OPTITR' or 'OSEM' in config["method"]['grid_search'][0] or config["method"]['grid_search'][0] == 'AML'):
+            if (method == 'MLEM' or self.method == 'OPTITR' or 'OSEM' in method or method == 'AML'):
                 config.pop("rho", None)
-            if ("nested" in config["method"] or "DNA" in config["method"]['grid_search'][0] or "Gong" in config["method"] or "DIPRecon" in config["method"]['grid_search'][0] or "DIPRecon" in config["method"]['grid_search'][0]):
+            if ("DNA" in method or "DIPRecon" in method):
                 if ("end_to_end" in config):
                     if (config["end_to_end"]):
                         config.pop("sub_iter_DIP", None)
@@ -441,7 +442,7 @@ class vGeneral(abc.ABC):
                 else:
                     config.pop("end_to_end", None)
             # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMLim in CASToR
-            if ('ADMMLim' in config["method"]['grid_search'][0] or "nested" in config["method"] or "DNA" in config["method"]['grid_search'][0]):
+            if ('ADMMLim' in method or "DNA" in self.method):
                 config["mlem_sequence"]['grid_search'] = [False]
         else:
             if ('results' not in task):
@@ -457,11 +458,11 @@ class vGeneral(abc.ABC):
         if (task == "show_results_replicates"):
             # List of beta values
             if (len(config["method"]['grid_search']) == 1):
-                if ('ADMMLim' in config["method"]['grid_search'][0]):
+                if ('ADMMLim' in method):
                     self.beta_list = config["alpha"]['grid_search']
                     config["alpha"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
                 else:
-                    if (config["method"]['grid_search'][0] == 'AML'):
+                    if (method == 'AML'):
                         self.beta_list = config["A_AML"]['grid_search']
                         config["A_AML"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
                     else:                
@@ -488,11 +489,11 @@ class vGeneral(abc.ABC):
             self.suffix_metrics = self.suffix_func(config,NNEPPS=True) # self.suffix with NNEPPS information
 
             # Store suffix to retrieve all suffixes in main.py for metrics
-            text_file = open(self.subroot_data + 'suffixes_for_last_run_' + config["method"] + '.txt', "a")
+            text_file = open(self.subroot_data + 'suffixes_for_last_run_' + self.method + '.txt', "a")
             text_file.write(self.suffix_metrics + "\n")
             text_file.close()
             # Store replicate to retrieve all replicates in main.py for metrics
-            text_file = open(self.subroot_data + 'replicates_for_last_run_' + config["method"] + '.txt', "a")
+            text_file = open(self.subroot_data + 'replicates_for_last_run_' + self.method + '.txt', "a")
             text_file.write("replicate_" + str(self.replicate) + "\n")
             text_file.close()
 
@@ -555,7 +556,7 @@ class vGeneral(abc.ABC):
         config_copy = dict(config)
         if (NNEPPS==False):
             config_copy.pop('NNEPPS',None)
-        if (("ADMMLim" in config["method"] and "nested" not in config["method"] and "DNA" not in config["method"]) or config["method"] == "ADMMLim_Bowsher"):
+        if (("ADMMLim" in self.method and "DNA" not in self.method) or self.method == "ADMMLim_Bowsher"):
             config_copy.pop('nb_outer_iteration',None)
         elif ("post_reco" in config_copy["task"]):
             if ("post_reco_in_suffix" not in config_copy):
@@ -869,7 +870,7 @@ class vGeneral(abc.ABC):
         classResults.simulation = self.simulation
         if (hasattr(self, 'image_net_input')):
             classResults.image_net_input = self.image_net_input
-        if ("nested" in self.method or "DNA" in self.method or "Gong" in self.method or "DIPRecon" in self.method):
+        if ("DNA" in self.method or "DIPRecon" in self.method):
             classResults.DIP_early_stopping = self.DIP_early_stopping
 
     def points_in_circle(self,center_x,center_y,center_z,radius,PETImage_shape,inner_circle=True): # x and y are inverted in an array compared to coordinates
@@ -1380,10 +1381,10 @@ class vGeneral(abc.ABC):
                 pnlt += ' -multimodal ' + self.subroot_data + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.hdr'
             else:
                 pnlt = ' -pnlt ' + penalty + ':' + self.subroot_data + method + '_MRF.conf'
-        elif ("nested" in method or "DNA" in method or 'ADMMLim' in method):
-            if (self.recoInNested == "ADMMLim"):
+        elif ("DNA" in method or 'ADMMLim' in method):
+            if (self.recoInDNA == "ADMMLim"):
                 opti = ' -opti ' + 'ADMMLim' + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) + ',' + str(self.tau_max) + ',' + str(self.stoppingCriterionValue) + ',' + str(self.saveSinogramsUAndV)
-                if ("nested" in method or "DNA" in method):
+                if ("DNA" in method):
                     # if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
                     if ((i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
                         rho = 0
@@ -1410,7 +1411,7 @@ class vGeneral(abc.ABC):
                         pnlt += ':' + self.subroot_data + method + '_MRF.conf'
 
                 penaltyStrength = ' -pnlt-beta ' + str(rho)
-            elif (self.recoInNested == "APGMAP"):
+            elif (self.recoInDNA == "APGMAP"):
                 if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
                     rho = 0
                     #self.rho = 0
@@ -1424,7 +1425,7 @@ class vGeneral(abc.ABC):
             if (rho == 0):
                 pnlt = ''
                 penaltyStrength = ''
-        elif (method == 'Gong'):
+        elif (method == "DIPRecon"):
             if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
                 rho = 0
                 #self.rho = 0
@@ -1517,8 +1518,8 @@ class vGeneral(abc.ABC):
                         
         return B1
 
-    def defineTotalNbIter_beta_rho(self,method,config,task,stopping_criterion=True):
-        if (method == 'ADMMLim'):
+    def defineTotalNbIter_beta_rho(self,config,task,stopping_criterion=True):
+        if (self.method == 'ADMMLim'):
             try:
                 self.path_stopping_criterion = self.subroot + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
                 with open(self.path_stopping_criterion) as f:
@@ -1530,7 +1531,7 @@ class vGeneral(abc.ABC):
                 self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1
                 #self.total_nb_iter = int(self.total_nb_iter / self.i_init) # if 1 out of i_init iterations was saved
             self.beta = config["alpha"]
-        elif ("nested" in method or "DNA" in method or "Gong" in method or "DIPRecon" in method or 'DIPRecon' in method):
+        elif ("DNA" in self.method or "DIPRecon" in self.method):
             if ('post_reco' in task):
                 if ("post_reco_in_suffix" not in config):
                     self.total_nb_iter = config["sub_iter_DIP"]
@@ -1558,9 +1559,9 @@ class vGeneral(abc.ABC):
         else:
             self.total_nb_iter = self.max_iter
 
-            if (config["method"] == 'AML'):
+            if (self.self.method == 'AML'):
                 self.beta = config["A_AML"]
-            if (config["method"] == 'BSREM' or "nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"] or 'DIPRecon' in config["method"] or 'APGMAP' in config["method"]):
+            if (self.self.method == 'BSREM' or "DNA" in self.method or "DIPRecon" in self.method or 'APGMAP' in self.method):
                 self.rho = config["rho"]
                 self.beta = self.rho
 

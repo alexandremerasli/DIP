@@ -25,7 +25,7 @@ class iFinalCurves(vGeneral):
 
     def runComputation(self,config_all_methods,root):
         # Add configuration folders to path to import them
-        for subfolder_config in ["PhD","LM"]:
+        for subfolder_config in ["PhD","LM","."]:
             sys.path.append(os.path.join('all_config',subfolder_config))  # Add the parent directory of config files to the Python path
 
 
@@ -60,14 +60,6 @@ class iFinalCurves(vGeneral):
             beta_BSREM_for_DNA = 0.01
         # Rename my settings (MIC)
 
-        # Convert Gong to DIPRecon
-        DIPRecon = False
-        for i in range(len(method_list)):
-            if "Gong" in method_list[i] or "DIPRecon" in method_list[i]:
-                method_list[i] = method_list[i].replace("Gong","DIPRecon")
-                if method_list[i] == "DIPRecon":
-                    DIPRecon = True
-
         config = dict.fromkeys(method_list) # Create one config dictionnary for each method
         nb_rho = dict.fromkeys(method_list)
         nb_other_dim = dict.fromkeys(method_list)
@@ -81,11 +73,6 @@ class iFinalCurves(vGeneral):
                 config[method] = self.choose_good_config_file(method,config,csv_before_MIC,DIPRecon)
             else:
                 config[method]["method"] = method
-
-            if (method.endswith("_configuration")):
-                method_without_configuration = method[:-14]
-            else:
-                method_without_configuration = method
 
 
             # Initialize config files with good phantom        
@@ -146,24 +133,18 @@ class iFinalCurves(vGeneral):
             replicates_legend = [None] * 3
             replicates_legend = [[],[],[]]
 
-            # Remove failing replicates if Gong in method for TMI paper
-            idx_Gong = -1
-            idx_Gong = next((i for i, string in enumerate(method_list) if "DIPRecon" in string or "Gong" in string, -1))
-            # idx_Gong = next((i for i, string in enumerate(method_list) if "nested" in string), -1)
-            if (idx_Gong != -1):
+            # Remove failing replicates if DIPRecon in method for TMI paper
+            idx_DIPRecon = -1
+            idx_DIPRecon = next((i for i, string in enumerate(method_list) if "DIPRecon" in string), -1)
+            if (idx_DIPRecon != -1):
                 if (rename_settings == "TMI"):
-                    self.scaling = config[method_list[idx_Gong]]["scaling"]
+                    self.scaling = config[method_list[idx_DIPRecon]]["scaling"]
             else:
                 self.scaling = None
 
             for method in method_list: # Compute 
 
-                if (method.endswith("_configuration")):
-                    method_without_configuration = method[:-14]
-                else:
-                    method_without_configuration = method
-
-                if ('ADMMLim' in method and 'nested' not in method):
+                if ('ADMMLim' in method and "DNA" not in method):
                     if ("50_2_10" in self.phantom):
                         self.i_init = 70 # Remove first iterations
                     else:
@@ -178,9 +159,6 @@ class iFinalCurves(vGeneral):
                 if "end_to_end" in config_tmp[method]:
                     if config_tmp[method]["end_to_end"]:
                         self.i_init = 20
-
-                # if ("Gong" in method or "DIPRecon" in method or "nested" in method or "DNA" in method):
-                #     self.i_init = 1 # 0 will take last value as first...
 
                 # Initialize variables
                 suffixes = []
@@ -201,10 +179,11 @@ class iFinalCurves(vGeneral):
                     config_other_dim[method] = config[method]["post_smoothing"]
                     rho_name = "post_smoothing"
                     other_dim_name = ""
-                elif ("nested" in method or "DNA" in method or "Gong" in method or "DIPRecon" in method):
+                elif ("DNA" in method or "DNA" in method or "DIPRecon" in method):
                     # For varying rho_1 (manuscript)
                     rho_name = "rho"
-                    # config_other_dim[method] = config_tmp[method]["rho"]["grid_search"]
+                    other_dim_name = "rho"
+                    config_other_dim[method] = config_tmp[method]["rho"]["grid_search"]
                     # For varying learning rate (manuscript)
                     # config_other_dim[method] = config[method]["lr"]
                     # other_dim_name = "lr"
@@ -212,8 +191,8 @@ class iFinalCurves(vGeneral):
                     # config_other_dim[method] = config_tmp[method]["sub_iter_DIP"]["grid_search"]
                     # other_dim_name = "sub_it_DIP"
                     # Other 
-                    config_other_dim[method] = config_tmp[method]["tau_DIP"]["grid_search"]
-                    other_dim_name = "tau_DIP"
+                    # config_other_dim[method] = config_tmp[method]["tau_DIP"]["grid_search"]
+                    # other_dim_name = "tau_DIP"
                 else:
                     config_other_dim[method] = [""]
                     other_dim_name = ""
@@ -240,7 +219,7 @@ class iFinalCurves(vGeneral):
                 else:
                     color_avg = None
                     if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom):
-                        color_avg = color_dict[method_without_configuration][0]    
+                        color_avg = color_dict[method][0]    
                     
 
                 # Wanted list of replicates
@@ -270,7 +249,7 @@ class iFinalCurves(vGeneral):
                 
                 # Sort suffixes from file by rho and other dim values 
                 sorted_suffixes = list(suffixes[0])
-                if ("ADMMLim" not in method and method != "ADMMLim_Bowsher" and "nested" not in method and "DNA" not in method and "APGMAP" not in method and "BSREM" not in method):
+                if ("ADMMLim" not in method and method != "ADMMLim_Bowsher" and "DNA" not in method and "DNA" not in method and "APGMAP" not in method and "BSREM" not in method):
                     sorted_suffixes.sort(key=self.natural_keys)
                 else:
                     sorted_suffixes.sort(key=self.natural_keys_ADMMLim)
@@ -329,7 +308,7 @@ class iFinalCurves(vGeneral):
                     if (fig_nb == 0):
                         reg[fig_nb] = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
                     elif (fig_nb == 2):
-                        if ("nested" not in method and "DNA" not in method and "DIPRecon" not in method):
+                        if ("DNA" not in method and "DNA" not in method and "DIPRecon" not in method):
                             reg[fig_nb] = np.zeros((nb_rho[method]*nb_other_dim[method]))
                         else:
                             reg[fig_nb] = np.zeros((nb_rho[method]*nb_other_dim[method],np.max(len_mini)))
@@ -371,7 +350,7 @@ class iFinalCurves(vGeneral):
                     if (fig_nb == 2): # Plot tradeoff curves at convergence
                         for rho_idx in range(nb_rho[method]):
                             for other_dim_idx in range(nb_other_dim[method]):
-                                if ("nested" not in method and "DNA" not in method and "DIPRecon" not in method):
+                                if ("DNA" not in method and "DNA" not in method and "DIPRecon" not in method):
                                     reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx] = self.linear_regression(100*IR_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][:,-1],metrics_final_array[other_dim_idx+nb_other_dim[method]*rho_idx][:,-1])
                                 else:
                                     for it in range(len(IR_final[case_mini[rho_idx]])):
@@ -407,17 +386,17 @@ class iFinalCurves(vGeneral):
 
                             if (fig_nb == 0):
                                 # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_avg)
-                                if ((("nested" in method or "DNA" in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1 or config_other_dim[method] == [""]):
+                                if ((("DNA" in method or "DNA" in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1 or config_other_dim[method] == [""]):
                                     idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                 else:
                                     if ("MLEM" in method or "OSEM" in method):
                                         idx_good_rho_color = config_other_dim[method].index(config[method][rho_name][other_dim_idx])
                                     else:
                                         idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
-                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])
+                                ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_dict[method][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])
                                 if (variance_plot):
                                     # ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]][::-1])), alpha = 0.4, label='_nolegend_')
-                                    ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1])), alpha = 0.4, label='_nolegend_',color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])                                
+                                    ax[fig_nb].fill(np.concatenate((100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)] - np.sign(reg[fig_nb])[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)]*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)]),100*(avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1] + np.sign(reg[fig_nb][other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1])*std_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1]))),np.concatenate((avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)]-std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1]+std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)][::-1])), alpha = 0.4, label='_nolegend_',color=color_dict[method][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])                                
                                 #ax[fig_nb].set_title('AR ' + 'in ' + ROI + ' region vs IR in background (with iterations)')
                             #'''
                             # ax[fig_nb].set_ylim([90,117])
@@ -425,14 +404,14 @@ class iFinalCurves(vGeneral):
                                 # Plot average and std of bias curves with iterations
                                 #ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg) # if 1 out of i_init iterations was saved
                                 # ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg)
-                                if ((("nested" in method or "DNA" in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1 or config_other_dim[method] == [""]):
+                                if ((("DNA" in method or "DNA" in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1 or config_other_dim[method] == [""]):
                                     idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                 else:
                                     if ("MLEM" in method or "OSEM" in method):
                                         idx_good_rho_color = config_other_dim[method].index(config[method][rho_name][other_dim_idx])
                                     else:
                                         idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
-                                ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])
+                                ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_dict[method][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])
                                 # Plot dashed line for target value, according to ROI
                                 if (ROI != "whole"):
                                     if (quantitative_tradeoff):
@@ -457,7 +436,7 @@ class iFinalCurves(vGeneral):
                                 # Show variance shadow over average line if asked for
                                 if (variance_plot):
                                     #ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx]))*self.i_init, avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_') # if 1 out of i_init iterations was saved
-                                    ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])), avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_',color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])
+                                    ax[fig_nb].fill_between(np.arange(0,len(avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx])), avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] - std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx] + std_metrics[other_dim_idx+nb_other_dim[method]*rho_idx], alpha = 0.4, label='_nolegend_',color=color_dict[method][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])
                                     
 
                                 '''
@@ -469,7 +448,7 @@ class iFinalCurves(vGeneral):
                             #'''                        
                     #'''
                     if (fig_nb == 2):
-                        if ("nested" not in method and "DNA" not in method and "DIPRecon" not in method):
+                        if ("DNA" not in method and "DNA" not in method and "DIPRecon" not in method):
                             # if ("APGMAP" in method):
                             #     for other_dim_idx in range(nb_other_dim[method]):
                             # else:
@@ -479,7 +458,7 @@ class iFinalCurves(vGeneral):
                                 
                                 if ((not APGMAP_vs_ADMMLim and (method == "APGMAP" and config_other_dim[method][other_dim_idx] == A_shift_ref_APPGML) or (method != "APGMAP" and other_dim_idx == 0)) or APGMAP_vs_ADMMLim):
                                 #    nb_other_dim["APGMAP"] = 1
-                                    ax[fig_nb].plot(100*avg_IR[(cases,len_mini-len_mini_to_remove)],avg_metrics[(cases,len_mini-len_mini_to_remove)],'-o',linewidth=3,color=color_dict[method_without_configuration][other_dim_idx],ls=marker_dict[method][idx_good_rho_color])#'-o',)
+                                    ax[fig_nb].plot(100*avg_IR[(cases,len_mini-len_mini_to_remove)],avg_metrics[(cases,len_mini-len_mini_to_remove)],'-o',linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][idx_good_rho_color])#'-o',)
                                 if (variance_plot):
                                     ax[fig_nb].fill(np.concatenate((100*(avg_IR[(cases,len_mini-len_mini_to_remove)] - np.sign(reg[fig_nb][cases])*std_IR[cases,-1]),100*(avg_IR[(cases,len_mini-len_mini_to_remove)][::-1] + np.sign(reg[fig_nb][cases][::-1])*std_IR[(cases,len_mini-len_mini_to_remove)][::-1]))),np.concatenate((avg_metrics[(cases,len_mini-len_mini_to_remove)]-std_metrics[(cases,len_mini-len_mini_to_remove)],avg_metrics[(cases,len_mini-len_mini_to_remove)][::-1]+std_metrics[(cases,len_mini-len_mini_to_remove)][::-1])), alpha = 0.4, label='_nolegend_', ls=marker_dict[method][idx_good_rho_color])
                                 # BSREM beta 0.01 white circle
@@ -497,21 +476,21 @@ class iFinalCurves(vGeneral):
                                         idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                     else:
                                         idx_good_rho_color = config_other_dim[method].index(config[method][other_dim_name][other_dim_idx])
-                                    ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)],marker='o'*('CT' in method) + '*'*('random' in method) + 'o'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])#'-o',)
-                                    # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:],marker='o'*('CT' in method) + '*'*('random' in method) + '+'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method_without_configuration][other_dim_idx],ls=marker_dict[method][idx_good_rho_color])#'-o',)
+                                    ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,np.linspace(0,len_mini[rho_idx]-1,nb_points_tradeoff_DIP).astype(int)],marker='o'*('CT' in method) + '*'*('random' in method) + 'o'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method][idx_good_rho_color],ls=marker_dict[method][idx_good_rho_color])#'-o',)
+                                    # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:],marker='o'*('CT' in method) + '*'*('random' in method) + '+'*('CT' not in method and 'random' not in method),linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][idx_good_rho_color])#'-o',)
                                     # unnested
                                     idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
-                                    plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'D',markersize=10, mfc='none',color=color_dict[method_without_configuration][idx_good_rho_color],label='_nolegend_')
+                                    plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],'D',markersize=10, mfc='none',color=color_dict[method][idx_good_rho_color],label='_nolegend_')
                                     plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,0],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,0],marker='D',markersize=9,color='white',label='_nolegend_')
-                                    # nested it 100 white circle
+                                    # DNA it 100 white circle
                                     #'''
-                                    if ('nested_BSREM_stand' in method):
+                                    if ("DNA_BSREM_stand" in method):
                                         idx = 100
-                                    elif ('nested_ADMMLim_stand' in method):
+                                    elif ("DNA_ADMMLim_stand" in method):
                                         idx = 75
                                     else:
                                         idx = 75
-                                    if ('nested_BSREM_stand' in method or "DIPRecon_BSREM_stand" in method):
+                                    if ("DNA_BSREM_stand" in method or "DIPRecon_BSREM_stand" in method):
                                         #plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,idx],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,idx],'o', color='white', label='_nolegend_')
                                         plt.plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,idx],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,idx],marker='X',markersize=10,color='black', label='_nolegend_')                                   
 
@@ -644,7 +623,7 @@ class iFinalCurves(vGeneral):
         if (self.phantom == "image2_0"):
             replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
         elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom):
-            if ("nested" not in method and "DNA" not in method and "DIPRecon" not in method):
+            if ("DNA" not in method and "DNA" not in method and "DIPRecon" not in method):
                 if (fig_nb != 2):
                     replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                 else:
@@ -669,15 +648,15 @@ class iFinalCurves(vGeneral):
                     replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                 elif ((not APGMAP_vs_ADMMLim and other_dim_idx == 0) or APGMAP_vs_ADMMLim):
                     if ("MLEM_norm" in method):
-                        replicates_legend[fig_nb].append(r'DIPRecon$_{init~MLEM}^{scal~norm}$')
+                        replicates_legend[fig_nb].append(r"DIPRecon$_{init~MLEM}^{scal~norm}$")
                     elif ("ADMMLim_norm" in method):
-                        replicates_legend[fig_nb].append(r'DIPRecon$_{init~ADMMLim}^{scal~norm}$')
-                    elif ("nested_ADMMLim_stand" in method):
-                        replicates_legend[fig_nb].append(r'nested$_{init~ADMMLim}^{scal~stand}$')
+                        replicates_legend[fig_nb].append(r"DIPRecon$_{init~ADMMLim}^{scal~norm}$")
+                    elif ("DNA_ADMMLim_stand" in method):
+                        replicates_legend[fig_nb].append(r"DNA$_{init~ADMMLim}^{scal~stand}$")
                     elif ("DIPRecon_ADMMLim_stand" in method):
-                        replicates_legend[fig_nb].append(r'DIPRecon$_{init~ADMMLim}^{scal~stand}$')
-                    elif ("nested_BSREM_stand" in method):
-                        replicates_legend[fig_nb].append('nested')
+                        replicates_legend[fig_nb].append(r"DIPRecon$_{init~ADMMLim}^{scal~stand}$")
+                    elif ("DNA_BSREM_stand" in method):
+                        replicates_legend[fig_nb].append("DNA")
                     elif ("DIPRecon_BSREM_stand" in method):
                         replicates_legend[fig_nb].append('DIPRecon')
                 if (rename_settings == "MIC"):
@@ -716,75 +695,75 @@ class iFinalCurves(vGeneral):
                             print("ok")
                         replicates_legend[fig_nb].append(label_name)
                 if (rename_settings == "TMI"):
-                    if ("nested_MIC_brain_2D_MR3" in method):
+                    if ("DNA_MIC_brain_2D_MR3" in method):
                         replicates_legend[fig_nb].append('DNA')
                     elif ("DIPRecon_MIC_brain_2D_MR3" in method):
                         replicates_legend[fig_nb].append('DIPRecon')
                     # Ablation study
-                    elif ("nested_with_ReLU" in method):    
+                    elif ("DNA_with_ReLU" in method):    
                         replicates_legend[fig_nb].append('DNA w/ ReLU')
                     elif ("DIPRecon_without_ReLU" in method):
                         replicates_legend[fig_nb].append('DIPRecon w/o ReLU')
-                    elif ("nested_init_wReLU_MIC_brain_2D_MR3" in method):    
+                    elif ("DNA_init_wReLU_MIC_brain_2D_MR3" in method):    
                         replicates_legend[fig_nb].append('DNA - init w ReLU')
                     elif ("DIPRecon_init_woReLU_MIC_brain_2D_MR3" in method):
                         replicates_legend[fig_nb].append('DIPRecon - init w/o ReLU')
 
                     # Low count study
-                    elif ("nested_low_count" in method):    
+                    elif ("DNA_low_count" in method):    
                         replicates_legend[fig_nb].append('DNA')
                     elif ("DIPRecon_low_count" in method):
                         replicates_legend[fig_nb].append('DIPRecon')
                     # replicates_legend[fig_nb].append(method)
                 elif(rename_settings == "hyperparameters_paper"):
-                    # if ("nested_MIC_brain_2D_MR3" in method):
+                    # if ("DNA_MIC_brain_2D_MR3" in method):
                     #     replicates_legend[fig_nb].append('DNA')
-                    # elif ("nested_APPGML_50_2" in method):
+                    # elif ("DNA_APPGML_50_2" in method):
                     #     replicates_legend[fig_nb].append('DNA-APPGML')
-                    if ("nested_ADMMLim_more_ADMMLim_it_10" in method):
+                    if ("DNA_ADMMLim_more_ADMMLim_it_10" in method):
                         replicates_legend[fig_nb].append(r'DNA$^{positive~norm}$')
-                    elif ("nested_APPGML_1it" in method):
+                    elif ("DNA_APPGML_1it" in method):
                         replicates_legend[fig_nb].append(r'DNA$^{norm}$')
-                    elif ("nested_APPGML_4it" in method):
+                    elif ("DNA_APPGML_4it" in method):
                         replicates_legend[fig_nb].append(r'DNA$^{stand}$')
                     elif ("DIPRecon_skip3_3_my_settings" in method):
                         replicates_legend[fig_nb].append(r'DIPRecon$^{positive~norm}$')
                     elif ("DIPRecon_CT_1_skip" in method):
                         replicates_legend[fig_nb].append(r'DIPRecon$^{norm}$')
-                    elif ("nested_image4_1_MR3_300" in method):
+                    elif ("DNA_image4_1_MR3_300" in method):
                         replicates_legend[fig_nb].append(r'DNA$_{it~DIP~300}$')
-                    elif ("nested_image4_1_MR3_30" in method):
+                    elif ("DNA_image4_1_MR3_30" in method):
                         replicates_legend[fig_nb].append(r'DNA$_{it~DIP~30}$')
-                    elif ("nested_image4_1_MR3_1000" in method):
+                    elif ("DNA_image4_1_MR3_1000" in method):
                         replicates_legend[fig_nb].append(r'DNA$_{it~DIP~1000}$')
-                    elif ("nested_image4_1_MR3_all_EMV" in method):
+                    elif ("DNA_image4_1_MR3_all_EMV" in method):
                         replicates_legend[fig_nb].append(r'DNA$_{it~DIP~EMV}$')
-                    elif ("nested_image4_1_MR3" in method):
+                    elif ("DNA_image4_1_MR3" in method):
                         replicates_legend[fig_nb].append(r'DNA$_{it~DIP~100}$')
-                    elif ("nested_MLEM_4_1" in method):
+                    elif ("DNA_MLEM_4_1" in method):
                         replicates_legend[fig_nb].append(r'DNA$_{init~MLEM}$')
-                    elif ("nested_norm" in method):
+                    elif ("DNA_norm" in method):
                         replicates_legend[fig_nb].append(r'DNA$^{norm}$')
-                    elif ("nested_stand" in method):
+                    elif ("DNA_stand" in method):
                         replicates_legend[fig_nb].append(r'DNA$^{stand}$')
-                    elif ("nested_positive_norm" in method):
+                    elif ("DNA_positive_norm" in method):
                         replicates_legend[fig_nb].append(r'DNA$^{positive~norm}$')
                     elif ("DIPRecon_stand" in method):
                         replicates_legend[fig_nb].append(r'DIPRecon$^{stand}$')
                     elif ("DIPRecon_positive_norm" in method):
                         replicates_legend[fig_nb].append(r'DIPRecon$^{positive~norm}$')
                     else:
-                        if ("nested" in method or "DNA" in method):
+                        if ("DNA" in method or "DNA" in method):
                             # replicates_legend[fig_nb].append('DNA' + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                             replicates_legend[fig_nb].append(method + (": " + rho_name + " = " + str(config[method]["rho"][rho_idx]))*(rho_name!=""))
                             # replicates_legend[fig_nb].append('DNA-APPGML' + (": " + r'$\rho_1$' + " = " + str(config[method]["rho"][rho_idx]))*(rho_name!=""))
-                        elif ("Gong" in method or "DIPRecon" in method):
+                        elif ("DIPRecon" in method):
                             replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                             # replicates_legend[fig_nb].append('DIPRecon' + ( ": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                         else:
                             replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
 
-                if ("nested_end_to_end" in method):
+                if ("DNA_end_to_end" in method):
                     replicates_legend[fig_nb].append(r'DNA$^{end~to~end}$')
                 if ("DIPRecon_end_to_end" in method):
                     replicates_legend[fig_nb].append(r'DIPRecon$^{end~to~end}$')
@@ -792,10 +771,10 @@ class iFinalCurves(vGeneral):
 
     def choose_good_config_file(self,method,config,csv_before_MIC,DIPRecon):        
         lib = importlib.import_module(method)
-        if ('nested_' in method):
-            method_name = "nested"
-        elif ('DIPRecon_' in method):
-            method_name = "Gong"
+        if ('DNA' in method):
+            method_name = "DNA"
+        elif ('DIPRecon' in method):
+            method_name = "DIPRecon"
         elif ("OSEM" in method):
             method_name = "MLEM"
         elif ("BSREM" in method):
@@ -805,6 +784,7 @@ class iFinalCurves(vGeneral):
         elif ("ADMMLim" in method):
             method_name = "ADMMLim"
         else:
+            print("No general method found, keep the whole name")
             method_name = method            
         
         config[method] = lib.config_func_MIC()
@@ -815,7 +795,7 @@ class iFinalCurves(vGeneral):
     def marker_color_dict_method(self):
         if (self.phantom == "image2_0"):
             color_dict = {
-                "nested" : 100*['red','pink'],
+                "DNA" : 100*['red','pink'],
                 "DIPRecon" : 100*['cyan','blue','teal','blueviolet'],
                 "APGMAP" : 100*['darkgreen','lime','gold'],
                 "ADMMLim" : 100*['fuchsia'],
@@ -823,8 +803,8 @@ class iFinalCurves(vGeneral):
                 "BSREM" : 100*['grey']
             }
             color_dict_supp = {
-                "nested_BSREM_stand" : [color_dict["nested"][0]],
-                "nested_ADMMLim_stand" : [color_dict["nested"][1]],
+                "DNA_BSREM_stand" : [color_dict["DNA"][0]],
+                "DNA_ADMMLim_stand" : [color_dict["DNA"][1]],
                 "DIPRecon_BSREM_stand" : [color_dict["DIPRecon"][0]],
                 "DIPRecon_ADMMLim_stand" : [color_dict["DIPRecon"][1]],
                 "DIPRecon_ADMMLim_norm" : [color_dict["DIPRecon"][2]],
@@ -835,12 +815,12 @@ class iFinalCurves(vGeneral):
 
         elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom):
             color_dict_after_MIC = {
-                "nested_ADMMLim" : ['cyan','blue','teal','blueviolet','black'],
-                #"nested_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
-                #"nested_APPGML_subsets" : ['darkgreen','lime','gold','darkseagreen'],
-                "nested_APPGML" : ['darkgreen','lime','gold','darkseagreen'],
-                "nested_CT_skip" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
-                "nested_random_skip" : ['fuchsia','orange','darkgreen','pink','black'],
+                "DNA_ADMMLim" : ['cyan','blue','teal','blueviolet','black'],
+                #"DNA_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
+                #"DNA_APPGML_subsets" : ['darkgreen','lime','gold','darkseagreen'],
+                "DNA_APPGML" : ['darkgreen','lime','gold','darkseagreen'],
+                "DNA_CT_skip" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "DNA_random_skip" : ['fuchsia','orange','darkgreen','pink','black'],
                 # "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "DIPRecon" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
                 "BSREM" : 5*['grey','cyan','blue','teal','blueviolet'],
@@ -853,38 +833,65 @@ class iFinalCurves(vGeneral):
                 "ADMMLim_Bowsher" : list(['cyan','darkviolet','red','saddlebrown','blueviolet','lime','black','yellow','grey','peru','gold','darkseagreen','cyan','blue','teal','black']),
             }
             color_dict_add_tests = {
-                "nested" : ['black'], # 3 it
-                "nested_skip0_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][3]],
-                "nested_skip1_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][1]],
-                "nested_skip2_3_my_settings" : [color_dict_after_MIC["nested_ADMMLim"][2]],
-                "nested_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["nested_ADMMLim"][0],color_dict_after_MIC["nested_ADMMLim"][1],color_dict_after_MIC["nested_ADMMLim"][2],color_dict_after_MIC["nested_ADMMLim"][3],color_dict_after_MIC["nested_ADMMLim"][4]],
-                "nested_ADMMLim_more_ADMMLim_it_30" : [color_dict_after_MIC["nested_ADMMLim"][1]],
-                "nested_ADMMLim_more_ADMMLim_it_80" : [color_dict_after_MIC["nested_ADMMLim"][2]],
-                "nested_ADMMLim_u_v" : [color_dict_after_MIC["nested_ADMMLim"][3]],
-                "nested_APPGML_1subset" : [color_dict_after_MIC["nested_APPGML"][0]],
-                "nested_APPGML_4subsets" : [color_dict_after_MIC["nested_APPGML"][1]],
-                "nested_APPGML_14subsets" : [color_dict_after_MIC["nested_APPGML"][2]],
-                "nested_APPGML_28subsets" : [color_dict_after_MIC["nested_APPGML"][3]],
-                "nested_APPGML_1it" : [color_dict_after_MIC["nested_APPGML"][0]],
-                "nested_APPGML_4it" : [color_dict_after_MIC["nested_APPGML"][1]],
-                "nested_APPGML_14it" : [color_dict_after_MIC["nested_APPGML"][2]],
-                "nested_APPGML_28it" : [color_dict_after_MIC["nested_APPGML"][3]],
-                "nested_CT_2_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][0]],
-                "nested_CT_3_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][1]],
-                "nested_CT_2_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][2]],
-                "nested_CT_3_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][3]],
-                "nested_CT_0_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][4]],
-                "nested_CT_1_skip_3it" : [color_dict_after_MIC["nested_CT_skip"][5]],
-                "nested_CT_0_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][6]],
-                "nested_CT_1_skip_10it" : [color_dict_after_MIC["nested_CT_skip"][7]],
-                "nested_random_3_skip_10it" : [color_dict_after_MIC["nested_random_skip"][0]],
-                "nested_random_2_skip_10it" : [color_dict_after_MIC["nested_random_skip"][1]],
-                "nested_random_1_skip_10it" : [color_dict_after_MIC["nested_random_skip"][2]],
-                "nested_random_0_skip_10it" : [color_dict_after_MIC["nested_random_skip"][3]],
-                "nested_DD" : [color_dict_after_MIC["nested_random_skip"][4]],
+                "DNA" : ['black'], # 3 it
+                "DNA_skip0_3_my_settings" : [color_dict_after_MIC["DNA_ADMMLim"][3]],
+                "DNA_skip1_3_my_settings" : [color_dict_after_MIC["DNA_ADMMLim"][1]],
+                "DNA_skip2_3_my_settings" : [color_dict_after_MIC["DNA_ADMMLim"][2]],
+                "DNA_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["DNA_ADMMLim"][0],color_dict_after_MIC["DNA_ADMMLim"][1],color_dict_after_MIC["DNA_ADMMLim"][2],color_dict_after_MIC["DNA_ADMMLim"][3],color_dict_after_MIC["DNA_ADMMLim"][4]],
+                "DNA_ADMMLim_more_ADMMLim_it_30" : [color_dict_after_MIC["DNA_ADMMLim"][1]],
+                "DNA_ADMMLim_more_ADMMLim_it_80" : [color_dict_after_MIC["DNA_ADMMLim"][2]],
+                "DNA_ADMMLim_u_v" : [color_dict_after_MIC["DNA_ADMMLim"][3]],
+                "DNA_APPGML_1subset" : [color_dict_after_MIC["DNA_APPGML"][0]],
+                "DNA_APPGML_4subsets" : [color_dict_after_MIC["DNA_APPGML"][1]],
+                "DNA_APPGML_14subsets" : [color_dict_after_MIC["DNA_APPGML"][2]],
+                "DNA_APPGML_28subsets" : [color_dict_after_MIC["DNA_APPGML"][3]],
+                "DNA_APPGML_1it" : [color_dict_after_MIC["DNA_APPGML"][0]],
+                "DNA_APPGML_4it" : [color_dict_after_MIC["DNA_APPGML"][1]],
+                "DNA_APPGML_14it" : [color_dict_after_MIC["DNA_APPGML"][2]],
+                "DNA_APPGML_28it" : [color_dict_after_MIC["DNA_APPGML"][3]],
+                "DNA_CT_2_skip_3it" : [color_dict_after_MIC["DNA_CT_skip"][0]],
+                "DNA_CT_3_skip_3it" : [color_dict_after_MIC["DNA_CT_skip"][1]],
+                "DNA_CT_2_skip_10it" : [color_dict_after_MIC["DNA_CT_skip"][2]],
+                "DNA_CT_3_skip_10it" : [color_dict_after_MIC["DNA_CT_skip"][3]],
+                "DNA_CT_0_skip_3it" : [color_dict_after_MIC["DNA_CT_skip"][4]],
+                "DNA_CT_1_skip_3it" : [color_dict_after_MIC["DNA_CT_skip"][5]],
+                "DNA_CT_0_skip_10it" : [color_dict_after_MIC["DNA_CT_skip"][6]],
+                "DNA_CT_1_skip_10it" : [color_dict_after_MIC["DNA_CT_skip"][7]],
+                "DNA_random_3_skip_10it" : [color_dict_after_MIC["DNA_random_skip"][0]],
+                "DNA_random_2_skip_10it" : [color_dict_after_MIC["DNA_random_skip"][1]],
+                "DNA_random_1_skip_10it" : [color_dict_after_MIC["DNA_random_skip"][2]],
+                "DNA_random_0_skip_10it" : [color_dict_after_MIC["DNA_random_skip"][3]],
+                "DNA_DD" : [color_dict_after_MIC["DNA_random_skip"][4]],
 
-                "nested_end_to_end" : [color_dict_after_MIC["nested_random_skip"][0]],
-                "DIPRecon_end_to_end" : [color_dict_after_MIC["nested_random_skip"][1]],
+
+
+                #####################
+                ## SIMON
+                ##
+                ## change colors of curves
+                "configuration_files_TMI_revision__high_count__normalization__DIPRecon" : ["green"],
+                "configuration_files_TMI_revision__high_count__normalization__DNA" : ["blue"],
+                "configuration_files_TMI_revision__high_count__normalization__DNA_ReLU__patience200" : ["red"],
+                "configuration_files_TMI_revision__high_count__normalization__DNA_ReLU__patience500" : ["yellow"],
+                "configuration_files_TMI_revision__high_count__positive_norm__DIPRecon" : ["green"],
+                "configuration_files_TMI_revision__high_count__positive_norm__DNA" : ["green"],
+                "configuration_files_TMI_revision__high_count__positive_norm__DNA_ReLU__patience200" : ["green"],
+                "configuration_files_TMI_revision__high_count__positive_norm__DNA_ReLU__patience500" : ["green"],
+                "configuration_files_TMI_revision__high_count__standardization__DIPRecon" : ["green"],
+                "configuration_files_TMI_revision__high_count__standardization__DNA" : ["green"],
+                "configuration_files_TMI_revision__high_count__standardization__DNA_ReLU" : ["green"],
+                "configuration_files_TMI_revision__low_count__normalization__DIPRecon" : ["green"],
+                "configuration_files_TMI_revision__low_count__normalization__DNA" : ["green"],
+                "configuration_files_TMI_revision__low_count__normalization__DNA_ReLU" : ["green"],
+                "configuration_files_TMI_revision__low_count__positive_norm__DIPRecon" : ["green"],
+                "configuration_files_TMI_revision__low_count__positive_norm__DNA" : ["green"],
+                "configuration_files_TMI_revision__low_count__positive_norm__DNA_ReLU" : ["green"],
+                ####################
+
+
+
+                "DNA_end_to_end" : [color_dict_after_MIC["DNA_random_skip"][0]],
+                "DIPRecon_end_to_end" : [color_dict_after_MIC["DNA_random_skip"][1]],
 
                 "DIPRecon_BSREM_stand" : [color_dict_after_MIC["DIPRecon"][0]],
                 "DIPRecon_CT_3_skip" : [color_dict_after_MIC["DIPRecon"][1]],
@@ -898,11 +905,11 @@ class iFinalCurves(vGeneral):
             }
 
             color_dict_TMI_DNA = {
-                "nested" : ['red','pink'],
-                "nested_image4_1_MR3" : ['peru','red','saddlebrown','blueviolet','lime','grey','black','yellow'],
-                "nested_image4_1_MR3_300" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey'],
-                "nested_image4_1_MR3_1000" : ['blueviolet','lime','black','yellow','grey'],
-                "nested_image4_1_MR3_30" : ['saddlebrown','blueviolet','lime','black','yellow','grey'],
+                "DNA" : ['red','pink'],
+                "DNA_image4_1_MR3" : ['peru','red','saddlebrown','blueviolet','lime','grey','black','yellow'],
+                "DNA_image4_1_MR3_300" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey'],
+                "DNA_image4_1_MR3_1000" : ['blueviolet','lime','black','yellow','grey'],
+                "DNA_image4_1_MR3_30" : ['saddlebrown','blueviolet','lime','black','yellow','grey'],
                 "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "DIPRecon_image4_1_MR3" : ['lime','saddlebrown','red','lime','black','yellow','grey','peru'],
                 "APGMAP" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
@@ -914,48 +921,48 @@ class iFinalCurves(vGeneral):
 
                 "BSREM_low_count" : ['grey'] + 5*['cyan','blue','teal','blueviolet'],
                 "BSREM_Bowsher_low_count" : ['blueviolet'] + 5*['cyan','blue','teal','grey'],
-                "nested_low_count" : ['black','red','pink'],
+                "DNA_low_count" : ['black','red','pink'],
                 "DIPRecon_low_count" : ['cyan','blue','teal','blueviolet'],
                 "APGMAP_low_count" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "ADMMLim_low_count" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
 
-                "nested_with_ReLU" : [color_dict_after_MIC["nested_CT_skip"][0]],
-                "DIPRecon_without_ReLU" : [color_dict_after_MIC["nested_CT_skip"][1]],
-                "nested_init_wReLU_MIC_brain_2D_MR3" : [color_dict_after_MIC["nested_CT_skip"][2]],
-                "DIPRecon_init_woReLU_MIC_brain_2D_MR3" : [color_dict_after_MIC["nested_CT_skip"][3]],
+                "DNA_with_ReLU" : [color_dict_after_MIC["DNA_CT_skip"][0]],
+                "DIPRecon_without_ReLU" : [color_dict_after_MIC["DNA_CT_skip"][1]],
+                "DNA_init_wReLU_MIC_brain_2D_MR3" : [color_dict_after_MIC["DNA_CT_skip"][2]],
+                "DIPRecon_init_woReLU_MIC_brain_2D_MR3" : [color_dict_after_MIC["DNA_CT_skip"][3]],
             }
             
             color_dict_MIC2023_DNA = {
-                "nested" : ['red','pink'],
-                "nested_MIC_brain_2D" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
-                "nested_MIC_cookie_2D" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
-                "nested_MIC_cookie_2D_DNA_ADMMLim" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "DNA" : ['red','pink'],
+                "DNA_MIC_brain_2D" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "DNA_MIC_cookie_2D" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "DNA_MIC_cookie_2D_DNA_ADMMLim" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
 
-                "nested_MIC_brain_2D_intermediate" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
-                "nested_MIC_brain_2D_intermediate0" : 5*[color_dict_after_MIC["nested_ADMMLim"][3]],
-                "nested_MIC_brain_2D_intermediate1" : 5*[color_dict_after_MIC["nested_ADMMLim"][2]],
-                "nested_MIC_brain_2D_intermediate2" : 5*[color_dict_after_MIC["nested_ADMMLim"][1]],
-                "nested_MIC_brain_2D_intermediate3" : 5*[color_dict_after_MIC["nested_ADMMLim"][0]],
-                "nested_MIC_brain_2D_MR" : 5*[color_dict_after_MIC["nested_CT_skip"][0]],
-                "nested_MIC_brain_2D_MR0" : 5*[color_dict_after_MIC["nested_CT_skip"][4]],
-                "nested_MIC_brain_2D_MR1" : 5*[color_dict_after_MIC["nested_CT_skip"][5]],
-                "nested_MIC_brain_2D_MR2" : 5*[color_dict_after_MIC["nested_CT_skip"][0]],
-                "nested_MIC_brain_2D_MR3" : 5*['black','red','saddlebrown','blueviolet','lime','grey','black','yellow','peru'],
-                "nested_APPGML_MIC_brain_2D_MR3" : 5*[color_dict_after_MIC["nested_CT_skip"][0]],
-                "DIPRecon_MIC_brain_2D_MR3" : 5*[color_dict_after_MIC["nested_CT_skip"][1]],
-                "DIPRecon_initDNA_MIC_brain_2D_MR3" : 5*[color_dict_after_MIC["nested_CT_skip"][2]],
-                "DIPRecon_initDNA_skip3_3_my_settings" : 5*[color_dict_after_MIC["nested_CT_skip"][3]],
-                "nested_MIC_brain_2D_random" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
-                "nested_MIC_brain_2D_random0" : 5*['red'],
-                "nested_MIC_brain_2D_random1" : 5*[color_dict_after_MIC["nested_random_skip"][2]],
-                "nested_MIC_brain_2D_random2" : 5*[color_dict_after_MIC["nested_random_skip"][1]],
-                "nested_MIC_brain_2D_random3" : 5*[color_dict_after_MIC["nested_random_skip"][0]],
-                "nested_MIC_brain_2D_diff1" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
-                # "nested_MIC_brain_2D_diff5" : [color_dict_after_MIC["nested_APPGML"][3],color_dict_after_MIC["nested_APPGML"][3],color_dict_after_MIC["nested_APPGML"][3],color_dict_after_MIC["nested_APPGML"][3]],
-                "nested_MIC_brain_2D_diff5" : [color_dict_after_MIC["nested_APPGML"][3],color_dict_after_MIC["nested_APPGML"][2],color_dict_after_MIC["nested_APPGML"][1],color_dict_after_MIC["nested_APPGML"][0]],
-                "nested_MIC_brain_2D_diff5_30" : [color_dict_after_MIC["nested_APPGML"][2],color_dict_after_MIC["nested_CT_skip"][2],color_dict_after_MIC["nested_CT_skip"][1],color_dict_after_MIC["nested_CT_skip"][0]],
-                "nested_MIC_brain_2D_diff5_SC1" : 5*[color_dict_after_MIC["nested_ADMMLim"][1]],
-                "nested_MIC_brain_2D_diff5_SC2" : 5*[color_dict_after_MIC["nested_ADMMLim"][2]],
+                "DNA_MIC_brain_2D_intermediate" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "DNA_MIC_brain_2D_intermediate0" : 5*[color_dict_after_MIC["DNA_ADMMLim"][3]],
+                "DNA_MIC_brain_2D_intermediate1" : 5*[color_dict_after_MIC["DNA_ADMMLim"][2]],
+                "DNA_MIC_brain_2D_intermediate2" : 5*[color_dict_after_MIC["DNA_ADMMLim"][1]],
+                "DNA_MIC_brain_2D_intermediate3" : 5*[color_dict_after_MIC["DNA_ADMMLim"][0]],
+                "DNA_MIC_brain_2D_MR" : 5*[color_dict_after_MIC["DNA_CT_skip"][0]],
+                "DNA_MIC_brain_2D_MR0" : 5*[color_dict_after_MIC["DNA_CT_skip"][4]],
+                "DNA_MIC_brain_2D_MR1" : 5*[color_dict_after_MIC["DNA_CT_skip"][5]],
+                "DNA_MIC_brain_2D_MR2" : 5*[color_dict_after_MIC["DNA_CT_skip"][0]],
+                "DNA_MIC_brain_2D_MR3" : 5*['black','red','saddlebrown','blueviolet','lime','grey','black','yellow','peru'],
+                "DNA_APPGML_MIC_brain_2D_MR3" : 5*[color_dict_after_MIC["DNA_CT_skip"][0]],
+                "DIPRecon_MIC_brain_2D_MR3" : 5*[color_dict_after_MIC["DNA_CT_skip"][1]],
+                "DIPRecon_initDNA_MIC_brain_2D_MR3" : 5*[color_dict_after_MIC["DNA_CT_skip"][2]],
+                "DIPRecon_initDNA_skip3_3_my_settings" : 5*[color_dict_after_MIC["DNA_CT_skip"][3]],
+                "DNA_MIC_brain_2D_random" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "DNA_MIC_brain_2D_random0" : 5*['red'],
+                "DNA_MIC_brain_2D_random1" : 5*[color_dict_after_MIC["DNA_random_skip"][2]],
+                "DNA_MIC_brain_2D_random2" : 5*[color_dict_after_MIC["DNA_random_skip"][1]],
+                "DNA_MIC_brain_2D_random3" : 5*[color_dict_after_MIC["DNA_random_skip"][0]],
+                "DNA_MIC_brain_2D_diff1" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                # "DNA_MIC_brain_2D_diff5" : [color_dict_after_MIC["DNA_APPGML"][3],color_dict_after_MIC["DNA_APPGML"][3],color_dict_after_MIC["DNA_APPGML"][3],color_dict_after_MIC["DNA_APPGML"][3]],
+                "DNA_MIC_brain_2D_diff5" : [color_dict_after_MIC["DNA_APPGML"][3],color_dict_after_MIC["DNA_APPGML"][2],color_dict_after_MIC["DNA_APPGML"][1],color_dict_after_MIC["DNA_APPGML"][0]],
+                "DNA_MIC_brain_2D_diff5_30" : [color_dict_after_MIC["DNA_APPGML"][2],color_dict_after_MIC["DNA_CT_skip"][2],color_dict_after_MIC["DNA_CT_skip"][1],color_dict_after_MIC["DNA_CT_skip"][0]],
+                "DNA_MIC_brain_2D_diff5_SC1" : 5*[color_dict_after_MIC["DNA_ADMMLim"][1]],
+                "DNA_MIC_brain_2D_diff5_SC2" : 5*[color_dict_after_MIC["DNA_ADMMLim"][2]],
 
                 "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "APGMAP" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
@@ -966,14 +973,14 @@ class iFinalCurves(vGeneral):
                 # Manuscrit
                 "APGMAP" : ['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "ADMMLim" : list(['cyan','darkviolet','red','saddlebrown','blueviolet','lime','black','yellow','grey','peru','gold','darkseagreen','cyan','blue','teal','black']),
-                "nested_image4_1_MR3" : ['black'],
-                "DIPRecon_image4_1_MR3" : 5*[color_dict_after_MIC["nested_CT_skip"][1]],
+                "DNA_image4_1_MR3" : ['black'],
+                "DIPRecon_image4_1_MR3" : 5*[color_dict_after_MIC["DNA_CT_skip"][1]],
 
-                "nested_stand" : ['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
-                "nested_norm" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
-                "nested_positive_norm" : ['gold'] + 5*['cyan','blue','teal','blueviolet'],
-                "nested_norm_init" : 5*['cyan','blue','teal','blueviolet'],
-                "nested_nothing" : 5*['blue','teal','blueviolet'],
+                "DNA_stand" : ['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "DNA_norm" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "DNA_positive_norm" : ['gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "DNA_norm_init" : 5*['cyan','blue','teal','blueviolet'],
+                "DNA_nothing" : 5*['blue','teal','blueviolet'],
                 "DIPRecon_stand" : list(reversed(['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'])),
                 "DIPRecon_norm" : list(reversed(['darkgreen','gold'] + 5*['cyan','blue','blueviolet','teal'])),
                 "DIPRecon_positive_norm" : list(reversed(['gold'] + 5*['cyan','teal','blueviolet','blue'])),
@@ -981,33 +988,33 @@ class iFinalCurves(vGeneral):
                 "DIPRecon_nothing" : list(reversed(5*['blue','teal','blueviolet'])),
 
 
-                "nested_ADMMLim" : ['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
-                "nested_BSREM" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
-                "nested_OSEM" : ['gold'] + 5*['cyan','blue','teal','blueviolet'],
-                "nested_MLEM" : 5*['cyan','blue','teal','blueviolet'],
+                "DNA_ADMMLim" : ['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "DNA_BSREM" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "DNA_OSEM" : ['gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "DNA_MLEM" : 5*['cyan','blue','teal','blueviolet'],
 
-                "nested_ADMMLim_4_1" : ['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
-                "nested_BSREM_4_1" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
-                "nested_OSEM_4_1" : ['gold'] + 5*['cyan','blue','teal','blueviolet'],
-                "nested_MLEM_4_1" : 5*['cyan','blue','teal','blueviolet'],
+                "DNA_ADMMLim_4_1" : ['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "DNA_BSREM_4_1" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "DNA_OSEM_4_1" : ['gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "DNA_MLEM_4_1" : 5*['cyan','blue','teal','blueviolet'],
 
-                "nested_image4_1_APPGML" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
-                # "nested_APPGML_50_2" : ['cyan','gold'] + 5*['cyan','blue','teal','blueviolet'],
-                "nested_APPGML_50_2" : 5*['black','red','saddlebrown','blueviolet','lime','grey','black','yellow','peru'],
+                "DNA_image4_1_APPGML" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                # "DNA_APPGML_50_2" : ['cyan','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "DNA_APPGML_50_2" : 5*['black','red','saddlebrown','blueviolet','lime','grey','black','yellow','peru'],
 
-                "nested_image4_1_MR3_several_rhos" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
-                "nested_image4_1_MR3_all_EMV" : ['lime'],
+                "DNA_image4_1_MR3_several_rhos" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "DNA_image4_1_MR3_all_EMV" : ['lime'],
             }
 
             color_dict_LM = {
                 "LM_OSEM" : ["orange"],
             }
 
-            color_dict = {**color_dict_after_MIC, **color_dict_add_tests, **color_dict_TMI_DNA, **color_dict_MIC2023_DNA, **color_dict_LM} # Comparison between APPGML and ADMMLim in nested (varying subsets and iterations)
+            color_dict = {**color_dict_after_MIC, **color_dict_add_tests, **color_dict_TMI_DNA, **color_dict_MIC2023_DNA, **color_dict_LM} # Comparison between APPGML and ADMMLim in DNA (varying subsets and iterations)
 
         if (self.phantom == "image2_0"):                    
             marker_dict = {
-                "nested" : ['-','--'],
+                "DNA" : ['-','--'],
                 "DIPRecon" : ['-','--','loosely dotted','dashdot'],
                 "APGMAP" : ['-','--','loosely dotted'],
                 "ADMMLim" : ['-'],
@@ -1016,8 +1023,8 @@ class iFinalCurves(vGeneral):
                 "BSREM_Bowsher" : ['-']
             }
             marker_dict_supp = {
-                "nested_BSREM_stand" : [marker_dict["nested"][0]],
-                "nested_ADMMLim_stand" : [marker_dict["nested"][1]],
+                "DNA_BSREM_stand" : [marker_dict["DNA"][0]],
+                "DNA_ADMMLim_stand" : [marker_dict["DNA"][1]],
                 "DIPRecon_BSREM_stand" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_ADMMLim_stand" : [marker_dict["DIPRecon"][1]],
                 "DIPRecon_ADMMLim_norm" : [marker_dict["DIPRecon"][2]],
@@ -1042,86 +1049,110 @@ class iFinalCurves(vGeneral):
                 "DIPRecon" : 15*['-']
             }
             marker_dict_supp = {
-                "nested" : [marker_dict["ADMMLim"][0]], # 3 it
-                "nested_skip0_3_my_settings" : [marker_dict["intermediate"][0]],
-                "nested_skip1_3_my_settings" : [marker_dict["intermediate"][0]],
-                "nested_skip2_3_my_settings" : [marker_dict["intermediate"][0]],
-                "nested_ADMMLim_more_ADMMLim_it_10" : [marker_dict["intermediate"][0],marker_dict["intermediate"][0],marker_dict["intermediate"][0],marker_dict["intermediate"][0]],
-                "nested_ADMMLim_more_ADMMLim_it_30" : [marker_dict["ADMMLim"][0]],
-                "nested_ADMMLim_more_ADMMLim_it_80" : [marker_dict["ADMMLim"][0]],
-                "nested_ADMMLim_u_v" : [marker_dict["ADMMLim"][0]],
-                "nested_APPGML_1subset" : [marker_dict["APPGML_subsets"][0]],
-                "nested_APPGML_4subsets" : [marker_dict["APPGML_subsets"][0]],
-                "nested_APPGML_14subsets" : [marker_dict["APPGML_subsets"][0]],
-                "nested_APPGML_28subsets" : [marker_dict["APPGML_subsets"][0]],
-                "nested_APPGML_1it" : [marker_dict["APPGML_it"][0]],
-                "nested_APPGML_4it" : [marker_dict["APPGML_it"][0]],
-                "nested_APPGML_14it" : [marker_dict["APPGML_it"][0]],
-                "nested_APPGML_28it" : [marker_dict["APPGML_it"][0]],
-                "nested_CT_2_skip_3it" : [marker_dict["CT"][0]],
-                "nested_CT_3_skip_3it" : [marker_dict["CT"][0]],
-                "nested_CT_2_skip_10it" : [marker_dict["CT"][0]],
-                "nested_CT_3_skip_10it" : [marker_dict["CT"][0]],
-                "nested_CT_0_skip_3it" : [marker_dict["CT"][0]],
-                "nested_CT_1_skip_3it" : [marker_dict["CT"][0]],
-                "nested_CT_0_skip_10it" : [marker_dict["CT"][0]],
-                "nested_CT_1_skip_10it" : [marker_dict["CT"][0]],
-                "nested_random_3_skip_10it" : [marker_dict["random"][0]],
-                "nested_random_2_skip_10it" : [marker_dict["random"][0]],
-                "nested_random_1_skip_10it" : [marker_dict["random"][0]],
-                "nested_random_0_skip_10it" : [marker_dict["random"][0]],
-                "nested_DD" : [marker_dict["random"][0]],
+                "DNA" : [marker_dict["ADMMLim"][0]], # 3 it
+                "DNA_skip0_3_my_settings" : [marker_dict["intermediate"][0]],
+                "DNA_skip1_3_my_settings" : [marker_dict["intermediate"][0]],
+                "DNA_skip2_3_my_settings" : [marker_dict["intermediate"][0]],
+                "DNA_ADMMLim_more_ADMMLim_it_10" : [marker_dict["intermediate"][0],marker_dict["intermediate"][0],marker_dict["intermediate"][0],marker_dict["intermediate"][0]],
+                "DNA_ADMMLim_more_ADMMLim_it_30" : [marker_dict["ADMMLim"][0]],
+                "DNA_ADMMLim_more_ADMMLim_it_80" : [marker_dict["ADMMLim"][0]],
+                "DNA_ADMMLim_u_v" : [marker_dict["ADMMLim"][0]],
+                "DNA_APPGML_1subset" : [marker_dict["APPGML_subsets"][0]],
+                "DNA_APPGML_4subsets" : [marker_dict["APPGML_subsets"][0]],
+                "DNA_APPGML_14subsets" : [marker_dict["APPGML_subsets"][0]],
+                "DNA_APPGML_28subsets" : [marker_dict["APPGML_subsets"][0]],
+                "DNA_APPGML_1it" : [marker_dict["APPGML_it"][0]],
+                "DNA_APPGML_4it" : [marker_dict["APPGML_it"][0]],
+                "DNA_APPGML_14it" : [marker_dict["APPGML_it"][0]],
+                "DNA_APPGML_28it" : [marker_dict["APPGML_it"][0]],
+                "DNA_CT_2_skip_3it" : [marker_dict["CT"][0]],
+                "DNA_CT_3_skip_3it" : [marker_dict["CT"][0]],
+                "DNA_CT_2_skip_10it" : [marker_dict["CT"][0]],
+                "DNA_CT_3_skip_10it" : [marker_dict["CT"][0]],
+                "DNA_CT_0_skip_3it" : [marker_dict["CT"][0]],
+                "DNA_CT_1_skip_3it" : [marker_dict["CT"][0]],
+                "DNA_CT_0_skip_10it" : [marker_dict["CT"][0]],
+                "DNA_CT_1_skip_10it" : [marker_dict["CT"][0]],
+                "DNA_random_3_skip_10it" : [marker_dict["random"][0]],
+                "DNA_random_2_skip_10it" : [marker_dict["random"][0]],
+                "DNA_random_1_skip_10it" : [marker_dict["random"][0]],
+                "DNA_random_0_skip_10it" : [marker_dict["random"][0]],
+                "DNA_DD" : [marker_dict["random"][0]],
 
-                "nested_end_to_end" : [marker_dict["random"][0]],
+
+                ##################
+                ## SIMON
+                ##
+                ## Change markers of curves
+                "configuration_files_TMI_revision__high_count__normalization__DIPRecon" : ["-"],
+                "configuration_files_TMI_revision__high_count__normalization__DNA" : ["-"],
+                "configuration_files_TMI_revision__high_count__normalization__DNA_ReLU__patience200" : ["-"],
+                "configuration_files_TMI_revision__high_count__normalization__DNA_ReLU__patience500" : ["-"],
+                "configuration_files_TMI_revision__high_count__positive_norm__DIPRecon" : ["-"],
+                "configuration_files_TMI_revision__high_count__positive_norm__DNA" : ["-"],
+                "configuration_files_TMI_revision__high_count__positive_norm__DNA_ReLU__patience200" : ["-"],
+                "configuration_files_TMI_revision__high_count__positive_norm__DNA_ReLU__patience500" : ["-"],
+                "configuration_files_TMI_revision__high_count__standardization__DIPRecon" : ["-"],
+                "configuration_files_TMI_revision__high_count__standardization__DNA" : ["-"],
+                "configuration_files_TMI_revision__high_count__standardization__DNA_ReLU" : ["-"],
+                "configuration_files_TMI_revision__low_count__normalization__DIPRecon" : ["-"],
+                "configuration_files_TMI_revision__low_count__normalization__DNA" : ["-"],
+                "configuration_files_TMI_revision__low_count__normalization__DNA_ReLU" : ["-"],
+                "configuration_files_TMI_revision__low_count__positive_norm__DIPRecon" : ["-"],
+                "configuration_files_TMI_revision__low_count__positive_norm__DNA" : ["-"],
+                "configuration_files_TMI_revision__low_count__positive_norm__DNA_ReLU" : ["-"],
+                #####################
+
+                "DNA_end_to_end" : [marker_dict["random"][0]],
                 "DIPRecon_end_to_end" : [marker_dict["random"][0]],
 
                 "BSREM_low_count" : [marker_dict["random"][0]],
                 "BSREM_Bowsher_low_count" : [marker_dict["random"][0]],
-                "nested_low_count" : [marker_dict["random"][0]],
+                "DNA_low_count" : [marker_dict["random"][0]],
                 "DIPRecon_low_count" : [marker_dict["random"][0]],
                 "APGMAP_low_count" : 10*[marker_dict["random"][0]],
                 "ADMMLim_low_count" : 10*[marker_dict["random"][0]],
                 
-                "nested_with_ReLU" : [marker_dict["random"][0]],
+                "DNA_with_ReLU" : [marker_dict["random"][0]],
                 "DIPRecon_without_ReLU" : [marker_dict["random"][0]],
-                "nested_init_wReLU_MIC_brain_2D_MR3" : [marker_dict["random"][0]],
+                "DNA_init_wReLU_MIC_brain_2D_MR3" : [marker_dict["random"][0]],
                 "DIPRecon_init_woReLU_MIC_brain_2D_MR3" : [marker_dict["random"][0]],
 
-                "nested_MIC_brain_2D" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_cookie_2D_DNA_ADMMLim" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_cookie_2D_DNA_ADMMLim" : 5*[marker_dict["CT"][0]],
 
-                "nested_MIC_brain_2D" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_intermediate" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_intermediate0" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_intermediate1" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_intermediate2" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_intermediate3" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_MR" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_MR0" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_MR1" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_MR2" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_MR3" : 15*[marker_dict["CT"][0]],
-                "nested_APPGML_MIC_brain_2D_MR3" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D_intermediate" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D_intermediate0" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D_intermediate1" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D_intermediate2" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D_intermediate3" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D_MR" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D_MR0" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D_MR1" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D_MR2" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D_MR3" : 15*[marker_dict["CT"][0]],
+                "DNA_APPGML_MIC_brain_2D_MR3" : 5*[marker_dict["CT"][0]],
                 "DIPRecon_MIC_brain_2D_MR3" : 5*[marker_dict["CT"][0]],
                 "DIPRecon_initDNA_MIC_brain_2D_MR3" : 5*[marker_dict["CT"][0]],
                 "DIPRecon_initDNA_skip3_3_my_settings" : 5*[marker_dict["CT"][0]],
                 "DIPRecon_MIC_brain_2D_MR3_30" : 5*[marker_dict["CT"][0]],
-                "nested_image4_1_MR3" : 5*[marker_dict["CT"][0]],
-                "nested_image4_1_MR3_300" : 5*[marker_dict["CT"][0]],
-                "nested_image4_1_MR3_1000" : 5*[marker_dict["CT"][0]],
-                "nested_image4_1_MR3_30" : 5*[marker_dict["CT"][0]],
+                "DNA_image4_1_MR3" : 5*[marker_dict["CT"][0]],
+                "DNA_image4_1_MR3_300" : 5*[marker_dict["CT"][0]],
+                "DNA_image4_1_MR3_1000" : 5*[marker_dict["CT"][0]],
+                "DNA_image4_1_MR3_30" : 5*[marker_dict["CT"][0]],
                 "DIPRecon" : 5*[marker_dict["CT"][0]],
                 "DIPRecon_image4_1_MR3" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_random" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_random0" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_random1" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_random2" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_random3" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_diff1" : 5*[marker_dict["CT"][0]],
-                "nested_MIC_brain_2D_diff5" : [':','dashdot','--','-'],
-                "nested_MIC_brain_2D_diff5_30" : [':','dashdot','--','-'],
-                "nested_MIC_brain_2D_diff5_SC1" : [':','dashdot','--','-'],
-                "nested_MIC_brain_2D_diff5_SC2" : [':','dashdot','--','-'],
+                "DNA_MIC_brain_2D_random" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D_random0" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D_random1" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D_random2" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D_random3" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D_diff1" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_brain_2D_diff5" : [':','dashdot','--','-'],
+                "DNA_MIC_brain_2D_diff5_30" : [':','dashdot','--','-'],
+                "DNA_MIC_brain_2D_diff5_SC1" : [':','dashdot','--','-'],
+                "DNA_MIC_brain_2D_diff5_SC2" : [':','dashdot','--','-'],
 
                 "DIPRecon_BSREM_stand" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_CT_3_skip" : [marker_dict["DIPRecon"][0]],
@@ -1134,31 +1165,31 @@ class iFinalCurves(vGeneral):
 
 
                 
-                "nested_stand" : [marker_dict["DIPRecon"][0]],
-                "nested_norm" : [marker_dict["DIPRecon"][0]],
-                "nested_positive_norm" : [marker_dict["DIPRecon"][0]],
-                "nested_norm_init" : [marker_dict["DIPRecon"][0]],
-                "nested_nothing" : [marker_dict["DIPRecon"][0]],
+                "DNA_stand" : [marker_dict["DIPRecon"][0]],
+                "DNA_norm" : [marker_dict["DIPRecon"][0]],
+                "DNA_positive_norm" : [marker_dict["DIPRecon"][0]],
+                "DNA_norm_init" : [marker_dict["DIPRecon"][0]],
+                "DNA_nothing" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_stand" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_norm" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_positive_norm" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_norm_init" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_nothing" : [marker_dict["DIPRecon"][0]],
 
-                "nested_ADMMLim" : [marker_dict["DIPRecon"][0]],
-                "nested_BSREM" : [marker_dict["DIPRecon"][0]],
-                "nested_OSEM" : [marker_dict["DIPRecon"][0]],
-                "nested_MLEM" : [marker_dict["DIPRecon"][0]],
+                "DNA_ADMMLim" : [marker_dict["DIPRecon"][0]],
+                "DNA_BSREM" : [marker_dict["DIPRecon"][0]],
+                "DNA_OSEM" : [marker_dict["DIPRecon"][0]],
+                "DNA_MLEM" : [marker_dict["DIPRecon"][0]],
 
-                "nested_ADMMLim_4_1" : [marker_dict["DIPRecon"][0]],
-                "nested_BSREM_4_1" : [marker_dict["DIPRecon"][0]],
-                "nested_OSEM_4_1" : [marker_dict["DIPRecon"][0]],
-                "nested_MLEM_4_1" : [marker_dict["DIPRecon"][0]],
+                "DNA_ADMMLim_4_1" : [marker_dict["DIPRecon"][0]],
+                "DNA_BSREM_4_1" : [marker_dict["DIPRecon"][0]],
+                "DNA_OSEM_4_1" : [marker_dict["DIPRecon"][0]],
+                "DNA_MLEM_4_1" : [marker_dict["DIPRecon"][0]],
 
-                "nested_image4_1_APPGML" : [marker_dict["DIPRecon"][0]],
-                "nested_APPGML_50_2" : 5*[marker_dict["DIPRecon"][0]],
-                "nested_image4_1_MR3_several_rhos" : 5*[marker_dict["DIPRecon"][0]],
-                "nested_image4_1_MR3_all_EMV" : 5*[marker_dict["DIPRecon"][0]],
+                "DNA_image4_1_APPGML" : [marker_dict["DIPRecon"][0]],
+                "DNA_APPGML_50_2" : 5*[marker_dict["DIPRecon"][0]],
+                "DNA_image4_1_MR3_several_rhos" : 5*[marker_dict["DIPRecon"][0]],
+                "DNA_image4_1_MR3_all_EMV" : 5*[marker_dict["DIPRecon"][0]],
             }
 
             marker_dict_LM = {
@@ -1195,7 +1226,7 @@ class iFinalCurves(vGeneral):
 
         for i in range(len(sorted_suffixes)):
             i_replicate = idx_wanted[i] # Loop over rhos and replicates, for each sorted rho, take sorted replicate
-            # if (rename_settings == "TMI"): # Remove Gong failing replicates and replace them
+            # if (rename_settings == "TMI"): # Remove DIPRecon failing replicates and replace them
             #     if (self.phantom == "image40_1"):
             #         if (self.scaling == "normalization"):
             #             # DIPRecon_failing_replicate_list = list(np.array([19,25,29,36])-1)
@@ -1215,34 +1246,34 @@ class iFinalCurves(vGeneral):
             #     if (i_replicate in DIPRecon_failing_replicate_list):
             #         i_replicate = replicates_replace_list[DIPRecon_failing_replicate_list.index(i_replicate)]
 
-            if (rename_settings == "MIC"): # Remove Gong failing replicates and replace them
+            if (rename_settings == "MIC"): # Remove DIPRecon failing replicates and replace them
                 if (self.phantom == "image50_1"):
                     if (config[method]["nb_outer_iteration"]==2):
                         rho = float(re.search(r'\d+(\.\d+)?', sorted_suffixes[i][sorted_suffixes[i].find("rho"):]).group())
-                        if (method == "nested_MIC_brain_2D_diff5" and config[method]["sub_iter_DIP"]==10 and rho==3):
+                        if (method == "DNA_MIC_brain_2D_diff5" and config[method]["sub_iter_DIP"]==10 and rho==3):
                             DIPRecon_failing_replicate_list = list(np.array([30])-1)
                             replicates_replace_list = list(np.array([1])-1)
                             print("final replicates to remove ?????????????????????,,,????")
-                        elif (method == "nested_MIC_brain_2D_diff5" and config[method]["sub_iter_DIP"]==10 and rho==0.3):
+                        elif (method == "DNA_MIC_brain_2D_diff5" and config[method]["sub_iter_DIP"]==10 and rho==0.3):
                             DIPRecon_failing_replicate_list = list(np.array([1])-1)
                             replicates_replace_list = list(np.array([40])-1)
                             print("final replicates to remove ?????????????????????,,,????")
-                        elif (method == "nested_MIC_brain_2D_diff5_SC2" and config[method]["sub_iter_DIP"]==10 and rho==0.3):
+                        elif (method == "DNA_MIC_brain_2D_diff5_SC2" and config[method]["sub_iter_DIP"]==10 and rho==0.3):
                             DIPRecon_failing_replicate_list = list(np.array([1,6,9,10])-1)
                             replicates_replace_list = list(np.array([2,3,4,5])-1)
                             print("final replicates to remove ?????????????????????,,,????")
-                        elif ("nested_MIC_brain_2D_MR2" in method):
+                        elif ("DNA_MIC_brain_2D_MR2" in method):
                             DIPRecon_failing_replicate_list = list(np.array([3])-1)
                             replicates_replace_list = list(np.array([1])-1)
                             print("final replicates to remove ?????????????????????,,,????")
-                        elif ("nested_MIC_brain_2D_MR1" in method):
+                        elif ("DNA_MIC_brain_2D_MR1" in method):
                             DIPRecon_failing_replicate_list = list(np.array([1,33])-1)
                             replicates_replace_list = list(np.array([2,3])-1)
                             print("final replicates to remove ?????????????????????,,,????")
-                        elif (method == "nested_MIC_brain_2D_intermediate3" and config[method]["sub_iter_DIP"]==100 and rho==3):
+                        elif (method == "DNA_MIC_brain_2D_intermediate3" and config[method]["sub_iter_DIP"]==100 and rho==3):
                             DIPRecon_failing_replicate_list = list(np.array([26])-1)
                             replicates_replace_list = list(np.array([40])-1)
-                        elif (method == "nested_MIC_brain_2D_intermediate1" and config[method]["sub_iter_DIP"]==100 and rho==3):
+                        elif (method == "DNA_MIC_brain_2D_intermediate1" and config[method]["sub_iter_DIP"]==100 and rho==3):
                             DIPRecon_failing_replicate_list = list(np.array([6])-1)
                             replicates_replace_list = list(np.array([40])-1)
 
@@ -1281,49 +1312,50 @@ class iFinalCurves(vGeneral):
                             raise ValueError("likelihood is not in csv")
                         
 
-                if (rename_settings == "TMI" or rename_settings == "hyperparameters_paper"): # Remove Gong failing replicates and replace them
-                    if (np.sum(np.isnan(np.array(rows_csv[10]))) > 0):
-                        print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
-                        self.nb_replicates[method] -= 1
-                        continue
-                    if ("nested" in method or "DNA" in method or "Gong" in method or "DIPRecon" in method):
-                        # if (i_replicate == 17-1 and rows_csv[6][0] == -100): # ReLU artifact in white matter...
-                        if (i_replicate == 17-1): # ReLU artifact in white matter...
-                            print("remove replicate 17 in loop to load metrics if relu artifact in white matter ?????????????????????,,,????")
-                            self.nb_replicates[method] -= 1
-                            continue                    
-                        # if (i_replicate == 7-1 and rows_csv[6][0] == -100): # ReLU artifact in white matter...
-                        if (i_replicate == 7-1): # ReLU artifact in white matter...
-                            print("remove replicate 7 in loop to load metrics if relu artifact in white matter ?????????????????????,,,????")
-                            self.nb_replicates[method] -= 1
-                            continue
-                        if (i_replicate == 9-1): # bug for now
-                            print("remove replicate 9 in loop to load metrics, BUG FOR NOOOOOOOOOOOOOOOOW")
-                            self.nb_replicates[method] -= 1
-                            continue
-                    # Low count case
-                    if ("Gong" in method or "DIPRecon" in method or "nested" in method or "DNA" in method):
-                        # if (i_replicate+1 in [2,4,5,6,10,12,14,15,17,18,19,20]): # No ES points for low count study...
-                        if (i_replicate+1 in [5,6,7,8,12,14,15,18,19]): # No ES points for low count study...
-                            # 6,7,8,12,14,15,18,19 # DIPRecon standardisation
-                        # if (i_replicate+1 in [5,14,19]): # No ES points for low count study...
-                            print("remove replicate " + str(i_replicate) + " in loop to load metrics because different ES points for ablation study ?????????????????????,,,????")
-                            self.nb_replicates[method] -= 1
-                            continue
-                if (rename_settings == "hyperparameters_paper"): # Remove DNA-EMV failing replicates and replace them
-                    if (i_replicate == 4-1 and method == "DIPRecon_positive_norm"):
-                        print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
-                        self.nb_replicates[method] -= 1
-                        continue
-                    if (i_replicate == 12-1 and method == "DIPRecon_positive_norm"):
-                        print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
-                        self.nb_replicates[method] -= 1
-                        continue
+                # Remove replicate with errors
+                # if (rename_settings == "TMI" or rename_settings == "hyperparameters_paper"): # Remove DIPRecon failing replicates and replace them
+                #     if (np.sum(np.isnan(np.array(rows_csv[10]))) > 0):
+                #         print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
+                #         self.nb_replicates[method] -= 1
+                #         continue
+                #     if ("DNA" in method or "DNA" in method or "DIPRecon" in method):
+                #         # if (i_replicate == 17-1 and rows_csv[6][0] == -100): # ReLU artifact in white matter...
+                #         if (i_replicate == 17-1): # ReLU artifact in white matter...
+                #             print("remove replicate 17 in loop to load metrics if relu artifact in white matter ?????????????????????,,,????")
+                #             self.nb_replicates[method] -= 1
+                #             continue                    
+                #         # if (i_replicate == 7-1 and rows_csv[6][0] == -100): # ReLU artifact in white matter...
+                #         if (i_replicate == 7-1): # ReLU artifact in white matter...
+                #             print("remove replicate 7 in loop to load metrics if relu artifact in white matter ?????????????????????,,,????")
+                #             self.nb_replicates[method] -= 1
+                #             continue
+                #         if (i_replicate == 9-1): # bug for now
+                #             print("remove replicate 9 in loop to load metrics, BUG FOR NOOOOOOOOOOOOOOOOW")
+                #             self.nb_replicates[method] -= 1
+                #             continue
+                #     # Low count case
+                #     if ("DIPRecon" in method or "DNA" in method or "DNA" in method):
+                #         # if (i_replicate+1 in [2,4,5,6,10,12,14,15,17,18,19,20]): # No ES points for low count study...
+                #         if (i_replicate+1 in [5,6,7,8,12,14,15,18,19]): # No ES points for low count study...
+                #             # 6,7,8,12,14,15,18,19 # DIPRecon standardisation
+                #         # if (i_replicate+1 in [5,14,19]): # No ES points for low count study...
+                #             print("remove replicate " + str(i_replicate) + " in loop to load metrics because different ES points for ablation study ?????????????????????,,,????")
+                #             self.nb_replicates[method] -= 1
+                #             continue
+                # if (rename_settings == "hyperparameters_paper"): # Remove DNA-EMV failing replicates and replace them
+                #     if (i_replicate == 4-1 and method == "DIPRecon_positive_norm"):
+                #         print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
+                #         self.nb_replicates[method] -= 1
+                #         continue
+                #     if (i_replicate == 12-1 and method == "DIPRecon_positive_norm"):
+                #         print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
+                #         self.nb_replicates[method] -= 1
+                #         continue
 
-                    if (i_replicate in np.array([1,3,10,13,14])-1 and method == "DIPRecon_stand"):
-                        print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
-                        self.nb_replicates[method] -= 1
-                        continue
+                #     if (i_replicate in np.array([1,3,10,13,14])-1 and method == "DIPRecon_stand"):
+                #         print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
+                #         self.nb_replicates[method] -= 1
+                #         continue
 
 
 

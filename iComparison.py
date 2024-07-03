@@ -19,11 +19,11 @@ class iComparison(vReconstruction):
             self.beta = config["A_AML"]
         elif ('ADMMLim' in self.method):
             self.beta = config["alpha"]
-            self.recoInNested = "ADMMLim"
+            self.recoInDNA = "ADMMLim"
         elif (self.method == 'BSREM' or self.method == 'APGMAP'):
             self.beta = self.rho
 
-        if (self.method != 'BSREM' and self.method != 'nested' and self.method != 'Gong' and self.method != 'APGMAP'):
+        if (self.method != 'BSREM' and self.method != 'DNA' and self.method != 'DIPRecon' and self.method != 'APGMAP'):
             self.post_smoothing = config["post_smoothing"]
         else:
             self.post_smoothing = 0

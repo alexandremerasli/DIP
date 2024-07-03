@@ -11,9 +11,9 @@ import os
 from ray import tune
 
 import importlib
-config_files = ['nested_CT_0_skip_10it','nested_CT_1_skip_10it','nested_CT_2_skip_10it','nested_CT_3_skip_10it', 'nested_ADMMLim_more_ADMMLim_it_10_configuration', 'nested_random_0_skip_10it', 'nested_random_1_skip_10it', 'nested_random_2_skip_10it', 'nested_random_3_skip_10it']
-config_files = ['nested_CT_0_skip_10it','nested_CT_1_skip_10it','nested_CT_3_skip_10it', 'nested_ADMMLim_more_ADMMLim_it_10_configuration', 'nested_random_0_skip_10it', 'nested_random_1_skip_10it', 'nested_random_2_skip_10it', 'nested_random_3_skip_10it']
-config_files = ['nested_skip0_3_my_settings']
+config_files = ["DNA_CT_0_skip_10it',"DNA_CT_1_skip_10it',"DNA_CT_2_skip_10it',"DNA_CT_3_skip_10it', "DNA_ADMMLim_more_ADMMLim_it_10_configuration', "DNA_random_0_skip_10it', "DNA_random_1_skip_10it', "DNA_random_2_skip_10it', "DNA_random_3_skip_10it']
+config_files = ["DNA_CT_0_skip_10it',"DNA_CT_1_skip_10it',"DNA_CT_3_skip_10it', "DNA_ADMMLim_more_ADMMLim_it_10_configuration', "DNA_random_0_skip_10it', "DNA_random_1_skip_10it', "DNA_random_2_skip_10it', "DNA_random_3_skip_10it']
+config_files = ["DNA_skip0_3_my_settings']
 
 # config_files = [f[:-3] for f in os.listdir('all_config') if os.path.isfile(os.path.join('all_config', f))]
 
@@ -42,24 +42,24 @@ for lib_string in config_files:
             config_tmp["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
 
             # Choose task to do (move this after raytune !!!)
-            if (config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested'):
+            if (method == "DIPRecon" or method == "DNA"):
                 task = 'full_reco_with_network'
 
-            elif ('ADMMLim' in config["method"]["grid_search"][0] or config["method"]["grid_search"][0] == 'MLEM' or config["method"]["grid_search"][0] == 'OPTITR' or config["method"]["grid_search"][0] == 'OSEM' or config["method"]["grid_search"][0] == 'BSREM' or config["method"]["grid_search"][0] == 'AML' or config["method"]["grid_search"][0] == 'APGMAP'):
+            elif ('ADMMLim' in method or method == 'MLEM' or method == 'OPTITR' or method == 'OSEM' or method == 'BSREM' or method == 'AML' or method == 'APGMAP'):
                 task = 'castor_reco'
 
-            #task = 'full_reco_with_network' # Run Gong or DNA
+            #task = 'full_reco_with_network' # Run DIPRecon or DNA
             #task = 'castor_reco' # Run CASToR reconstruction with given optimizer
             #task = 'post_reco' # Run network denoising after a given reconstructed image im_corrupt
             #task = 'show_results_post_reco'
             task = 'show_results'
             #task = 'show_metrics_results_already_computed'
             #task = 'show_metrics_ADMMLim'
-            #task = 'show_metrics_nested'
+            #task = 'show_metrics_DNA'
             #task = 'compare_2_methods'
 
             # Local files to import, AFTER CONFIG TO SET RANDOM SEED OR NOT
-            if (task == 'full_reco_with_network'): # Run Gong or DNA
+            if (task == 'full_reco_with_network'): # Run DIPRecon or DNA
                 from iADMM_DIP import iADMM_DIP
                 # classTask = iADMM_DIP(hyperparameters_config)
                 raise ValueError("needs hyperparameters_config")
@@ -79,7 +79,7 @@ for lib_string in config_files:
                 config["task"] = "show_results_post_reco"
                 from iMeritsADMMLim import iMeritsADMMLim
                 classTask = iMeritsADMMLim(config)
-            elif (task == 'show_metrics_nested'): # Show nested or Gong FOMs over iterations
+            elif (task == 'show_metrics_DNA'): # Show DNA or DIPRecon FOMs over iterations
                 from iMeritsDIP_ADMM import iMeritsDIP_ADMM
                 classTask = iMeritsDIP_ADMM(config)
             # elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
@@ -91,14 +91,14 @@ for lib_string in config_files:
                 classTask = iResultsADMMLim_VS_APGMAP(config)
 
             # Incompatible parameters (should be written in vGeneral I think)
-            if (config["method"]["grid_search"][0] == 'nested' and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
-                raise ValueError("nested must be launched with rho > 0")
-            elif ((config["method"]["grid_search"][0] != 'Gong' and config["method"]["grid_search"][0] != 'nested') and task == "post_reco"):
-                raise ValueError("Only Gong or nested can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
-            elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["all_images_DIP"]["grid_search"][0] != "True" and config["DIP_early_stopping"]["grid_search"][0] == "True"):
-                raise ValueError("Please set all_images_DIP to True to save all images for nested or Gong reconstruction if using WMV.")
-            elif ((config["method"]["grid_search"][0] == 'Gong' or config["method"]["grid_search"][0] == 'nested') and config["rho"]["grid_search"][0] == 0 and task != "post_reco"):
-                raise ValueError("Please set rho > 0 for nested or Gong reconstruction (or set task to post reconstruction).")
+            if (method == "DNA" and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
+                raise ValueError("DNA must be launched with rho > 0")
+            elif ((method != "DIPRecon" and method != "DNA") and task == "post_reco"):
+                raise ValueError("Only DIPRecon or DNA can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
+            elif ((method == "DIPRecon" or method == "DNA") and config["all_images_DIP"]["grid_search"][0] != "True" and config["DIP_early_stopping"]["grid_search"][0] == "True"):
+                raise ValueError("Please set all_images_DIP to True to save all images for DNA or DIPRecon reconstruction if using WMV.")
+            elif ((method == "DIPRecon" or method == "DNA") and config["rho"]["grid_search"][0] == 0 and task != "post_reco"):
+                raise ValueError("Please set rho > 0 for DNA or DIPRecon reconstruction (or set task to post reconstruction).")
             elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["DIP_early_stopping"]["grid_search"][0]):
                 raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
             elif (config["debug"] and config["ray"]):
