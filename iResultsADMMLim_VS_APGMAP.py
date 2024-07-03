@@ -106,7 +106,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             beta_string = ""
 
         '''
-        if ( 'nested' in config["method"] or  'Gong' in config["method"]):
+        if ( "nested" in config["method"] or "DNA" in config["method"] or  "Gong" in config["method"] or "DIPRecon" in config["method"]):
             self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
             #self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
         else:
@@ -201,7 +201,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                     NNEPPS_string = "_NNEPPS"
                 else:
                     NNEPPS_string = ""
-                if ( 'Gong' in config["method"] or  'nested' in config["method"]):
+                if ( "Gong" in config["method"] or "DIPRecon" in config["method"] or  "nested" in config["method"] or "DNA" in config["method"]):
                     if ('post_reco' in config["task"]):
                         pet_algo=config["method"]+"to fit"
                         iteration_name="(post reconstruction)"
@@ -618,7 +618,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
             NNEPPS_string = "_NNEPPS"
         else:
             NNEPPS_string = ""
-        if ( 'Gong' in config["method"] or  'nested' in config["method"]):
+        if ( "Gong" in config["method"] or "DIPRecon" in config["method"] or  "nested" in config["method"] or "DNA" in config["method"]):
             if ('post_reco' in config["task"]):
                 pet_algo=config["method"]+"to fit"
                 iteration_name="(post reconstruction)"

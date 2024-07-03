@@ -63,7 +63,7 @@ class iFinalCurves(vGeneral):
         # Convert Gong to DIPRecon
         DIPRecon = False
         for i in range(len(method_list)):
-            if "Gong" in method or "DIPRecon" in method_list[i]:
+            if "Gong" in method_list[i] or "DIPRecon" in method_list[i]:
                 method_list[i] = method_list[i].replace("Gong","DIPRecon")
                 if method_list[i] == "DIPRecon":
                     DIPRecon = True
@@ -148,7 +148,7 @@ class iFinalCurves(vGeneral):
 
             # Remove failing replicates if Gong in method for TMI paper
             idx_Gong = -1
-            idx_Gong = next((i for i, string in enumerate(method_list) if "DIPRecon" in string), -1)
+            idx_Gong = next((i for i, string in enumerate(method_list) if "DIPRecon" in string or "Gong" in string, -1))
             # idx_Gong = next((i for i, string in enumerate(method_list) if "nested" in string), -1)
             if (idx_Gong != -1):
                 if (rename_settings == "TMI"):
@@ -179,7 +179,7 @@ class iFinalCurves(vGeneral):
                     if config_tmp[method]["end_to_end"]:
                         self.i_init = 20
 
-                # if ('Gong' in method or 'nested' in method):
+                # if ("Gong" in method or "DIPRecon" in method or "nested" in method or "DNA" in method):
                 #     self.i_init = 1 # 0 will take last value as first...
 
                 # Initialize variables
@@ -201,7 +201,7 @@ class iFinalCurves(vGeneral):
                     config_other_dim[method] = config[method]["post_smoothing"]
                     rho_name = "post_smoothing"
                     other_dim_name = ""
-                elif ("nested" in method or "DNA" in method or "DIPRecon" in method):
+                elif ("nested" in method or "DNA" in method or "Gong" in method or "DIPRecon" in method):
                     # For varying rho_1 (manuscript)
                     rho_name = "rho"
                     # config_other_dim[method] = config_tmp[method]["rho"]["grid_search"]
@@ -407,7 +407,7 @@ class iFinalCurves(vGeneral):
 
                             if (fig_nb == 0):
                                 # ax[fig_nb].plot(100*avg_IR[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],'-o',color=color_avg)
-                                if ((('nested' in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1 or config_other_dim[method] == [""]):
+                                if ((("nested" in method or "DNA" in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1 or config_other_dim[method] == [""]):
                                     idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                 else:
                                     if ("MLEM" in method or "OSEM" in method):
@@ -425,7 +425,7 @@ class iFinalCurves(vGeneral):
                                 # Plot average and std of bias curves with iterations
                                 #ax[fig_nb].plot(np.arange(0,len_mini[rho_idx])*self.i_init,avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg) # if 1 out of i_init iterations was saved
                                 # ax[fig_nb].plot(np.arange(0,len_mini[rho_idx]),avg_metrics[other_dim_idx+nb_other_dim[method]*rho_idx,:len_mini[rho_idx]],color=color_avg)
-                                if ((('nested' in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1 or config_other_dim[method] == [""]):
+                                if ((("nested" in method or "DNA" in method or 'DIPRecon' in method) and nb_other_dim[method] == 1) or nb_rho[method] > 1 or config_other_dim[method] == [""]):
                                     idx_good_rho_color = config_tmp[method]["rho"]["grid_search"].index(config[method]["rho"][rho_idx])
                                 else:
                                     if ("MLEM" in method or "OSEM" in method):
@@ -778,7 +778,7 @@ class iFinalCurves(vGeneral):
                             # replicates_legend[fig_nb].append('DNA' + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                             replicates_legend[fig_nb].append(method + (": " + rho_name + " = " + str(config[method]["rho"][rho_idx]))*(rho_name!=""))
                             # replicates_legend[fig_nb].append('DNA-APPGML' + (": " + r'$\rho_1$' + " = " + str(config[method]["rho"][rho_idx]))*(rho_name!=""))
-                        elif ("DIPRecon" in method):
+                        elif ("Gong" in method or "DIPRecon" in method):
                             replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                             # replicates_legend[fig_nb].append('DIPRecon' + ( ": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                         else:
@@ -1286,7 +1286,7 @@ class iFinalCurves(vGeneral):
                         print("remove this replicate in loop to load metrics if nan ?????????????????????,,,????")
                         self.nb_replicates[method] -= 1
                         continue
-                    if ('nested' in method or "DIPRecon" in method):
+                    if ("nested" in method or "DNA" in method or "Gong" in method or "DIPRecon" in method):
                         # if (i_replicate == 17-1 and rows_csv[6][0] == -100): # ReLU artifact in white matter...
                         if (i_replicate == 17-1): # ReLU artifact in white matter...
                             print("remove replicate 17 in loop to load metrics if relu artifact in white matter ?????????????????????,,,????")
@@ -1302,7 +1302,7 @@ class iFinalCurves(vGeneral):
                             self.nb_replicates[method] -= 1
                             continue
                     # Low count case
-                    if ("DIPRecon" in method or "nested" in method or "DNA" in method):
+                    if ("Gong" in method or "DIPRecon" in method or "nested" in method or "DNA" in method):
                         # if (i_replicate+1 in [2,4,5,6,10,12,14,15,17,18,19,20]): # No ES points for low count study...
                         if (i_replicate+1 in [5,6,7,8,12,14,15,18,19]): # No ES points for low count study...
                             # 6,7,8,12,14,15,18,19 # DIPRecon standardisation

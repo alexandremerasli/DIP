@@ -36,12 +36,12 @@ class vReconstruction(vGeneral):
             self.rho = config["rho"]
         else:
             self.rho = 0
-        if ('ADMMLim' in config["method"] or  'nested' in config["method"] or  'Gong' in config["method"]):
+        if ('ADMMLim' in config["method"] or  "nested" in config["method"] or "DNA" in config["method"] or  "Gong" in config["method"] or "DIPRecon" in config["method"]):
             if (config["method"] != "ADMMLim"):
                 self.unnested_1st_global_iter = config["unnested_1st_global_iter"]
             else:
                 self.unnested_1st_global_iter = None
-            if ( 'Gong' in config["method"]):
+            if ( "Gong" in config["method"] or "DIPRecon" in config["method"]):
                 self.alpha = None
             else:
                 if (config["recoInNested"] == "ADMMLim"):
@@ -283,7 +283,7 @@ class vReconstruction(vGeneral):
     def compute_x_v_u_ADMM(self,x_reconstruction_command_line,subdir,i,phantom,subroot_output_path,subroot,method, it_name=''):
         # Compute x,u,v
         #os.system(x_reconstruction_command_line + ' -oit 90:' + str(int(self.config["nb_outer_iteration"]*3)))
-        if ('nested' in method): # we only need output at last iteration
+        if ("nested" in method or "DNA" in method): # we only need output at last iteration
             if (self.PETImage_shape[2] == 1): # 2D
                 os.system(x_reconstruction_command_line + ' -oit -1')
             else:

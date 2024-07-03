@@ -18,12 +18,12 @@ class iComputeLikelihood_nested(vGeneral):
             self.rho = config["rho"]
         else:
             self.rho = 0
-        if ('ADMMLim' in config["method"] or  'nested' in config["method"] or  'Gong' in config["method"]):
+        if ('ADMMLim' in config["method"] or  "nested" in config["method"] or "DNA" in config["method"] or  "Gong" in config["method"] or "DIPRecon" in config["method"]):
             if (config["method"] != "ADMMLim"):
                 self.unnested_1st_global_iter = config["unnested_1st_global_iter"]
             else:
                 self.unnested_1st_global_iter = None
-            if ( 'Gong' in config["method"]):
+            if ( "Gong" in config["method"] or "DIPRecon" in config["method"]):
                 self.alpha = None
             else:
                 if (config["recoInNested"] == "ADMMLim"):
@@ -70,7 +70,7 @@ class iComputeLikelihood_nested(vGeneral):
             self.post_smoothing = 0
 
     
-        if 'nested' in config["method"] or 'Gong' in config["method"]:
+        if "nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]:
             folder_sub_path = self.subroot + 'Block2/' + self.suffix
         else:
             folder_sub_path = self.subroot + '/' + self.suffix
@@ -82,7 +82,7 @@ class iComputeLikelihood_nested(vGeneral):
         
         self.likelihoods = []
 
-        if 'nested' in config["method"] or 'Gong' in config["method"]:
+        if "nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]:
             i_init = 0
             i_last = self.max_iter
         else:
@@ -91,7 +91,7 @@ class iComputeLikelihood_nested(vGeneral):
         # i_init = 10 # remove some iterations
 
         for i in range(i_init,i_last):
-            if 'nested' in config["method"] or 'Gong' in config["method"]:
+            if "nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]:
                 output_path = ' -fout ' + folder_sub_path + '/' + config["method"] + "_" + str(i-1) # Output path for CASTOR framework
                 initialimage = ' -img ' + self.subroot + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr'
             else:
@@ -99,7 +99,7 @@ class iComputeLikelihood_nested(vGeneral):
                 initialimage = ' -img ' + self.subroot + '/' + self.suffix + '/' + config["method"] + '_it' + str(i) + '.hdr'
             it = ' -it 1:1'
         
-            if 'nested' in config["method"] or 'Gong' in config["method"]:
+            if "nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]:
                 logfile_name = config["method"] + '_' + str(i-1) + '.log'
             else:
                 logfile_name = config["method"] + '_' + str(i) + '.log'
@@ -129,7 +129,7 @@ class iComputeLikelihood_nested(vGeneral):
 
         # Show likelihood across iterations
         if (not config["ray"]):
-            if 'nested' in config["method"] or 'Gong' in config["method"]:
+            if "nested" in config["method"] or "DNA" in config["method"] or "Gong" in config["method"] or "DIPRecon" in config["method"]:
                 plt.plot(np.arange(-1+i_init,self.max_iter-1),self.likelihoods)
             else:
                 plt.plot(np.arange(i_init,self.max_iter+1),self.likelihoods)

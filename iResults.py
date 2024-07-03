@@ -178,7 +178,7 @@ class iResults(vDenoising):
         # SSIM_corrupt = structural_similarity(np.squeeze(self.image_gt), np.squeeze(self.image_corrupt), data_range=(self.image_corrupt).max() - (self.image_corrupt).min())
         # from utils.mssim import ssimc
         # SSIM_corrupt = ssimc(np.squeeze(self.image_gt), np.squeeze(self.image_corrupt),1, 1, 1)
-        if ('Gong' in config["method"] or 'nested' in config["method"]):
+        if ("Gong" in config["method"] or "DIPRecon" in config["method"] or "nested" in config["method"] or "DNA" in config["method"]):
             self.i_init = 0
 
     def writeBeginningImages(self,suffix,image_net_input=None,i=0):
@@ -232,12 +232,12 @@ class iResults(vDenoising):
             if (hasattr(self,'beta')):
                 self.beta_string = ', beta = ' + str(self.beta)
 
-            if (('nested' in config["method"] or  'Gong' in config["method"]) and "results" not in config["task"]):
+            if (("nested" in config["method"] or "DNA" in config["method"] or  "Gong" in config["method"] or "DIPRecon" in config["method"]) and "results" not in config["task"]):
                 self.writeBeginningImages(self.suffix,self.image_net_input) # Write GT and DIP input
                 self.writeCorruptedImage(0,self.total_nb_iter,self.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
             else:
                 # self.writeBeginningImages(self.suffix) # Write GT
-                if ('nested' in config["method"] or  'Gong' in config["method"]):
+                if ("nested" in config["method"] or "DNA" in config["method"] or  "Gong" in config["method"] or "DIPRecon" in config["method"]):
                     if (not hasattr(self,"image_net_input")):
                         self.input = config["input"]
                         self.override_input = False
@@ -256,7 +256,7 @@ class iResults(vDenoising):
 
             # DNA stopping criterion
             if ("3_" not in self.phantom):
-                if ('nested' in config["method"]):
+                if ("nested" in config["method"] or "DNA" in config["method"]):
                     # Compute IR for BSREM initialization image
                     im_BSREM = self.fijii_np(self.subroot_data + 'Data/initialization/' + self.phantom + '/BSREM_30it' + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<f') # loading BSREM initialization image
                     self.IR_ref = [np.NaN]
@@ -541,7 +541,7 @@ class iResults(vDenoising):
                     NNEPPS_string = "_NNEPPS"
                 else:
                     NNEPPS_string = ""
-                if ( 'Gong' in config["method"] or  'nested' in config["method"]):
+                if ( "Gong" in config["method"] or "DIPRecon" in config["method"] or  "nested" in config["method"] or "DNA" in config["method"]):
                     if ('post_reco' in config["task"]):
                         self.pet_algo=config["method"]+"to fit"
                         self.iteration_name="(post reconstruction)"
@@ -591,7 +591,7 @@ class iResults(vDenoising):
                     self.compute_IR_whole(self.PETImage_shape,f_p,int((i-self.i_init)),self.IR_whole_recon,self.phantom)
 
                     # # DNA stopping criterion
-                    # if('nested' in config["method"]):
+                    # if("nested" in config["method"] or "DNA" in config["method"]):
                     #     if (self.IR_whole_recon[int((i-self.i_init))]> self.IR_ref[0]): # > 1.604):# > self.IR_ref[0]):
                     #         print("DNA stopping criterion reached")
                     #         self.path_stopping_criterion = self.subroot + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
