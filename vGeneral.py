@@ -265,7 +265,6 @@ class vGeneral(abc.ABC):
         # Define PET input dimensions according to input data dimensions
         self.PETImage_shape_str = self.read_input_dim(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
         self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
-        self.nb_dimensions = len(self.PETImage_shape)
 
         # # Loading Ground Truth image to compute metrics
         # self.image_gt = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')            
@@ -575,6 +574,12 @@ class vGeneral(abc.ABC):
         #     PETImage_shape = (int(dim1/2),int(dim2/2),dim3)
         PETImage_shape_str = str(dim1) + ','+ str(dim2) + ',' + str(dim3)
         print('image shape :', PETImage_shape)
+
+        if (dim3 == 1):
+            self.nb_dimensions = 2
+        else:
+            self.nb_dimensions = 3
+
         return PETImage_shape_str
 
     def input_dim_str_to_list(self,PETImage_shape_str):
@@ -589,11 +594,10 @@ class vGeneral(abc.ABC):
                 type_im = '<d'
                     
         file_path=(path)
-        nb_dimensions = len(shape)
         dtype_np = dtype(type_im)
         with open(file_path, 'rb') as fid:
             data = fromfile(fid,dtype_np)
-            if (nb_dimensions == 2): # 2D
+            if (self.nb_dimensions == 2): # 2D
                 image = data.reshape(shape)
             else: # 3D
                 image = data.reshape(shape[::-1])
@@ -1125,7 +1129,7 @@ class vGeneral(abc.ABC):
     def write_image_tensorboard(self,writer,image,name,suffix,image_gt,i=0,full_contrast=False):
         # Creating matplotlib figure with colorbar
         figure()
-        if (len(squeeze(image).shape) != 2):
+        if (self.nb_dimensions == 3):
             print('image is ' + str(len(image.shape)) + 'D, plotting only 2D slice')
             image = image[int(image.shape[0] / 2.),:,:]
             #image = image[:,:,int(image.shape[0] / 2.)]

@@ -4,7 +4,10 @@ from pathlib import Path
 def fijii_np(path,shape,type_im='<f'):
     """"Transforming raw data to numpy array"""               
     file_path=(path)
-    nb_dimensions = len(shape)
+        if (1 in shape):
+        nb_dimensions = 2
+    else:    
+        nb_dimensions = 3
     dtype_np = np.dtype(type_im)
     with open(file_path, 'rb') as fid:
         data = np.fromfile(fid,dtype_np)
