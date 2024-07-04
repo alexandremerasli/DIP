@@ -72,12 +72,16 @@ def path_from_config(config,root):
     return path
 
 def fijii_np(path,shape,type_im='<f'):
-    """"Transforming raw data to numpy array"""
+    """"Transforming raw data to numpy array"""               
     file_path=(path)
-    dtype = np.dtype(type_im)
-    fid = open(file_path, 'rb')
-    data = np.fromfile(fid,dtype)
-    image = data.reshape(shape)
+    nb_dimensions = len(shape)
+    dtype_np = np.dtype(type_im)
+    with open(file_path, 'rb') as fid:
+        data = np.fromfile(fid,dtype_np)
+        if (nb_dimensions == 2): # 2D
+            image = data.reshape(shape)
+        else: # 3D
+            image = data.reshape(shape[::-1])
     return image
 
 def show_image(subroot, config):
@@ -143,8 +147,8 @@ config = {
     "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     #"skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     "scaling" : tune.grid_search(['normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-    "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
-    #"input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)
+    "input" : tune.grid_search(["anatomical"]), # Neural network input (random or anatomical )
+    #"input" : tune.grid_search(["anatomical",'random']), # Neural network input (random or anatomical )
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMReg - OPTITR hyperparameters

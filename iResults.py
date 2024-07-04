@@ -55,7 +55,7 @@ class iResults(vDenoising):
             if (self.DIP_early_stopping):# and "show_results_post_reco" in config["task"]):
                 from iMovingVariance import iMovingVariance
                 self.classMV = iMovingVariance(config)
-                self.classMV.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,config["sub_iter_DIP"],root,self.subroot,self.scanner, self.simulation)
+                self.classMV.initialize_MV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,config["sub_iter_DIP"],root,self.subroot,self.scanner, self.simulation)
                 self.lr = config['lr']
 
         if ('ADMMReg' in self.method):
@@ -84,7 +84,7 @@ class iResults(vDenoising):
             self.image_gt = self.image_gt.astype(np.float64)
 
         if ("DNA" in self.method or "DIPRecon" in self.method):
-            if (config["input"] == "CT"):
+            if (config["input"] == "anatomical"):
                 # # Loading attenuation map
                 # image_atn = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type_im='<f')
                 # self.write_image_tensorboard(self.writer,image_atn,"Attenuation map (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # Attenuation map in tensorboard
@@ -183,8 +183,8 @@ class iResults(vDenoising):
             if (config["read_only_MV_csv"]):
                 read_only_MV_csv = True
                 if ("DNA" in self.method or "DIPRecon" in self.method):
-                    if(self.DIP_early_stopping):# WMV
-                        self.WMV_plot(config)
+                    if(self.DIP_early_stopping):# MV
+                        self.MV_plot(config)
                     self.MV_several_alphas_plot(config)
             else:
                 read_only_MV_csv = False
@@ -247,15 +247,15 @@ class iResults(vDenoising):
             print("loop over")
 
             if ("DNA" in self.method or "DIPRecon" in self.method):
-                if (self.DIP_early_stopping):# WMV
+                if (self.DIP_early_stopping):# MV
                     if ("post_reco" in config["task"] or "end_to_end" in config["task"]):
                         # Save computed variance from WMV/EMV in csv
                         with open(self.MV_csv_path(self.alpha_EMV,config), 'w', newline='') as myfile:
                             wr = writer_csv(myfile,delimiter=';')
                             wr.writerow(self.VAR_recon)  
-                        self.WMV_plot(config)
+                        self.MV_plot(config)
 
-    def WMV_plot(self,config):
+    def MV_plot(self,config):
 
         if (config["read_only_MV_csv"]):
             with open(self.MV_csv_path(self.alpha_EMV,config), 'r') as myfile:
@@ -265,14 +265,14 @@ class iResults(vDenoising):
 
             for i in range(self.i_init,self.total_nb_iter+self.i_init):
             # for i in range(self.i_init,4444):
-                self.SUCCESS, self.VAR_recon, self.MSE_WMV, self.PSNR_WMV, self.SSIM_WMV, self.epochStar, self.patienceNumber = self.run_WMV(None,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,self.simulation,i,MV_metrics_already_stored_in_csv=True)
+                self.SUCCESS, self.VAR_recon, self.MSE_MV, self.PSNR_MV, self.SSIM_MV, self.epochStar, self.patienceNumber = self.run_MV(None,self.config,i,MV_metrics_already_stored_in_csv=True)
                 if (self.SUCCESS):
                     print("ES point found, break loop")
                     break
         
         self.VAR_recon_original = np.copy(self.VAR_recon)
 
-        # 2.2 plot window moving variance
+        # 2.2 plot moving variance
         plt.figure(1)
         if (config["EMV_or_WMV"] == "WMV"):
             var_x = np.arange(self.windowSize-1, self.windowSize + len(self.VAR_recon)-1)  # define x axis of WMV
@@ -294,9 +294,9 @@ class iResults(vDenoising):
         if (log_MV):
             self.VAR_recon = np.log(self.VAR_recon)
         if (not config["read_only_MV_csv"]):
-            self.MSE_WMV = self.MSE_WMV[remove_first_iterations:last_iteration+1]
-            self.PSNR_WMV = self.PSNR_WMV[remove_first_iterations:last_iteration+1]
-            self.SSIM_WMV = self.SSIM_WMV[remove_first_iterations:last_iteration+1]
+            self.MSE_MV = self.MSE_MV[remove_first_iterations:last_iteration+1]
+            self.PSNR_MV = self.PSNR_MV[remove_first_iterations:last_iteration+1]
+            self.SSIM_MV = self.SSIM_MV[remove_first_iterations:last_iteration+1]
 
         # remove_only_first_iterations_VAR = 250 - remove_first_iterations
         remove_only_first_iterations_VAR = 0 - remove_first_iterations
@@ -312,53 +312,53 @@ class iResults(vDenoising):
             plt.savefig(self.mkdir(self.subroot_phantom + '/self.VAR_recon/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
             self.lr) + '-lr' + str(self.lr) + '+self.VAR_recon-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
 
-        # Save WMV in tensorboard
-        #print("WMV saved in tensorboard")
+        # Save MV in tensorboard
+        #print("MV saved in tensorboard")
         for i in range(len(self.VAR_recon)):
-            self.writer.add_scalar('WMV in the phantom (should follow MSE trend to find peak)', self.VAR_recon[i], var_x[i])
+            self.writer.add_scalar('MV in the phantom (should follow MSE trend to find peak)', self.VAR_recon[i], var_x[i])
 
         if (not config["read_only_MV_csv"]):
             # 2.3 plot MSE
             plt.figure(2)
-            plt.plot(var_x,self.MSE_WMV, 'y')
+            plt.plot(var_x,self.MSE_MV, 'y')
             plt.title('MSE,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
             plt.axvline(self.epochStar, c='g')
             # plt.xticks([self.epochStar, 0, self.total_nb_iter-1], [self.epochStar, 0, self.total_nb_iter-1], color='green')
-            plt.axhline(y=np.min(self.MSE_WMV), c="black", linewidth=0.5)
+            plt.axhline(y=np.min(self.MSE_MV), c="black", linewidth=0.5)
             if (config["EMV_or_WMV"] == "WMV"):
-                plt.savefig(self.mkdir(self.subroot_phantom + '/self.MSE_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
-                    self.lr) + '-lr' + str(self.lr) + '+self.MSE_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
+                plt.savefig(self.mkdir(self.subroot_phantom + '/self.MSE_MV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                    self.lr) + '-lr' + str(self.lr) + '+self.MSE_MV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
             else:
-                plt.savefig(self.mkdir(self.subroot_phantom + '/self.MSE_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
-                self.lr) + '-lr' + str(self.lr) + '+self.MSE_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
+                plt.savefig(self.mkdir(self.subroot_phantom + '/self.MSE_MV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
+                self.lr) + '-lr' + str(self.lr) + '+self.MSE_MV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
 
             # 2.4 plot PSNR
             plt.figure(3)
-            plt.plot(var_x,self.PSNR_WMV)
+            plt.plot(var_x,self.PSNR_MV)
             plt.title('PSNR,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
             plt.axvline(self.epochStar, c='g')
             # plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
-            plt.axhline(y=np.max(self.PSNR_WMV), c="black", linewidth=0.5)
+            plt.axhline(y=np.max(self.PSNR_MV), c="black", linewidth=0.5)
             if (config["EMV_or_WMV"] == "WMV"):
-                plt.savefig(self.mkdir(self.subroot_phantom + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
-                    self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
+                plt.savefig(self.mkdir(self.subroot_phantom + '/self.PSNR_MV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                    self.lr) + '-lr' + str(self.lr) + '+self.PSNR_MV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
             else:
-                plt.savefig(self.mkdir(self.subroot_phantom + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
-                self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
+                plt.savefig(self.mkdir(self.subroot_phantom + '/self.PSNR_MV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
+                self.lr) + '-lr' + str(self.lr) + '+self.PSNR_MV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
             #'''
             # 2.5 plot SSIM
             plt.figure(4)
-            plt.plot(var_x,self.SSIM_WMV, c='orange')
+            plt.plot(var_x,self.SSIM_MV, c='orange')
             plt.title('SSIM,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
             plt.axvline(self.epochStar, c='g')
             # plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
-            plt.axhline(y=np.max(self.SSIM_WMV), c="black", linewidth=0.5)
+            plt.axhline(y=np.max(self.SSIM_MV), c="black", linewidth=0.5)
             if (config["EMV_or_WMV"] == "WMV"):
-                plt.savefig(self.mkdir(self.subroot_phantom + '/self.SSIM_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
-                    self.lr) + '-lr' + str(self.lr) + '+self.SSIM_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
+                plt.savefig(self.mkdir(self.subroot_phantom + '/self.SSIM_MV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                    self.lr) + '-lr' + str(self.lr) + '+self.SSIM_MV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
             else:
-                plt.savefig(self.mkdir(self.subroot_phantom + '/self.SSIM_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
-                self.lr) + '-lr' + str(self.lr) + '+self.SSIM_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
+                plt.savefig(self.mkdir(self.subroot_phantom + '/self.SSIM_MV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
+                self.lr) + '-lr' + str(self.lr) + '+self.SSIM_MV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
             
             #'''
             
@@ -371,9 +371,9 @@ class iResults(vDenoising):
             ax4 = ax1.twinx()  # creat other y-axis for different scale
             if (config["EMV_or_WMV"] == "WMV"):
                 ax2.spines.right.set_position(("axes", 1.18))
-            p2, = ax2.plot(var_x[:-1],self.MSE_WMV[:-1], "y", label="MSE")
-            # p1, = ax1.plot(var_x,self.PSNR_WMV, label="PSNR")
-            p3, = ax3.plot(var_x[:-1],self.SSIM_WMV[:-1], "orange", label="SSIM")
+            p2, = ax2.plot(var_x[:-1],self.MSE_MV[:-1], "y", label="MSE")
+            # p1, = ax1.plot(var_x,self.PSNR_MV, label="PSNR")
+            p3, = ax3.plot(var_x[:-1],self.SSIM_MV[:-1], "orange", label="SSIM")
             p4, = ax4.plot(var_x[remove_only_first_iterations_VAR:], self.VAR_recon[remove_only_first_iterations_VAR:], "r", label=config["EMV_or_WMV"] + ", " + r'$\alpha$' + "=" + str(self.alpha_EMV))
             #ax1.set_xlim(0, self.total_nb_iter-1)
             ax1.set_xlim(0, min(self.epochStar+self.patienceNumber,self.total_nb_iter-1))
@@ -417,25 +417,25 @@ class iResults(vDenoising):
 
             # 2.4 plot PSNR
             plt.figure(3)
-            plt.plot(self.PSNR_WMV)
+            plt.plot(self.PSNR_MV)
 
             '''
             N = 100
-            moving_average_PSNR = self.moving_average(self.PSNR_WMV,N)
-            plt.plot(np.arange(N-1,len(self.PSNR_WMV)), moving_average_PSNR)
+            moving_average_PSNR = self.moving_average(self.PSNR_MV,N)
+            plt.plot(np.arange(N-1,len(self.PSNR_MV)), moving_average_PSNR)
             '''
 
 
             plt.title('PSNR,epoch*=' + str(self.epochStar) + ',lr=' + str(self.lr))
             plt.axvline(self.epochStar, c='g')
             # plt.xticks([self.epochStar, 0, self.total_nb_iter - 1], [self.epochStar, 0, self.total_nb_iter - 1], color='green')
-            plt.axhline(y=np.max(self.PSNR_WMV), c="black", linewidth=0.5)
+            plt.axhline(y=np.max(self.PSNR_MV), c="black", linewidth=0.5)
             if (config["EMV_or_WMV"] == "WMV"):
-                plt.savefig(self.mkdir(self.subroot_phantom + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
-                    self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
+                plt.savefig(self.mkdir(self.subroot_phantom + '/self.PSNR_MV/' + self.suffix + '/w' + str(self.windowSize) + 'p' + str(self.patienceNumber)) + '/' + str(
+                    self.lr) + '-lr' + str(self.lr) + '+self.PSNR_MV-w' + str(self.windowSize) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
             else:
-                plt.savefig(self.mkdir(self.subroot_phantom + '/self.PSNR_WMV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
-                self.lr) + '-lr' + str(self.lr) + '+self.PSNR_WMV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
+                plt.savefig(self.mkdir(self.subroot_phantom + '/self.PSNR_MV/' + self.suffix + '/w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber)) + '/' + str(
+                self.lr) + '-lr' + str(self.lr) + '+self.PSNR_MV-w' + str(self.alpha_EMV) + 'p' + str(self.patienceNumber) + '_' + str(remove_first_iterations) + '.png')
     
     def MV_csv_path(self,alpha_EMV,config):
         Path(self.subroot_metrics + self.method + '/' + self.suffix_metrics + '/').mkdir(parents=True, exist_ok=True)
@@ -528,7 +528,7 @@ class iResults(vDenoising):
                     if config["FLTNB"] == "double":
                         f_p = f_p.astype(np.float64)
 
-                elif ('ADMMReg' in self.method or self.method == 'MLEM' or self.method == 'OPTITR' or self.method == 'OSEM' or self.method == 'BSREM' or self.method == 'AML' or 'APGMAP' in self.method):
+                elif ('ADMMReg' in self.method or self.method == 'MLEM' or self.method == 'OPTITR' or self.method == 'OSEM' or self.method == 'BSREM' or self.method == 'AML' or 'APPGML' in self.method):
                     self.pet_algo=config["method"]
                     self.iteration_name = "iterations"
                     if (hasattr(self,'beta')):
@@ -543,8 +543,8 @@ class iResults(vDenoising):
                     #elif (self.method == 'BSREM'):
                     #    f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  self.method + '_beta_' + str(self.beta) + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                     else:
-                        if ('APGMAP' in self.method):
-                            f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  "APGMAP" + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                        if ('APPGML' in self.method):
+                            f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  "APPGML" + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         else:
                             f_p = self.fijii_np(self.subroot_p + self.suffix + '/' +  self.method + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
 
@@ -577,12 +577,11 @@ class iResults(vDenoising):
                 elif (config["average_replicates"] == False and p == self.replicate):
                     self.f = f_p
             
-                # WMV
+                # MV
                 if ("DNA" in self.method or "DIPRecon" in self.method):
-                    # self.run_WMV(f_p,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,self.simulation,i)
-                    if(self.DIP_early_stopping):# WMV
+                    if(self.DIP_early_stopping): # MV
                         if ("post_reco" in config["task"] or "end_to_end" in config["task"]):
-                            self.SUCCESS, self.VAR_recon, self.MSE_WMV, self.PSNR_WMV, self.SSIM_WMV, self.epochStar, self.patienceNumber = self.run_WMV(f_p,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,self.simulation,i)
+                            self.SUCCESS, self.VAR_recon, self.MSE_MV, self.PSNR_MV, self.SSIM_MV, self.epochStar, self.patienceNumber = self.run_MV(f_p,self.config,i)
                             if (self.SUCCESS):
                                 return 1
                 del f_p

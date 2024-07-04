@@ -2,19 +2,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import ndimage
 
-def fijii_np(path,shape,type_im='>u2'):
-    """"Transforming raw data to numpy array"""
+def fijii_np(path,shape,type_im='<f'):
+    """"Transforming raw data to numpy array"""               
     file_path=(path)
-    # type_im='>u2'
-    type_im='<f4'
-    dtype = np.dtype(type_im)
-    fid = open(file_path, 'rb')
-    data = np.fromfile(fid,dtype)
-    if (1 in shape): # 2D
-        #shape = (shape[0],shape[1])
-        image = data.reshape(shape)
-    else: # 3D
-        image = data.reshape(shape[::-1])
+    nb_dimensions = len(shape)
+    dtype_np = np.dtype(type_im)
+    with open(file_path, 'rb') as fid:
+        data = np.fromfile(fid,dtype_np)
+        if (nb_dimensions == 2): # 2D
+            image = data.reshape(shape)
+        else: # 3D
+            image = data.reshape(shape[::-1])
     return image
 
 def save_img(img,name):
@@ -58,9 +56,9 @@ def laplacian():
 
 it = 99
 subroot = 'data/Algo/'
-root_MR = subroot + 'image40_1/replicate_1/DNA/Block2/config_recoI=APGMAP_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=positive_normalization_input=CT_nb_ou=10_mlem_=False_A_AML=-100/out_cnn/24/out_DIP' + str(it) + '_FINAL.img'
-root_intermediate = subroot + 'image40_1/replicate_1/DNA/Block2/config_recoI=APGMAP_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=positive_normalization_input=random_nb_ou=10_mlem_=False_A_AML=-100/out_cnn/24/out_DIP' + str(it) + '_FINAL.img'
-root_random = subroot + 'image40_1/replicate_1/DNA/Block2/config_recoI=APGMAP_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=200_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=positive_normalization_input=random_nb_ou=10_mlem_=False_A_AML=-100/out_cnn/24/out_DIP' + str(it) + '_FINAL.img'
+root_MR = subroot + 'image40_1/replicate_1/DNA/Block2/config_recoI=APPGML_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=positive_normalization_input=CT_nb_ou=10_mlem_=False_A_AML=-100/out_cnn/24/out_DIP' + str(it) + '_FINAL.img'
+root_intermediate = subroot + 'image40_1/replicate_1/DNA/Block2/config_recoI=APPGML_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=10_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=positive_normalization_input=random_nb_ou=10_mlem_=False_A_AML=-100/out_cnn/24/out_DIP' + str(it) + '_FINAL.img'
+root_random = subroot + 'image40_1/replicate_1/DNA/Block2/config_recoI=APPGML_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=200_tau_D=2_lr=0.01_sub_i=100_opti_=Adam_skip_=3_scali=positive_normalization_input=random_nb_ou=10_mlem_=False_A_AML=-100/out_cnn/24/out_DIP' + str(it) + '_FINAL.img'
 
 PETImage_shape = (112,112)
 

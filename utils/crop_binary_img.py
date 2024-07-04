@@ -4,14 +4,13 @@ import numpy as np
 from re import split
 
 def fijii_np(path,shape,type_im='<f'):
-    """"Transforming raw data to numpy array"""
+    """"Transforming raw data to numpy array"""               
     file_path=(path)
+    nb_dimensions = len(shape)
     dtype_np = np.dtype(type_im)
     with open(file_path, 'rb') as fid:
         data = np.fromfile(fid,dtype_np)
-        # image = data.reshape(shape)
-        if (1 in shape): # 2D
-            #shape = (shape[0],shape[1])
+        if (nb_dimensions == 2): # 2D
             image = data.reshape(shape)
         else: # 3D
             image = data.reshape(shape[::-1])

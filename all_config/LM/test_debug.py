@@ -41,9 +41,9 @@ def config_func_MIC():
     }
     # Configuration dictionnary for hyperparameters to tune
     hyperparameters_config = {
-        "PSF" : tune.grid_search([False]), # Use or not of PSF in the reconstruction algorithm
-        # "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
+        # "PSF" : tune.grid_search([False]), # Use or not of PSF in the reconstruction algorithm
         "image_init_path_without_extension" : tune.grid_search(['MLEM_it20']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
+        "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
         "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)
         "mu_DIP" : tune.grid_search([111]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMReg
         "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMReg. If adaptive tau, it corresponds to tau max
@@ -54,8 +54,8 @@ def config_func_MIC():
         "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-        "input" : tune.grid_search(['random']), # Neural network input (random or CT)
-        # "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
+        "input" : tune.grid_search(['random']), # Neural network input (random or anatomical )
+        "input" : tune.grid_search(["anatomical"]), # Neural network input (random or anatomical )
         ## ADMMReg - OPTITR hyperparameters
         "nb_outer_iteration": tune.grid_search([10]), # Number of outer iterations in ADMMReg (and DNA) and OPTITR (for DIPRecon)
         "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMReg
@@ -68,7 +68,7 @@ def config_func_MIC():
         ## hyperparameters from CASToR algorithms 
         # Optimization transfer (OPTITR) hyperparameters
         "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False
-        # AML/APGMAP hyperparameters
+        # AML/APPGML hyperparameters
         "A_AML" : tune.grid_search([-10]), # AML lower bound A
         # Post smoothing by CASToR after reconstruction
         "post_smoothing" : tune.grid_search([0]), # Post smoothing by CASToR after reconstruction

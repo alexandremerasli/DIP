@@ -60,8 +60,8 @@ def config_func_MIC():
         "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         #"skip_connections" : tune.grid_search([0,1,2,3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-        "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
-        #"input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)
+        "input" : tune.grid_search(["anatomical"]), # Neural network input (random or anatomical )
+        #"input" : tune.grid_search(["anatomical",'random']), # Neural network input (random or anatomical )
         "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
         "k_DD" : tune.grid_search([32]), # k for Deep Decoder
         ## ADMMReg - OPTITR hyperparameters
@@ -76,7 +76,7 @@ def config_func_MIC():
             ## hyperparameters from CASToR algorithms 
         # Optimization transfer (OPTITR) hyperparameters
         "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False
-        # AML/APGMAP hyperparameters
+        # AML/APPGML hyperparameters
         "A_AML" : tune.grid_search([-10,-100,-1000]), # AML lower bound A
         # Post smoothing by CASToR after reconstruction
         "post_smoothing" : tune.grid_search([0]), # Post smoothing by CASToR after reconstruction

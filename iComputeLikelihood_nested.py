@@ -54,17 +54,17 @@ class iComputeLikelihood_DNA(vGeneral):
         
     def runComputation(self,config,root):
 
-        if (self.method == 'AML' or self.method == 'APGMAP'):
+        if (self.method == 'AML' or self.method == 'APPGML'):
             self.A_AML = config["A_AML"]
         if (self.method == 'AML'):
             self.beta = config["A_AML"]
         elif ('ADMMReg' in self.method):
             self.beta = config["alpha"]
             self.recoInDNA = "ADMMReg"
-        elif (self.method == 'BSREM' or self.method == 'APGMAP'):
+        elif (self.method == 'BSREM' or self.method == 'APPGML'):
             self.beta = self.rho
 
-        if (self.method != 'BSREM' and self.method != 'DNA' and self.method != 'DIPRecon' and self.method != 'APGMAP'):
+        if (self.method != 'BSREM' and self.method != 'DNA' and self.method != 'DIPRecon' and self.method != 'APPGML'):
             self.post_smoothing = config["post_smoothing"]
         else:
             self.post_smoothing = 0

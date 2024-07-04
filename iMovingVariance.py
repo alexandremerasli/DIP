@@ -12,7 +12,7 @@ class iMovingVariance(vGeneral):
 
     def initializeSpecific(self,config,root, *args, **kwargs):
 
-        ## Variables for WMV ##
+        ## Variables for MV ##
         self.queueQ = []
         self.VAR_min = inf
         self.SUCCESS = False
@@ -21,9 +21,9 @@ class iMovingVariance(vGeneral):
         self.patienceNumber = config["patienceNumber"]
         self.epochStar = -1
         self.VAR_recon = []
-        self.MSE_WMV = []
-        self.PSNR_WMV = []
-        self.SSIM_WMV = []
+        self.MSE_MV = []
+        self.PSNR_MV = []
+        self.SSIM_MV = []
         self.DIP_it_if_no_ES_found = config["DIP_it_if_no_ES_found"]
         
 
@@ -55,23 +55,22 @@ class iMovingVariance(vGeneral):
     def runComputation(self,config,root):
         pass
 
-    def WMV(self,out,epoch,sub_iter_DIP,queueQ,SUCCESS,VAR_min,stagnate,descale=True,MV_value_csv=NaN,current_DIP_iteration=0, MV_metrics_already_stored_in_csv=False):
+    def compute_MV_value(self,out,epoch,sub_iter_DIP,queueQ,SUCCESS,VAR_min,stagnate,descale=True,MV_value_csv=NaN,current_DIP_iteration=0, MV_metrics_already_stored_in_csv=False):
         
         if (not MV_metrics_already_stored_in_csv):
             # Descale, squeeze image and add 3D dimension to 1 (ok for 2D images)
             if (descale):
                 out = self.descale_imag(from_numpy(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
             out = squeeze(out)
-            if (len(out.shape) == 2): # 2D, check length because squeeze before
+            if (self.nb_dimensions == 2): # 2D, add new axis because squeeze before (needed because several dimensions could be present because of torch tensors)
                 out = out[:,:,newaxis]
             else: # 3D
-                # out = out.reshape(out.shape[::-1])
                 out = transpose(out,axes=(1,2,0))
                 image_gt_reversed = transpose(self.image_gt,axes=(1,2,0))
                 phantom_ROI_reversed = transpose(self.phantom_ROI,axes=(1,2,0))
             
-            # Crop image to inside phantom if 2D simulations
-            if (self.simulation): # 2D    
+            # Crop image to inside phantom if simulations
+            if (self.nb_dimensions == 2):
                 out_cropped = out * self.phantom_ROI
                 image_gt_cropped = self.image_gt * self.phantom_ROI
             else:
@@ -107,12 +106,11 @@ class iMovingVariance(vGeneral):
                 append_metrics = True
 
             if append_metrics:
-                self.MSE_WMV.append(mean((image_gt_cropped - out_cropped)**2))
-                self.PSNR_WMV.append(peak_signal_noise_ratio(image_gt_cropped, out_cropped, data_range=amax(out_cropped) - amin(out_cropped)))
-                self.SSIM_WMV.append(structural_similarity(squeeze(image_gt_cropped), squeeze(out_cropped), data_range=out_cropped.max() - out_cropped.min()))
+                self.MSE_MV.append(mean((image_gt_cropped - out_cropped)**2))
+                self.PSNR_MV.append(peak_signal_noise_ratio(image_gt_cropped, out_cropped, data_range=amax(out_cropped) - amin(out_cropped)))
+                self.SSIM_MV.append(structural_similarity(squeeze(image_gt_cropped), squeeze(out_cropped), data_range=out_cropped.max() - out_cropped.min()))
 
         if (self.EMV_or_WMV == "WMV"):
-            #'''
             #####################################  Window Moving Variance  #############################################
             if (not MV_metrics_already_stored_in_csv):
                 queueQ.append(out_cropped.flatten()) # Add last computed image to last element in queueQ from window
@@ -139,14 +137,8 @@ class iMovingVariance(vGeneral):
                         SUCCESS = True
                     queueQ.pop(0) # Remove first element in queueQ from window for next variance computation
                     self.VAR_recon.append(VAR) # Store current variance to plot variance curve after
-            # else:
-            #     if (epoch < self.windowSize):
-            #         self.WMV = 0
-            #     else:
-            #         self.WMV = MV_value_csv
-            #'''
+
         else:
-            #'''
             #####################################  Exponential Moving Variance  #############################################
             if (not MV_metrics_already_stored_in_csv):
                 # Compute variance for this window
@@ -167,7 +159,6 @@ class iMovingVariance(vGeneral):
                 SUCCESS = True
             if (not MV_metrics_already_stored_in_csv):
                 self.VAR_recon.append(self.EMV) # Store current variance to plot variance curve after
-            #'''
 
         # Wait one iteration after SUCCESS to save ES point
         if self.SUCCESS:
@@ -178,7 +169,7 @@ class iMovingVariance(vGeneral):
                 plt.legend()
                 plt.ylabel("EMV (log scale)")
                 plt.xlabel("DIP Iterations")
-                plt.savefig(self.subroot_phantom + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/EMV_global_' + str(self.global_it) + '.png')
+                plt.savefig(self.subroot_phantom + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/MV_global_' + str(self.global_it) + '.png')
             # Open output corresponding to epoch star
             net_output_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
             # Open ckpt corresponding to epoch star
@@ -195,7 +186,7 @@ class iMovingVariance(vGeneral):
             # Saving ES point image
             net_output_path = self.subroot_phantom + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/ES_out_' + self.net +  str(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
             self.save_img(out, net_output_path)
-            print("#### WMV ########################################################")
+            print("#### MV ########################################################")
             print("                 ES point found, epoch* =", self.epochStar)
             print("#################################################################")
         
@@ -216,7 +207,7 @@ class iMovingVariance(vGeneral):
             
         return SUCCESS, VAR_min, stagnate
     
-    def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,sub_iter_DIP,root, subroot, scanner, simulation,image_net_input=None):          
+    def initialize_MV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,sub_iter_DIP,root, subroot, scanner, simulation,image_net_input=None):          
         self.subroot = subroot
         self.fixed_hyperparameters_list = fixed_hyperparameters_list
         self.hyperparameters_list = hyperparameters_list
@@ -233,24 +224,24 @@ class iMovingVariance(vGeneral):
         # Initialize variables
         self.do_everything(config,root)
 
-    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner,simulation,i, MV_metrics_already_stored_in_csv=False):
+    def run_MV(self,out,config, i, MV_metrics_already_stored_in_csv=False):
         if (self.DIP_early_stopping):
 
             if (config["read_only_MV_csv"]):
                 MV_value_csv = self.VAR_recon[i]
             else:
                 MV_value_csv = NaN
-            self.SUCCESS,self.VAR_min,self.stagnate = self.WMV(out,i,self.sub_iter_DIP,self.queueQ,self.SUCCESS,self.VAR_min,self.stagnate,descale=False,MV_value_csv=MV_value_csv, MV_metrics_already_stored_in_csv=MV_metrics_already_stored_in_csv)
+            self.SUCCESS,self.VAR_min,self.stagnate = self.compute_MV_value(out,i,self.sub_iter_DIP,self.queueQ,self.SUCCESS,self.VAR_min,self.stagnate,descale=False,MV_value_csv=MV_value_csv, MV_metrics_already_stored_in_csv=MV_metrics_already_stored_in_csv)
             if (not config["read_only_MV_csv"]):
                 self.VAR_recon = self.VAR_recon
-                self.MSE_WMV = self.MSE_WMV
-                self.PSNR_WMV = self.PSNR_WMV
-                self.SSIM_WMV = self.SSIM_WMV
+                self.MSE_MV = self.MSE_MV
+                self.PSNR_MV = self.PSNR_MV
+                self.SSIM_MV = self.SSIM_MV
             self.epochStar = self.epochStar
             self.patienceNumber = self.patienceNumber
 
             if self.SUCCESS: # Will be true 1 epoch after self.SUCCESS becomes True
-                print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
+                print("SUCCESS MVVVVVVVVVVVVVVVVVV")
             #     return 1
             # return 0
 
@@ -259,7 +250,7 @@ class iMovingVariance(vGeneral):
             else:
                 self.windowSize = self.windowSize
         
-            return self.SUCCESS, self.VAR_recon, self.MSE_WMV, self.PSNR_WMV, self.SSIM_WMV, self.epochStar, self.patienceNumber
+            return self.SUCCESS, self.VAR_recon, self.MSE_MV, self.PSNR_MV, self.SSIM_MV, self.epochStar, self.patienceNumber
         
     def save_DIP_output(self, ckpt_path, net_output_path):
         # Load ckpt file with pytorch ligthning and return the output of DIP network

@@ -178,7 +178,7 @@ class iADMM_DIP(vReconstruction):
             self.save_img(x_label,self.subroot_phantom+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
 
     def initializeSettingsForCurrentIteration(self,config,i_init,root,classDenoising):
-        # If pre or last iteration, do WMV and initialize vDenoising object if pre iteration
+        # Initialization
         if ((self.global_it == i_init and ((i_init == -1 and not config["unnested_1st_global_iter"])) or (config["unnested_1st_global_iter"]))): # or (self.global_it == self.max_iter - 1)): # TESTCT_random
             if (self.scanner != "mMR_3D"):
                 if self.DIP_early_stopping_when == "all" or self.DIP_early_stopping_when == "init":
@@ -201,7 +201,7 @@ class iADMM_DIP(vReconstruction):
             
             # Initialize vDenoising object
             classDenoising = vDenoising(config,self.global_it)
-            # Put CT as input (mu_DIP = 200 is for random only)
+            # Put anatomical  as input (mu_DIP = 200 is for random only)
             if (not (i_init == 0 and config["unnested_1st_global_iter"])):
                 if (self.net == "DIP" and config["mu_DIP"] != 200):
                     classDenoising.override_input = True
@@ -231,7 +231,7 @@ class iADMM_DIP(vReconstruction):
             classDenoising.subroot = self.subroot
             classDenoising.initializeGeneralVariables(config,root)
         
-        # During iterations, do not do WMV
+        # During iterations
         if (self.global_it == i_init + 1 and ((i_init == -1 and not config["unnested_1st_global_iter"]) or (i_init == 0 and config["unnested_1st_global_iter"]))): # TESTCT_random , put back random input
             if self.DIP_early_stopping_when == "all":
                 self.DIP_early_stopping = True

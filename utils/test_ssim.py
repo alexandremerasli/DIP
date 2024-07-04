@@ -3,43 +3,17 @@ from utils.mssim import mssim
 import numpy as np
 import matplotlib.pyplot as plt
         
-def fijii_np(path,shape,type_im=None):
-    """"Transforming raw data to numpy array"""
-    attempts = 0
-
-    while attempts < 1000:
-        attempts += 1
-        try:
-            type_im = ('<f')*(type_im=='<f') + ('<d')*(type_im=='<d')
-            file_path=(path)
-            dtype_np = np.dtype(type_im)
-            with open(file_path, 'rb') as fid:
-                data = np.fromfile(fid,dtype_np)
-                if (1 in shape): # 2D
-                    #shape = (shape[0],shape[1])
-                    image = data.reshape(shape)
-                else: # 3D
-                    image = data.reshape(shape[::-1])
-            attempts = 1000
-            break
-        except:
-            # fid.close()
-            type_im = ('<f')*(type_im=='<d') + ('<d')*(type_im=='<f')
-            file_path=(path)
-            dtype_np = np.dtype(type_im)
-            with open(file_path, 'rb') as fid:
-                data = np.fromfile(fid,dtype_np)
-                if (1 in shape): # 2D
-                    #shape = (shape[0],shape[1])
-                    try:
-                        image = data.reshape(shape)
-                    except Exception as e:
-                        pass
-                else: # 3D
-                    image = data.reshape(shape[::-1])
-            
-            fid.close()
-
+def fijii_np(path,shape,type_im='<f'):
+    """"Transforming raw data to numpy array"""               
+    file_path=(path)
+    nb_dimensions = len(shape)
+    dtype_np = np.dtype(type_im)
+    with open(file_path, 'rb') as fid:
+        data = np.fromfile(fid,dtype_np)
+        if (nb_dimensions == 2): # 2D
+            image = data.reshape(shape)
+        else: # 3D
+            image = data.reshape(shape[::-1])
     return image
 
 

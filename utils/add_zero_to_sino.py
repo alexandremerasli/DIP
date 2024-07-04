@@ -4,13 +4,16 @@ import numpy as np
 from re import split
 
 def fijii_np(path,shape,type_im='<f'):
-    """"Transforming raw data to numpy array"""
+    """"Transforming raw data to numpy array"""               
     file_path=(path)
+    nb_dimensions = len(shape)
     dtype_np = np.dtype(type_im)
     with open(file_path, 'rb') as fid:
         data = np.fromfile(fid,dtype_np)
-        image = data.reshape(shape)
-                    
+        if (nb_dimensions == 2): # 2D
+            image = data.reshape(shape)
+        else: # 3D
+            image = data.reshape(shape[::-1])
     return image
 
 def save_img(img,name):
@@ -22,7 +25,7 @@ def atoi(text):
     return int(text) if text.isdigit() else text
     
 def natural_keys(text):
-    return [ atoi(c) for c in split(r'(\d+)', text) ] # APGMAP final curves + resume computation
+    return [ atoi(c) for c in split(r'(\d+)', text) ] # APPGML final curves + resume computation
 
 # phantom = "image10_1000"
 phantom = "image40_1"

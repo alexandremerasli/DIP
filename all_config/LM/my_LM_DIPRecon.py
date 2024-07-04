@@ -33,7 +33,7 @@ def config_func_MIC():
         "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMReg
         "xi_DIP" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in DIPRecon and DNA
         "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-        "DIP_early_stopping" : tune.grid_search([True]), # Use DIP early stopping with WMV strategy
+        "DIP_early_stopping" : tune.grid_search([True]), # Use DIP early stopping with moving variance strategy
         "EMV_or_WMV" : tune.grid_search(["EMV"]), # Use DIP early stopping with WMV or EMV
         "alpha_EMV" : tune.grid_search([0.01,0.0251,0.05,0.1,0.5,0.9,0.99]), # EMV forgetting factor alpha
         "alpha_EMV" : tune.grid_search([0.0251]), # EMV forgetting factor alpha
@@ -56,8 +56,8 @@ def config_func_MIC():
         "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-        "input" : tune.grid_search(['random']), # Neural network input (random or CT)
-        # "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
+        "input" : tune.grid_search(['random']), # Neural network input (random or anatomical )
+        # "input" : tune.grid_search(["anatomical"]), # Neural network input (random or anatomical )
         ## ADMMReg - OPTITR hyperparameters
         "nb_outer_iteration": tune.grid_search([10]), # Number of outer iterations in ADMMReg (and DNA) and OPTITR (for DIPRecon)
         "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMReg
@@ -70,7 +70,7 @@ def config_func_MIC():
         ## hyperparameters from CASToR algorithms 
         # Optimization transfer (OPTITR) hyperparameters
         "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False
-        # AML/APGMAP hyperparameters
+        # AML/APPGML hyperparameters
         "A_AML" : tune.grid_search([-10]), # AML lower bound A
         # Post smoothing by CASToR after reconstruction
         "post_smoothing" : tune.grid_search([0]), # Post smoothing by CASToR after reconstruction

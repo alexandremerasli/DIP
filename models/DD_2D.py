@@ -46,19 +46,19 @@ class DD_2D(pl.LightningModule):
 
 
         self.DIP_early_stopping = config["DIP_early_stopping"]
-        self.classWMV = iMovingVariance(config)
+        self.classMV = iMovingVariance(config)
         if(self.DIP_early_stopping):
             
-            self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
-            self.classWMV.hyperparameters_list = hyperparameters_list
-            self.classWMV.debug = debug
-            self.classWMV.param1_scale_im_corrupt = param1_scale_im_corrupt
-            self.classWMV.param2_scale_im_corrupt = param2_scale_im_corrupt
-            self.classWMV.scaling_input = scaling_input
-            self.classWMV.suffix = suffix
-            self.classWMV.global_it = global_it
+            self.classMV.fixed_hyperparameters_list = fixed_hyperparameters_list
+            self.classMV.hyperparameters_list = hyperparameters_list
+            self.classMV.debug = debug
+            self.classMV.param1_scale_im_corrupt = param1_scale_im_corrupt
+            self.classMV.param2_scale_im_corrupt = param2_scale_im_corrupt
+            self.classMV.scaling_input = scaling_input
+            self.classMV.suffix = suffix
+            self.classMV.global_it = global_it
             # Initialize variables
-            self.classWMV.do_everything(config,root)
+            self.classMV.do_everything(config,root)
 
         # Defining CNN variables
         self.num_channels_up = [k]*(d+1) + [1]
@@ -79,7 +79,7 @@ class DD_2D(pl.LightningModule):
         # self.positivity = nn.Softplus() # Final SiLU to enforce positivity of ouput image, smoother than ReLU
 
         self.write_current_img_mode = True
-        self.DIP_early_stopping = False # need to add WMV init here to do ES
+        self.DIP_early_stopping = False # need to add MV init here to do ES
 
     def write_image_tensorboard(self,writer,image,name,suffix,i=0,full_contrast=False):
         # Creating matplotlib figure with colorbar
@@ -116,26 +116,26 @@ class DD_2D(pl.LightningModule):
         if (self.write_current_img_mode):
             self.write_current_img(out)
 
-        # WMV
-        self.log("SUCCESS", int(self.classWMV.SUCCESS))
+        # MV
+        self.log("SUCCESS", int(self.classMV.SUCCESS))
         if (self.DIP_early_stopping):
-            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(out.detach().numpy(),self.current_epoch,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
-            self.VAR_recon = self.classWMV.VAR_recon
-            self.MSE_WMV = self.classWMV.MSE_WMV
-            self.PSNR_WMV = self.classWMV.PSNR_WMV
-            self.SSIM_WMV = self.classWMV.SSIM_WMV
-            self.epochStar = self.classWMV.epochStar
+            self.classMV.SUCCESS,self.classMV.VAR_min,self.classMV.stagnate = self.classMV.compute_MV_value(out.detach().numpy(),self.current_epoch,self.classMV.queueQ,self.classMV.SUCCESS,self.classMV.VAR_min,self.classMV.stagnate)
+            self.VAR_recon = self.classMV.VAR_recon
+            self.MSE_MV = self.classMV.MSE_MV
+            self.PSNR_MV = self.classMV.PSNR_MV
+            self.SSIM_MV = self.classMV.SSIM_MV
+            self.epochStar = self.classMV.epochStar
             '''
             if self.EMV_or_WMV == "EMV":
-                self.alpha_EMV = self.classWMV.alpha_EMV
+                self.alpha_EMV = self.classMV.alpha_EMV
             else:
-                self.windowSize = self.classWMV.windowSize
+                self.windowSize = self.classMV.windowSize
             '''
-            self.patienceNumber = self.classWMV.patienceNumber
-            self.SUCCESS = self.classWMV.SUCCESS
+            self.patienceNumber = self.classMV.patienceNumber
+            self.SUCCESS = self.classMV.SUCCESS
 
             if self.SUCCESS:
-                print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
+                print("SUCCESS MVVVVVVVVVVVVVVVVVV")
         else:
             self.SUCCESS = False
 

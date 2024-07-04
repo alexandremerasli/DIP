@@ -108,13 +108,7 @@ class DIP_2D(LightningModule):
 
         self.num_total_batch = -1
         self.end_epoch = False
-        '''
-        ## Variables for WMV ##
-        self.queueQ = []
-        self.VAR_min = inf
-        self.SUCCESS = False
-        self.stagnate = 0
-        '''
+
         self.DIP_early_stopping = DIP_early_stopping
         self.override_input = override_input
         self.scanner = scanner
@@ -126,7 +120,7 @@ class DIP_2D(LightningModule):
             # self.classMV.model_class = DIP_2D
             self.classMV.model_class = type(self)
             self.classMV.image_net_input_torch = self.image_net_input_torch
-            self.classMV.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,self.sub_iter_DIP,root,subroot,scanner, simulation, image_net_input_torch)
+            self.classMV.initialize_MV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,self.sub_iter_DIP,root,subroot,scanner, simulation, image_net_input_torch)
 
         self.write_current_img_mode = True
         #self.suffix = self.suffix_func(config,hyperparameters_list)
@@ -441,13 +435,13 @@ class DIP_2D(LightningModule):
         # Monitor learning rate across iterations
         self.monitor_lr_func(out,image_corrupt_torch)
 
-        # WMV
+        # MV
         if (self.DIP_early_stopping):
             if (end_epoch_LBFGS):
                 if (self.num_total_batch == self.several_DIP_inputs - 1):
                     self.SUCCESS = self.classMV.SUCCESS
                     self.log("SUCCESS", int(self.SUCCESS))
-                    self.SUCCESS, self.VAR_recon, self.MSE_WMV, self.PSNR_WMV, self.SSIM_WMV, self.epochStar, self.patienceNumber = self.classMV.run_WMV(out.detach().numpy(),self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.subroot,self.scanner, self.simulation, self.current_epoch)
+                    self.SUCCESS, self.VAR_recon, self.MSE_MV, self.PSNR_MV, self.SSIM_MV, self.epochStar, self.patienceNumber = self.classMV.run_MV(out.detach().numpy(),self.config, self.current_epoch)
                     self.epochStar = self.classMV.epochStar
             
         # Increment number of iterations since beginnning of DNA
@@ -557,255 +551,3 @@ class DIP_2D(LightningModule):
                     self.lr /= 2
                     print(self.lr)
                     print("chaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaange lrrrrrrrrrrrrrrrrrrrrrrrrrrr")
-    
-    # def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner, simulation, image_net_input_torch):
-    #     self.classWMV = iMovingVariance(config)            
-    #     self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
-    #     self.classWMV.hyperparameters_list = hyperparameters_list
-    #     self.classWMV.debug = debug
-    #     self.classWMV.param1_scale_im_corrupt = param1_scale_im_corrupt
-    #     self.classWMV.param2_scale_im_corrupt = param2_scale_im_corrupt
-    #     self.classWMV.scaling_input = scaling_input
-    #     self.classWMV.suffix = suffix
-    #     self.classWMV.global_it = global_it
-    #     self.classWMV.scanner = scanner
-    #     self.classWMV.simulation = simulation
-    #     self.classWMV.image_net_input_torch = image_net_input_torch
-    #     self.classWMV.model_class = DIP_2D
-    #     # Initialize variables
-    #     self.classWMV.do_everything(config,root)
-
-    # def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner, simulation):
-    #     if (self.DIP_early_stopping):
-    #         self.SUCCESS = self.classWMV.SUCCESS
-    #         self.log("SUCCESS", int(self.classWMV.SUCCESS))
-
-    #         try:
-    #             out_np = out.detach().numpy()[0,0,:,:]
-    #         except:
-    #             out_np = out.cpu().detach().numpy()[0,0,:,:]
-
-    #         if (len(out_np.shape) == 2): # 2D
-    #             out_np = out_np[:,:,newaxis]
-
-    #         self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(copy(out_np),self.current_epoch,self.sub_iter_DIP,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate,current_DIP_iteration = self.sub_iter_DIP_this_global_it)
-    #         self.VAR_recon = self.classWMV.VAR_recon
-    #         self.MSE_WMV = self.classWMV.MSE_WMV
-    #         self.PSNR_WMV = self.classWMV.PSNR_WMV
-    #         self.SSIM_WMV = self.classWMV.SSIM_WMV
-    #         self.epochStar = self.classWMV.epochStar
-    #         '''
-    #         if self.EMV_or_WMV == "EMV":
-    #             self.alpha_EMV = self.classWMV.alpha_EMV
-    #         else:
-    #             self.windowSize = self.classWMV.windowSize
-    #         '''
-    #         self.patienceNumber = self.classWMV.patienceNumber
-
-    #         if self.SUCCESS:
-    #             print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
-    #             self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner, simulation, self.image_net_input_torch)
-        
-    #     else:
-    #         self.log("SUCCESS", int(False))
-
-    def norm_imag(self,img):
-        print("nooooooooorm")
-        """ Normalization of input - output [0..1] and the normalization value for each slide"""
-        if (max_np(img) - min_np(img)) != 0:
-            return (img - min_np(img)) / (max_np(img) - min_np(img)), min_np(img), max_np(img)
-        else:
-            return img, min_np(img), max_np(img)
-
-    def denorm_imag(self,image, mini, maxi):
-        """ Denormalization of input - output [0..1] and the normalization value for each slide"""
-        image_np = image.detach().numpy()
-        return self.denorm_numpy_imag(image_np, mini, maxi)
-
-    def denorm_numpy_imag(self,img, mini, maxi):
-        if (maxi - mini) != 0:
-            return img * (maxi - mini) + mini
-        else:
-            return img
-
-
-    def norm_positive_imag(self,img):
-        """ Positive normalization of input - output [0..1] and the normalization value for each slide"""
-        if (max_np(img) - min_np(img)) != 0:
-            print(max_np(img))
-            print(min_np(img))
-            return img / max_np(img), 0, max_np(img)
-        else:
-            return img, 0, max_np(img)
-
-    def denorm_positive_imag(self,image, mini, maxi):
-        """ Positive normalization of input - output [0..1] and the normalization value for each slide"""
-        image_np = image.detach().numpy()
-        return self.denorm_numpy_imag(image_np, mini, maxi)
-
-    def denorm_numpy_positive_imag(self, img, mini, maxi):
-        if (maxi - mini) != 0:
-            return img * maxi 
-        else:
-            return img
-
-    def stand_imag(self,image_corrupt):
-        print("staaaaaaaaaaand")
-        """ Standardization of input - output with mean 0 and std 1 for each slide"""
-        mean_im=mean_np(image_corrupt)
-        std_im=std_np(image_corrupt)
-        image_center = image_corrupt - mean_im
-        if (std_im == 0.):
-            raise ValueError("std 0")
-        image_corrupt_std = image_center / std_im
-        return image_corrupt_std,mean_im,std_im
-
-    def destand_numpy_imag(self,image, mean_im, std_im):
-        """ Destandardization of input - output with mean 0 and std 1 for each slide"""
-        return image * std_im + mean_im
-
-    def destand_imag(self,image, mean_im, std_im):
-        image_np = image.detach().numpy()
-        return self.destand_numpy_imag(image_np, mean_im, std_im)
-
-    def rescale_imag(self,image_corrupt, scaling):
-        """ Scaling of input """
-        if (scaling == 'standardization'):
-            return self.stand_imag(image_corrupt)
-        elif (scaling == 'normalization'):
-            return self.norm_imag(image_corrupt)
-        elif (scaling == 'positive_normalization'):
-            return self.norm_positive_imag(image_corrupt)
-        else: # No scaling required
-            return image_corrupt, 0, 0
-
-    def descale_imag(self,image, param_scale1, param_scale2, scaling='standardization'):
-        """ Descaling of input """
-        try:
-            image_np = image.detach().numpy()
-        except:
-            image_np = image.cpu().detach().numpy()
-        if (scaling == 'standardization'):
-            return self.destand_numpy_imag(image_np, param_scale1, param_scale2)
-        elif (scaling == 'normalization'):
-            return self.denorm_numpy_imag(image_np, param_scale1, param_scale2)
-        elif (scaling == 'positive_normalization'):
-            return self.denorm_numpy_positive_imag(image_np, param_scale1, param_scale2)
-        else: # No scaling required
-            return image_np
-
-    def get_phantom_ROI(self,image='image0'):
-        # Select only phantom ROI, not whole reconstructed image
-        path_phantom_ROI = self.subroot+'Data/database_v2/' + image + '/' + "phantom_mask" + str(image[5:]) + '.raw'
-        my_file = Path(path_phantom_ROI)
-        if (my_file.is_file()):
-            phantom_ROI = self.fijii_np(path_phantom_ROI, shape=(self.PETImage_shape),type_im='<f')
-        else:
-            print("No phantom file for this phantom")
-            # Loading Ground Truth image to compute metrics
-            try:
-                image_gt = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
-            except:
-                raise ValueError("Please put the header file from CASToR with name of phantom")
-            phantom_ROI = ones_like(image_gt)
-            #raise ValueError("No phantom file for this phantom")
-            #phantom_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + image + '/' + "background_mask" + image[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
-            
-        return phantom_ROI
-    
-    def fijii_np(self,path,shape,type_im=None):
-        """"Transforming raw data to numpy array"""
-        # if (type_im is None):
-        #     if (self.FLTNB == 'float'):
-        #         type_im = '<f'
-        #     elif (self.FLTNB == 'double'):
-        #         type_im = '<d'
-
-        attempts = 0
-
-        while attempts < 1000:
-            attempts += 1
-            try:
-                type_im = ('<f')*(type_im=='<f') + ('<d')*(type_im=='<d')
-                file_path=(path)
-                dtype_np = dtype(type_im)
-                with open(file_path, 'rb') as fid:
-                    data = fromfile(fid,dtype_np)
-                    if (1 in shape): # 2D
-                        #shape = (shape[0],shape[1])
-                        image = data.reshape(shape)
-                    else: # 3D
-                        image = data.reshape(shape[::-1])
-                attempts = 1000
-                break
-            except:
-                # fid.close()
-                type_im = ('<f')*(type_im=='<d') + ('<d')*(type_im=='<f')
-                file_path=(path)
-                dtype_np = dtype(type_im)
-                with open(file_path, 'rb') as fid:
-                    data = fromfile(fid,dtype_np)
-                    if (1 in shape): # 2D
-                        #shape = (shape[0],shape[1])
-                        try:
-                            image = data.reshape(shape)
-                        except Exception as e:
-                            # print(data.shape)
-                            # print(type_im)
-                            # print(dtype_np)
-                            # print(fid)
-                            # '''
-                            # import numpy as np
-                            # data = fromfile(fid,dtype('<f'))
-                            # np.save('data' + str(self.replicate) + '_' + str(attempts) + '_f.npy', data)
-                            # '''
-                            # print('Failed: '+ str(e) + '_' + str(attempts))
-                            pass
-                    else: # 3D
-                        image = data.reshape(shape[::-1])
-                
-                fid.close()
-            '''
-            image = data.reshape(shape)
-            #image = transpose(image,axes=(1,2,0)) # imshow ok
-            #image = transpose(image,axes=(1,0,2)) # imshow ok
-            #image = transpose(image,axes=(0,1,2)) # imshow ok
-            #image = transpose(image,axes=(0,2,1)) # imshow ok
-            #image = transpose(image,axes=(2,0,1)) # imshow ok
-            #image = transpose(image,axes=(2,1,0)) # imshow ok
-            '''
-            
-        #'''
-        #image = data.reshape(shape)
-        '''
-        try:
-            print(image[0,0])
-        except Exception as e:
-            print('exception image: '+ str(e))
-        '''
-        # print("read from ", path)
-        return image
-
-    def read_input_dim(self,file_path):
-        # Read CASToR header file to retrieve image dimension """
-        try:
-            with open(file_path) as f:
-                for line in f:
-                    if 'matrix size [1]' in line.strip():
-                        dim1 = [int(s) for s in line.split() if s.isdigit()][-1]
-                    if 'matrix size [2]' in line.strip():
-                        dim2 = [int(s) for s in line.split() if s.isdigit()][-1]
-                    if 'matrix size [3]' in line.strip():
-                        dim3 = [int(s) for s in line.split() if s.isdigit()][-1]
-        except:
-            raise ValueError("Please put the header file from CASToR with name of phantom")
-        # Create variables to store dimensions
-        PETImage_shape = (dim1,dim2,dim3)
-        # if (self.scanner == "mMR_3D"):
-        #     PETImage_shape = (int(dim1/2),int(dim2/2),dim3)
-        PETImage_shape_str = str(dim1) + ','+ str(dim2) + ',' + str(dim3)
-        print('image shape :', PETImage_shape)
-        return PETImage_shape_str
-
-    def input_dim_str_to_list(self,PETImage_shape_str):
-        return [int(e.strip()) for e in PETImage_shape_str.split(',')]#[:-1]

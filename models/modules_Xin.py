@@ -131,7 +131,7 @@ class Full_DIP_backbone(pl.LightningModule):
         self.num_total_batch = -1
         self.end_epoch = False
         '''
-        ## Variables for WMV ##
+        ## Variables for MV ##
         self.queueQ = []
         self.VAR_min = inf
         self.SUCCESS = False
@@ -144,7 +144,7 @@ class Full_DIP_backbone(pl.LightningModule):
         
         # Initialize early stopping method if asked for
         if(self.DIP_early_stopping):
-            self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner,simulation)
+            self.initialize_MV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner,simulation)
 
         self.write_current_img_mode = True
         #self.suffix = self.suffix_func(config,hyperparameters_list)
@@ -282,9 +282,9 @@ class Full_DIP_backbone(pl.LightningModule):
             self.out_np_all_inputs[self.num_total_batch,:,:] = out.cpu().detach().numpy()[0,0,:,:]     
 
 
-        # WMV
+        # MV
         if (self.num_total_batch == self.several_DIP_inputs - 1):
-            self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.subroot,self.scanner)
+            self.run_MV(out,self.config)
         
         # Increment number of iterations since beginnning of DNA
         if (self.end_epoch): # We looped over all images of the batch
@@ -357,56 +357,6 @@ class Full_DIP_backbone(pl.LightningModule):
         fp=open(name,'wb')
         img.tofile(fp)
         print('Succesfully save in:', name)
-
-
-    def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner, simulation):
-        self.classWMV = iMovingVariance(config)            
-        self.classWMV.fixed_hyperparameters_list = fixed_hyperparameters_list
-        self.classWMV.hyperparameters_list = hyperparameters_list
-        self.classWMV.debug = debug
-        self.classWMV.param1_scale_im_corrupt = param1_scale_im_corrupt
-        self.classWMV.param2_scale_im_corrupt = param2_scale_im_corrupt
-        self.classWMV.scaling_input = scaling_input
-        self.classWMV.suffix = suffix
-        self.classWMV.global_it = global_it
-        self.classWMV.scanner = scanner
-        self.classWMV.simulation = simulation
-        # Initialize variables
-        self.classWMV.do_everything(config,root)
-
-    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner,simulation):
-        if (self.DIP_early_stopping):
-            self.SUCCESS = self.classWMV.SUCCESS
-            self.log("SUCCESS", int(self.classWMV.SUCCESS))
-
-            try:
-                out_np = out.detach().numpy()[0,0,:,:]
-            except:
-                out_np = out.cpu().detach().numpy()[0,0,:,:]
-
-            if (len(out_np.shape) == 2): # 2D
-                out_np = out_np[:,:,newaxis]
-
-            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(copy(out_np),self.current_epoch,self.sub_iter_DIP,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate)
-            self.VAR_recon = self.classWMV.VAR_recon
-            self.MSE_WMV = self.classWMV.MSE_WMV
-            self.PSNR_WMV = self.classWMV.PSNR_WMV
-            self.SSIM_WMV = self.classWMV.SSIM_WMV
-            self.epochStar = self.classWMV.epochStar
-            '''
-            if self.EMV_or_WMV == "EMV":
-                self.alpha_EMV = self.classWMV.alpha_EMV
-            else:
-                self.windowSize = self.classWMV.windowSize
-            '''
-            self.patienceNumber = self.classWMV.patienceNumber
-
-            if self.SUCCESS:
-                print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
-                self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner,simulation)
-        
-        else:
-            self.log("SUCCESS", int(False))
     
 
 # DIP 输入加噪音

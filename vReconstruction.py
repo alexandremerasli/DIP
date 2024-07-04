@@ -137,8 +137,8 @@ class vReconstruction(vGeneral):
         if (method == 'DNA'):
             if config["recoInDNA"] == "ADMMReg":
                 x = self.ADMMReg_general(config, i, subdir, subroot_output_path,writer,image_gt, i_init)
-            elif config["recoInDNA"] == "APGMAP":
-                print("APGMAP in DNA")
+            elif config["recoInDNA"] == "APPGML":
+                print("APPGML in DNA")
                 # Choose number of argmax iteration for (second) x computation
                 if (mlem_sequence):
                     #it = ' -it 2:56,4:42,6:36,4:28,4:21,2:14,2:7,2:4,2:2,2:1' # large subsets sequence to approximate argmax, too many subsets for 2D, but maybe ok for 3D
@@ -280,7 +280,7 @@ class vReconstruction(vGeneral):
         # Compute x,u,v
         #os.system(x_reconstruction_command_line + ' -oit 90:' + str(int(self.config["nb_outer_iteration"]*3)))
         if ("DNA" in self.method): # we only need output at last iteration
-            if (self.PETImage_shape[2] == 1): # 2D
+            if (self.nb_dimensions == 2): # 2D
                 os.system(x_reconstruction_command_line + ' -oit -1')
             else:
                 os.system(x_reconstruction_command_line)

@@ -45,7 +45,7 @@ for lib_string in config_files:
             if (method == "DIPRecon" or method == "DNA"):
                 task = 'full_reco_with_network'
 
-            elif ('ADMMReg' in method or method == 'MLEM' or method == 'OPTITR' or method == 'OSEM' or method == 'BSREM' or method == 'AML' or method == 'APGMAP'):
+            elif ('ADMMReg' in method or method == 'MLEM' or method == 'OPTITR' or method == 'OSEM' or method == 'BSREM' or method == 'AML' or method == 'APPGML'):
                 task = 'castor_reco'
 
             #task = 'full_reco_with_network' # Run DIPRecon or DNA
@@ -87,8 +87,8 @@ for lib_string in config_files:
             #     classTask = iResultsAlreadyComputed(config)
             elif (task == 'compare_2_methods'): # Show already computed results averaging over replicates
                 config["average_replicates"] = tune.grid_search([True])
-                from iResultsADMMReg_VS_APGMAP import iResultsADMMReg_VS_APGMAP
-                classTask = iResultsADMMReg_VS_APGMAP(config)
+                from iResultsADMMReg_VS_APPGML import iResultsADMMReg_VS_APPGML
+                classTask = iResultsADMMReg_VS_APPGML(config)
 
             # Incompatible parameters (should be written in vGeneral I think)
             if (method == "DNA" and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
@@ -96,7 +96,7 @@ for lib_string in config_files:
             elif ((method != "DIPRecon" and method != "DNA") and task == "post_reco"):
                 raise ValueError("Only DIPRecon or DNA can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
             elif ((method == "DIPRecon" or method == "DNA") and config["all_images_DIP"]["grid_search"][0] != "True" and config["DIP_early_stopping"]["grid_search"][0] == "True"):
-                raise ValueError("Please set all_images_DIP to True to save all images for DNA or DIPRecon reconstruction if using WMV.")
+                raise ValueError("Please set all_images_DIP to True to save all images for DNA or DIPRecon reconstruction if using moving variance algorithms")
             elif ((method == "DIPRecon" or method == "DNA") and config["rho"]["grid_search"][0] == 0 and task != "post_reco"):
                 raise ValueError("Please set rho > 0 for DNA or DIPRecon reconstruction (or set task to post reconstruction).")
             elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["DIP_early_stopping"]["grid_search"][0]):
@@ -139,7 +139,7 @@ for lib_string in config_files:
         #     classTask.runRayTune(config_without_grid_search,root,task)
 
         '''
-        classTask = iResultsADMMReg_VS_APGMAP(config_without_grid_search)
+        classTask = iResultsADMMReg_VS_APPGML(config_without_grid_search)
         config_without_grid_search["ray"] = False
         classTask.runRayTune(config_without_grid_search,root,task)
         '''

@@ -20,11 +20,11 @@ settings_config = {
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
     "method" : tune.grid_search(['DIPRecon_ADMMReg_stand','DIPRecon_ADMMReg_norm','DIPRecon_BSREM_stand','DIPRecon_MLEM_norm',"DNA_ADMMReg_stand","DNA_BSREM_stand"]), # Reconstruction algorithm (DNA, DIPRecon, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     #"method" : tune.grid_search(["DNA_ADMMReg_stand","DNA_BSREM_stand"]), # Reconstruction algorithm (DNA, DIPRecon, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    #"method" : tune.grid_search(["DNA_BSREM_stand",'APGMAP','BSREM','DIPRecon_BSREM_stand','DIPRecon_MLEM_norm','OSEM']), # Reconstruction algorithm (DNA, DIPRecon, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    #"method" : tune.grid_search(["DNA_BSREM_stand",'APPGML','BSREM','DIPRecon_BSREM_stand','DIPRecon_MLEM_norm','OSEM']), # Reconstruction algorithm (DNA, DIPRecon, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     #"method" : tune.grid_search(['DIPRecon',"DNA"]),
     #"method" : tune.grid_search(['DIPRecon_MLEM_norm','DIPRecon_ADMMReg_norm','DIPRecon_ADMMReg_stand','DIPRecon_BSREM_stand',"DNA_BSREM_stand","DNA_ADMMReg_stand"]),
-    "method" : tune.grid_search(["DNA","DIPRecon",'ADMMReg','APGMAP','BSREM','OSEM']), # Reconstruction algorithm (DNA, DIPRecon, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    #"method" : tune.grid_search(['ADMMReg','APGMAP']), # Reconstruction algorithm (DNA, DIPRecon, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    "method" : tune.grid_search(["DNA","DIPRecon",'ADMMReg','APPGML','BSREM','OSEM']), # Reconstruction algorithm (DNA, DIPRecon, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
+    #"method" : tune.grid_search(['ADMMReg','APPGML']), # Reconstruction algorithm (DNA, DIPRecon, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMReg and DNA)
@@ -50,7 +50,7 @@ fixed_config = {
     "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMReg
     "xi_DIP" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in DIPRecon and DNA
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "DIP_early_stopping" : tune.grid_search([False]), # Use DIP early stopping with WMV strategy
+    "DIP_early_stopping" : tune.grid_search([False]), # Use DIP early stopping with moving variance strategy
     "windowSize" : tune.grid_search([50]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "patienceNumber" : tune.grid_search([100]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
 }
@@ -68,8 +68,8 @@ hyperparameters_config = {
     "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
     "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
     "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
-    "input" : tune.grid_search(['random']), # Neural network input (random or CT)
-    #"input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)
+    "input" : tune.grid_search(['random']), # Neural network input (random or anatomical )
+    #"input" : tune.grid_search(["anatomical",'random']), # Neural network input (random or anatomical )
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMReg - OPTITR hyperparameters
@@ -86,7 +86,7 @@ hyperparameters_config = {
     ## hyperparameters from CASToR algorithms 
     # Optimization transfer (OPTITR) hyperparameters
     "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False
-    # AML/APGMAP hyperparameters
+    # AML/APPGML hyperparameters
     "A_AML" : tune.grid_search([-100,-500,-10000]), # AML lower bound A
     "A_AML" : tune.grid_search([-10,-100]), # AML lower bound A
     # Post smoothing by CASToR after reconstruction
@@ -120,7 +120,7 @@ from iResults import iResults
 from iMeritsADMMReg import iMeritsADMMReg
 from iMeritsDIP_ADMM import iMeritsDIP_ADMM
 from iResultsAlreadyComputed import iResultsAlreadyComputed
-from iResultsADMMReg_VS_APGMAP import iResultsADMMReg_VS_APGMAP
+from iResultsADMMReg_VS_APPGML import iResultsADMMReg_VS_APPGML
 from iFinalCurves import iFinalCurves
 
 for method in config["method"]['grid_search']:
@@ -140,7 +140,7 @@ for method in config["method"]['grid_search']:
         if (method == "DIPRecon" or method == "DNA"):
             task = 'full_reco_with_network'
 
-        elif ('ADMMReg' in method or method == 'MLEM' or method == 'OPTITR' or method == 'OSEM' or method == 'BSREM' or method == 'AML' or method == 'APGMAP'):
+        elif ('ADMMReg' in method or method == 'MLEM' or method == 'OPTITR' or method == 'OSEM' or method == 'BSREM' or method == 'AML' or method == 'APPGML'):
             task = 'castor_reco'
 
     if task != "show_metrics_results_already_computed":
@@ -181,10 +181,10 @@ for method in config["method"]['grid_search']:
             #config = config_func()
             config = config_func_MIC()
 
-        # APGMAP reconstruction
-        if ('APGMAP' in method and len(config["method"]["grid_search"]) == 1):
+        # APPGML reconstruction
+        if ('APPGML' in method and len(config["method"]["grid_search"]) == 1):
             print("configuration fiiiiiiiiiiiiiiiiiiile")
-            from APGMAP_configuration import config_func_MIC
+            from APPGML_configuration import config_func_MIC
             #config = config_func()
             config = config_func_MIC()
 
@@ -220,7 +220,7 @@ for method in config["method"]['grid_search']:
         classTask = iResultsAlreadyComputed(config)
     elif (task == 'compare_2_methods'): # Show already computed results averaging over replicates
         config["average_replicates"] = tune.grid_search([True])
-        classTask = iResultsADMMReg_VS_APGMAP(config)
+        classTask = iResultsADMMReg_VS_APPGML(config)
 
     # Incompatible parameters (should be written in vGeneral I think)
     if (method == "DNA" and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
@@ -228,7 +228,7 @@ for method in config["method"]['grid_search']:
     elif ((method != "DIPRecon" and method != "DNA") and task == "post_reco"):
         raise ValueError("Only DIPRecon or DNA can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
     elif ((method == "DIPRecon" or method == "DNA") and config["all_images_DIP"]["grid_search"][0] != "True" and config["DIP_early_stopping"]["grid_search"][0] == "True"):
-        raise ValueError("Please set all_images_DIP to True to save all images for DNA or DIPRecon reconstruction if using WMV.")
+        raise ValueError("Please set all_images_DIP to True to save all images for DNA or DIPRecon reconstruction if using moving variance algorithms")
     elif ((method == "DIPRecon" or method == "DNA") and config["rho"]["grid_search"][0] == 0 and task != "post_reco"):
         raise ValueError("Please set rho > 0 for DNA or DIPRecon reconstruction (or set task to post reconstruction).")
     elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["DIP_early_stopping"]["grid_search"][0]):
@@ -271,7 +271,7 @@ if (task == 'show_metrics_results_already_computed'):
     classTask.runRayTune(config_without_grid_search,root,task)
 
 '''
-classTask = iResultsADMMReg_VS_APGMAP(config_without_grid_search)
+classTask = iResultsADMMReg_VS_APPGML(config_without_grid_search)
 config_without_grid_search["ray"] = False
 classTask.runRayTune(config_without_grid_search,root,task)
 '''

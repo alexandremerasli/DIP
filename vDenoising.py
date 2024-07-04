@@ -58,14 +58,14 @@ class vDenoising(vGeneral):
             self.input = config["input"]
             self.scaling_input = config["scaling"]
             # Loading DIP input
-            # Creating random image input for DIP while we do not have CT, but need to be removed after
-            self.create_input(self.net,self.PETImage_shape,config,self.subroot) # to be removed when CT will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
-            # Loading DIP input (we do not have CT-map, so random image created in block 1)
+            # Creating random image input for DIP while we do not have anatomical image, but need to be removed after
+            self.create_input(self.net,self.PETImage_shape,config,self.subroot) # to be removed when anatomical image will be used instead of random input. DO NOT PUT IT IN BLOCK 2 !!!
+            # Loading DIP input
             self.image_net_input = self.load_input(self.net,self.PETImage_shape,self.subroot) # Scaling of network input. DO NOT CREATE RANDOM INPUT IN BLOCK 2 !!! ONLY AT THE BEGINNING, IN BLOCK 1    
             # Rescale network input
             self.image_net_input_scale = self.rescale_imag(self.image_net_input,self.scaling_input)[0]
             # Diffusion model like : add random noise to anatomical input or use several inputs for the same training
-            # if (self.input == "CT"):
+            # if (self.input == "anatomical"):
             # Generate random input
             # gaussian_distribution = normal(0, (self.global_it+1) * self.diffusion_model_like,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).reshape(self.PETImage_shape) # reshaping (for DIP)
             # self.image_net_input_scale += gaussian_distribution
@@ -98,7 +98,7 @@ class vDenoising(vGeneral):
             self.image_net_input_torch = Tensor(self.image_net_input_scale)
             # Adding dimensions to fit network architecture
             if (self.net == 'DIP' or self.net == 'DIP_VAE' or self.net == 'DD_AE' or self.net == "DIP_Xin" or self.net == "Swin_Unetr"): # For autoencoders structure
-                if (self.PETImage_shape[2] == 1): # if 3D but with dim3 = 1 -> 2D
+                if (self.nb_dimensions == 2): # if 3D but with dim3 = 1 -> 2D
                     self.image_net_input_torch = self.image_net_input_torch.view(self.several_DIP_inputs,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
                     self.image_net_input_torch = self.image_net_input_torch[:,:,:,:,0]
                 else: #3D
@@ -255,7 +255,7 @@ class vDenoising(vGeneral):
         return concatenated_callbacks
 
 
-    def create_input(self,net,PETImage_shape,config,subroot): #CT map for high-count data, but not CT yet...
+    def create_input(self,net,PETImage_shape,config,subroot):
         
         # Write image if it does not exist
         if config["input"] == "random":
@@ -264,7 +264,7 @@ class vDenoising(vGeneral):
                 Path(subroot+'Data/initialization/' + 'random/replicate_' + str(self.replicate) + '/').mkdir(parents=True, exist_ok=True)
         elif config["input"] == "uniform":
             name = 'uniform_input'
-        else: # CT input, do not need to create one
+        else: # anatomical input, do not need to create one
             return 1
         
         if (PETImage_shape[2] == 1):
@@ -285,7 +285,7 @@ class vDenoising(vGeneral):
                 elif config["input"] == "uniform":
                     im_input = constant_uniform*ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type_im) # initializing input image with random image (for DIP)
                 else:
-                    return "CT input, do not need to create input"
+                    return "anatomical  input, do not need to create input"
                 im_input = im_input.reshape(PETImage_shape) # reshaping (for DIP)
             else:
                 if (net == 'DD'):
@@ -295,7 +295,7 @@ class vDenoising(vGeneral):
                     elif config["input"] == "uniform":
                         im_input = constant_uniform*ones((config["k_DD"],input_size_DD,input_size_DD)).astype(type_im) # initializing input image with random image (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
                     else:
-                        return "CT input, do not need to create input"
+                        return "anatomical  input, do not need to create input"
                     im_input = im_input.reshape(config["k_DD"],input_size_DD,input_size_DD) # reshaping (for Deep Decoder) # if original Deep Decoder (i.e. only with decoder part)
                     
                 elif (net == 'DD_AE'):
@@ -304,17 +304,17 @@ class vDenoising(vGeneral):
                     elif config["input"] == "uniform":
                         im_input = constant_uniform*ones((PETImage_shape[0]*PETImage_shape[1]*PETImage_shape[2])).astype(type_im) # initializing input image with random image (for Deep Decoder) # if auto encoder based on Deep Decoder
                     else:
-                        return "CT input, do not need to create input"
+                        return "anatomical  input, do not need to create input"
                     im_input = im_input.reshape(PETImage_shape[0],PETImage_shape[1],PETImage_shape[2]) # reshaping (for Deep Decoder) # if auto encoder based on Deep Decoder
 
             self.save_img(im_input,file_path)
 
     def load_input(self,net,PETImage_shape,subroot):
         if (self.override_input): # TESTCT_random
-            self.input = "CT"
+            self.input = "anatomical"
             #self.input = "random"
 
-        if (self.PETImage_shape[2] == 1):
+        if (self.nb_dimensions == 2):
             im_2D_or_3D = '2D'
         else:
             im_2D_or_3D = '3D'
@@ -323,12 +323,12 @@ class vDenoising(vGeneral):
                 file_path = (subroot+'Data/initialization/random/replicate_' + str(self.replicate) + '/random_input_' + im_2D_or_3D + '_' + net + '_' + str(self.PETImage_shape[0]) + '.img')
             else:
                 file_path = (subroot+'Data/initialization/random_input_3D_' + net + '_' + str(self.PETImage_shape[0]) + '.img')
-        elif self.input == "CT":
+        elif self.input == "anatomical":
             if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom or self.phantom == "image10_1000"):
                 if (os.path.isfile(subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw')): # If MR exists
                     file_path = subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw'
             else:
-                file_path = (subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw') #CT map, but not CT yet, attenuation for now...
+                file_path = (subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw') # attenuation map
         elif self.input == "BSREM":
             file_path = (subroot+'Data/initialization/BSREM_it30_REF_cropped.img') #
         elif self.input == "uniform":
@@ -341,13 +341,13 @@ class vDenoising(vGeneral):
         #elif (net == 'DD_AE'):   
         #    PETImage_shape = (PETImage_shape[0],PETImage_shape[1],PETImage_shape[2]) # if auto encoder based on Deep Decoder
 
-        if (self.input == 'CT' and self.net != 'DD'):
+        if (self.input == "anatomical" and self.net != 'DD'):
             type_im = '<f'
         else:
             type_im = '<f'
             # type_im = '<d' # random images were generated in double
 
-        im_input = self.fijii_np(file_path, shape=(PETImage_shape),type_im=type_im) # Load input of the DNN (CT image)
+        im_input = self.fijii_np(file_path, shape=(PETImage_shape),type_im=type_im) # Load input of the DNN
 
         return im_input
 
@@ -405,7 +405,7 @@ class vDenoising(vGeneral):
         # Corrupted image x_label, numpy --> torch float32
         self.image_corrupt_torch = Tensor(self.several_DIP_inputs*[image_corrupt_input_scale])
         # Adding dimensions to fit network architecture
-        if (self.PETImage_shape[2] == 1): # if 3D but with dim3 = 1 -> 2D
+        if (self.nb_dimensions == 2): # if 3D but with dim3 = 1 -> 2D
             self.image_corrupt_torch = self.image_corrupt_torch.view(self.several_DIP_inputs,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
             self.image_corrupt_torch = self.image_corrupt_torch[:,:,:,:,0]
         else: #3D
@@ -426,9 +426,9 @@ class vDenoising(vGeneral):
             self.epochStar = model.epochStar
             self.patienceNumber = model.patienceNumber
             self.VAR_recon = model.VAR_recon
-            self.MSE_WMV = model.MSE_WMV
-            self.PSNR_WMV = model.PSNR_WMV
-            self.SSIM_WMV = model.SSIM_WMV
+            self.MSE_MV = model.MSE_MV
+            self.PSNR_MV = model.PSNR_MV
+            self.SSIM_MV = model.SSIM_MV
             self.SUCCESS = model.SUCCESS
             if (self.SUCCESS and self.epochStar!= self.sub_iter_DIP - self.patienceNumber): # ES point is reached 
                 self.sub_iter_DIP = self.epochStar + self.patienceNumber + 1

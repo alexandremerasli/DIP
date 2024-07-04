@@ -265,6 +265,7 @@ class vGeneral(abc.ABC):
         # Define PET input dimensions according to input data dimensions
         self.PETImage_shape_str = self.read_input_dim(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
         self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
+        self.nb_dimensions = len(self.PETImage_shape)
 
         # # Loading Ground Truth image to compute metrics
         # self.image_gt = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')            
@@ -349,7 +350,7 @@ class vGeneral(abc.ABC):
         #if (task == "compare_2_methods"):
         #    config["replicates"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
 
-        # By default use ADMMReg in DNA, not APGMAP
+        # By default use ADMMReg in DNA, not APPGML
         if "recoInDNA" not in config:
             config["recoInDNA"] = tune.grid_search(["ADMMReg"])
 
@@ -375,11 +376,11 @@ class vGeneral(abc.ABC):
 
         # Delete hyperparameters specific to others optimizer 
         if (len(config["method"]['grid_search']) == 1):
-            if (method != "AML" and "APGMAP" not in method and "APGMAP" not in config["recoInDNA"]['grid_search'][0]):
+            if (method != "AML" and "APPGML" not in method and "APPGML" not in config["recoInDNA"]['grid_search'][0]):
                 config.pop("A_AML", None)
-            if ('BSREM' in method or 'DNA' in method or "DIPRecon" in method or 'APGMAP' in method):
+            if ('BSREM' in method or 'DNA' in method or "DIPRecon" in method or 'APPGML' in method):
                 config.pop("post_smoothing", None)
-            if ((('ADMMReg' not in method and 'DNA' not in method) and method != 'ADMMReg_Bowsher' and "DNA" not in method) or "APGMAP" in config["recoInDNA"]['grid_search'][0]):
+            if ((('ADMMReg' not in method and 'DNA' not in method) and method != 'ADMMReg_Bowsher' and "DNA" not in method) or "APPGML" in config["recoInDNA"]['grid_search'][0]):
                 #config.pop("nb_inner_iteration", None)
                 config.pop("alpha", None)
                 config.pop("adaptive_parameters", None)
@@ -578,79 +579,6 @@ class vGeneral(abc.ABC):
 
     def input_dim_str_to_list(self,PETImage_shape_str):
         return [int(e.strip()) for e in PETImage_shape_str.split(',')]#[:-1]
-
-    def fijii_np_old(self,path,shape,type_im=None):
-        """"Transforming raw data to numpy array"""
-        if (type_im is None):
-            if (self.FLTNB == 'float'):
-                type_im = '<f'
-            elif (self.FLTNB == 'double'):
-                type_im = '<d'
-
-        attempts = 0
-
-        while attempts < 1000:
-            attempts += 1
-            try:
-                # type_im = ('<f')*(type_im=='<f') + ('<d')*(type_im=='<d')
-                file_path=(path)
-                dtype_np = dtype(type_im)
-                with open(file_path, 'rb') as fid:
-                    data = fromfile(fid,dtype_np)
-                    if (1 in shape): # 2D
-                        #shape = (shape[0],shape[1])
-                        image = data.reshape(shape)
-                    else: # 3D
-                        image = data.reshape(shape[::-1])
-                attempts = 1000
-                break
-            except:
-                # fid.close()
-                # type_im = ('<f')*(type_im=='<d') + ('<d')*(type_im=='<f')
-                file_path=(path)
-                dtype_np = dtype(type_im)
-                with open(file_path, 'rb') as fid:
-                    data = fromfile(fid,dtype_np)
-                    if (1 in shape): # 2D
-                        #shape = (shape[0],shape[1])
-                        try:
-                            image = data.reshape(shape)
-                        except Exception as e:
-                            # print(data.shape)
-                            # print(type_im)
-                            # print(dtype_np)
-                            # print(fid)
-                            # '''
-                            # import numpy as np
-                            # data = fromfile(fid,dtype('<f'))
-                            # np.save('data' + str(self.replicate) + '_' + str(attempts) + '_f.npy', data)
-                            # '''
-                            # print('Failed: '+ str(e) + '_' + str(attempts))
-                            pass
-                    else: # 3D
-                        image = data.reshape(shape[::-1])
-                
-                fid.close()
-            '''
-            image = data.reshape(shape)
-            #image = transpose(image,axes=(1,2,0)) # imshow ok
-            #image = transpose(image,axes=(1,0,2)) # imshow ok
-            #image = transpose(image,axes=(0,1,2)) # imshow ok
-            #image = transpose(image,axes=(0,2,1)) # imshow ok
-            #image = transpose(image,axes=(2,0,1)) # imshow ok
-            #image = transpose(image,axes=(2,1,0)) # imshow ok
-            '''
-            
-        #'''
-        #image = data.reshape(shape)
-        '''
-        try:
-            print(image[0,0])
-        except Exception as e:
-            print('exception image: '+ str(e))
-        '''
-        # print("read from ", path)
-        return image
     
     def fijii_np(self,path,shape,type_im='<f'):
         """"Transforming raw data to numpy array"""
@@ -659,13 +587,16 @@ class vGeneral(abc.ABC):
                 type_im = '<f'
             elif (self.FLTNB == 'double'):
                 type_im = '<d'
-
+                    
         file_path=(path)
+        nb_dimensions = len(shape)
         dtype_np = dtype(type_im)
         with open(file_path, 'rb') as fid:
             data = fromfile(fid,dtype_np)
-            image = data.reshape(shape)
-                        
+            if (nb_dimensions == 2): # 2D
+                image = data.reshape(shape)
+            else: # 3D
+                image = data.reshape(shape[::-1])
         return image
 
     def norm_imag(self,img):
@@ -1273,7 +1204,7 @@ class vGeneral(abc.ABC):
             else:
                 vox = ' -vox 2.08626,2.08626,2.03125'
             # Set PSF from scanner usual settings
-            if ("1" in PETImage_shape_str.split(',')): # 2D
+            if (self.nb_dimensions == 2): # 2D
                 psf = ' -conv gaussian,4,1,3.5::psf'
             else: # 3D
                 if (self.scanner == "mMR_3D"):
@@ -1287,7 +1218,7 @@ class vGeneral(abc.ABC):
 
 
         if (post_smoothing != 0):
-            if ("1" in PETImage_shape_str.split(',')): # 2D
+            if (self.nb_dimensions == 2): # 2D
                 conv = ' -conv gaussian,' + str(post_smoothing) + ',1,3.5::post'
             else: # 3D
                 conv = ' -conv gaussian,' + str(post_smoothing) + ',' + str(post_smoothing) + ',3.5::post' # isotropic post smoothing
@@ -1318,7 +1249,7 @@ class vGeneral(abc.ABC):
             opti = ' -opti ' + method + ',1,1e-10,' + str(self.A_AML)
             pnlt = ''
             penaltyStrength = ''
-        elif (method == 'APGMAP'):
+        elif (method == 'APPGML'):
             #opti = ' -opti ' + "APPGML" + ',1,1e-10,0.01,-1,' + str(self.A_AML) + ',0' # Multimodal image is only used by APPGML
             opti = ' -opti ' + "APPGML" + ':' + self.subroot_phantom + '/' + self.suffix  + '/' + 'APPGML.conf'
             # Choose penalty config file according to Bowsher weights or not
@@ -1383,7 +1314,7 @@ class vGeneral(abc.ABC):
                         pnlt += ':' + self.subroot + method + '_MRF.conf'
 
                 penaltyStrength = ' -pnlt-beta ' + str(rho)
-            elif (self.recoInDNA == "APGMAP"):
+            elif (self.recoInDNA == "APPGML"):
                 if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
                     rho = 0
                     #self.rho = 0
@@ -1454,11 +1385,11 @@ class vGeneral(abc.ABC):
 
     def natural_keys(self,text):
         # print(split(r'(\d+)', text))
-        return [ self.atoi(c) for c in split(r'(\d+)', text) ] # APGMAP final curves + resume computation
+        return [ self.atoi(c) for c in split(r'(\d+)', text) ] # APPGML final curves + resume computation
         #return [ self.atoi(c) for c in split(r'(\+|-)\d+(\.\d+)?', text) ] # ADMMReg final curves
     
     def natural_keys_ADMMReg(self,text): # Sort by scientific or float numbers
-        #return [ self.atoi(c) for c in split(r'(\d+)', text) ] # APGMAP final curves + resume computation
+        #return [ self.atoi(c) for c in split(r'(\d+)', text) ] # APPGML final curves + resume computation
         match_number = compile('-?\ *[0-9]+\.?[0-9]*(?:[Ee]\ *-?\ *[0-9]+)?')
         final_list = [float(x) for x in findall(match_number, text)] # Extract scientific of float numbers in string
         return final_list # ADMMReg final curves
@@ -1533,7 +1464,7 @@ class vGeneral(abc.ABC):
 
             if (self.method == 'AML'):
                 self.beta = config["A_AML"]
-            if (self.method == 'BSREM' or "DNA" in self.method or "DIPRecon" in self.method or 'APGMAP' in self.method):
+            if (self.method == 'BSREM' or "DNA" in self.method or "DIPRecon" in self.method or 'APPGML' in self.method):
                 self.rho = config["rho"]
                 self.beta = self.rho
 

@@ -20,7 +20,7 @@ from scipy.ndimage import map_coordinates
 #from vGeneral import vGeneral
 from vDenoising import vDenoising
 
-class iResultsADMMReg_VS_APGMAP(vDenoising):
+class iResultsADMMReg_VS_APPGML(vDenoising):
     def __init__(self,config, *args, **kwargs):
         print("__init__")
 
@@ -221,7 +221,7 @@ class iResultsADMMReg_VS_APGMAP(vDenoising):
                         f_init_p = self.fijii_np(local_dir+'/'+self.get_first_filename(local_dir),shape=(self.PETImage_shape),type_im='<f') # loading DIP output
                     if config["FLTNB"] == "double":
                         self.f_p.astype(np.float64)
-                elif ('ADMMReg' in self.method or self.method == 'MLEM' or self.method == 'OPTITR' or self.method == 'OSEM' or self.method == 'BSREM' or self.method == 'AML' or self.method == 'APGMAP'):
+                elif ('ADMMReg' in self.method or self.method == 'MLEM' or self.method == 'OPTITR' or self.method == 'OSEM' or self.method == 'BSREM' or self.method == 'AML' or self.method == 'APPGML'):
                     pet_algo=config["method"]
                     iteration_name = "iterations"
                     if (hasattr(self,'beta')):
@@ -608,7 +608,7 @@ class iResultsADMMReg_VS_APGMAP(vDenoising):
     def compareImages(self,suffix):
         if (self.tensorboard):
             self.write_image_tensorboard(self.writer,self.image_method,self.method + " at convergence",suffix,self.image_gt,0,full_contrast=True) # ADMMReg at convergence in tensorboard
-            #self.write_image_tensorboard(self.writer,self.image_APGMAP,"APGMAP at convergence",suffix,self.image_gt,0,full_contrast=True) # APGMAP at convergence in tensorboard
+            #self.write_image_tensorboard(self.writer,self.image_APPGML,"APPGML at convergence",suffix,self.image_gt,0,full_contrast=True) # APPGML at convergence in tensorboard
        
     def read_image_method(self,config,beta_string,i_init,p,i):
         self.subroot_p = self.subroot + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
@@ -635,7 +635,7 @@ class iResultsADMMReg_VS_APGMAP(vDenoising):
                 f_init_p = self.fijii_np(self.subroot_p+'Block1/' + self.suffix + '/before_eq22/' + '0_f_mu.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
             if config["FLTNB"] == "double":
                 self.f_p.astype(np.float64)
-        elif ('ADMMReg' in self.method or self.method == 'MLEM' or self.method == 'OPTITR' or self.method == 'OSEM' or self.method == 'BSREM' or self.method == 'AML' or self.method == 'APGMAP'):
+        elif ('ADMMReg' in self.method or self.method == 'MLEM' or self.method == 'OPTITR' or self.method == 'OSEM' or self.method == 'BSREM' or self.method == 'AML' or self.method == 'APPGML'):
             pet_algo=config["method"]
             iteration_name = "iterations"
             if (hasattr(self,'beta')):

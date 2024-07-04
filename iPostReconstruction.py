@@ -35,15 +35,6 @@ class iPostReconstruction(vDenoising):
         self.checkpoint_simple_path = 'runs/' # To log loss in tensorboard thanks to Logger
         self.name_run = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self.total_nb_iter = config["sub_iter_DIP"]
-
-        '''
-        ## Variables for WMV ##
-        self.epochStar = -1
-        self.windowSize = config["windowSize"]
-        self.patienceNumber = config["patienceNumber"]
-        self.SUCCESS = False
-        self.VAR_recon = []
-        '''
         
     def runComputation(self,config,root):
         # Initializing results class
@@ -84,7 +75,7 @@ class iPostReconstruction(vDenoising):
         # Corrupted image x_label, numpy --> torch float32
         self.image_corrupt_torch = torch.Tensor(self.several_DIP_inputs*[image_corrupt_input_scale])
         # Adding dimensions to fit network architecture
-        if (self.PETImage_shape[2] == 1): # if 3D but with dim3 = 1 -> 2D
+        if (self.nb_dimensions == 2): # if 3D but with dim3 = 1 -> 2D
             self.image_corrupt_torch = self.image_corrupt_torch.view(self.several_DIP_inputs,1,self.PETImage_shape[0],self.PETImage_shape[1],self.PETImage_shape[2])
             self.image_corrupt_torch = self.image_corrupt_torch[:,:,:,:,0]
         else: #3D
@@ -98,17 +89,17 @@ class iPostReconstruction(vDenoising):
         # Train model using previously trained network (at iteration before)
         model = self.train_process(self.param1_scale_im_corrupt, self.param2_scale_im_corrupt, self.scaling_input, self.suffix,config, self.finetuning, self.processing_unit, self.total_nb_iter, self.method, self.global_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot_phantom, all_images_DIP = self.all_images_DIP)
 
-        ## Variables for WMV ##
+        ## Variables for MV ##
         if (model.DIP_early_stopping):
-            self.epochStar = model.classWMV.epochStar
+            self.epochStar = model.classMV.epochStar
             # if (config["EMV_or_WMV"] == "WMV"):
             #     classResults.windowSize = self.windowSize
-            self.patienceNumber = model.classWMV.patienceNumber
-            self.VAR_recon = model.classWMV.VAR_recon
-            self.MSE_WMV = model.classWMV.MSE_WMV
-            self.PSNR_WMV = model.classWMV.PSNR_WMV
-            self.SSIM_WMV = model.classWMV.SSIM_WMV
-            self.SUCCESS = model.classWMV.SUCCESS
+            self.patienceNumber = model.classMV.patienceNumber
+            self.VAR_recon = model.classMV.VAR_recon
+            self.MSE_MV = model.classMV.MSE_MV
+            self.PSNR_MV = model.classMV.PSNR_MV
+            self.SSIM_MV = model.classMV.SSIM_MV
+            self.SUCCESS = model.classMV.SUCCESS
             if (self.SUCCESS): # ES point is reached
                 self.total_nb_iter = self.epochStar + self.patienceNumber + 1
                 self.total_nb_iter = self.epochStar + 1
@@ -137,7 +128,7 @@ class iPostReconstruction(vDenoising):
                 self.total_nb_iter = model.epochStar + self.patienceNumber
 
         # Initialize WMV class
-        model.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.sub_iter_DIP,self.root, self.subroot,self.scanner, self.simulation)
+        model.initialize_MV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.sub_iter_DIP,self.root, self.subroot,self.scanner, self.simulation)
 
         # Iterations to be descaled
         if (self.all_images_DIP == "True"):
@@ -160,26 +151,26 @@ class iPostReconstruction(vDenoising):
 
 
 
-            # WMV
-            # self.log("SUCCESS", int(model.classWMV.SUCCESS))
+            # MV
+            # self.log("SUCCESS", int(model.classMV.SUCCESS))
             if (model.DIP_early_stopping):
-                model.classWMV.SUCCESS,model.classWMV.VAR_min,model.classWMV.stagnate = model.classWMV.WMV(np.copy(out),epoch,model.sub_iter_DIP,model.classWMV.queueQ,model.classWMV.SUCCESS,model.classWMV.VAR_min,model.classWMV.stagnate)
-                self.VAR_recon = model.classWMV.VAR_recon
-                self.MSE_WMV = model.classWMV.MSE_WMV
-                self.PSNR_WMV = model.classWMV.PSNR_WMV
-                self.SSIM_WMV = model.classWMV.SSIM_WMV
-                self.epochStar = model.classWMV.epochStar
+                model.classMV.SUCCESS,model.classMV.VAR_min,model.classMV.stagnate = model.classMV.compute_MV_value(np.copy(out),epoch,model.sub_iter_DIP,model.classMV.queueQ,model.classMV.SUCCESS,model.classMV.VAR_min,model.classMV.stagnate)
+                self.VAR_recon = model.classMV.VAR_recon
+                self.MSE_MV = model.classMV.MSE_MV
+                self.PSNR_MV = model.classMV.PSNR_MV
+                self.SSIM_MV = model.classMV.SSIM_MV
+                self.epochStar = model.classMV.epochStar
                 '''
                 if self.EMV_or_WMV == "EMV":
-                    self.alpha_EMV = model.classWMV.alpha_EMV
+                    self.alpha_EMV = model.classMV.alpha_EMV
                 else:
-                    self.windowSize = model.classWMV.windowSize
+                    self.windowSize = model.classMV.windowSize
                 '''
-                self.patienceNumber = model.classWMV.patienceNumber
-                self.SUCCESS = model.classWMV.SUCCESS
+                self.patienceNumber = model.classMV.patienceNumber
+                self.SUCCESS = model.classMV.SUCCESS
                 print(self.VAR_recon)
                 if self.SUCCESS:
-                    print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
+                    print("SUCCESS MVVVVVVVVVVVVVVVVVV")
 
             out_descale = out
 
@@ -211,18 +202,18 @@ class iPostReconstruction(vDenoising):
             #classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
 
             if (self.DIP_early_stopping):
-                if (model.classWMV.SUCCESS):
+                if (model.classMV.SUCCESS):
                     break
 
         if (model.DIP_early_stopping):
             classResults.epochStar = self.epochStar
             classResults.VAR_recon = self.VAR_recon
-            classResults.MSE_WMV = self.MSE_WMV
-            classResults.PSNR_WMV = self.PSNR_WMV
-            classResults.SSIM_WMV = self.SSIM_WMV
+            classResults.MSE_MV = self.MSE_MV
+            classResults.PSNR_MV = self.PSNR_MV
+            classResults.SSIM_MV = self.SSIM_MV
             # if (config["EMV_or_WMV"] == "WMV"):
             #     classResults.windowSize = self.windowSize
             classResults.patienceNumber = self.patienceNumber
             classResults.SUCCESS = self.SUCCESS
             # if (config["EMV_or_WMV"] == "WMV"):
-            #     classResults.WMV_plot(config)
+            #     classResults.MV_plot(config)
