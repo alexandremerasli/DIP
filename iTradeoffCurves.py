@@ -85,8 +85,8 @@ class iTradeoffCurves(vGeneral):
             config_tmp[method] = dict(config[method])
             config_tmp[method]["method"] = tune.grid_search([method]) # Put only 1 method to remove useless hyperparameters from settings_config and hyperparameters_config
             config_tmp[method]["ray"] = True # Activate ray
-            os.system("rm -rf " + root + subroot + 'suffixes_for_last_run_' + method + '.txt')
-            os.system("rm -rf " + root + subroot + 'replicates_for_last_run_' + method + '.txt')
+            os.system("rm -rf " + root + self.subroot + 'suffixes_for_last_run_' + method + '.txt')
+            os.system("rm -rf " + root + self.subroot + 'replicates_for_last_run_' + method + '.txt')
             classTask = iResultsAlreadyComputed(config[method])
             task = 'show_metrics_results_already_computed'
             classTask.runRayTune(config_tmp[method],root,task,only_suffix_replicate_file=True) # Only to write suffix and replicate files
@@ -529,19 +529,17 @@ class iTradeoffCurves(vGeneral):
                         for other_dim_idx in range(nb_other_dim[method]):
                             self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APPGML_vs_ADMMReg,rename_settings)
                     if (method == method_list[-1]):
-                        legend_this_ROI = False
-                        if (quantitative_tradeoff): # AR
-                            if (len(ROI_list) > 2):
-                                if (ROI == ROI_list[1] or ROI == ROI_list[-1] or rename_settings == "MIC"): # if legend is needed only in one ROI
-                                    legend_this_ROI = True
-                            else:
-                                legend_this_ROI = True
-                            if (legend_this_ROI):
-                                ax[fig_nb].legend(replicates_legend[fig_nb], prop={'size': 12})
-                        else: # SSIM
-                            # ax[fig_nb].legend(replicates_legend[fig_nb])#, prop={'size': 15})
-                            print("SSIM")
-
+                        # legend_this_ROI = False
+                        # if (quantitative_tradeoff): # AR
+                        #     if (len(ROI_list) > 2):
+                        #         if (ROI == ROI_list[1] or ROI == ROI_list[-1] or rename_settings == "MIC"): # if legend is needed only in one ROI
+                        #             legend_this_ROI = True
+                        #     else:
+                        #         legend_this_ROI = True
+                        legend_this_ROI = True
+                        if (legend_this_ROI):
+                            ax[fig_nb].legend(replicates_legend[fig_nb], prop={'size': 12})
+                        
             # Saving figures locally in png
             for fig_nb in range(3):
                 if len(method_list) == 1:
