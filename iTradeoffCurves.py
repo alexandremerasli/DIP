@@ -15,7 +15,7 @@ import importlib
 from vGeneral import vGeneral
 from iResultsAlreadyComputed import iResultsAlreadyComputed
 
-class iFinalCurves(vGeneral):
+class iTradeoffCurves(vGeneral):
     def __init__(self,config, *args, **kwargs):
         print("__init__")
 

@@ -276,8 +276,8 @@ if (task != "post_reco"):
                     if key != 'A_AML' and key != 'post_smoothing' and key != 'lr':
                         config_without_grid_search[key] = config_without_grid_search[key][0]
 
-    from iFinalCurves import iFinalCurves
-    classTask = iFinalCurves(config_without_grid_search)
+    from iTradeoffCurves import iTradeoffCurves
+    classTask = iTradeoffCurves(config_without_grid_search)
     config_without_grid_search["ray"] = False
     classTask.config_with_grid_search = config
     classTask.runRayTune(config_without_grid_search,root,task)

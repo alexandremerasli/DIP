@@ -115,7 +115,7 @@ from iMeritsADMMReg import iMeritsADMMReg
 from iMeritsDIP_ADMM import iMeritsDIP_ADMM
 from iResultsAlreadyComputed import iResultsAlreadyComputed
 from iResultsADMMReg_VS_APPGML import iResultsADMMReg_VS_APPGML
-from iFinalCurves import iFinalCurves
+from iTradeoffCurves import iTradeoffCurves
 
 for method in config["method"]['grid_search']:
 
@@ -270,7 +270,7 @@ if (task != "post_reco"):
                     if key != 'A_AML' and key != 'post_smoothing' and key != 'lr':
                         config_without_grid_search[key] = config_without_grid_search[key][0]
 
-    classTask = iFinalCurves(config_without_grid_search)
+    classTask = iTradeoffCurves(config_without_grid_search)
     config_without_grid_search["ray"] = False
     classTask.config_with_grid_search = config
     classTask.runRayTune(config_without_grid_search,root,task)
