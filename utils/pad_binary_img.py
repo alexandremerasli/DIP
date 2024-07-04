@@ -1,73 +1,17 @@
 import numpy as np
 from pathlib import Path
 
-def fijii_np(path,shape,type_im=None):
-    """"Transforming raw data to numpy array"""
-
-
-    attempts = 0
-
-    while attempts < 1000:
-        attempts += 1
-        try:
-            type_im = ('<f')*(type_im=='<f') + ('<d')*(type_im=='<d')
-            file_path=(path)
-            dtype_np = np.dtype(type_im)
-            with open(file_path, 'rb') as fid:
-                data = np.fromfile(fid,dtype_np)
-                if (1 in shape): # 2D
-                    #shape = (shape[0],shape[1])
-                    image = data.reshape(shape)
-                else: # 3D
-                    image = data.reshape(shape[::-1])
-            attempts = 1000
-            break
-        except:
-            # fid.close()
-            type_im = ('<f')*(type_im=='<d') + ('<d')*(type_im=='<f')
-            file_path=(path)
-            dtype_np = np.dtype(type_im)
-            with open(file_path, 'rb') as fid:
-                data = np.fromfile(fid,dtype_np)
-                if (1 in shape): # 2D
-                    #shape = (shape[0],shape[1])
-                    try:
-                        image = data.reshape(shape)
-                    except Exception as e:
-                        # print(data.shape)
-                        # print(type_im)
-                        # print(dtype_np)
-                        # print(fid)
-                        # '''
-                        # import numpy as np
-                        # data = fromfile(fid,dtype('<f'))
-                        # np.save('data' + str(self.replicate) + '_' + str(attempts) + '_f.npy', data)
-                        # '''
-                        # print('Failed: '+ str(e) + '_' + str(attempts))
-                        pass
-                else: # 3D
-                    image = data.reshape(shape[::-1])
-            
-            fid.close()
-        '''
-        image = data.reshape(shape)
-        #image = transpose(image,axes=(1,2,0)) # imshow ok
-        #image = transpose(image,axes=(1,0,2)) # imshow ok
-        #image = transpose(image,axes=(0,1,2)) # imshow ok
-        #image = transpose(image,axes=(0,2,1)) # imshow ok
-        #image = transpose(image,axes=(2,0,1)) # imshow ok
-        #image = transpose(image,axes=(2,1,0)) # imshow ok
-        '''
-        
-    #'''
-    #image = data.reshape(shape)
-    '''
-    try:
-        print(image[0,0])
-    except Exception as e:
-        print('exception image: '+ str(e))
-    '''
-    # print("read from ", path)
+def fijii_np(path,shape,type_im='<f'):
+    """"Transforming raw data to numpy array"""               
+    file_path=(path)
+    nb_dimensions = len(shape)
+    dtype_np = np.dtype(type_im)
+    with open(file_path, 'rb') as fid:
+        data = np.fromfile(fid,dtype_np)
+        if (nb_dimensions == 2): # 2D
+            image = data.reshape(shape)
+        else: # 3D
+            image = data.reshape(shape[::-1])
     return image
 
 def save_img(img,name):
@@ -94,10 +38,20 @@ def write_hdr_img(path,filename):
 subroot = 'data/Algo/'
 filenames = [subroot + 'Data/initialization/image010_3D/BSREM_30it/replicate_1/BSREM_it30']
 
+original_shape = (192,192,184)
+new_dimx = 284
+new_dimy = 284
+if (len(original_shape) == 2):
+    new_shape = (new_dimx,new_dimy)
+else:
+    new_shape = (original_shape[-1],new_dimy,new_dimx)
+
 for filename in filenames:
     path = Path(filename)
     print(path)
-    im_full = fijii_np(filename + ".img",(230,150,127),type_im='<f')
-    im_padded = np.zeros((127,152,232),dtype='<f')
-    im_padded[:,1:-1,1:-1] = im_full
+    im_full = fijii_np(filename + ".img",original_shape,type_im='<f')
+    im_padded = np.zeros(new_shape,dtype='<f')
+    pad_x = (new_dimx - original_shape[0])//2
+    pad_y = (new_dimy - original_shape[1])//2
+    im_padded[:,pad_y:-pad_y,pad_x:-pad_x] = im_full
     save_img(im_padded,filename + "_padded.img")
