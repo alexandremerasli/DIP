@@ -1,4 +1,4 @@
-# ADMMLim
+# ADMMReg
 #: '
 for outer_it in {1..1}
 do
@@ -8,8 +8,8 @@ echo "outer_it"$outer_it
         if [[ $inner_it -ne 0 ]];
         then
             echo "inner_it"$inner_it
-            global_path="/home/meraslia/sgld/hernan_folder/data/Algo/replicate_1/Comparison/ADMMLim/config_rho=0_sub_i=100_alpha=0.005_mlem_=True/"
-            global_path="/home/meraslia/sgld/ADMMLim_thread/"
+            global_path="/home/meraslia/sgld/hernan_folder/data/Algo/replicate_1/Comparison/ADMMReg/config_rho=0_sub_i=100_alpha=0.005_mlem_=True/"
+            global_path="/home/meraslia/sgld/ADMMReg_thread/"
             
             : '
             path1=$global_path"ADMM_1/0_"$outer_it"_it"$inner_it".img"

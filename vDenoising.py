@@ -8,7 +8,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 
 # Useful
-from numpy import inf, array, arange, ones, copy, zeros, linspace, float32
+from numpy import inf, array, arange, ones, copy, zeros, linspace, float32, squeeze
 from numpy.random import seed, uniform, normal
 import os
 from pathlib import Path
@@ -488,10 +488,10 @@ class vDenoising(vGeneral):
     def choose_net(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, override_input):
         if (net == 'DIP'): # Loading DIP architecture
             if(PETImage_shape[2] == 1): # 2D
-                model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.simulation, self.sub_iter_DIP_already_done, self.override_SC_init, self.DIP_early_stopping, self.image_net_input_torch)
+                model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,self.subroot_phantom,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.simulation, self.sub_iter_DIP_already_done, self.override_SC_init, self.DIP_early_stopping, self.image_net_input_torch)
                 model_class = DIP_2D
             else: # 3D
-                model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.simulation, self.sub_iter_DIP_already_done, self.override_SC_init, self.DIP_early_stopping, self.image_net_input_torch)
+                model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,self.subroot_phantom,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.simulation, self.sub_iter_DIP_already_done, self.override_SC_init, self.DIP_early_stopping, self.image_net_input_torch)
                 model_class = DIP_3D
         elif (net == "DIP_Xin"):
             self.embed_dim = 16
@@ -530,7 +530,7 @@ class vDenoising(vGeneral):
             model_class = DD_AE_2D
 
         return model, model_class
-    
+
     def generate_nn_output(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, image_net_input_torch, PETImage_shape, finetuning, global_it, experiment, suffix, subroot, all_images_DIP):
         # Loading using previous model
         model, model_class = self.choose_net(net, config, method, all_images_DIP, global_it, PETImage_shape, suffix)

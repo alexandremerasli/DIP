@@ -18,7 +18,7 @@ from iMovingVariance import iMovingVariance
 
 class DIP_2D(LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, simulation, sub_iter_DIP_already_done, override_SC_init, DIP_early_stopping, image_net_input_torch):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, subroot_phantom, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, simulation, sub_iter_DIP_already_done, override_SC_init, DIP_early_stopping, image_net_input_torch):
         super().__init__()
 
         # Save all the arguments passed to your model in the checkpoint, especially to save learning rate
@@ -67,6 +67,7 @@ class DIP_2D(LightningModule):
         self.debug = debug
         self.root = root
         self.subroot = root + subroot
+        self.subroot_phantom = subroot_phantom
         self.config = config
         self.experiment = config["experiment"]
         self.image_net_input_torch = image_net_input_torch
@@ -122,7 +123,10 @@ class DIP_2D(LightningModule):
         # Initialize early stopping method if asked for
         if(self.DIP_early_stopping):
             self.classMV = iMovingVariance(config)
-            self.classMV.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner, simulation, image_net_input_torch)
+            # self.classMV.model_class = DIP_2D
+            self.classMV.model_class = type(self)
+            self.classMV.image_net_input_torch = self.image_net_input_torch
+            self.classMV.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,self.sub_iter_DIP,root,subroot,scanner, simulation, image_net_input_torch)
 
         self.write_current_img_mode = True
         #self.suffix = self.suffix_func(config,hyperparameters_list)
@@ -424,7 +428,7 @@ class DIP_2D(LightningModule):
             end_epoch_LBFGS = False
             self.SUCCESS = False
             self.counter_inside_epoch += 1
-            self.log("SUCCESS", int(self.classWMV.SUCCESS))
+            self.log("SUCCESS", int(self.classMV.SUCCESS))
             if (self.counter_inside_epoch == 10): # number of max iter in lbfgs opti
                 end_epoch_LBFGS = True
                 self.counter_inside_epoch = 0
@@ -443,7 +447,8 @@ class DIP_2D(LightningModule):
                 if (self.num_total_batch == self.several_DIP_inputs - 1):
                     self.SUCCESS = self.classMV.SUCCESS
                     self.log("SUCCESS", int(self.SUCCESS))
-                    self.classMV.run_WMV(out.detach().numpy(),self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.subroot,self.scanner, self.simulation, self.current_epoch)
+                    self.SUCCESS, self.VAR_recon, self.MSE_WMV, self.PSNR_WMV, self.SSIM_WMV, self.epochStar, self.patienceNumber = self.classMV.run_WMV(out.detach().numpy(),self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.subroot,self.scanner, self.simulation, self.current_epoch)
+                    self.epochStar = self.classMV.epochStar
             
         # Increment number of iterations since beginnning of DNA
         if (self.end_epoch): # We looped over all images of the batch
@@ -501,7 +506,7 @@ class DIP_2D(LightningModule):
             print("save before ReLU here")
             # self.save_img(out_np, self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/beforeReLU_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
         else:
-            self.save_img(self.out_np, self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+            self.save_img(self.out_np, self.subroot_phantom +'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
         config_copy = dict(config)

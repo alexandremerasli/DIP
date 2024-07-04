@@ -36,15 +36,15 @@ class vReconstruction(vGeneral):
             self.rho = config["rho"]
         else:
             self.rho = 0
-        if ('ADMMLim' in self.method or  "DNA" in self.method or "DIPRecon" in self.method):
-            if (self.method != "ADMMLim"):
+        if ('ADMMReg' in self.method or  "DNA" in self.method or "DIPRecon" in self.method):
+            if (self.method != "ADMMReg"):
                 self.unnested_1st_global_iter = config["unnested_1st_global_iter"]
             else:
                 self.unnested_1st_global_iter = None
             if ( "DIPRecon" in self.method):
                 self.alpha = None
             else:
-                if (config["recoInDNA"] == "ADMMLim"):
+                if (config["recoInDNA"] == "ADMMReg"):
                     if ("stoppingCriterionValue" in config):
                         self.stoppingCriterionValue = config["stoppingCriterionValue"]
                     else:
@@ -135,8 +135,8 @@ class vReconstruction(vGeneral):
         # Initialization
         self.recoInDNA = config["recoInDNA"]
         if (method == 'DNA'):
-            if config["recoInDNA"] == "ADMMLim":
-                x = self.ADMMLim_general(config, i, subdir, subroot_output_path,writer,image_gt, i_init)
+            if config["recoInDNA"] == "ADMMReg":
+                x = self.ADMMReg_general(config, i, subdir, subroot_output_path,writer,image_gt, i_init)
             elif config["recoInDNA"] == "APGMAP":
                 print("APGMAP in DNA")
                 # Choose number of argmax iteration for (second) x computation
@@ -285,7 +285,7 @@ class vReconstruction(vGeneral):
             else:
                 os.system(x_reconstruction_command_line)
                 # os.system(x_reconstruction_command_line + ' -oit -1')
-        else: # ADMMLim, save output at all iterations
+        else: # ADMMReg, save output at all iterations
             os.system(x_reconstruction_command_line)
         # Change iteration name for header if stopping criterion reached
         try:
@@ -299,7 +299,7 @@ class vReconstruction(vGeneral):
         self.write_hdr(subroot,[i],subdir,phantom,'u_it' + str(it_name),subroot_output_path=subroot_output_path,matrix_type='sino')
         self.write_hdr(subroot,[i],subdir,phantom,'v_it' + str(it_name),subroot_output_path=subroot_output_path,matrix_type='sino')
 
-    def ADMMLim_general(self, config, i, subdir, subroot_output_path,writer=None,image_gt=None, i_init=0):
+    def ADMMReg_general(self, config, i, subdir, subroot_output_path,writer=None,image_gt=None, i_init=0):
         if ("DNA" in self.method):
             self.post_smoothing = 0
         castor_command_line_x = self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing)
@@ -313,8 +313,8 @@ class vReconstruction(vGeneral):
             folder_sub_path = os.path.join(self.subroot_phantom,self.suffix)
         sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if (os.path.splitext(filename)[1] == '.hdr' and "u" not in filename and "v" not in filename)]
         # sorted_files = [] # To not continue previous computation, restart from scratch
-        #''' Continue previous computation if ADMMLim have already been launched with these settings
-        if ("ADMMLim" in self.method):
+        #''' Continue previous computation if ADMMReg have already been launched with these settings
+        if ("ADMMReg" in self.method):
             if (len(sorted_files) > 0):
                 it = ' -it ' + str(config["nb_outer_iteration"]) + ':1'  # 1 subset
                 initialimage, it, last_iter = self.ImageAndItToResumeComputation(sorted_files,it,folder_sub_path)
@@ -377,7 +377,7 @@ class vReconstruction(vGeneral):
                 else:
                     initialimage = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
 
-        if ('ADMMLim' in self.method):
+        if ('ADMMReg' in self.method):
             # Compute one ADMM iteration (x, v, u)
             if (self.post_smoothing): # Apply post smoothing for vizualization
                 if ("1" in self.PETImage_shape_str.split(',')): # 2D

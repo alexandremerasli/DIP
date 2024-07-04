@@ -16,8 +16,8 @@ finalOuterIter = 5000
 MSE_normed = np.zeros((finalOuterIter,1))
 subroot = "data/Algo/"
 subsubroot = 'image2_0/replicate_1/'
-subfolder1 = 'ADMMLim_test_1_frame1_float'
-subfolder2 = 'ADMMLim_test_48_frame_1_float'
+subfolder1 = 'ADMMReg_test_1_frame1_float'
+subfolder2 = 'ADMMReg_test_48_frame_1_float'
 PETImage_shape = (112,112,1)
 
 for outer_it in range(1,finalOuterIter+1):

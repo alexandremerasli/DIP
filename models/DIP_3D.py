@@ -11,7 +11,7 @@ from iMovingVariance import iMovingVariance
 
 class DIP_3D(pl.LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, simulation, sub_iter_DIP_already_done, override_SC_init, DIP_early_stopping):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, subroot_phantom, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, simulation, sub_iter_DIP_already_done, override_SC_init, DIP_early_stopping):
         super().__init__()
 
         #'''
@@ -44,6 +44,7 @@ class DIP_3D(pl.LightningModule):
         self.debug = debug
         self.root = root
         self.subroot = root + subroot
+        self.subroot_phantom = subroot_phantom
         self.config = config
         self.experiment = config["experiment"]
 
@@ -63,7 +64,7 @@ class DIP_3D(pl.LightningModule):
         
         # Initialize early stopping method if asked for
         if(self.DIP_early_stopping):
-            self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner,simulation)
+            self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,self.sub_iter_DIP,root,subroot,scanner,simulation)
 
         self.write_current_img_mode = True
         #self.suffix = self.suffix_func(config,hyperparameters_list)
@@ -262,7 +263,7 @@ class DIP_3D(pl.LightningModule):
         self.logger.experiment.add_scalar('loss', loss,self.current_epoch)        
 
         # WMV
-        self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.subroot,self.scanner,self.simulation)
+        self.SUCCESS, self.VAR_recon, self.MSE_WMV, self.PSNR_WMV, self.SSIM_WMV, self.epochStar, self.patienceNumber = self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.subroot,self.scanner,self.simulation)
         
         # Increment number of iterations since beginnning of DNA
         self.sub_iter_DIP_already_done += 1

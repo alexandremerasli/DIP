@@ -55,10 +55,10 @@ class iResults(vDenoising):
             if (self.DIP_early_stopping):# and "show_results_post_reco" in config["task"]):
                 from iMovingVariance import iMovingVariance
                 self.classMV = iMovingVariance(config)
-                self.classMV.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,root,self.subroot,self.scanner, self.simulation)
+                self.classMV.initialize_WMV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,config["sub_iter_DIP"],root,self.subroot,self.scanner, self.simulation)
                 self.lr = config['lr']
 
-        if ('ADMMLim' in self.method):
+        if ('ADMMReg' in self.method):
             self.i_init = 30 # Remove first iterations
             self.i_init = 1 # Remove first iterations
         else:
@@ -265,7 +265,8 @@ class iResults(vDenoising):
 
             for i in range(self.i_init,self.total_nb_iter+self.i_init):
             # for i in range(self.i_init,4444):
-                if (self.run_WMV(None,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,self.simulation,i,MV_metrics_already_stored_in_csv=True)):
+                self.SUCCESS, self.VAR_recon, self.MSE_WMV, self.PSNR_WMV, self.SSIM_WMV, self.epochStar, self.patienceNumber = self.run_WMV(None,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,self.simulation,i,MV_metrics_already_stored_in_csv=True)
+                if (self.SUCCESS):
                     print("ES point found, break loop")
                     break
         
@@ -527,12 +528,12 @@ class iResults(vDenoising):
                     if config["FLTNB"] == "double":
                         f_p = f_p.astype(np.float64)
 
-                elif ('ADMMLim' in self.method or self.method == 'MLEM' or self.method == 'OPTITR' or self.method == 'OSEM' or self.method == 'BSREM' or self.method == 'AML' or 'APGMAP' in self.method):
+                elif ('ADMMReg' in self.method or self.method == 'MLEM' or self.method == 'OPTITR' or self.method == 'OSEM' or self.method == 'BSREM' or self.method == 'AML' or 'APGMAP' in self.method):
                     self.pet_algo=config["method"]
                     self.iteration_name = "iterations"
                     if (hasattr(self,'beta')):
                         self.iteration_name += self.beta_string
-                    if ('ADMMLim' in self.method):
+                    if ('ADMMReg' in self.method):
                         subdir = 'ADMM' + '_' + str(config["nb_threads"])
                         subdir = ''
                         #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
@@ -581,7 +582,7 @@ class iResults(vDenoising):
                     # self.run_WMV(f_p,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,self.simulation,i)
                     if(self.DIP_early_stopping):# WMV
                         if ("post_reco" in config["task"] or "end_to_end" in config["task"]):
-                            self.run_WMV(f_p,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,self.simulation,i)
+                            self.SUCCESS, self.VAR_recon, self.MSE_WMV, self.PSNR_WMV, self.SSIM_WMV, self.epochStar, self.patienceNumber = self.run_WMV(f_p,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,self.root,self.scanner,self.simulation,i)
                             if (self.SUCCESS):
                                 return 1
                 del f_p
@@ -694,14 +695,14 @@ class iResults(vDenoising):
             mean_inside_recon[i] = np.mean(image_recon * self.phantom_ROI) / np.mean(self.image_corrupt * self.phantom_ROI)
         
         # Likelihood from fake CASToR reconstruction just to compute likelihood of initialization image        
-        if "DNA" in self.self.method or "DIPRecon" in self.config["method"]:
+        if "DNA" in self.method or "DIPRecon" in self.config["method"]:
             folder_sub_path = self.subroot_phantom + 'Block2/' + self.suffix
         else:
             folder_sub_path = self.subroot_phantom + '/' + self.suffix
-        if "DNA" in self.self.method or "DIPRecon" in self.config["method"]:
-            logfile_name = self.self.method + '_' + str(i-1) + '.log'
+        if "DNA" in self.method or "DIPRecon" in self.config["method"]:
+            logfile_name = self.method + '_' + str(i-1) + '.log'
         else:
-            logfile_name = self.self.method + '_' + str(i+1) + '.log'
+            logfile_name = self.method + '_' + str(i+1) + '.log'
         path_log = folder_sub_path + '/' + logfile_name
         if (isfile(path_log)):
             self.extract_likelihood_from_log(path_log)

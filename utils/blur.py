@@ -25,7 +25,7 @@ def save_img(img,name):
 
 shape = (112,112,1)
 subroot = "data/Algo/"
-img = fijii_np(subroot + "/Data/initialization/ADMMLim_it100.img",shape)
+img = fijii_np(subroot + "/Data/initialization/ADMMReg_it100.img",shape)
 
 #plt.imshow(img,cmap="gray")
 #plt.show()
@@ -38,4 +38,4 @@ for i in range(len(l)):
     plt.colorbar(show, ax=axs[i])
 plt.show()
 
-save_img(img_blur,subroot + "/Data/initialization/ADMMLim_blurred_it10000.img")
+save_img(img_blur,subroot + "/Data/initialization/ADMMReg_blurred_it10000.img")

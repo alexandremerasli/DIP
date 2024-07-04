@@ -12,14 +12,14 @@ def parametersIncompatibility(config,task=None):
         config.pop("A_AML", None)
     if (method == 'BSREM' or method == 'DNA' or method == 'DIPRecon'):
         config.pop("post_smoothing", None)
-    if ('ADMMLim' not in method and method != "DNA"):
+    if ('ADMMReg' not in method and method != "DNA"):
         config.pop("nb_outer_iteration", None)
         config.pop("alpha", None)
         config.pop("adaptive_parameters", None)
         config.pop("mu_adaptive", None)
         config.pop("tau", None)
         config.pop("xi", None)
-    if ('ADMMLim' not in method and method != "DNA" and method != "DIPRecon"):
+    if ('ADMMReg' not in method and method != "DNA" and method != "DIPRecon"):
         config.pop("nb_inner_iteration", None)
     if (method != "DNA" and method != "DIPRecon" and task != "post_reco"):
         config.pop("lr", None)
@@ -120,10 +120,10 @@ settings_config = {
     "method" : tune.grid_search(['BSREM']), # Reconstruction algorithm (DNA, DIPRecon, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
-    "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and DNA)
+    "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMReg and DNA)
     "debug" : False, # Debug mode = run without raytune and with one iteration
     "max_iter" : tune.grid_search([30]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for DNA and DIPRecon
-    "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
+    "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMReg)
     "finetuning" : tune.grid_search(['last']),
     "experiment" : tune.grid_search([24]),
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
@@ -147,10 +147,10 @@ config = {
     #"input" : tune.grid_search(['CT','random']), # Neural network input (random or CT)
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
-    ## ADMMLim - OPTITR hyperparameters
-    "nb_inner_iteration" : tune.grid_search([50]), # Number of inner iterations in ADMMLim (if mlem_sequence is False) or in OPTITR (for DIPRecon)
-    "nb_outer_iteration": tune.grid_search([10]), # Number outer iterations in ADMMLim
-    "alpha" : tune.grid_search([0.005]), # alpha (penalty parameter) in ADMMLim
+    ## ADMMReg - OPTITR hyperparameters
+    "nb_inner_iteration" : tune.grid_search([50]), # Number of inner iterations in ADMMReg (if mlem_sequence is False) or in OPTITR (for DIPRecon)
+    "nb_outer_iteration": tune.grid_search([10]), # Number outer iterations in ADMMReg
+    "alpha" : tune.grid_search([0.005]), # alpha (penalty parameter) in ADMMReg
     ## hyperparameters from CASToR algorithms 
     # Optimization transfer (OPTITR) hyperparameters
     "mlem_sequence" : tune.grid_search([False]), # Given sequence (with decreasing number of subsets) to quickly converge. True or False

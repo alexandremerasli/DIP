@@ -349,9 +349,9 @@ class vGeneral(abc.ABC):
         #if (task == "compare_2_methods"):
         #    config["replicates"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
 
-        # By default use ADMMLim in DNA, not APGMAP
+        # By default use ADMMReg in DNA, not APGMAP
         if "recoInDNA" not in config:
-            config["recoInDNA"] = tune.grid_search(["ADMMLim"])
+            config["recoInDNA"] = tune.grid_search(["ADMMReg"])
 
         # Do not scale images if network input is uniform of if DIPRecon's method
         if config["input"]['grid_search'] == 'uniform': # Do not standardize or normalize if uniform, otherwise NaNs
@@ -363,9 +363,9 @@ class vGeneral(abc.ABC):
                 #config["scaling"]['grid_search'] = ["positive_normalization"]
                 print("Gooooooooong")
 
-        # If ADMMLim (not DNA), begin with CASToR default value, which is uniform image of 1
+        # If ADMMReg (not DNA), begin with CASToR default value, which is uniform image of 1
         if (len(config["method"]['grid_search']) == 1):
-            if method == 'ADMMLim':
+            if method == 'ADMMReg':
                 config["unnested_1st_global_iter"]['grid_search'] = [True]
         
         # Remove NNEPPS=False if True is selected for computation
@@ -379,7 +379,7 @@ class vGeneral(abc.ABC):
                 config.pop("A_AML", None)
             if ('BSREM' in method or 'DNA' in method or "DIPRecon" in method or 'APGMAP' in method):
                 config.pop("post_smoothing", None)
-            if ((('ADMMLim' not in method and 'DNA' not in method) and method != 'ADMMLim_Bowsher' and "DNA" not in method) or "APGMAP" in config["recoInDNA"]['grid_search'][0]):
+            if ((('ADMMReg' not in method and 'DNA' not in method) and method != 'ADMMReg_Bowsher' and "DNA" not in method) or "APGMAP" in config["recoInDNA"]['grid_search'][0]):
                 #config.pop("nb_inner_iteration", None)
                 config.pop("alpha", None)
                 config.pop("adaptive_parameters", None)
@@ -389,12 +389,12 @@ class vGeneral(abc.ABC):
                 config.pop("stoppingCriterionValue", None)
                 config.pop("saveSinogramsUAndV", None)
                 #config.pop("xi", None)
-            elif ((method == 'ADMMLim' or method == 'ADMMLim_Bowsher' or "DNA" in method) and config["adaptive_parameters"]['grid_search'][0] == "nothing"):
+            elif ((method == 'ADMMReg' or method == 'ADMMReg_Bowsher' or "DNA" in method) and config["adaptive_parameters"]['grid_search'][0] == "nothing"):
                 config.pop("mu_adaptive", None)
                 config.pop("tau", None)
                 config.pop("tau_max", None)
                 config.pop("xi", None)
-            if ('ADMMLim' not in method and "DNA" not in method and "DIPRecon" not in method):
+            if ('ADMMReg' not in method and "DNA" not in method and "DIPRecon" not in method):
                 config.pop("nb_outer_iteration", None)
             if ("DNA" not in method and "DIPRecon" not in method and task != "post_reco"):
                 config.pop("lr", None)
@@ -424,8 +424,8 @@ class vGeneral(abc.ABC):
                         config.pop("end_to_end", None)
                 else:
                     config.pop("end_to_end", None)
-            # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMLim in CASToR
-            if ('ADMMLim' in method or "DNA" in method):
+            # Do not use subsets so do not use mlem sequence for ADMM Lim, because of stepsize computation in ADMMReg in CASToR
+            if ('ADMMReg' in method or "DNA" in method):
                 config["mlem_sequence"]['grid_search'] = [False]
         else:
             if ('results' not in task):
@@ -434,7 +434,7 @@ class vGeneral(abc.ABC):
         if (task == "show_results_replicates"):
             # List of beta values
             if (len(config["method"]['grid_search']) == 1):
-                if ('ADMMLim' in method):
+                if ('ADMMReg' in method):
                     self.beta_list = config["alpha"]['grid_search']
                     config["alpha"] = tune.grid_search([0]) # Only put 1 value to avoid running same run several times (only for results with several replicates)
                 else:
@@ -531,7 +531,7 @@ class vGeneral(abc.ABC):
         config_copy = dict(config)
         if (NNEPPS==False):
             config_copy.pop('NNEPPS',None)
-        if (("ADMMLim" in self.method and "DNA" not in self.method) or self.method == "ADMMLim_Bowsher"):
+        if (("ADMMReg" in self.method and "DNA" not in self.method) or self.method == "ADMMReg_Bowsher"):
             config_copy.pop('nb_outer_iteration',None)
         elif ("post_reco" in config_copy["task"]):
             if ("post_reco_in_suffix" not in config_copy):
@@ -1353,18 +1353,18 @@ class vGeneral(abc.ABC):
                 pnlt += ' -multimodal ' + self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.hdr'
             else:
                 pnlt = ' -pnlt ' + penalty + ':' + self.subroot + method + '_MRF.conf'
-        elif ("DNA" in method or 'ADMMLim' in method):
-            if (self.recoInDNA == "ADMMLim"):
-                opti = ' -opti ' + 'ADMMLim' + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) + ',' + str(self.tau_max) + ',' + str(self.stoppingCriterionValue) + ',' + str(self.saveSinogramsUAndV)
+        elif ("DNA" in method or 'ADMMReg' in method):
+            if (self.recoInDNA == "ADMMReg"):
+                opti = ' -opti ' + 'ADMMReg' + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) + ',' + str(self.tau_max) + ',' + str(self.stoppingCriterionValue) + ',' + str(self.saveSinogramsUAndV)
                 if ("DNA" in method):
                     # if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
                     if ((i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
                         rho = 0
                         #self.rho = 0
-                    method = 'ADMMLim' + method[6:]
+                    method = 'ADMMReg' + method[6:]
                     #pnlt = ' -pnlt QUAD' # Multimodal image is only used by quadratic penalty
                     pnlt = ' -pnlt ' + "QUAD" + ':' + self.subroot_phantom + 'Block1/' + self.suffix  + '/' + 'QUAD.conf'
-                elif ('ADMMLim' in method):
+                elif ('ADMMReg' in method):
                     pnlt = ' -pnlt ' + penalty
 
                     # Choose penalty config file according to Bowsher weights or not
@@ -1455,13 +1455,13 @@ class vGeneral(abc.ABC):
     def natural_keys(self,text):
         # print(split(r'(\d+)', text))
         return [ self.atoi(c) for c in split(r'(\d+)', text) ] # APGMAP final curves + resume computation
-        #return [ self.atoi(c) for c in split(r'(\+|-)\d+(\.\d+)?', text) ] # ADMMLim final curves
+        #return [ self.atoi(c) for c in split(r'(\+|-)\d+(\.\d+)?', text) ] # ADMMReg final curves
     
-    def natural_keys_ADMMLim(self,text): # Sort by scientific or float numbers
+    def natural_keys_ADMMReg(self,text): # Sort by scientific or float numbers
         #return [ self.atoi(c) for c in split(r'(\d+)', text) ] # APGMAP final curves + resume computation
         match_number = compile('-?\ *[0-9]+\.?[0-9]*(?:[Ee]\ *-?\ *[0-9]+)?')
         final_list = [float(x) for x in findall(match_number, text)] # Extract scientific of float numbers in string
-        return final_list # ADMMLim final curves
+        return final_list # ADMMReg final curves
         
     def has_numbers(self,inputString):
         return any(char.isdigit() for char in inputString)
@@ -1491,7 +1491,7 @@ class vGeneral(abc.ABC):
         return B1
 
     def defineTotalNbIter_beta_rho(self,config,task,stopping_criterion=True):
-        if (self.method == 'ADMMLim'):
+        if (self.method == 'ADMMReg'):
             try:
                 self.path_stopping_criterion = self.subroot_phantom + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
                 with open(self.path_stopping_criterion) as f:
@@ -1531,9 +1531,9 @@ class vGeneral(abc.ABC):
         else:
             self.total_nb_iter = self.max_iter
 
-            if (self.self.method == 'AML'):
+            if (self.method == 'AML'):
                 self.beta = config["A_AML"]
-            if (self.self.method == 'BSREM' or "DNA" in self.method or "DIPRecon" in self.method or 'APGMAP' in self.method):
+            if (self.method == 'BSREM' or "DNA" in self.method or "DIPRecon" in self.method or 'APGMAP' in self.method):
                 self.rho = config["rho"]
                 self.beta = self.rho
 
@@ -1575,13 +1575,3 @@ class vGeneral(abc.ABC):
             if (hasattr(self,"likelihoods_alpha")):
                 self.likelihoods_alpha.append(likelihood)
             self.likelihoods.append(likelihood)
-
-    def save_DIP_output(self, ckpt_path, net_output_path):
-        # Load ckpt file with pytorch ligthning and return the output of DIP network
-        model = self.model_class.load_from_checkpoint(ckpt_path)
-        # Get the output
-        output = model(self.image_net_input_torch)
-        image_net_output = squeeze(output.detach().numpy())
-        # Save the output
-        self.save_img(image_net_output, net_output_path)
-    

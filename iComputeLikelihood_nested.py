@@ -18,15 +18,15 @@ class iComputeLikelihood_DNA(vGeneral):
             self.rho = config["rho"]
         else:
             self.rho = 0
-        if ('ADMMLim' in self.method or  "DNA" in self.method or "DIPRecon" in self.method):
-            if (self.method != "ADMMLim"):
+        if ('ADMMReg' in self.method or  "DNA" in self.method or "DIPRecon" in self.method):
+            if (self.method != "ADMMReg"):
                 self.unnested_1st_global_iter = config["unnested_1st_global_iter"]
             else:
                 self.unnested_1st_global_iter = None
             if ( "DIPRecon" in self.method):
                 self.alpha = None
             else:
-                if (config["recoInDNA"] == "ADMMLim"):
+                if (config["recoInDNA"] == "ADMMReg"):
                     self.stoppingCriterionValue = config["stoppingCriterionValue"]
                     self.saveSinogramsUAndV = config["saveSinogramsUAndV"]
                     self.alpha = config["alpha"]
@@ -58,9 +58,9 @@ class iComputeLikelihood_DNA(vGeneral):
             self.A_AML = config["A_AML"]
         if (self.method == 'AML'):
             self.beta = config["A_AML"]
-        elif ('ADMMLim' in self.method):
+        elif ('ADMMReg' in self.method):
             self.beta = config["alpha"]
-            self.recoInDNA = "ADMMLim"
+            self.recoInDNA = "ADMMReg"
         elif (self.method == 'BSREM' or self.method == 'APGMAP'):
             self.beta = self.rho
 

@@ -17,9 +17,9 @@ class iComparison(vReconstruction):
             self.A_AML = config["A_AML"]
         if (self.method == 'AML'):
             self.beta = config["A_AML"]
-        elif ('ADMMLim' in self.method):
+        elif ('ADMMReg' in self.method):
             self.beta = config["alpha"]
-            self.recoInDNA = "ADMMLim"
+            self.recoInDNA = "ADMMReg"
         elif (self.method == 'BSREM' or self.method == 'APGMAP'):
             self.beta = self.rho
 
@@ -29,7 +29,7 @@ class iComparison(vReconstruction):
             self.post_smoothing = 0
 
         # castor-recon command line
-        if ('ADMMLim' in self.method):
+        if ('ADMMReg' in self.method):
             # Path variables
             subroot_output_path = (self.subroot_phantom + self.suffix)
             subdir = 'ADMM' + '_' + str(config["nb_threads"])
@@ -37,7 +37,7 @@ class iComparison(vReconstruction):
             f_mu_for_penalty = ' -multimodal ' + self.subroot + 'Data/initialization/1_im_value_cropped.hdr' # Will be removed if first global iteration and unnested_1st_global_iter (rho == 0)
             #f_mu_for_penalty = ' -multimodal ' + self.subroot + 'Data/initialization/BSREM_it30_REF_cropped.hdr' # Test for DIP_ADMM (will be removed if first global iteration and unnested_1st_global_iter (rho == 0))
             Path(self.subroot_phantom + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
-            self.ADMMLim_general(config, 0, subdir, subroot_output_path, f_mu_for_penalty)
+            self.ADMMReg_general(config, 0, subdir, subroot_output_path, f_mu_for_penalty)
         else:
             folder_sub_path = self.subroot_phantom + self.suffix
             Path(folder_sub_path).mkdir(parents=True, exist_ok=True) # CASToR path
@@ -80,7 +80,7 @@ class iComparison(vReconstruction):
             os.system(self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
 
         # NNEPPS
-        if ('ADMMLim' in self.method):
+        if ('ADMMReg' in self.method):
             max_it = config["nb_outer_iteration"]
         else:
             max_it = config["max_iter"]
@@ -102,7 +102,7 @@ class iComparison(vReconstruction):
     def NNEPPS_function(self,config,it):
         executable='removeNegativeValues.exe'
 
-        if ('ADMMLim' in self.method):
+        if ('ADMMReg' in self.method):
             i = 0
             subdir = 'ADMM' + '_' + str(config["nb_threads"])
             subdir = ''

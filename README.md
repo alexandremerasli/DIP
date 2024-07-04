@@ -18,7 +18,7 @@ This project involves saving the 2D system matrix from the CASToR reconstruction
 
 4. **Compare to CASToR Forward Projection**
     - If needed to compare to CASToR forward projection:
-        - Run CASToR reconstruction with ADMMLim optimizer, and save m2p_vectorAx[0] into .img file.
+        - Run CASToR reconstruction with ADMMReg optimizer, and save m2p_vectorAx[0] into .img file.
         - Run the `utils/add_zero_to_sino.py` script with initialisation x (could be the phantom for instance), with input m2p_vectorAx[0].
         - Compare it to matrix product in Python between saved system matrix and image x.
 
@@ -45,7 +45,7 @@ Ablation study (DNA - DIPRecon)
 
 4. **Compare to CASToR Forward Projection**
     - If needed to compare to CASToR forward projection:
-        - Run CASToR reconstruction with ADMMLim optimizer, and save m2p_vectorAx[0] into .img file.
+        - Run CASToR reconstruction with ADMMReg optimizer, and save m2p_vectorAx[0] into .img file.
         - Run the `utils/add_zero_to_sino.py` script with initialisation x (could be the phantom for instance), with input m2p_vectorAx[0].
         - Compare it to matrix product in Python between saved system matrix and image x.
 

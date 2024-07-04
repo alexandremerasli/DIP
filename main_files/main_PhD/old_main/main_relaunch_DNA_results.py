@@ -11,8 +11,8 @@ import os
 from ray import tune
 
 import importlib
-config_files = ["DNA_CT_0_skip_10it',"DNA_CT_1_skip_10it',"DNA_CT_2_skip_10it',"DNA_CT_3_skip_10it', "DNA_ADMMLim_more_ADMMLim_it_10_configuration', "DNA_random_0_skip_10it', "DNA_random_1_skip_10it', "DNA_random_2_skip_10it', "DNA_random_3_skip_10it']
-config_files = ["DNA_CT_0_skip_10it',"DNA_CT_1_skip_10it',"DNA_CT_3_skip_10it', "DNA_ADMMLim_more_ADMMLim_it_10_configuration', "DNA_random_0_skip_10it', "DNA_random_1_skip_10it', "DNA_random_2_skip_10it', "DNA_random_3_skip_10it']
+config_files = ["DNA_CT_0_skip_10it',"DNA_CT_1_skip_10it',"DNA_CT_2_skip_10it',"DNA_CT_3_skip_10it', "DNA_ADMMReg_more_ADMMReg_it_10_configuration', "DNA_random_0_skip_10it', "DNA_random_1_skip_10it', "DNA_random_2_skip_10it', "DNA_random_3_skip_10it']
+config_files = ["DNA_CT_0_skip_10it',"DNA_CT_1_skip_10it',"DNA_CT_3_skip_10it', "DNA_ADMMReg_more_ADMMReg_it_10_configuration', "DNA_random_0_skip_10it', "DNA_random_1_skip_10it', "DNA_random_2_skip_10it', "DNA_random_3_skip_10it']
 config_files = ["DNA_skip0_3_my_settings']
 
 # config_files = [f[:-3] for f in os.listdir('all_config') if os.path.isfile(os.path.join('all_config', f))]
@@ -45,7 +45,7 @@ for lib_string in config_files:
             if (method == "DIPRecon" or method == "DNA"):
                 task = 'full_reco_with_network'
 
-            elif ('ADMMLim' in method or method == 'MLEM' or method == 'OPTITR' or method == 'OSEM' or method == 'BSREM' or method == 'AML' or method == 'APGMAP'):
+            elif ('ADMMReg' in method or method == 'MLEM' or method == 'OPTITR' or method == 'OSEM' or method == 'BSREM' or method == 'AML' or method == 'APGMAP'):
                 task = 'castor_reco'
 
             #task = 'full_reco_with_network' # Run DIPRecon or DNA
@@ -54,7 +54,7 @@ for lib_string in config_files:
             #task = 'show_results_post_reco'
             task = 'show_results'
             #task = 'show_metrics_results_already_computed'
-            #task = 'show_metrics_ADMMLim'
+            #task = 'show_metrics_ADMMReg'
             #task = 'show_metrics_DNA'
             #task = 'compare_2_methods'
 
@@ -75,10 +75,10 @@ for lib_string in config_files:
             elif (task == 'show_results_post_reco'): # Show already computed results over iterations of post reconstruction mode
                 from iResults import iResults
                 classTask = iResults(config)
-            elif (task == 'show_metrics_ADMMLim'): # Show ADMMLim FOMs over iterations
+            elif (task == 'show_metrics_ADMMReg'): # Show ADMMReg FOMs over iterations
                 config["task"] = "show_results_post_reco"
-                from iMeritsADMMLim import iMeritsADMMLim
-                classTask = iMeritsADMMLim(config)
+                from iMeritsADMMReg import iMeritsADMMReg
+                classTask = iMeritsADMMReg(config)
             elif (task == 'show_metrics_DNA'): # Show DNA or DIPRecon FOMs over iterations
                 from iMeritsDIP_ADMM import iMeritsDIP_ADMM
                 classTask = iMeritsDIP_ADMM(config)
@@ -87,8 +87,8 @@ for lib_string in config_files:
             #     classTask = iResultsAlreadyComputed(config)
             elif (task == 'compare_2_methods'): # Show already computed results averaging over replicates
                 config["average_replicates"] = tune.grid_search([True])
-                from iResultsADMMLim_VS_APGMAP import iResultsADMMLim_VS_APGMAP
-                classTask = iResultsADMMLim_VS_APGMAP(config)
+                from iResultsADMMReg_VS_APGMAP import iResultsADMMReg_VS_APGMAP
+                classTask = iResultsADMMReg_VS_APGMAP(config)
 
             # Incompatible parameters (should be written in vGeneral I think)
             if (method == "DNA" and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
@@ -139,7 +139,7 @@ for lib_string in config_files:
         #     classTask.runRayTune(config_without_grid_search,root,task)
 
         '''
-        classTask = iResultsADMMLim_VS_APGMAP(config_without_grid_search)
+        classTask = iResultsADMMReg_VS_APGMAP(config_without_grid_search)
         config_without_grid_search["ray"] = False
         classTask.runRayTune(config_without_grid_search,root,task)
         '''

@@ -20,7 +20,7 @@ from scipy.ndimage import map_coordinates
 #from vGeneral import vGeneral
 from vDenoising import vDenoising
 
-class iResultsADMMLim_VS_APGMAP(vDenoising):
+class iResultsADMMReg_VS_APGMAP(vDenoising):
     def __init__(self,config, *args, **kwargs):
         print("__init__")
 
@@ -34,7 +34,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
         #'''
         #vDenoising.initializeSpecific(self,config,root)
 
-        if ('ADMMLim' in self.method):
+        if ('ADMMReg' in self.method):
             self.i_init = 30 # Remove first iterations
             self.i_init = 1 # Remove first iterations
         else:
@@ -127,7 +127,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
 
         f_list = self.nb_replicates * [0]
 
-        if ('ADMMLim' in self.method):
+        if ('ADMMReg' in self.method):
             i_init = 20
         else:
             i_init = 1
@@ -221,12 +221,12 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                         f_init_p = self.fijii_np(local_dir+'/'+self.get_first_filename(local_dir),shape=(self.PETImage_shape),type_im='<f') # loading DIP output
                     if config["FLTNB"] == "double":
                         self.f_p.astype(np.float64)
-                elif ('ADMMLim' in self.method or self.method == 'MLEM' or self.method == 'OPTITR' or self.method == 'OSEM' or self.method == 'BSREM' or self.method == 'AML' or self.method == 'APGMAP'):
+                elif ('ADMMReg' in self.method or self.method == 'MLEM' or self.method == 'OPTITR' or self.method == 'OSEM' or self.method == 'BSREM' or self.method == 'AML' or self.method == 'APGMAP'):
                     pet_algo=config["method"]
                     iteration_name = "iterations"
                     if (hasattr(self,'beta')):
                         iteration_name += beta_string
-                    if ('ADMMLim' in self.method):
+                    if ('ADMMReg' in self.method):
                         subdir = 'ADMM' + '_' + str(config["nb_threads"])
                         subdir = ''
                         #self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
@@ -384,7 +384,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
 
 
 
-        # if ("DNA" in self.method or "DIPRecon" in self.method or "ADMMLim" in self.method):
+        # if ("DNA" in self.method or "DIPRecon" in self.method or "ADMMReg" in self.method):
         #     print("ok")
         # else:
         #     i_init = self.total_nb_iter
@@ -607,7 +607,7 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
 
     def compareImages(self,suffix):
         if (self.tensorboard):
-            self.write_image_tensorboard(self.writer,self.image_method,self.method + " at convergence",suffix,self.image_gt,0,full_contrast=True) # ADMMLim at convergence in tensorboard
+            self.write_image_tensorboard(self.writer,self.image_method,self.method + " at convergence",suffix,self.image_gt,0,full_contrast=True) # ADMMReg at convergence in tensorboard
             #self.write_image_tensorboard(self.writer,self.image_APGMAP,"APGMAP at convergence",suffix,self.image_gt,0,full_contrast=True) # APGMAP at convergence in tensorboard
        
     def read_image_method(self,config,beta_string,i_init,p,i):
@@ -635,12 +635,12 @@ class iResultsADMMLim_VS_APGMAP(vDenoising):
                 f_init_p = self.fijii_np(self.subroot_p+'Block1/' + self.suffix + '/before_eq22/' + '0_f_mu.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
             if config["FLTNB"] == "double":
                 self.f_p.astype(np.float64)
-        elif ('ADMMLim' in self.method or self.method == 'MLEM' or self.method == 'OPTITR' or self.method == 'OSEM' or self.method == 'BSREM' or self.method == 'AML' or self.method == 'APGMAP'):
+        elif ('ADMMReg' in self.method or self.method == 'MLEM' or self.method == 'OPTITR' or self.method == 'OSEM' or self.method == 'BSREM' or self.method == 'AML' or self.method == 'APGMAP'):
             pet_algo=config["method"]
             iteration_name = "iterations"
             if (hasattr(self,'beta')):
                 iteration_name += beta_string
-            if ('ADMMLim' in self.method):
+            if ('ADMMReg' in self.method):
                 subdir = 'ADMM' + '_' + str(config["nb_threads"])
                 subdir = ''
                 #self.f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output

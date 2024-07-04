@@ -11,7 +11,7 @@ data/Algo/Data/MLEM_reco_for_init_hdr/
 env/
 env_disk/
 
-data/Algo/Data/ADMMLim_*
+data/Algo/Data/ADMMReg_*
 
 data/Algo/Data/database_v2/
 data/Algo/Data/im_corrupt_beginning.img

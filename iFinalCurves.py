@@ -34,8 +34,8 @@ class iFinalCurves(vGeneral):
         MIC_config = True
         csv_before_MIC = False
 
-        # Plot APGMAP vs ADMMLim (True)
-        APGMAP_vs_ADMMLim = False
+        # Plot APGMAP vs ADMMReg (True)
+        APGMAP_vs_ADMMReg = False
         # Number of points in final tradeoff curve for DIP based algorithms
         nb_points_tradeoff_DIP = 25
         # rename_settings = "hyperparameters_paper"
@@ -144,7 +144,7 @@ class iFinalCurves(vGeneral):
 
             for method in method_list: # Compute 
 
-                if ('ADMMLim' in method and "DNA" not in method):
+                if ('ADMMReg' in method and "DNA" not in method):
                     if ("50_2_10" in self.phantom):
                         self.i_init = 70 # Remove first iterations
                     else:
@@ -249,10 +249,10 @@ class iFinalCurves(vGeneral):
                 
                 # Sort suffixes from file by rho and other dim values 
                 sorted_suffixes = list(suffixes[0])
-                if ("ADMMLim" not in method and method != "ADMMLim_Bowsher" and "DNA" not in method and "DNA" not in method and "APGMAP" not in method and "BSREM" not in method):
+                if ("ADMMReg" not in method and method != "ADMMReg_Bowsher" and "DNA" not in method and "DNA" not in method and "APGMAP" not in method and "BSREM" not in method):
                     sorted_suffixes.sort(key=self.natural_keys)
                 else:
-                    sorted_suffixes.sort(key=self.natural_keys_ADMMLim)
+                    sorted_suffixes.sort(key=self.natural_keys_ADMMReg)
 
                 # Load metrics from last runs to merge them in one figure
                 metrics_final, IR_final = self.load_metrics(sorted_suffixes, idx_wanted, root, config, method, task, csv_before_MIC, quantitative_tradeoff, ROI, rename_settings)
@@ -263,7 +263,7 @@ class iFinalCurves(vGeneral):
 
 
 
-                # Compute number of displayable iterations for each rho and find case with smallest iterations (useful for ADMMLim)
+                # Compute number of displayable iterations for each rho and find case with smallest iterations (useful for ADMMReg)
                 len_mini_list = np.zeros((nb_rho[method],nb_other_dim[method],self.nb_replicates[method]),dtype=int)
                 len_mini = np.zeros((nb_rho[method]),dtype=int)
                 len_mini_to_remove = np.zeros((nb_rho[method]),dtype=int)
@@ -274,7 +274,7 @@ class iFinalCurves(vGeneral):
                             len_mini_list[rho_idx,other_dim_idx,replicate_idx] = len(metrics_final[replicate_idx + self.nb_replicates[method]*other_dim_idx + (self.nb_replicates[method]*nb_other_dim[method])*rho_idx])
                         len_mini[rho_idx] = int(np.min(len_mini_list[rho_idx]))
                         len_mini_to_remove[rho_idx] = 1
-                        if (method == "ADMMLim" or method == "ADMMLim_Bowsher"): # Add 1 to index if stopping criterion was reached to avoid having 0 for metrics
+                        if (method == "ADMMReg" or method == "ADMMReg_Bowsher"): # Add 1 to index if stopping criterion was reached to avoid having 0 for metrics
                             if (len_mini[rho_idx] != self.total_nb_iter - self.i_init + 1):
                                 len_mini_to_remove[rho_idx] += 1
                         case_mini[rho_idx] = int(np.argmin(len_mini_list[rho_idx,:,:])) + self.nb_replicates[method]*rho_idx
@@ -456,7 +456,7 @@ class iFinalCurves(vGeneral):
                             for other_dim_idx in range(nb_other_dim[method]):
                                 cases = np.arange(0,nb_other_dim[method]*nb_rho[method],nb_other_dim[method]) + other_dim_idx
                                 
-                                if ((not APGMAP_vs_ADMMLim and (method == "APGMAP" and config_other_dim[method][other_dim_idx] == A_shift_ref_APPGML) or (method != "APGMAP" and other_dim_idx == 0)) or APGMAP_vs_ADMMLim):
+                                if ((not APGMAP_vs_ADMMReg and (method == "APGMAP" and config_other_dim[method][other_dim_idx] == A_shift_ref_APPGML) or (method != "APGMAP" and other_dim_idx == 0)) or APGMAP_vs_ADMMReg):
                                 #    nb_other_dim["APGMAP"] = 1
                                     ax[fig_nb].plot(100*avg_IR[(cases,len_mini-len_mini_to_remove)],avg_metrics[(cases,len_mini-len_mini_to_remove)],'-o',linewidth=3,color=color_dict[method][other_dim_idx],ls=marker_dict[method][idx_good_rho_color])#'-o',)
                                 if (variance_plot):
@@ -486,7 +486,7 @@ class iFinalCurves(vGeneral):
                                     #'''
                                     if ("DNA_BSREM_stand" in method):
                                         idx = 100
-                                    elif ("DNA_ADMMLim_stand" in method):
+                                    elif ("DNA_ADMMReg_stand" in method):
                                         idx = 75
                                     else:
                                         idx = 75
@@ -523,11 +523,11 @@ class iFinalCurves(vGeneral):
                     if (fig_nb != 2): 
                         for rho_idx in range(nb_rho[method]):
                             for other_dim_idx in range(nb_other_dim[method]):
-                                self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings)
+                                self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMReg,rename_settings)
                     else: # Do not loop on rho because here is at convergence
                         # for rho_idx in range(nb_rho[method]):
                         for other_dim_idx in range(nb_other_dim[method]):
-                            self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings)
+                            self.label_method_plot(replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMReg,rename_settings)
                     if (method == method_list[-1]):
                         legend_this_ROI = False
                         if (quantitative_tradeoff): # AR
@@ -619,7 +619,7 @@ class iFinalCurves(vGeneral):
         else:
             ax[fig_nb].set_ylabel('SSIM')
 
-    def label_method_plot(self,replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMLim,rename_settings):
+    def label_method_plot(self,replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APGMAP_vs_ADMMReg,rename_settings):
         if (self.phantom == "image2_0"):
             replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
         elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom):
@@ -627,13 +627,13 @@ class iFinalCurves(vGeneral):
                 if (fig_nb != 2):
                     replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                 else:
-                    if (APGMAP_vs_ADMMLim):
+                    if (APGMAP_vs_ADMMReg):
                         replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
                     else:
-                        # if ("ADMMLim" in method):
+                        # if ("ADMMReg" in method):
                         #     replicates_legend[fig_nb].append('ADMM-Reg')
                         if (rename_settings == "TMI"):
-                            if ("ADMMLim" in method):
+                            if ("ADMMReg" in method):
                                 replicates_legend[fig_nb].append('ADMM-Reg')
                             elif ("APGMAP" in method):
                                 replicates_legend[fig_nb].append('APPGML')
@@ -644,17 +644,17 @@ class iFinalCurves(vGeneral):
                             replicates_legend[fig_nb].append(method)
             else:
                 # replicates_legend[fig_nb].append(method)
-                if (APGMAP_vs_ADMMLim):
+                if (APGMAP_vs_ADMMReg):
                     replicates_legend[fig_nb].append(method + (": " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
-                elif ((not APGMAP_vs_ADMMLim and other_dim_idx == 0) or APGMAP_vs_ADMMLim):
+                elif ((not APGMAP_vs_ADMMReg and other_dim_idx == 0) or APGMAP_vs_ADMMReg):
                     if ("MLEM_norm" in method):
                         replicates_legend[fig_nb].append(r"DIPRecon$_{init~MLEM}^{scal~norm}$")
-                    elif ("ADMMLim_norm" in method):
-                        replicates_legend[fig_nb].append(r"DIPRecon$_{init~ADMMLim}^{scal~norm}$")
-                    elif ("DNA_ADMMLim_stand" in method):
-                        replicates_legend[fig_nb].append(r"DNA$_{init~ADMMLim}^{scal~stand}$")
-                    elif ("DIPRecon_ADMMLim_stand" in method):
-                        replicates_legend[fig_nb].append(r"DIPRecon$_{init~ADMMLim}^{scal~stand}$")
+                    elif ("ADMMReg_norm" in method):
+                        replicates_legend[fig_nb].append(r"DIPRecon$_{init~ADMMReg}^{scal~norm}$")
+                    elif ("DNA_ADMMReg_stand" in method):
+                        replicates_legend[fig_nb].append(r"DNA$_{init~ADMMReg}^{scal~stand}$")
+                    elif ("DIPRecon_ADMMReg_stand" in method):
+                        replicates_legend[fig_nb].append(r"DIPRecon$_{init~ADMMReg}^{scal~stand}$")
                     elif ("DNA_BSREM_stand" in method):
                         replicates_legend[fig_nb].append("DNA")
                     elif ("DIPRecon_BSREM_stand" in method):
@@ -720,7 +720,7 @@ class iFinalCurves(vGeneral):
                     #     replicates_legend[fig_nb].append('DNA')
                     # elif ("DNA_APPGML_50_2" in method):
                     #     replicates_legend[fig_nb].append('DNA-APPGML')
-                    if ("DNA_ADMMLim_more_ADMMLim_it_10" in method):
+                    if ("DNA_ADMMReg_more_ADMMReg_it_10" in method):
                         replicates_legend[fig_nb].append(r'DNA$^{positive~norm}$')
                     elif ("DNA_APPGML_1it" in method):
                         replicates_legend[fig_nb].append(r'DNA$^{norm}$')
@@ -781,8 +781,8 @@ class iFinalCurves(vGeneral):
             method_name = "BSREM"
         elif ("APGMAP" in method):
             method_name = "APGMAP"
-        elif ("ADMMLim" in method):
-            method_name = "ADMMLim"
+        elif ("ADMMReg" in method):
+            method_name = "ADMMReg"
         else:
             print("No general method found, keep the whole name")
             method_name = method            
@@ -798,16 +798,16 @@ class iFinalCurves(vGeneral):
                 "DNA" : 100*['red','pink'],
                 "DIPRecon" : 100*['cyan','blue','teal','blueviolet'],
                 "APGMAP" : 100*['darkgreen','lime','gold'],
-                "ADMMLim" : 100*['fuchsia'],
+                "ADMMReg" : 100*['fuchsia'],
                 "OSEM" : 100*['darkorange'],
                 "BSREM" : 100*['grey']
             }
             color_dict_supp = {
                 "DNA_BSREM_stand" : [color_dict["DNA"][0]],
-                "DNA_ADMMLim_stand" : [color_dict["DNA"][1]],
+                "DNA_ADMMReg_stand" : [color_dict["DNA"][1]],
                 "DIPRecon_BSREM_stand" : [color_dict["DIPRecon"][0]],
-                "DIPRecon_ADMMLim_stand" : [color_dict["DIPRecon"][1]],
-                "DIPRecon_ADMMLim_norm" : [color_dict["DIPRecon"][2]],
+                "DIPRecon_ADMMReg_stand" : [color_dict["DIPRecon"][1]],
+                "DIPRecon_ADMMReg_norm" : [color_dict["DIPRecon"][2]],
                 "DIPRecon_MLEM_norm" : [color_dict["DIPRecon"][3]],
             }
 
@@ -815,7 +815,7 @@ class iFinalCurves(vGeneral):
 
         elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom):
             color_dict_after_MIC = {
-                "DNA_ADMMLim" : ['cyan','blue','teal','blueviolet','black'],
+                "DNA_ADMMReg" : ['cyan','blue','teal','blueviolet','black'],
                 #"DNA_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
                 #"DNA_APPGML_subsets" : ['darkgreen','lime','gold','darkseagreen'],
                 "DNA_APPGML" : ['darkgreen','lime','gold','darkseagreen'],
@@ -830,17 +830,17 @@ class iFinalCurves(vGeneral):
                 #"APGMAP" : ['darkgreen','lime','gold'],
                 "APGMAP" : list(reversed(['darkgreen','lime'])),
                 "APGMAP_Bowsher" : list(reversed(15*['darkgreen','lime'])),
-                "ADMMLim_Bowsher" : list(['cyan','darkviolet','red','saddlebrown','blueviolet','lime','black','yellow','grey','peru','gold','darkseagreen','cyan','blue','teal','black']),
+                "ADMMReg_Bowsher" : list(['cyan','darkviolet','red','saddlebrown','blueviolet','lime','black','yellow','grey','peru','gold','darkseagreen','cyan','blue','teal','black']),
             }
             color_dict_add_tests = {
                 "DNA" : ['black'], # 3 it
-                "DNA_skip0_3_my_settings" : [color_dict_after_MIC["DNA_ADMMLim"][3]],
-                "DNA_skip1_3_my_settings" : [color_dict_after_MIC["DNA_ADMMLim"][1]],
-                "DNA_skip2_3_my_settings" : [color_dict_after_MIC["DNA_ADMMLim"][2]],
-                "DNA_ADMMLim_more_ADMMLim_it_10" : [color_dict_after_MIC["DNA_ADMMLim"][0],color_dict_after_MIC["DNA_ADMMLim"][1],color_dict_after_MIC["DNA_ADMMLim"][2],color_dict_after_MIC["DNA_ADMMLim"][3],color_dict_after_MIC["DNA_ADMMLim"][4]],
-                "DNA_ADMMLim_more_ADMMLim_it_30" : [color_dict_after_MIC["DNA_ADMMLim"][1]],
-                "DNA_ADMMLim_more_ADMMLim_it_80" : [color_dict_after_MIC["DNA_ADMMLim"][2]],
-                "DNA_ADMMLim_u_v" : [color_dict_after_MIC["DNA_ADMMLim"][3]],
+                "DNA_skip0_3_my_settings" : [color_dict_after_MIC["DNA_ADMMReg"][3]],
+                "DNA_skip1_3_my_settings" : [color_dict_after_MIC["DNA_ADMMReg"][1]],
+                "DNA_skip2_3_my_settings" : [color_dict_after_MIC["DNA_ADMMReg"][2]],
+                "DNA_ADMMReg_more_ADMMReg_it_10" : [color_dict_after_MIC["DNA_ADMMReg"][0],color_dict_after_MIC["DNA_ADMMReg"][1],color_dict_after_MIC["DNA_ADMMReg"][2],color_dict_after_MIC["DNA_ADMMReg"][3],color_dict_after_MIC["DNA_ADMMReg"][4]],
+                "DNA_ADMMReg_more_ADMMReg_it_30" : [color_dict_after_MIC["DNA_ADMMReg"][1]],
+                "DNA_ADMMReg_more_ADMMReg_it_80" : [color_dict_after_MIC["DNA_ADMMReg"][2]],
+                "DNA_ADMMReg_u_v" : [color_dict_after_MIC["DNA_ADMMReg"][3]],
                 "DNA_APPGML_1subset" : [color_dict_after_MIC["DNA_APPGML"][0]],
                 "DNA_APPGML_4subsets" : [color_dict_after_MIC["DNA_APPGML"][1]],
                 "DNA_APPGML_14subsets" : [color_dict_after_MIC["DNA_APPGML"][2]],
@@ -913,7 +913,7 @@ class iFinalCurves(vGeneral):
                 "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "DIPRecon_image4_1_MR3" : ['lime','saddlebrown','red','lime','black','yellow','grey','peru'],
                 "APGMAP" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
-                "ADMMLim" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
+                "ADMMReg" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
                 "OSEM" : ['darkorange'] + 5*['cyan','blue','teal','blueviolet'],
                 "BSREM" : ['grey'] + 5*['cyan','blue','teal','blueviolet'],
                 "BSREM_Bowsher" : ['blueviolet'] + 5*['cyan','blue','teal','grey'],
@@ -924,7 +924,7 @@ class iFinalCurves(vGeneral):
                 "DNA_low_count" : ['black','red','pink'],
                 "DIPRecon_low_count" : ['cyan','blue','teal','blueviolet'],
                 "APGMAP_low_count" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
-                "ADMMLim_low_count" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
+                "ADMMReg_low_count" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
 
                 "DNA_with_ReLU" : [color_dict_after_MIC["DNA_CT_skip"][0]],
                 "DIPRecon_without_ReLU" : [color_dict_after_MIC["DNA_CT_skip"][1]],
@@ -936,13 +936,13 @@ class iFinalCurves(vGeneral):
                 "DNA" : ['red','pink'],
                 "DNA_MIC_brain_2D" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
                 "DNA_MIC_cookie_2D" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
-                "DNA_MIC_cookie_2D_DNA_ADMMLim" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
+                "DNA_MIC_cookie_2D_DNA_ADMMReg" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
 
                 "DNA_MIC_brain_2D_intermediate" : ['red','saddlebrown','blueviolet','lime','black','yellow','grey','peru'],
-                "DNA_MIC_brain_2D_intermediate0" : 5*[color_dict_after_MIC["DNA_ADMMLim"][3]],
-                "DNA_MIC_brain_2D_intermediate1" : 5*[color_dict_after_MIC["DNA_ADMMLim"][2]],
-                "DNA_MIC_brain_2D_intermediate2" : 5*[color_dict_after_MIC["DNA_ADMMLim"][1]],
-                "DNA_MIC_brain_2D_intermediate3" : 5*[color_dict_after_MIC["DNA_ADMMLim"][0]],
+                "DNA_MIC_brain_2D_intermediate0" : 5*[color_dict_after_MIC["DNA_ADMMReg"][3]],
+                "DNA_MIC_brain_2D_intermediate1" : 5*[color_dict_after_MIC["DNA_ADMMReg"][2]],
+                "DNA_MIC_brain_2D_intermediate2" : 5*[color_dict_after_MIC["DNA_ADMMReg"][1]],
+                "DNA_MIC_brain_2D_intermediate3" : 5*[color_dict_after_MIC["DNA_ADMMReg"][0]],
                 "DNA_MIC_brain_2D_MR" : 5*[color_dict_after_MIC["DNA_CT_skip"][0]],
                 "DNA_MIC_brain_2D_MR0" : 5*[color_dict_after_MIC["DNA_CT_skip"][4]],
                 "DNA_MIC_brain_2D_MR1" : 5*[color_dict_after_MIC["DNA_CT_skip"][5]],
@@ -961,18 +961,18 @@ class iFinalCurves(vGeneral):
                 # "DNA_MIC_brain_2D_diff5" : [color_dict_after_MIC["DNA_APPGML"][3],color_dict_after_MIC["DNA_APPGML"][3],color_dict_after_MIC["DNA_APPGML"][3],color_dict_after_MIC["DNA_APPGML"][3]],
                 "DNA_MIC_brain_2D_diff5" : [color_dict_after_MIC["DNA_APPGML"][3],color_dict_after_MIC["DNA_APPGML"][2],color_dict_after_MIC["DNA_APPGML"][1],color_dict_after_MIC["DNA_APPGML"][0]],
                 "DNA_MIC_brain_2D_diff5_30" : [color_dict_after_MIC["DNA_APPGML"][2],color_dict_after_MIC["DNA_CT_skip"][2],color_dict_after_MIC["DNA_CT_skip"][1],color_dict_after_MIC["DNA_CT_skip"][0]],
-                "DNA_MIC_brain_2D_diff5_SC1" : 5*[color_dict_after_MIC["DNA_ADMMLim"][1]],
-                "DNA_MIC_brain_2D_diff5_SC2" : 5*[color_dict_after_MIC["DNA_ADMMLim"][2]],
+                "DNA_MIC_brain_2D_diff5_SC1" : 5*[color_dict_after_MIC["DNA_ADMMReg"][1]],
+                "DNA_MIC_brain_2D_diff5_SC2" : 5*[color_dict_after_MIC["DNA_ADMMReg"][2]],
 
                 "DIPRecon" : ['cyan','blue','teal','blueviolet'],
                 "APGMAP" : ['darkgreen','lime','gold'] + 5*['cyan','blue','teal','blueviolet'],
-                "ADMMLim" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
+                "ADMMReg" : ['fuchsia'] + 5*['cyan','blue','teal','blueviolet'],
                 "OSEM" : ['darkorange'] + 5*['cyan','blue','teal','blueviolet'],
                 "BSREM" : ['grey'] + 5*['cyan','blue','teal','blueviolet'],
 
                 # Manuscrit
                 "APGMAP" : ['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
-                "ADMMLim" : list(['cyan','darkviolet','red','saddlebrown','blueviolet','lime','black','yellow','grey','peru','gold','darkseagreen','cyan','blue','teal','black']),
+                "ADMMReg" : list(['cyan','darkviolet','red','saddlebrown','blueviolet','lime','black','yellow','grey','peru','gold','darkseagreen','cyan','blue','teal','black']),
                 "DNA_image4_1_MR3" : ['black'],
                 "DIPRecon_image4_1_MR3" : 5*[color_dict_after_MIC["DNA_CT_skip"][1]],
 
@@ -988,12 +988,12 @@ class iFinalCurves(vGeneral):
                 "DIPRecon_nothing" : list(reversed(5*['blue','teal','blueviolet'])),
 
 
-                "DNA_ADMMLim" : ['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "DNA_ADMMReg" : ['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "DNA_BSREM" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "DNA_OSEM" : ['gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "DNA_MLEM" : 5*['cyan','blue','teal','blueviolet'],
 
-                "DNA_ADMMLim_4_1" : ['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
+                "DNA_ADMMReg_4_1" : ['lime','darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "DNA_BSREM_4_1" : ['darkgreen','gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "DNA_OSEM_4_1" : ['gold'] + 5*['cyan','blue','teal','blueviolet'],
                 "DNA_MLEM_4_1" : 5*['cyan','blue','teal','blueviolet'],
@@ -1010,24 +1010,24 @@ class iFinalCurves(vGeneral):
                 "LM_OSEM" : ["orange"],
             }
 
-            color_dict = {**color_dict_after_MIC, **color_dict_add_tests, **color_dict_TMI_DNA, **color_dict_MIC2023_DNA, **color_dict_LM} # Comparison between APPGML and ADMMLim in DNA (varying subsets and iterations)
+            color_dict = {**color_dict_after_MIC, **color_dict_add_tests, **color_dict_TMI_DNA, **color_dict_MIC2023_DNA, **color_dict_LM} # Comparison between APPGML and ADMMReg in DNA (varying subsets and iterations)
 
         if (self.phantom == "image2_0"):                    
             marker_dict = {
                 "DNA" : ['-','--'],
                 "DIPRecon" : ['-','--','loosely dotted','dashdot'],
                 "APGMAP" : ['-','--','loosely dotted'],
-                "ADMMLim" : ['-'],
+                "ADMMReg" : ['-'],
                 "OSEM" : ['-'],
                 "BSREM" : ['-'],
                 "BSREM_Bowsher" : ['-']
             }
             marker_dict_supp = {
                 "DNA_BSREM_stand" : [marker_dict["DNA"][0]],
-                "DNA_ADMMLim_stand" : [marker_dict["DNA"][1]],
+                "DNA_ADMMReg_stand" : [marker_dict["DNA"][1]],
                 "DIPRecon_BSREM_stand" : [marker_dict["DIPRecon"][0]],
-                "DIPRecon_ADMMLim_stand" : [marker_dict["DIPRecon"][1]],
-                "DIPRecon_ADMMLim_norm" : [marker_dict["DIPRecon"][2]],
+                "DIPRecon_ADMMReg_stand" : [marker_dict["DIPRecon"][1]],
+                "DIPRecon_ADMMReg_norm" : [marker_dict["DIPRecon"][2]],
                 "DIPRecon_MLEM_norm" : [marker_dict["DIPRecon"][3]],
             }
 
@@ -1036,8 +1036,8 @@ class iFinalCurves(vGeneral):
             marker_dict = {
                 "APPGML_it" : 15*[':'],
                 "APPGML_subsets" : 15*['-'],
-                "ADMMLim" : 15*['--'],
-                "ADMMLim_Bowsher" : 15*['-'],
+                "ADMMReg" : 15*['--'],
+                "ADMMReg_Bowsher" : 15*['-'],
                 "CT" : 15*['dashdot'],
                 "random" : 15*['dashdot'],
                 "intermediate" : 15*['-'],
@@ -1049,14 +1049,14 @@ class iFinalCurves(vGeneral):
                 "DIPRecon" : 15*['-']
             }
             marker_dict_supp = {
-                "DNA" : [marker_dict["ADMMLim"][0]], # 3 it
+                "DNA" : [marker_dict["ADMMReg"][0]], # 3 it
                 "DNA_skip0_3_my_settings" : [marker_dict["intermediate"][0]],
                 "DNA_skip1_3_my_settings" : [marker_dict["intermediate"][0]],
                 "DNA_skip2_3_my_settings" : [marker_dict["intermediate"][0]],
-                "DNA_ADMMLim_more_ADMMLim_it_10" : [marker_dict["intermediate"][0],marker_dict["intermediate"][0],marker_dict["intermediate"][0],marker_dict["intermediate"][0]],
-                "DNA_ADMMLim_more_ADMMLim_it_30" : [marker_dict["ADMMLim"][0]],
-                "DNA_ADMMLim_more_ADMMLim_it_80" : [marker_dict["ADMMLim"][0]],
-                "DNA_ADMMLim_u_v" : [marker_dict["ADMMLim"][0]],
+                "DNA_ADMMReg_more_ADMMReg_it_10" : [marker_dict["intermediate"][0],marker_dict["intermediate"][0],marker_dict["intermediate"][0],marker_dict["intermediate"][0]],
+                "DNA_ADMMReg_more_ADMMReg_it_30" : [marker_dict["ADMMReg"][0]],
+                "DNA_ADMMReg_more_ADMMReg_it_80" : [marker_dict["ADMMReg"][0]],
+                "DNA_ADMMReg_u_v" : [marker_dict["ADMMReg"][0]],
                 "DNA_APPGML_1subset" : [marker_dict["APPGML_subsets"][0]],
                 "DNA_APPGML_4subsets" : [marker_dict["APPGML_subsets"][0]],
                 "DNA_APPGML_14subsets" : [marker_dict["APPGML_subsets"][0]],
@@ -1111,7 +1111,7 @@ class iFinalCurves(vGeneral):
                 "DNA_low_count" : [marker_dict["random"][0]],
                 "DIPRecon_low_count" : [marker_dict["random"][0]],
                 "APGMAP_low_count" : 10*[marker_dict["random"][0]],
-                "ADMMLim_low_count" : 10*[marker_dict["random"][0]],
+                "ADMMReg_low_count" : 10*[marker_dict["random"][0]],
                 
                 "DNA_with_ReLU" : [marker_dict["random"][0]],
                 "DIPRecon_without_ReLU" : [marker_dict["random"][0]],
@@ -1119,7 +1119,7 @@ class iFinalCurves(vGeneral):
                 "DIPRecon_init_woReLU_MIC_brain_2D_MR3" : [marker_dict["random"][0]],
 
                 "DNA_MIC_brain_2D" : 5*[marker_dict["CT"][0]],
-                "DNA_MIC_cookie_2D_DNA_ADMMLim" : 5*[marker_dict["CT"][0]],
+                "DNA_MIC_cookie_2D_DNA_ADMMReg" : 5*[marker_dict["CT"][0]],
 
                 "DNA_MIC_brain_2D" : 5*[marker_dict["CT"][0]],
                 "DNA_MIC_brain_2D_intermediate" : 5*[marker_dict["CT"][0]],
@@ -1176,12 +1176,12 @@ class iFinalCurves(vGeneral):
                 "DIPRecon_norm_init" : [marker_dict["DIPRecon"][0]],
                 "DIPRecon_nothing" : [marker_dict["DIPRecon"][0]],
 
-                "DNA_ADMMLim" : [marker_dict["DIPRecon"][0]],
+                "DNA_ADMMReg" : [marker_dict["DIPRecon"][0]],
                 "DNA_BSREM" : [marker_dict["DIPRecon"][0]],
                 "DNA_OSEM" : [marker_dict["DIPRecon"][0]],
                 "DNA_MLEM" : [marker_dict["DIPRecon"][0]],
 
-                "DNA_ADMMLim_4_1" : [marker_dict["DIPRecon"][0]],
+                "DNA_ADMMReg_4_1" : [marker_dict["DIPRecon"][0]],
                 "DNA_BSREM_4_1" : [marker_dict["DIPRecon"][0]],
                 "DNA_OSEM_4_1" : [marker_dict["DIPRecon"][0]],
                 "DNA_MLEM_4_1" : [marker_dict["DIPRecon"][0]],

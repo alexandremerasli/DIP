@@ -19,9 +19,9 @@ def save_img(img,name):
     print('Succesfully save in:', name)
 
 folder_path = "data/Algo/image00_cylinder/"
-subfolder = "ADMMLim_TOF_70_0.0002"
-subfolder = "ADMMLim_sans_TOF_70_0.0002"
-#subfolder = "ADMMLim_TOF_70"
+subfolder = "ADMMReg_TOF_70_0.0002"
+subfolder = "ADMMReg_sans_TOF_70_0.0002"
+#subfolder = "ADMMReg_TOF_70"
 
 subsubfolder = subfolder
 

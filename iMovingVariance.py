@@ -216,7 +216,7 @@ class iMovingVariance(vGeneral):
             
         return SUCCESS, VAR_min, stagnate
     
-    def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, subroot, scanner, simulation, image_net_input=None):          
+    def initialize_WMV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,sub_iter_DIP,root, subroot, scanner, simulation,image_net_input=None):          
         self.subroot = subroot
         self.fixed_hyperparameters_list = fixed_hyperparameters_list
         self.hyperparameters_list = hyperparameters_list
@@ -229,6 +229,7 @@ class iMovingVariance(vGeneral):
         self.scanner = scanner
         self.simulation = simulation
         self.image_net_input = image_net_input
+        self.sub_iter_DIP = sub_iter_DIP
         # Initialize variables
         self.do_everything(config,root)
 
@@ -239,20 +240,32 @@ class iMovingVariance(vGeneral):
                 MV_value_csv = self.VAR_recon[i]
             else:
                 MV_value_csv = NaN
-            self.SUCCESS,self.VAR_min,self.stagnate = self.WMV(out,i,config["sub_iter_DIP"],self.queueQ,self.SUCCESS,self.VAR_min,self.stagnate,descale=False,MV_value_csv=MV_value_csv, MV_metrics_already_stored_in_csv=MV_metrics_already_stored_in_csv)
+            self.SUCCESS,self.VAR_min,self.stagnate = self.WMV(out,i,self.sub_iter_DIP,self.queueQ,self.SUCCESS,self.VAR_min,self.stagnate,descale=False,MV_value_csv=MV_value_csv, MV_metrics_already_stored_in_csv=MV_metrics_already_stored_in_csv)
             if (not config["read_only_MV_csv"]):
                 self.VAR_recon = self.VAR_recon
                 self.MSE_WMV = self.MSE_WMV
                 self.PSNR_WMV = self.PSNR_WMV
                 self.SSIM_WMV = self.SSIM_WMV
             self.epochStar = self.epochStar
-            if config["EMV_or_WMV"] == "EMV":
-                self.alpha_EMV = self.alpha_EMV
-            else:
-                self.windowSize = self.windowSize
             self.patienceNumber = self.patienceNumber
 
             if self.SUCCESS: # Will be true 1 epoch after self.SUCCESS becomes True
                 print("SUCCESS WMVVVVVVVVVVVVVVVVVV")
-                return 1
-            return 0
+            #     return 1
+            # return 0
+
+            if config["EMV_or_WMV"] == "EMV":
+                self.alpha_EMV = self.alpha_EMV
+            else:
+                self.windowSize = self.windowSize
+        
+            return self.SUCCESS, self.VAR_recon, self.MSE_WMV, self.PSNR_WMV, self.SSIM_WMV, self.epochStar, self.patienceNumber
+        
+    def save_DIP_output(self, ckpt_path, net_output_path):
+        # Load ckpt file with pytorch ligthning and return the output of DIP network
+        model = self.model_class.load_from_checkpoint(ckpt_path)
+        # Get the output
+        output = model(self.image_net_input_torch)
+        image_net_output = squeeze(output.detach().numpy())
+        # Save the output
+        self.save_img(image_net_output, net_output_path)

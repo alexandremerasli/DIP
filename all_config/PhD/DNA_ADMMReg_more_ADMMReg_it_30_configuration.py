@@ -9,7 +9,7 @@ def config_func_MIC():
         "method" : tune.grid_search(["DNA"]), # Reconstruction algorithm (DNA, DIPRecon, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
         "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
         "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
-        "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMLim and DNA)
+        "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMReg and DNA)
         "debug" : False, # Debug mode = run without raytune and with one iteration
         "ray" : False, # Ray mode = run with raytune if True, to run several settings in parallel
         "tensorboard" : True, # Tensorboard mode = show results in tensorboard
@@ -18,19 +18,19 @@ def config_func_MIC():
         "replicates" : tune.grid_search(list(range(1,40+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
         "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
         "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
-        "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMLim)
+        "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMReg)
     }
     # Configuration dictionnary for previous hyperparameters, but fixed to simplify
     fixed_config = {
         "max_iter" : tune.grid_search([300]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for DNA and DIPRecon
-        "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMLim)
+        "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMReg)
         "use_u_and_v_DNA" : tune.grid_search([False]), # If sinogram u and v from previous global iteration are used to initialize current u and v
         "finetuning" : tune.grid_search(['last']),
         "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
         "unnested_1st_global_iter" : tune.grid_search([False]), # If True, unnested are computed after 1st global iteration (because rho is set to 0). If False, needs to set f_init to initialize the network, as in DIPRecon paper, and rho is not changed.
         "sub_iter_DIP_initial_and_final" : tune.grid_search([2000]), # Number of epochs in first global iteration (pre iteraiton) in network optimization (only for DIPRecon for now)
-        "nb_inner_iteration" : tune.grid_search([1]), # Number of inner iterations in ADMMLim (if mlem_sequence is False). (3 sub iterations are done within 1 inner iteration in CASToR)
-        "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMLim
+        "nb_inner_iteration" : tune.grid_search([1]), # Number of inner iterations in ADMMReg (if mlem_sequence is False). (3 sub iterations are done within 1 inner iteration in CASToR)
+        "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMReg
         "xi_DIP" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in DIPRecon and DNA
         "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
         "DIP_early_stopping" : tune.grid_search([True]), # Use DIP early stopping with WMV strategy
@@ -54,9 +54,9 @@ def config_func_MIC():
         # "rho" : tune.grid_search([0.3,0.03,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)
         "rho" : tune.grid_search([0.8,0.3,0.08]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)
         "adaptive_parameters_DIP" : tune.grid_search(["nothing"]), # which parameters are adaptive ? Must be set to nothing, alpha, or tau (which means alpha and tau)
-        "mu_DIP" : tune.grid_search([100]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
-        "tau_DIP" : tune.grid_search([0.95,0.92,0.9,0.8]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
-        "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim. If adaptive tau, it corresponds to tau max
+        "mu_DIP" : tune.grid_search([100]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMReg
+        "tau_DIP" : tune.grid_search([0.95,0.92,0.9,0.8]), # Factor to multiply alpha in adaptive alpha computation in ADMMReg. If adaptive tau, it corresponds to tau max
+        "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMReg. If adaptive tau, it corresponds to tau max
         ## network hyperparameters
         # "monitor_lr" : tune.grid_search([True]), # Learning rate in network optimization
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
@@ -72,15 +72,15 @@ def config_func_MIC():
         # "input" : tune.grid_search(['CT']), # Neural network input (random or CT)
         "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
         "k_DD" : tune.grid_search([32]), # k for Deep Decoder
-        ## ADMMLim - OPTITR hyperparameters
-        "nb_outer_iteration": tune.grid_search([10]), # Number of outer iterations in ADMMLim (and DNA) and OPTITR (for DIPRecon)
-        # "nb_outer_iteration": tune.grid_search([3]), # Number of outer iterations in ADMMLim (and DNA) and OPTITR (for DIPRecon)
-        "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMLim
+        ## ADMMReg - OPTITR hyperparameters
+        "nb_outer_iteration": tune.grid_search([10]), # Number of outer iterations in ADMMReg (and DNA) and OPTITR (for DIPRecon)
+        # "nb_outer_iteration": tune.grid_search([3]), # Number of outer iterations in ADMMReg (and DNA) and OPTITR (for DIPRecon)
+        "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMReg
         "adaptive_parameters" : tune.grid_search(["both"]), # which parameters are adaptive ? Must be set to nothing, alpha, or both (which means alpha and tau)
-        "mu_adaptive" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMLim
-        "tau" : tune.grid_search([100]), # Factor to multiply alpha in adaptive alpha computation in ADMMLim
-        "tau_max" : tune.grid_search([100]), # Maximum value for tau in adaptive tau in ADMMLim
-        "stoppingCriterionValue" : tune.grid_search([0]), # Value of the stopping criterion in ADMMLim
+        "mu_adaptive" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMReg
+        "tau" : tune.grid_search([100]), # Factor to multiply alpha in adaptive alpha computation in ADMMReg
+        "tau_max" : tune.grid_search([100]), # Maximum value for tau in adaptive tau in ADMMReg
+        "stoppingCriterionValue" : tune.grid_search([0]), # Value of the stopping criterion in ADMMReg
         "saveSinogramsUAndV" : tune.grid_search([0]), # 1 means save sinograms u and v from CASToR, otherwise it means do not save them. If adaptive tau, it corresponds to tau max
         ## hyperparameters from CASToR algorithms 
         # Optimization transfer (OPTITR) hyperparameters

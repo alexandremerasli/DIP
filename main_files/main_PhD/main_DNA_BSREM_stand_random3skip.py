@@ -45,10 +45,10 @@ def class_for_task(config,task):
     elif (task == 'show_results_post_reco'): # Show already computed results over iterations of post reconstruction mode
         from iResults import iResults
         classTask = iResults(config)
-    elif (task == 'show_metrics_ADMMLim'): # Show ADMMLim FOMs over iterations
+    elif (task == 'show_metrics_ADMMReg'): # Show ADMMReg FOMs over iterations
         config["task"] = "show_results_post_reco"
-        from iMeritsADMMLim import iMeritsADMMLim
-        classTask = iMeritsADMMLim(config)
+        from iMeritsADMMReg import iMeritsADMMReg
+        classTask = iMeritsADMMReg(config)
     elif (task == 'show_metrics_DNA'): # Show DNA or DIPRecon FOMs over iterations
         from iMeritsDIP_ADMM import iMeritsDIP_ADMM
         classTask = iMeritsDIP_ADMM(config)
@@ -57,8 +57,8 @@ def class_for_task(config,task):
     #     classTask = iResultsAlreadyComputed(config)
     elif (task == 'compare_2_methods'): # Show already computed results averaging over replicates
         config["average_replicates"] = tune.grid_search([True])
-        from iResultsADMMLim_VS_APGMAP import iResultsADMMLim_VS_APGMAP
-        classTask = iResultsADMMLim_VS_APGMAP(config)
+        from iResultsADMMReg_VS_APGMAP import iResultsADMMReg_VS_APGMAP
+        classTask = iResultsADMMReg_VS_APGMAP(config)
 
     return classTask
 
@@ -68,7 +68,7 @@ def choose_task(config):
     if (method == "DIPRecon" or method == "DNA"):
         task = 'full_reco_with_network'
 
-    elif ('ADMMLim' in method or method == 'MLEM' or method == 'OPTITR' or method == 'OSEM' or method == 'BSREM' or method == 'AML' or method == 'APGMAP'):
+    elif ('ADMMReg' in method or method == 'MLEM' or method == 'OPTITR' or method == 'OSEM' or method == 'BSREM' or method == 'AML' or method == 'APGMAP'):
         task = 'castor_reco'
 
     # Override task here if needed
@@ -78,7 +78,7 @@ def choose_task(config):
     # task = 'show_results_post_reco'
     # task = 'show_results'
     # task = 'show_metrics_results_already_computed'
-    # task = 'show_metrics_ADMMLim'
+    # task = 'show_metrics_ADMMReg'
     # task = 'show_metrics_DNA'
     # task = 'compare_2_methods'
 
@@ -89,15 +89,15 @@ config_files = ["DIPRecon_CT_1_skip", "DIPRecon_CT_2_skip"]#, "DIPRecon_CT_3_ski
 config_files = ["DIPRecon_CT_3_skip","DIPRecon_CT_1_skip","DIPRecon_CT_2_skip"]
 config_files = ["DIPRecon_CT_1_skip","DIPRecon_CT_2_skip"]
 config_files = ['APGMAP_configuration']
-# config_files = ['ADMMLim_configuration']
-config_files = ["DNA_ADMMLim_more_ADMMLim_it_10_configuration"]
-# config_files = ["DNA_ADMMLim_more_ADMMLim_it_30_configuration"]
+# config_files = ['ADMMReg_configuration']
+config_files = ["DNA_ADMMReg_more_ADMMReg_it_10_configuration"]
+# config_files = ["DNA_ADMMReg_more_ADMMReg_it_30_configuration"]
 # config_files = ['OSEM_configuration']
 # config_files = ['DIPRecon_skip3_3_my_settings']
 # config_files = ['BSREM_configuration']
 # config_files = [f[:-3] for f in os.listdir('all_config') if os.path.isfile(os.path.join('all_config', f))]
 
-# config_files = ['ADMMLim_configuration']
+# config_files = ['ADMMReg_configuration']
 
 for lib_string in config_files:
     # try:
@@ -167,7 +167,7 @@ for lib_string in config_files:
             # classTask.runRayTune(config_without_grid_search,root,task)
 
         '''
-        classTask = iResultsADMMLim_VS_APGMAP(config_without_grid_search)
+        classTask = iResultsADMMReg_VS_APGMAP(config_without_grid_search)
         config_without_grid_search["ray"] = False
         classTask.runRayTune(config_without_grid_search,root,task)
         '''

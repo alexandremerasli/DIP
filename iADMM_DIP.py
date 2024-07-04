@@ -54,7 +54,7 @@ class iADMM_DIP(vReconstruction):
             if (self.global_it != i_init or config["unnested_1st_global_iter"]): # DIPRecon or DNA after pre iteration
                 #if (self.global_it == i_init + 1 and config["unnested_1st_global_iter"] == False): # enable to avoid pre iteration
                 #    self.f = self.fijii_np(self.subroot + 'Data/initialization/' + config["f_init"] + '.img',shape=(self.PETImage_shape),type_im='<f') # enable to avoid pre iteration
-                self.x_label, self.x = self.castor_reconstruction(classResults.writer, self.global_it, i_init, self.subroot_phantom, config["nb_outer_iteration"], self.experiment, config, self.method, self.phantom, self.replicate, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.alpha, self.image_init_path_without_extension) # without ADMMLim file
+                self.x_label, self.x = self.castor_reconstruction(classResults.writer, self.global_it, i_init, self.subroot_phantom, config["nb_outer_iteration"], self.experiment, config, self.method, self.phantom, self.replicate, self.suffix, classResults.image_gt, self.f, self.mu, self.PETImage_shape, self.PETImage_shape_str, self.alpha, self.image_init_path_without_extension) # without ADMMReg file
                 # Write corrupted image over ADMM iterations
                 classResults.writeCorruptedImage(self.global_it,config["nb_outer_iteration"],self.x_label,self.suffix,pet_algo=self.method)
 

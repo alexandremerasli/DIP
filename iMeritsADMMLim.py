@@ -10,7 +10,7 @@ import pandas as pd
 # Local files to import
 from vGeneral import vGeneral
 
-class iMeritsADMMLim(vGeneral):
+class iMeritsADMMReg(vGeneral):
     def __init__(self,config, *args, **kwargs):
         print("__init__")
 
@@ -43,7 +43,7 @@ class iMeritsADMMLim(vGeneral):
         self.tuners_tag = OPTION[option]
         
         self._squreNorm = False  # defaut:False
-        self.whichADMMoptimizer = 'ADMMLim'
+        self.whichADMMoptimizer = 'ADMMReg'
         self.SHOW = False  # show the plots in python or not !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     def runComputation(self,config,root):

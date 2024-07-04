@@ -17,7 +17,7 @@
 #     done
 #     if $cpu_available;
 #     then
-#         taskset -c $replicate_id python3 main_nested_BSREM_stand_more_ADMMLim_it.py --replicate $replicate_id &
+#         taskset -c $replicate_id python3 main_nested_BSREM_stand_more_ADMMReg_it.py --replicate $replicate_id &
 #         echo $replicate_id
 #     fi
 # done

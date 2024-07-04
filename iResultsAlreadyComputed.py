@@ -24,7 +24,7 @@ class iResultsAlreadyComputed(vDenoising):
         self.initializeGeneralVariables(config,root)
         #vDenoising.initializeSpecific(self,config,root)
         
-        if ('ADMMLim' in self.method):
+        if ('ADMMReg' in self.method):
             self.i_init = 30 # Remove first iterations
             self.i_init = 1 # Remove first iterations
         else:
