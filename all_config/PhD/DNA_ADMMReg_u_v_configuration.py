@@ -9,7 +9,6 @@ def config_func_MIC():
         "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
         "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
         "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMReg and DNA)
-        "debug" : False, # Debug mode = run without raytune and with one iteration
         "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
         "tensorboard" : True, # Tensorboard mode = show results in tensorboard
         "all_images_DIP" : tune.grid_search(['Last']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Unique" (store only last image)

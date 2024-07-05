@@ -58,7 +58,7 @@ class iADMM_DIP(vReconstruction):
                 # Write corrupted image over ADMM iterations
                 classResults.writeCorruptedImage(self.global_it,config["nb_outer_iteration"],self.x_label,self.suffix,pet_algo=self.method)
 
-            ####################    Block 2 - CNN    ####################yy
+            ####################    Block 2 - NN    ####################yy
             start_time_block2= time.time()
             # Create label corresponding to initial reconstructed image to start with
             self.saveLabel(config,i_init)
@@ -221,7 +221,6 @@ class iADMM_DIP(vReconstruction):
             self.sub_iter_DIP_already_done = 0
             classDenoising.fixed_hyperparameters_list = self.fixed_hyperparameters_list
             classDenoising.hyperparameters_list = self.hyperparameters_list
-            classDenoising.debug = self.debug
             classDenoising.config = self.config
             classDenoising.root = self.root
             classDenoising.method = self.method

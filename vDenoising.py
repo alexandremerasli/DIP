@@ -17,8 +17,9 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 # Local files to import
 from vGeneral import vGeneral
 
-from models.DIP_2D import DIP_2D # DIP
-from models.DIP_3D import DIP_3D # DIP
+# from models.DIP_2D import DIP_2D # DIP
+# from models.DIP_3D import DIP_3D # DIP
+from models.DIP_UNet import DIP_UNet # DIP
 from models.VAE_DIP_2D import VAE_DIP_2D # DIP vae
 from models.DD_2D import DD_2D # DD
 from models.DD_AE_2D import DD_AE_2D # DD adding encoder part
@@ -267,7 +268,7 @@ class vDenoising(vGeneral):
         else: # anatomical input, do not need to create one
             return 1
         
-        if (PETImage_shape[2] == 1):
+        if (self.nb_dimensions == 2):
             name += '_2D_'
         else:
             name += '_3D_'
@@ -347,47 +348,15 @@ class vDenoising(vGeneral):
             type_im = '<f'
             # type_im = '<d' # random images were generated in double
 
-        im_input = self.fijii_np(file_path, shape=(PETImage_shape),type_im=type_im) # Load input of the DNN
+        im_input = self.fijii_np(file_path, shape=(PETImage_shape),type_im=type_im) # Load input of the NN
 
         return im_input
 
 
     def load_model(self,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training):
-        if (finetuning == 'last'): # last model saved in checkpoint
-            if (global_it > 0): # if model has already been trained
-                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug, suffix=self.suffix, override_input = self.override_input, scanner = self.scanner) # Load previous model in checkpoint
-            elif (global_it == 0 and not config["unnested_1st_global_iter"]):
-                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug, suffix=self.suffix, override_input = self.override_input, scanner = self.scanner) # Load previous model in checkpoint
-                #model = model_class.load_from_checkpoint(self.subroot + 'Data/initialization/' + 'last.ckpt', config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # enable to avoid pre iteratio
-            elif (global_it == 0 and config["unnested_1st_global_iter"]):
-                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug, suffix=self.suffix, override_input = self.override_input, scanner = self.scanner) # Load previous model in checkpoint
-                #model = model_class.load_from_checkpoint(self.subroot + 'Data/initialization/' + 'last.ckpt', config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # enable to avoid pre iteratio
-            elif (global_it == -100): # post reco was not already launched once
-                if (os.path.isfile(os.path.join(checkpoint_simple_path_exp,'last.ckpt'))):
-                    model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug, suffix=self.suffix, override_input = self.override_input, scanner = self.scanner) # Load previous model in checkpoint
-
-        elif (finetuning == 'ES'): # ES model saved in checkpoint
-            if (global_it > 0): # if model has already been trained
-                # model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,"epoch=" + str(self.epochStar) + "-step=" + str(self.epochStar)) + ".ckpt", config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug, suffix=self.suffix) # Load previous model in checkpoint        
-                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug, suffix=self.suffix, override_input = self.override_input, scanner = self.scanner) # Load previous model in checkpoint
-            elif (global_it == 0 and not config["unnested_1st_global_iter"]):
-                # model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,"epoch=" + str(self.epochStar) + "-step=" + str(self.epochStar)) + ".ckpt", config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug, suffix=self.suffix) # Load previous model in checkpoint        
-                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug, suffix=self.suffix, override_input = self.override_input, scanner = self.scanner) # Load previous model in checkpoint
-                #model = model_class.load_from_checkpoint(self.subroot + 'Data/initialization/' + 'last.ckpt', config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug) # enable to avoid pre iteratio
-            elif (global_it == 0 and config["unnested_1st_global_iter"]):
-                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug, suffix=self.suffix, override_input = self.override_input, scanner = self.scanner) # Load previous model in checkpoint
-            elif (global_it == -100): # post reco was not already launched once
-                if (os.path.isfile(os.path.join(checkpoint_simple_path_exp,'last.ckpt'))):
-                    model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, fixed_hyperparameters_list=self.fixed_hyperparameters_list, hyperparameters_list=self.hyperparameters_list, debug=self.debug, suffix=self.suffix, override_input = self.override_input, scanner = self.scanner) # Load previous model in checkpoint
-        elif (finetuning == 'best'): # best model saved in checkpoint
-            if (global_it > 0): # if model has already been trained
-                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'best_loss.ckpt'), config=config,method=method, all_images_DIP = all_images_DIP) # Load best model in checkpoint
-            #if (global_it == 0):
-            # DD finetuning, k=32, d=6
-                #model = model_class.load_from_checkpoint(os.path.join(subroot,'high_statistics.ckpt'), config=config) # Load model coming from high statistics computation (normally coming from finetuning with supervised learning)
-            if (training):
-                os.system('rm -rf ' + checkpoint_simple_path_exp + '/best_loss.ckpt') # Otherwise, pl will store checkpoint with version in filename
-        
+        if (finetuning == 'last' or finetuning == "ES"): # last model saved in checkpoint
+            if (global_it > 0 or (global_it == 0 and not config["unnested_1st_global_iter"]) or (global_it == 0 and config["unnested_1st_global_iter"]) or (global_it==-100 and os.path.isfile(os.path.join(checkpoint_simple_path_exp,'last.ckpt')))): # if model has already been trained
+                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, suffix=self.suffix, override_input = self.override_input, scanner = self.scanner) # Load previous model in checkpoint
         return model
 
     def runComputation(self,config,root):
@@ -487,12 +456,9 @@ class vDenoising(vGeneral):
 
     def choose_net(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, override_input):
         if (net == 'DIP'): # Loading DIP architecture
-            if(PETImage_shape[2] == 1): # 2D
-                model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,self.subroot_phantom,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.simulation, self.sub_iter_DIP_already_done, self.override_SC_init, self.DIP_early_stopping, self.image_net_input_torch)
-                model_class = DIP_2D
-            else: # 3D
-                model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,self.subroot_phantom,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.simulation, self.sub_iter_DIP_already_done, self.override_SC_init, self.DIP_early_stopping, self.image_net_input_torch)
-                model_class = DIP_3D
+            model = DIP_UNet(self.nb_dimensions, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,self.subroot_phantom,method,all_images_DIP,global_it, suffix, override_input, self.scanner, self.simulation, self.hyperparameters_list, self.sub_iter_DIP_already_done, self.override_SC_init, self.DIP_early_stopping, self.image_net_input_torch)
+            model_class = type(model)
+            
         elif (net == "DIP_Xin"):
             self.embed_dim = 16
             self.kernel_size = 3
@@ -501,7 +467,7 @@ class vDenoising(vGeneral):
             self.depths = 2
             self.mode = "bilinear"
             from models.modules_Xin import DIP_skip_add # DIP Xin
-            model = DIP_skip_add(1,self.embed_dim,1,self.kernel_size,self.skip,self.num_layers,self.depths,self.mode,config,suffix,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot_phantom,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)
+            model = DIP_skip_add(1,self.embed_dim,1,self.kernel_size,self.skip,self.num_layers,self.depths,self.mode,config,suffix,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot_phantom,method,all_images_DIP,global_it, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)
             model_class = DIP_skip_add
         elif (net == "Swin_Unetr"):
             self.embed_dim = 16
@@ -516,14 +482,14 @@ class vDenoising(vGeneral):
             self.use_v2 = True #tune.grid_search([True,False]),
             self.sigma_p = 0
             from models.modules_Xin import Swin_Unetr # Swin Unetr
-            model = Swin_Unetr(self.num_heads,self.embed_dim,1,self.kernel_size,self.skip,self.num_layers,self.depths,self.mode,config,suffix,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot_phantom,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)
+            model = Swin_Unetr(self.num_heads,self.embed_dim,1,self.kernel_size,self.skip,self.num_layers,self.depths,self.mode,config,suffix,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot_phantom,method,all_images_DIP,global_it, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)
             model_class = Swin_Unetr
         elif (net == 'DIP_VAE'): # Loading DIP VAE architecture
             model = VAE_DIP_2D(config)
             model_class = VAE_DIP_2D
         elif (net == 'DD'): # Loading Deep Decoder architecture
-                #model = DD_2D(config,self.subroot_phantom,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix)
-                model = DD_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot_phantom,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix)
+                #model = DD_2D(config,self.subroot_phantom,method,all_images_DIP,global_it, suffix)
+                model = DD_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot_phantom,method,all_images_DIP,global_it, suffix)
                 model_class = DD_2D
         elif (net == 'DD_AE'): # Loading Deep Decoder based autoencoder architecture
             model = DD_AE_2D(config) 

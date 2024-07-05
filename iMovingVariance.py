@@ -207,11 +207,8 @@ class iMovingVariance(vGeneral):
             
         return SUCCESS, VAR_min, stagnate
     
-    def initialize_MV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,sub_iter_DIP,root, subroot, scanner, simulation,image_net_input=None):          
+    def initialize_MV(self,config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,sub_iter_DIP,root, subroot, scanner, simulation, hyperparameters_list,image_net_input=None):          
         self.subroot = subroot
-        self.fixed_hyperparameters_list = fixed_hyperparameters_list
-        self.hyperparameters_list = hyperparameters_list
-        self.debug = debug
         self.param1_scale_im_corrupt = param1_scale_im_corrupt
         self.param2_scale_im_corrupt = param2_scale_im_corrupt
         self.scaling_input = scaling_input
@@ -221,6 +218,7 @@ class iMovingVariance(vGeneral):
         self.simulation = simulation
         self.image_net_input = image_net_input
         self.sub_iter_DIP = sub_iter_DIP
+        self.hyperparameters_list = hyperparameters_list
         # Initialize variables
         self.do_everything(config,root)
 

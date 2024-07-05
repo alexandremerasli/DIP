@@ -74,7 +74,7 @@ def path_from_config(config,root):
 def fijii_np(path,shape,type_im='<f'):
     """"Transforming raw data to numpy array"""               
     file_path=(path)
-        if (1 in shape):
+    if (1 in shape):
         nb_dimensions = 2
     else:    
         nb_dimensions = 3
@@ -128,7 +128,6 @@ settings_config = {
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMReg and DNA)
-    "debug" : False, # Debug mode = run without raytune and with one iteration
     "max_iter" : tune.grid_search([30]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for DNA and DIPRecon
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMReg)
     "finetuning" : tune.grid_search(['last']),
@@ -180,7 +179,7 @@ config = {**config, **config, **split_config}
 config_copy = dict(config)
 config_copy = dict(config)
 for key, value in config_copy.items():
-    if key !="debug" and key != "hyperparameters":
+    if key != "hyperparameters":
         config_copy[key] = value["grid_search"][0]
 
 for key, value in config_copy.items():

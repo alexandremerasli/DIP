@@ -11,9 +11,9 @@ import os
 from ray import tune
 
 import importlib
-config_files = ["DNA_CT_0_skip_10it',"DNA_CT_1_skip_10it',"DNA_CT_2_skip_10it',"DNA_CT_3_skip_10it', "DNA_ADMMReg_more_ADMMReg_it_10_configuration', "DNA_random_0_skip_10it', "DNA_random_1_skip_10it', "DNA_random_2_skip_10it', "DNA_random_3_skip_10it']
-config_files = ["DNA_CT_0_skip_10it',"DNA_CT_1_skip_10it',"DNA_CT_3_skip_10it', "DNA_ADMMReg_more_ADMMReg_it_10_configuration', "DNA_random_0_skip_10it', "DNA_random_1_skip_10it', "DNA_random_2_skip_10it', "DNA_random_3_skip_10it']
-config_files = ["DNA_skip0_3_my_settings']
+config_files = ["DNA_CT_0_skip_10it","DNA_CT_1_skip_10it","DNA_CT_2_skip_10it","DNA_CT_3_skip_10it", "DNA_ADMMReg_more_ADMMReg_it_10_configuration", "DNA_random_0_skip_10it", "DNA_random_1_skip_10it", "DNA_random_2_skip_10it", "DNA_random_3_skip_10it"]
+config_files = ["DNA_CT_0_skip_10it","DNA_CT_1_skip_10it","DNA_CT_3_skip_10it", "DNA_ADMMReg_more_ADMMReg_it_10_configuration", "DNA_random_0_skip_10it", "DNA_random_1_skip_10it", "DNA_random_2_skip_10it", "DNA_random_3_skip_10it"]
+config_files = ["DNA_skip0_3_my_settings"]
 
 # config_files = [f[:-3] for f in os.listdir('all_config') if os.path.isfile(os.path.join('all_config', f))]
 
@@ -101,8 +101,6 @@ for lib_string in config_files:
                 raise ValueError("Please set rho > 0 for DNA or DIPRecon reconstruction (or set task to post reconstruction).")
             elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["DIP_early_stopping"]["grid_search"][0]):
                 raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
-            elif (config["debug"] and config["ray"]):
-                raise ValueError("Debug mode must is used without ray")
             elif (task == "post_reco" and config["DIP_early_stopping"]["grid_search"][0] == True and config["all_images_DIP"]["grid_search"][0] == "False"):
                 raise ValueError("post reco mode need to save all images if ES")
 

@@ -160,9 +160,9 @@ class iResultsADMMReg_VS_APPGML(vDenoising):
         # lines_angles = self.nb_replicates * []
         # min_len_zi = self.nb_replicates * []
         for p in range(self.nb_replicates,0,-1):
-            self.subroot_phantom = self.subroot + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
+            self.subroot_phantom = self.subroot + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
             self.defineTotalNbIter_beta_rho(config, config["task"])
-            self.subroot_phantom = self.subroot + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(1) + '/' + self.method + '/' # Directory root
+            self.subroot_phantom = self.subroot + '/' + self.phantom + '/' + 'replicate_' + str(1) + '/' + self.method + '/' # Directory root
             p_for_file = p
             i = self.total_nb_iter
             if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
@@ -194,7 +194,7 @@ class iResultsADMMReg_VS_APPGML(vDenoising):
                 #     p_for_file = replicates_replace_list[DIPRecon_failing_replicate_list.index(p)]
             
 
-                self.subroot_p = self.subroot + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p_for_file) + '/' + self.method + '/' # Directory root
+                self.subroot_p = self.subroot + '/' + self.phantom + '/' + 'replicate_' + str(p_for_file) + '/' + self.method + '/' # Directory root
 
                 # Take NNEPPS images if NNEPPS is asked for this run
                 if (config["NNEPPS"]):
@@ -413,9 +413,9 @@ class iResultsADMMReg_VS_APPGML(vDenoising):
         #         #     p_for_file = replicates_replace_list[DIPRecon_failing_replicate_list.index(p)]
                 
         #         p_for_file = p
-        #         self.subroot_phantom = self.subroot + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p_for_file) + '/' + self.method + '/' # Directory root
+        #         self.subroot_phantom = self.subroot + '/' + self.phantom + '/' + 'replicate_' + str(p_for_file) + '/' + self.method + '/' # Directory root
         #         self.defineTotalNbIter_beta_rho(config, config["task"])
-        #         self.subroot_phantom = self.subroot + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(1) + '/' + self.method + '/' # Directory root
+        #         self.subroot_phantom = self.subroot + '/' + self.phantom + '/' + 'replicate_' + str(1) + '/' + self.method + '/' # Directory root
         #         i_min = self.total_nb_iter
         #         self.IR_bkg_recon = np.zeros(self.total_nb_iter)
         #         IR = 0
@@ -611,7 +611,7 @@ class iResultsADMMReg_VS_APPGML(vDenoising):
             #self.write_image_tensorboard(self.writer,self.image_APPGML,"APPGML at convergence",suffix,self.image_gt,0,full_contrast=True) # APPGML at convergence in tensorboard
        
     def read_image_method(self,config,beta_string,i_init,p,i):
-        self.subroot_p = self.subroot + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
+        self.subroot_p = self.subroot + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
 
         # Take NNEPPS images if NNEPPS is asked for this run
         if (config["NNEPPS"]):

@@ -97,7 +97,7 @@ class iEndToEnd(vDenoising):
                 self.total_nb_iter = model.epochStar + self.patienceNumber
 
         # Initialize WMV class
-        model.initialize_MV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.sub_iter_DIP,root, self.subroot,self.scanner, self.simulation)
+        model.initialize_MV(config,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.sub_iter_DIP,root, self.subroot,self.scanner, self.simulation, self.hyperparameters_list)
 
         # Iterations to be descaled
         if (self.all_images_DIP == "True"):

@@ -26,8 +26,6 @@ def uncompatible_parameters(config):
         raise ValueError("Please set rho > 0 for DNA or DIPRecon reconstruction (or set task to post reconstruction).")
     elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["EMV_or_WMV"]["grid_search"][0] == "WMV"):
         raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
-    elif (config["debug"] and config["ray"]):
-        raise ValueError("Debug mode must is used without ray")
     elif (task == "post_reco" and config["DIP_early_stopping"]["grid_search"][0] == True and config["all_images_DIP"]["grid_search"][0] == "False"):
         raise ValueError("post reco mode need to save all images if ES")
     elif ((config["sub_iter_DIP_initial_and_final"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0]) or (config["sub_iter_DIP_initial_and_final"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0] and config["DIP_early_stopping_when"]["grid_search"][0] == "all")):

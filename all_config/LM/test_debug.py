@@ -10,7 +10,6 @@ def config_func_MIC():
         "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
         "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
         "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMReg and DNA)
-        "debug" : False, # Debug mode = run without raytune and with one iteration
         "ray" : False, # Ray mode = run with raytune if True, to run several settings in parallel
         "tensorboard" : False, # Tensorboard mode = show results in tensorboard
         "all_images_DIP_when" : tune.grid_search(['True_init']), # Option to choose which DIP outputs to save. Can be set to "True" (save all images), "False" (10 images like in tensorboard (quicker, for visualization), "Unique" (store only last image), "True_init" (save all images at initialization and at each iteration) - first DIP denoising
@@ -41,17 +40,17 @@ def config_func_MIC():
     }
     # Configuration dictionnary for hyperparameters to tune
     hyperparameters_config = {
-        # "PSF" : tune.grid_search([False]), # Use or not of PSF in the reconstruction algorithm
+        "PSF" : tune.grid_search([False]), # Use or not of PSF in the reconstruction algorithm
+        # "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
         "image_init_path_without_extension" : tune.grid_search(['MLEM_it20']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
-        "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
         "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)
-        "mu_DIP" : tune.grid_search([111]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMReg
+        "mu_DIP" : tune.grid_search([100]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMReg
         "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMReg. If adaptive tau, it corresponds to tau max
         ## network hyperparameters
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
-        "sub_iter_DIP" : tune.grid_search([12]), # Number of epochs in network optimization
+        "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
         "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
-        "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+        "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         "input" : tune.grid_search(['random']), # Neural network input (random or anatomical )

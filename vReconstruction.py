@@ -268,7 +268,7 @@ class vReconstruction(vGeneral):
         self.save_img(x, name)
         self.write_hdr(subroot,[i],'out_eq22',phantom,'',subroot_output_path)
 
-        # Save x_label for load into block 2 - CNN as corrupted image (x_label)
+        # Save x_label for load into block 2 - NN as corrupted image (x_label)
         x_label = x + mu
         # Save x_label in .img and .hdr format
         name=(subroot+'Block2/' + self.suffix + '/x_label/'+format(experiment) + '/' + format(i) +'_x_label' + suffix + '.img')

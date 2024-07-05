@@ -1281,7 +1281,7 @@ class iTradeoffCurves(vGeneral):
             replicate = "replicate_" + str(i_replicate + 1)
 
             
-            self.subroot_phantom = self.subroot + 'debug/'*self.debug + self.phantom + '/'+ str(replicate) + '/' + config[method]["method"] + '/' # Directory root
+            self.subroot_phantom = self.subroot + self.phantom + '/'+ str(replicate) + '/' + config[method]["method"] + '/' # Directory root
             self.suffix = suffix[:-12] # Remove NNEPPS from suffix
             self.max_iter = config[method]["max_iter"]
             self.defineTotalNbIter_beta_rho(method,config[method],task)

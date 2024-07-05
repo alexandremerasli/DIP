@@ -7,7 +7,7 @@ import struct
 def fijii_np(path,shape,type_im='<f'):
     """"Transforming raw data to numpy array"""               
     file_path=(path)
-        if (1 in shape):
+    if (1 in shape):
         nb_dimensions = 2
     else:    
         nb_dimensions = 3

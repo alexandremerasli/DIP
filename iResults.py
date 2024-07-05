@@ -55,7 +55,7 @@ class iResults(vDenoising):
             if (self.DIP_early_stopping):# and "show_results_post_reco" in config["task"]):
                 from iMovingVariance import iMovingVariance
                 self.classMV = iMovingVariance(config)
-                self.classMV.initialize_MV(config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,config["sub_iter_DIP"],root,self.subroot,self.scanner, self.simulation)
+                self.classMV.initialize_MV(config,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,config["sub_iter_DIP"],root,self.subroot,self.scanner, self.simulation, self.hyperparameters_list)
                 self.lr = config['lr']
 
         if ('ADMMReg' in self.method):
@@ -502,7 +502,7 @@ class iResults(vDenoising):
     def loop_on_replicates(self,config,i):
         for p in range(1,self.nb_replicates+1):
             if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
-                self.subroot_p = self.subroot + 'debug/'*self.debug + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
+                self.subroot_p = self.subroot + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
                 self.pet_algo=config["method"]
                 # Take NNEPPS images if NNEPPS is asked for this run
                 if (config["NNEPPS"]):

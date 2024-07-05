@@ -127,8 +127,8 @@ class vGeneral(abc.ABC):
         
         if (config["task"] != "show_metrics_results_already_computed_following_step"):
             # Initialize useful variables
-            self.subroot_phantom = self.subroot + 'debug/'*self.debug + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' + self.method + '/' # Directory root
-            self.subroot_metrics = self.subroot + 'debug/'*self.debug + 'metrics/' + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' # Directory root for metrics
+            self.subroot_phantom = self.subroot + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' + self.method + '/' # Directory root
+            self.subroot_metrics = self.subroot + 'metrics/' + self.phantom + '/'+ 'replicate_' + str(self.replicate) + '/' # Directory root for metrics
             self.suffix = self.suffix_func(config) # self.suffix to make difference between raytune runs (different hyperparameters)
             self.suffix_metrics = self.suffix_func(config,NNEPPS=True) # self.suffix with NNEPPS information
             if ("post_reco" in config["task"] and "post_reco" not in self.suffix):
@@ -191,15 +191,13 @@ class vGeneral(abc.ABC):
         # Check parameters incompatibility
         if (task != "show_metrics_results_already_computed_following_step"): # there is no grid_search in config for this task
             self.parametersIncompatibility(config,task)
-        # Remove debug and ray keys from config, and ask task
-        self.debug = config["debug"]
+        # Remove ray key from config, and ask task
         self.ray = config["ray"]
         # Remove hyperparameters lists
         self.fixed_hyperparameters_list = config["fixed_hyperparameters"]
         config.pop("fixed_hyperparameters", None)
         self.hyperparameters_list = config["hyperparameters"]
         config.pop("hyperparameters", None)
-        config.pop("debug",None)
         # config.pop("ray",None)
         # Convert tensorboard to ray
         config["tensorboard"] = tune.grid_search([config["tensorboard"]])
@@ -223,17 +221,10 @@ class vGeneral(abc.ABC):
         if (task != "show_metrics_results_already_computed_following_step"):
             for key, value in config.items():
                 if key != "hyperparameters" and key != "fixed_hyperparameters" and key != "ray":
-                    if (len(value["grid_search"]) == 1 or self.debug):
+                    if (len(value["grid_search"]) == 1):
                         config[key] = value["grid_search"][0]
                     else:
                         raise ValueError("Please put one value for " + key + " in config variable in main.py if ray is deactivated.")
-                    
-                    if (self.debug):
-                        # Set every iteration values to 1 to be quicker
-                        if key in ["max_iter","nb_subsets","sub_iter_DIP","nb_inner_iteration","nb_outer_iteration"]:
-                            config[key] = 1
-                        elif key == "mlem_sequence":
-                            config["mlem_sequence"] = False
         else:
             config["task"] = task
         return config
@@ -527,34 +518,48 @@ class vGeneral(abc.ABC):
                         else:
                             f1.write(line)
 
-    def suffix_func(self,config,NNEPPS=False,hyperparameters_list=False):
+    def suffix_func(self,config,NNEPPS=False,hyperparameters_list="not_provided"):
+        ### Drop unwanted strings in suffix
+        # Make a copy of config
         config_copy = dict(config)
+        # Remove NNEPPS from config to not put it into suffix
         if (NNEPPS==False):
             config_copy.pop('NNEPPS',None)
+        # Do not put ADMMReg outer iterations in suffix
         if (("ADMMReg" in self.method and "DNA" not in self.method) or self.method == "ADMMReg_Bowsher"):
             config_copy.pop('nb_outer_iteration',None)
+        # Do not put number of DIP iterations in suffix if post reco mode if post_reco_in_suffix
         elif ("post_reco" in config_copy["task"]):
             if ("post_reco_in_suffix" not in config_copy):
                 config_copy.pop("sub_iter_DIP", None)
             else:
                 if (config["post_reco_in_suffix"]):
                     config_copy.pop("sub_iter_DIP", None)
-        if list(config.keys())[-1] == "sub_iter_DIP": # Remove sub_iter_DIP if it is the last key because it comes from an override in iEndToEnd.py
+        # Remove sub_iter_DIP if it is the last key because it comes from an override in iEndToEnd.py
+        if list(config.keys())[-1] == "sub_iter_DIP": 
             config_copy.pop('sub_iter_DIP',None)
-        suffix = "config"
-        if hyperparameters_list == False:
-            for key, value in config_copy.items():
-                if key in self.hyperparameters_list:
-                    suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
-        else:   
-            #'''
-            #hyperparameters_list = ["lr", "optimizer"]
-            for key, value in config_copy.items():
-                if key in hyperparameters_list:
-                    suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
-            #'''
+        
+        ### Start filling suffix variable
+        # Use hyperparameters_list if provided, otherwise use self.hyperparameters_list
+        if hyperparameters_list == "not_provided":
+            suffix = self.fillSuffix(config_copy,self.hyperparameters_list)
+        else:
+            suffix = self.fillSuffix(config_copy,hyperparameters_list)
+
+        # End
         return suffix
 
+    def fillSuffix(self,config_copy,hyperparameters_list):
+        # Start suffix by "config"
+        suffix = "config"
+        # Keep only beginning of each key in suffix to shorten full suffix
+        size_key_in_suffix = 5
+        # Loop over config items
+        for key, value in config_copy.items():
+            if key in self.hyperparameters_list:
+                suffix +=  "_" + key[:min(len(key),size_key_in_suffix)] + "=" + str(value)
+        return suffix
+        
     def read_input_dim(self,file_path):
         # Read CASToR header file to retrieve image dimension """
         try:
@@ -783,7 +788,6 @@ class vGeneral(abc.ABC):
     def assignVariablesFromResults(self,classResults):
         classResults.subroot = self.subroot
         classResults.nb_replicates = self.nb_replicates
-        classResults.debug = self.debug
         if (hasattr(self, 'rho')):
             classResults.rho = self.rho
         classResults.fixed_hyperparameters_list = self.fixed_hyperparameters_list
@@ -1128,7 +1132,7 @@ class vGeneral(abc.ABC):
 
     def create_bkg(self, all_defined_ROI, PETImage_shape):
         # Create a DataFrame from the concatenated arrays
-        if (PETImage_shape[2] == 1):
+        if (self.nb_dimensions == 2):
             df = DataFrame(concatenate(all_defined_ROI, axis=0), columns=['x', 'y'])
         else:
             df = DataFrame(concatenate(all_defined_ROI, axis=0), columns=['x', 'y', 'z'])
