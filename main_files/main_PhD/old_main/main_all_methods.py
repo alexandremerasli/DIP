@@ -114,7 +114,7 @@ file_seed.close()
 
 # Local files to import, AFTER CONFIG TO SET RANDOM SEED OR NOT
 from iADMM_DIP import iADMM_DIP
-from iComparison import iComparison
+from iCastorAlgo import iCastorAlgo
 from iPostReconstruction import iPostReconstruction
 from iResults import iResults
 from iMeritsADMMReg import iMeritsADMMReg
@@ -204,7 +204,7 @@ for method in config["method"]['grid_search']:
     if (task == 'full_reco_with_network'): # Run DIPRecon or DNA
         classTask = iADMM_DIP(hyperparameters_config)
     elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
-        classTask = iComparison(config)
+        classTask = iCastorAlgo(config)
     elif (task == 'post_reco'): # Run network denoising after a given reconstructed image im_corrupt
         classTask = iPostReconstruction(config)
     elif (task == 'show_results'): # Show already computed results over iterations

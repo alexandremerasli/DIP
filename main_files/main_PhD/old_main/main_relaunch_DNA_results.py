@@ -64,8 +64,8 @@ for lib_string in config_files:
                 # classTask = iADMM_DIP(hyperparameters_config)
                 raise ValueError("needs hyperparameters_config")
             elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
-                from iComparison import iComparison
-                classTask = iComparison(config)
+                from iCastorAlgo import iCastorAlgo
+                classTask = iCastorAlgo(config)
             elif (task == 'post_reco'): # Run network denoising after a given reconstructed image im_corrupt
                 from iPostReconstruction import iPostReconstruction
                 classTask = iPostReconstruction(config)

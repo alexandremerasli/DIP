@@ -7,7 +7,7 @@ import re
 # Local files to import
 from vReconstruction import vReconstruction
 
-class iComparison(vReconstruction):
+class iCastorAlgo(vReconstruction):
     def __init__(self,config, *args, **kwargs):
         print("__init__")
 

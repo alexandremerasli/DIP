@@ -79,20 +79,25 @@ class iResults(vDenoising):
         self.writer = SummaryWriter()
         
         #Loading Ground Truth image to compute metrics
-        self.image_gt = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')
+        self.image_gt = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')
         if config["FLTNB"] == "double":
             self.image_gt = self.image_gt.astype(np.float64)
 
         if ("DNA" in self.method or "DIPRecon" in self.method):
             if (config["input"] == "anatomical"):
-                # # Loading attenuation map
-                # image_atn = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type_im='<f')
-                # self.write_image_tensorboard(self.writer,image_atn,"Attenuation map (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # Attenuation map in tensorboard
-        
-                # # Loading MR-like image
-                # image_mr = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw',shape=(self.PETImage_shape),type_im='<f')
-                image_mr = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw',shape=(self.PETImage_shape),type_im='<f')
-                self.write_image_tensorboard(self.writer,image_mr,"DIP input (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # Attenuation map in tensorboard
+                # Loading anatomical image
+                file_path_mr = self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_mr.raw'
+                file_path_ct = self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_ct.raw'
+                file_path_atn = self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '_atn.raw'
+                if (isfile(file_path_mr)):
+                    file_path_anatomical = file_path_mr
+                elif (isfile(file_path_ct)):
+                    file_path_anatomical = file_path_ct
+                elif (isfile(file_path_atn)):
+                    file_path_anatomical = file_path_atn
+                image_anat = self.fijii_np(file_path_anatomical,shape=(self.PETImage_shape),type_im='<f')
+                # Show it in tensorboard
+                self.write_image_tensorboard(self.writer,image_anat,"DIP input (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # Attenuation map in tensorboard
 
         # Defining ROIs
         if (not hasattr(self,"phantom_ROI")):

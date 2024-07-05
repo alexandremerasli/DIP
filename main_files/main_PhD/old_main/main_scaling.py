@@ -215,8 +215,8 @@ for method in config["method"]['grid_search']:
         from iADMM_DIP import iADMM_DIP
         classTask = iADMM_DIP(hyperparameters_config)
     elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
-        from iComparison import iComparison
-        classTask = iComparison(config)
+        from iCastorAlgo import iCastorAlgo
+        classTask = iCastorAlgo(config)
     elif (task == 'post_reco'): # Run network denoising after a given reconstructed image im_corrupt
         from iPostReconstruction import iPostReconstruction
         classTask = iPostReconstruction(config)

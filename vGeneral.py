@@ -267,7 +267,7 @@ class vGeneral(abc.ABC):
         self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
 
         # # Loading Ground Truth image to compute metrics
-        # self.image_gt = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img',shape=(self.PETImage_shape),type_im='<f')            
+        # self.image_gt = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')            
 
 
         # Define ROIs for image0 phantom, otherwise it is already done in the database
@@ -587,20 +587,32 @@ class vGeneral(abc.ABC):
     
     def fijii_np(self,path,shape,type_im='<f'):
         """"Transforming raw data to numpy array"""
-        if (type_im is None):
-            if (self.FLTNB == 'float'):
-                type_im = '<f'
-            elif (self.FLTNB == 'double'):
-                type_im = '<d'
+        if (type_im == '<f'):
+            other_type_im = '<d'
+        elif (type_im == '<d'):
+            other_type_im = '<f'
+        else: # int for instance
+            other_type_im = type_im
                     
         file_path=(path)
-        dtype_np = dtype(type_im)
+        try:
+            dtype_np = dtype(type_im)
+            image = self.reshape_img_from_data(shape,file_path,dtype_np)
+        except:
+            dtype_np = dtype(other_type_im)
+            image = self.reshape_img_from_data(shape,file_path,dtype_np)
+
+        return image
+
+    def reshape_img_from_data(self,shape,file_path,dtype_np):
+        
         with open(file_path, 'rb') as fid:
             data = fromfile(fid,dtype_np)
             if (self.nb_dimensions == 2): # 2D
                 image = data.reshape(shape)
             else: # 3D
                 image = data.reshape(shape[::-1])
+        
         return image
 
     def norm_imag(self,img):
