@@ -108,8 +108,8 @@ for lib_string in config_files:
         sys.path.append(join('all_config',subfolder_config))  # Add the parent directory of config files to the Python path
         lib = importlib.import_module(lib_string)
         config = lib.config_func_MIC()
-        config["image"] = tune.grid_search(['imageUHR_IEC'])
         config["image"] = tune.grid_search(['image40_1'])
+        config["image"] = tune.grid_search(['imageUHR_IEC'])
         config["replicates"] = tune.grid_search(list(range(1,1+1)))
         config["max_iter"] = tune.grid_search([30])
         config["ray"] = False

@@ -50,11 +50,11 @@ def config_func_MIC():
         "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
         "sub_iter_DIP" : tune.grid_search([100]), # Number of epochs in network optimization
         "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
-        "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
+        "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         "input" : tune.grid_search(['random']), # Neural network input (random or anatomical )
-        "input" : tune.grid_search(["anatomical"]), # Neural network input (random or anatomical )
+        # "input" : tune.grid_search(["anatomical"]), # Neural network input (random or anatomical )
         ## ADMMReg - OPTITR hyperparameters
         "nb_outer_iteration": tune.grid_search([10]), # Number of outer iterations in ADMMReg (and DNA) and OPTITR (for DIPRecon)
         "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMReg

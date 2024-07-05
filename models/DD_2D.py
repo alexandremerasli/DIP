@@ -11,7 +11,7 @@ import os
 from iMovingVariance import iMovingVariance
 class DD_2D(pl.LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, last_iter):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, suffix, last_iter):
         super().__init__()
 
         # Set random seed if asked (for NN weights here)
@@ -48,10 +48,6 @@ class DD_2D(pl.LightningModule):
         self.DIP_early_stopping = config["DIP_early_stopping"]
         self.classMV = iMovingVariance(config)
         if(self.DIP_early_stopping):
-            
-            self.classMV.fixed_hyperparameters_list = fixed_hyperparameters_list
-            self.classMV.hyperparameters_list = hyperparameters_list
-            self.classMV.debug = debug
             self.classMV.param1_scale_im_corrupt = param1_scale_im_corrupt
             self.classMV.param2_scale_im_corrupt = param2_scale_im_corrupt
             self.classMV.scaling_input = scaling_input
@@ -60,11 +56,11 @@ class DD_2D(pl.LightningModule):
             # Initialize variables
             self.classMV.do_everything(config,root)
 
-        # Defining CNN variables
+        # Defining NN variables
         self.num_channels_up = [k]*(d+1) + [1]
         self.decoder_layers = nn.ModuleList([])
 
-        # Layers in CNN architecture
+        # Layers in NN architecture
         for i in range(len(self.num_channels_up)-2):       
             self.decoder_layers.append(nn.Sequential(
                                nn.Conv2d(self.num_channels_up[i], self.num_channels_up[i+1], 1, stride=1),
@@ -149,7 +145,7 @@ class DD_2D(pl.LightningModule):
         # Optimization algorithm according to command line
 
         """
-        Optimization of the DNN with SGLD
+        Optimization of the NN with SGLD
         """
 
         if (self.opti_DIP == 'Adam'):

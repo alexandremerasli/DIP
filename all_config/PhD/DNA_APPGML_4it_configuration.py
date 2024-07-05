@@ -67,6 +67,7 @@ def config_func_MIC():
         # "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         # "scaling_all_init" : tune.grid_search([True,False]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         # "scaling_all_init" : tune.grid_search([False]), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
+        "override_input_to_anat_init": tune.grid_search([True]), # Enforce DIP input image to anatomical image for initialization
         "input" : tune.grid_search(['random']), # Neural network input (random or anatomical )
         # "input" : tune.grid_search(["anatomical"]), # Neural network input (random or anatomical )
         "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size

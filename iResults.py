@@ -95,6 +95,8 @@ class iResults(vDenoising):
                     file_path_anatomical = file_path_ct
                 elif (isfile(file_path_atn)):
                     file_path_anatomical = file_path_atn
+                else:
+                    raise ValueError("No anatomical image found for this phantom")
                 image_anat = self.fijii_np(file_path_anatomical,shape=(self.PETImage_shape),type_im='<f')
                 # Show it in tensorboard
                 self.write_image_tensorboard(self.writer,image_anat,"DIP input (FULL CONTRAST)",self.suffix,self.image_gt,0,full_contrast=True) # Attenuation map in tensorboard

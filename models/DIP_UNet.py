@@ -138,7 +138,7 @@ class DIP_UNet(LightningModule):
 
         self.up1 = Sequential(Upsample(scale_factor=scale_factor_dim, mode=upsampling_mode_dim, align_corners=False),
                                  self.ReplicationPad_dict.get(self.nb_dimensions, None)(1),
-                                 self.Conv_dict.get(self.nb_dimensions, None)(num_channel[3], num_channel[2], 3, stride=(1, 1), padding=pad[0]),
+                                 self.Conv_dict.get(self.nb_dimensions, None)(num_channel[3], num_channel[2], 3, stride=1, padding=pad[0]),
                                  self.BatchNnorm_dict.get(self.nb_dimensions, None)(num_channel[2]),
                                  LeakyReLU(L_relu))
 
@@ -153,7 +153,7 @@ class DIP_UNet(LightningModule):
 
         self.up2 = Sequential(Upsample(scale_factor=scale_factor_dim, mode=upsampling_mode_dim, align_corners=False),
                                  self.ReplicationPad_dict.get(self.nb_dimensions, None)(1),
-                                 self.Conv_dict.get(self.nb_dimensions, None)(num_channel[2], num_channel[1], 3, stride=(1, 1), padding=pad[0]),
+                                 self.Conv_dict.get(self.nb_dimensions, None)(num_channel[2], num_channel[1], 3, stride=1, padding=pad[0]),
                                  self.BatchNnorm_dict.get(self.nb_dimensions, None)(num_channel[1]),
                                  LeakyReLU(L_relu))
 
@@ -168,7 +168,7 @@ class DIP_UNet(LightningModule):
 
         self.up3 = Sequential(Upsample(scale_factor=scale_factor_dim, mode=upsampling_mode_dim, align_corners=False),
                                  self.ReplicationPad_dict.get(self.nb_dimensions, None)(1),
-                                 self.Conv_dict.get(self.nb_dimensions, None)(num_channel[1], num_channel[0], 3, stride=(1, 1), padding=pad[0]),
+                                 self.Conv_dict.get(self.nb_dimensions, None)(num_channel[1], num_channel[0], 3, stride=1, padding=pad[0]),
                                  self.BatchNnorm_dict.get(self.nb_dimensions, None)(num_channel[0]),
                                  LeakyReLU(L_relu))
 

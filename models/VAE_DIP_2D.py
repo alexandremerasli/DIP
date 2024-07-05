@@ -26,7 +26,7 @@ class VAE_DIP_2D(pl.LightningModule):
         else:
             self.post_reco_mode = False
 
-        # Defining CNN variables
+        # Defining NN variables
         L_relu = 0.2
         num_channel = [16, 32, 64, 128]
         pad = [0, 0]
@@ -36,7 +36,7 @@ class VAE_DIP_2D(pl.LightningModule):
         input_size = 128
         self.high_dim = int(num_channel[-1] * (input_size / 2**(len(num_channel) - 1)) **2)
 
-        # Layers in CNN architecture
+        # Layers in NN architecture
         self.deep1 = nn.Sequential(nn.ReplicationPad2d(1),
                                    nn.Conv2d(1, num_channel[0], (3, 3), stride=1, padding=pad[1]),
                                    nn.BatchNorm2d(num_channel[0]),

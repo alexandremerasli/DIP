@@ -29,14 +29,14 @@ class DD_AE_2D(pl.LightningModule):
         d = config["d_DD"] # Number of layers
         k = config['k_DD'] # Number of channels, depending on how much noise we mant to remove. Small k = less noise, but less fit
 
-        # Defining CNN variables
+        # Defining NN variables
         self.num_channels_up = [k]*(d+1) + [1]
         self.num_channels_down = list(reversed(self.num_channels_up))
         self.encoder_deep_layers = nn.ModuleList([])
         self.encoder_down_layers = nn.ModuleList([])
         self.decoder_layers = nn.ModuleList([])
 
-        # Layers in CNN architecture
+        # Layers in NN architecture
         for i in range(len(self.num_channels_down)-2):       
             self.encoder_deep_layers.append(nn.Sequential(
                                #nn.ReplicationPad2d(1), # if kernel size = 3
@@ -95,7 +95,7 @@ class DD_AE_2D(pl.LightningModule):
         # Optimization algorithm according to command line
 
         """
-        Optimization of the DNN with SGLD
+        Optimization of the NN with SGLD
         """
 
         if (self.opti_DIP == 'Adam'):

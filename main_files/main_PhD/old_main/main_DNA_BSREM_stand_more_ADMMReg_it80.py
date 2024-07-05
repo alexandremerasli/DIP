@@ -69,6 +69,7 @@ hyperparameters_config = {
     "scaling" : tune.grid_search(['standardization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
     "input" : tune.grid_search(['random']), # Neural network input (random or anatomical )
     #"input" : tune.grid_search(["anatomical",'random']), # Neural network input (random or anatomical )
+    "override_input_to_anat_init": tune.grid_search([True]), # Enforce DIP input image to anatomical image for initialization
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMReg - OPTITR hyperparameters

@@ -79,12 +79,12 @@ class DIP_3D(pl.LightningModule):
         else:
             self.write_current_img_mode = False
         '''
-        # Defining CNN variables
+        # Defining NN variables
         L_relu = 0.2
         num_channel = [16, 32, 64, 128]
         pad = [0, 0]
 
-        # Layers in CNN architecture
+        # Layers in NN architecture
         self.deep1 = nn.Sequential(nn.ReplicationPad3d(1),
                                    nn.Conv3d(1, num_channel[0], (3, 3, 3), stride=1, padding=pad[1]),
                                    nn.BatchNorm3d(num_channel[0]),
@@ -274,7 +274,7 @@ class DIP_3D(pl.LightningModule):
         # Optimization algorithm according to command line
 
         """
-        Optimization of the DNN with SGLD
+        Optimization of the NN with SGLD
         """
 
         if (self.opti_DIP == 'Adam'):

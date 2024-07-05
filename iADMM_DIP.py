@@ -201,10 +201,13 @@ class iADMM_DIP(vReconstruction):
             
             # Initialize vDenoising object
             classDenoising = vDenoising(config,self.global_it)
-            # Put anatomical  as input (mu_DIP = 200 is for random only)
+            # Put anatomical as input if asked by user (old: mu_DIP = 200 is for random only)
             if (not (i_init == 0 and config["unnested_1st_global_iter"])):
-                if (self.net == "DIP" and config["mu_DIP"] != 200):
-                    classDenoising.override_input = True
+                if ("override_input_to_anat_init" in config):
+                    if (self.net == "DIP" and config["override_input_to_anat_init"]):
+                        classDenoising.override_input = True
+                    else:
+                        classDenoising.override_input = False
                 else:
                     classDenoising.override_input = False
             else:

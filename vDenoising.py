@@ -116,25 +116,18 @@ class vDenoising(vGeneral):
     def train_process(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, suffix, config, finetuning, processing_unit, sub_iter_DIP, method, global_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, experiment, checkpoint_simple_path, name_run, subroot, all_images_DIP):
         # Implements Dataset
         train_dataset = TensorDataset(image_net_input_torch, image_corrupt_torch) # Put several times the input
-        # train_dataset = TensorDataset(*self.several_DIP_inputs*[image_net_input_torch], *self.several_DIP_inputs*[image_corrupt_torch])
-        
         # Add different level of gaussian noise to input
         if (self.diffusion_model_like_each_DIP != 0):
             it_list = arange(0,self.several_DIP_inputs)
-            # train_dataset = ImagePairDataset([(image_net_input_torch[i], image_corrupt_torch) for i in range(len(it_list))])
             image_net_input_torch = image_net_input_torch[:, :, None, :]
             image_corrupt_torch = image_corrupt_torch[:, :, None, :]
             train_dataset = ImagePairDataset([(image_net_input_torch[i], image_corrupt_torch) for i in range(len(it_list))])
-            # train_dataset = ImagePairDataset([(image_net_input_torch[len(it_list)-i-1], image_corrupt_torch) for i in range(len(it_list))])
-
         else:
             train_dataset = ImagePairDataset([(image_net_input_torch,image_corrupt_torch) for i in range(self.several_DIP_inputs)])
 
-        if (config["tau_DIP"] == 200):        
-            train_dataloader = DataLoader(train_dataset, batch_size=1,num_workers=0,shuffle=False) # Mini batch training without shuffle
-        else:
-            train_dataloader = DataLoader(train_dataset, batch_size=1,num_workers=0,shuffle=True) # Mini batch training
-        # train_dataloader = DataLoader(train_dataset, batch_size=1, num_workers=1, persistent_workers=True) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
+        # Mini batch training (if several inputs). Old: do not shuffle if and only if tau_DIP = 200
+        # train_dataloader = DataLoader(train_dataset, batch_size=1,num_workers=0,shuffle=True) # Mini batch training
+        train_dataloader = DataLoader(train_dataset, batch_size=1,num_workers=0,shuffle=False) # Mini batch training without shuffle
         # Choose network architecture as model
         model, self.model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, self.override_input)
         # Define path for this global iteration
@@ -313,7 +306,6 @@ class vDenoising(vGeneral):
     def load_input(self,net,PETImage_shape,subroot):
         if (self.override_input): # TESTCT_random
             self.input = "anatomical"
-            #self.input = "random"
 
         if (self.nb_dimensions == 2):
             im_2D_or_3D = '2D'
@@ -334,21 +326,16 @@ class vDenoising(vGeneral):
             file_path = (subroot+'Data/initialization/BSREM_it30_REF_cropped.img') #
         elif self.input == "uniform":
             file_path = (subroot+'Data/initialization/uniform_input_' + net + '.img')
+        
         if (net == 'DD'):
-            if (self.input != "random"):
-                raise ValueError("input must be random with Deep Decoder")
             input_size_DD = int(PETImage_shape[0] / (2**self.d_DD)) # if original Deep Decoder (i.e. only with decoder part)
             PETImage_shape = (self.k_DD,input_size_DD,input_size_DD) # if original Deep Decoder (i.e. only with decoder part)
-        #elif (net == 'DD_AE'):   
-        #    PETImage_shape = (PETImage_shape[0],PETImage_shape[1],PETImage_shape[2]) # if auto encoder based on Deep Decoder
 
-        if (self.input == "anatomical" and self.net != 'DD'):
-            type_im = '<f'
+        if (self.net == 'DD' and self.input == "anatomical"):
+            raise ValueError("Deep Decoder could not use an anatomical image as input")
         else:
-            type_im = '<f'
-            # type_im = '<d' # random images were generated in double
-
-        im_input = self.fijii_np(file_path, shape=(PETImage_shape),type_im=type_im) # Load input of the NN
+            im_input = self.fijii_np(file_path, shape=(PETImage_shape)) # Load input of the NN
+        
 
         return im_input
 

@@ -19,7 +19,7 @@ from os.path import isfile
 from iMovingVariance import iMovingVariance
 
 from .common import * # for Lipschitz Gaussian controle modules
-from .swinUNETR.SwinUNetr import * # for SwinUNetr  encoder= swin transformer, decoder = cnn
+from .swinUNETR.SwinUNetr import * # for SwinUNetr  encoder= swin transformer, decoder = NN
 # from .swinUNET.SwinUNet import * # for SwinUNet  unet architecture with pure swin transformer
 # from .swinIR.swinIR import *  # for SwinIR  replace the bottleneck of unet by swin transformer
 # from .restormer.restormer import * 
