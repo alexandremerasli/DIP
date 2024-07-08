@@ -1,6 +1,7 @@
 import numpy as np
 import struct
 import pandas as pd
+from pathlib import Path
 
 def read_histo_cdf(filename, data, data_time, data_float, data_ID):
     with open(filename, 'rb') as f:
@@ -124,8 +125,9 @@ def remove_histogram_from_histo_datafile(data, data_time, data_float, data_ID,fi
             print(i / nb_events * 100, "%")
             
             # Write 1 uint32 element
-            bytes = struct.pack('I', data_time[i])
-            f.write(bytes)
+            if ("time" not in histo_type_to_remove):
+                bytes = struct.pack('I', data_time[i])
+                f.write(bytes)
             
             # Write 5 float32 elements
             if ("atn" not in histo_type_to_remove):
@@ -182,6 +184,61 @@ def remove_data_from_LM_datafile(data, data_time, data_float, data_ID,filename_f
             f.write(bytes)
             bytes = struct.pack('I', data_ID[1][i])
             f.write(bytes)    
+
+def modify_histogram_from_histo_datafile(data, data_time, data_float, data_ID,filename_full_cdf,filename_cdf_to_write, nb_events, histo_type_to_modify=[], modified_values=[]):
+    # Read histo cdf file and store data in lists
+    read_histo_cdf(filename_full_cdf, data, data_time, data_float, data_ID)
+    
+    # Write the data in the new histo file and in the histo order
+    with open(filename_cdf_to_write, 'wb') as f:
+        for i in range(0, nb_events):
+            print(i / nb_events * 100, "%")
+            
+            # Write 1 uint32 element
+            if ("time" in histo_type_to_modify):
+                bytes = struct.pack('I', modified_values[histo_type_to_modify.index("time")])
+                f.write(bytes)
+            else:
+                bytes = struct.pack('I', data_time[i])
+                f.write(bytes)
+            
+            # Write 5 float32 elements
+            if ("atn" in histo_type_to_modify):
+                bytes = struct.pack('I', modified_values[histo_type_to_modify.index("atn")])
+                f.write(bytes)
+            else:
+                bytes = struct.pack('f', data_float[0][i])
+                f.write(bytes)
+            if ("random" in histo_type_to_modify):
+                bytes = struct.pack('I', modified_values[histo_type_to_modify.index("random")])
+                f.write(bytes)
+            else:
+                bytes = struct.pack('f', data_float[1][i])
+                f.write(bytes)
+            if ("norm" in histo_type_to_modify):
+                bytes = struct.pack('I', modified_values[histo_type_to_modify.index("norm")])
+                f.write(bytes)
+            else:
+                bytes = struct.pack('f', data_float[2][i])
+                f.write(bytes)
+            if ("event_value" in histo_type_to_modify):
+                bytes = struct.pack('I', modified_values[histo_type_to_modify.index("event_value")])
+                f.write(bytes)
+            else:
+                bytes = struct.pack('f', data_float[3][i])
+                f.write(bytes)
+            if ("scatter" in histo_type_to_modify):
+                bytes = struct.pack('I', modified_values[histo_type_to_modify.index("scatter")])
+                f.write(bytes)
+            else:
+                bytes = struct.pack('f', data_float[4][i])
+                f.write(bytes)
+            
+            # Write 2 uint32 elements
+            bytes = struct.pack('I', data_ID[0][i])
+            f.write(bytes)
+            bytes = struct.pack('I', data_ID[1][i])
+            f.write(bytes)
 
 def write_binary_file_from_histo_to_LM(data, data_time, data_float, data_ID, data_event_value, filename, nb_events):
     # Assign the data to the corresponding variables
@@ -293,8 +350,8 @@ def write_header_file(filename_to_read, filename_to_write, nb_events, data_mode)
 # Path to the histo or LM cdf file
 subroot = "data/Algo/"
 cdf_path = "../TestCastor/umd_h12_wRot_act_BTB_1_100_df.Cdf"
-cdf_path = subroot + "/Data/database_v2/image40_1/data40_1_1/data40_1_1.cdf"
 cdf_path = subroot + "/Data/database_v2/image40_1/dataLM40_1_1/data40_1_1.cdf"
+cdf_path = subroot + "/Data/database_v2/image40_1/data40_1_1/data40_1_1.cdf"
 
 # Define the number of events (from the header file) and the type of conversion (LM to histo or histo to LM)
 if ("LM" in cdf_path):
@@ -310,6 +367,16 @@ else:
 remove_histo = False
 # remove_LM = True
 remove_LM = False
+histo_type_to_remove = ["atn", "norm"]
+
+
+# Test modifying one histogram type from the histo or LM cdf file. Let to false to not modify any data
+# modify_histo = True
+modify_histo = True
+# modify_LM = True
+modify_LM = False
+histo_type_to_modify = ["time"] # Put a list for different histo types to be modified
+modified_values = [0] # List of values to modify the histo data with. Put the same value for all events/LORs, put a list for different histo types
 
 # Define variables to store the data
 data, data_time, data_atn, data_random, data_norm, data_event_value, data_scatter, data_float, data_ID1, data_ID2, data_ID = define_data(LM_to_histo)
@@ -318,10 +385,11 @@ data, data_time, data_atn, data_random, data_norm, data_event_value, data_scatte
 if (remove_histo or remove_LM):
     # Define the histogram types to remove and new datafile path
     histo_type_to_remove_str = "" # string to store the histogram types to remove, for the datafile name
-    histo_type_to_remove = ["norm","atn"]
     for i in range(0, len(histo_type_to_remove)):
         histo_type_to_remove_str += histo_type_to_remove[i]
-    cdf_removed_histo_path = subroot + "/Data/database_v2/image40_1/data_removed_" + histo_type_to_remove_str + "40_1_1/data40_1_1.cdf"
+    cdf_removed_folder = subroot + "/Data/database_v2/image40_1/data_removed_" + histo_type_to_remove_str + "40_1_1/"
+    Path(cdf_removed_folder).mkdir(parents=True, exist_ok=True) # path to store the new datafile
+    cdf_removed_histo_path = cdf_removed_folder + "data40_1_1.cdf"
 
     # Remove the data from the histo or LM cdf file
     if (remove_histo):
@@ -332,6 +400,26 @@ if (remove_histo or remove_LM):
     # End
     print("end")
     exit()
+
+############ Modify data (norm, atn etc.) from histogram or LM cdf file
+if (modify_histo or modify_LM):
+    # Define the histogram types to modify and new datafile path
+    histo_type_to_modify_str = "" # string to store the histogram types to modify, for the datafile name
+    for i in range(0, len(histo_type_to_modify)):
+        histo_type_to_modify_str += histo_type_to_modify[i]
+    cdf_modified_folder = subroot + "/Data/database_v2/image40_1/data_modified_" + histo_type_to_modify_str + "40_1_1/"
+    Path(cdf_modified_folder).mkdir(parents=True, exist_ok=True) # path to store the new datafile
+    cdf_modified_histo_path = cdf_modified_folder + "data40_1_1.cdf"
+
+    # Remove the data from the histo or LM cdf file
+    if (modify_histo):
+        modify_histogram_from_histo_datafile(data, data_time, data_float, data_ID,cdf_path, cdf_modified_histo_path, nb_events, histo_type_to_modify, modified_values)
+    elif (modify_LM):
+        modify_data_from_LM_datafile(data, data_time, data_float, data_ID,cdf_path, cdf_modified_histo_path, nb_events, histo_type_to_modify, modified_values)
+
+    # End
+    print("end")
+    exit()    
 
 ############ Convert histogram cdf file to listmode cdf file
 if (not LM_to_histo):
@@ -379,7 +467,6 @@ if (LM_to_histo):
 
     # Write the data in the histo file
     nb_histo_events = len(data_event_value)
-    from pathlib import Path
     folder_path = subroot + "/Data/database_v2/image40_1/datahisto40_1_1/"
     Path(folder_path).mkdir(parents=True, exist_ok=True) # path to store the histo datafile
     write_binary_file_from_LM_to_histo(data, data_time, data_float, data_ID, folder_path + "data40_1_1.cdf", nb_histo_events)
