@@ -117,8 +117,8 @@ class vGeneral(abc.ABC):
                 elif (config["DIP_early_stopping_when"] == "all"):
                     self.DIP_early_stopping_when = "all"
                     self.DIP_early_stopping = True
-                elif (config["DIP_early_stopping_when"] == "nothing"):
-                    self.DIP_early_stopping_when = "nothing"
+                elif (config["DIP_early_stopping_when"] == "never"):
+                    self.DIP_early_stopping_when = "never"
                     self.DIP_early_stopping = False
             else:
                 self.DIP_early_stopping = False
@@ -248,7 +248,7 @@ class vGeneral(abc.ABC):
             self.scanner = "mMR_2D"
 
         # Define if simulation or not
-        if ("50_" in self.phantom or "4_" in self.phantom or "2_" in self.phantom or "40_" in self.phantom or self.phantom == "imageUHR_IEC"):
+        if ("50_" in self.phantom or "4_" in self.phantom or "2_" in self.phantom or "40_" in self.phantom or self.phantom == "imageUHR_IEC" or self.phantom == "imageTest"):
             self.simulation = True
         else:
             self.simulation = False
@@ -650,8 +650,8 @@ class vGeneral(abc.ABC):
     def norm_positive_imag(self,img):
         """ Positive normalization of input - output [0..1] and the normalization value for each slide"""
         if (max_np(img) - min_np(img)) != 0:
-            print(max_np(img))
-            print(min_np(img))
+            # print(max_np(img))
+            # print(min_np(img))
             return img / max_np(img), 0, max_np(img)
         else:
             return img, 0, max_np(img)

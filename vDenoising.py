@@ -446,6 +446,15 @@ class vDenoising(vGeneral):
             model = DIP_UNet(self.nb_dimensions, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,self.subroot_phantom,method,all_images_DIP,global_it, suffix, override_input, self.scanner, self.simulation, self.hyperparameters_list, self.sub_iter_DIP_already_done, self.override_SC_init, self.DIP_early_stopping, self.image_net_input_torch)
             model_class = type(model)
             
+            # from models.DIP_3D_to_be_removed_when_merged_with_2D import DIP_3D
+            # model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input,self.config,self.root,self.subroot,self.subroot_phantom, method,all_images_DIP,global_it, suffix, override_input, self.scanner, self.simulation, self.hyperparameters_list, self.sub_iter_DIP_already_done, self.override_SC_init, self.DIP_early_stopping, self.image_net_input_torch)
+            # # Show summary of model
+            # from torchsummary import summary
+            # if (self.nb_dimensions == 2):
+            #     summary(model, input_size=(1, PETImage_shape[0], PETImage_shape[1]))
+            # else:
+            #     summary(model, input_size=(1, PETImage_shape[0], PETImage_shape[1], PETImage_shape[2]))
+
         elif (net == "DIP_Xin"):
             self.embed_dim = 16
             self.kernel_size = 3

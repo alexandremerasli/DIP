@@ -84,7 +84,7 @@ class iMovingVariance(vGeneral):
                 # Taking only slice from 3D data
                 # out = out[:,:,int(out.shape[2]/2)+20]
                 # image_gt_reversed = image_gt_reversed[:,:,int(image_gt_reversed.shape[2]/2)+20]
-                slice_MV = 54
+                slice_MV = out.shape[2]//2 # hard coded
                 out = out[:,:,slice_MV]
                 image_gt_reversed = image_gt_reversed[:,:,slice_MV]
                 if (len(self.EMA.shape) == 3):

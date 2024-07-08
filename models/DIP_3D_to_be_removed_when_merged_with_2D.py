@@ -11,7 +11,7 @@ from iMovingVariance import iMovingVariance
 
 class DIP_3D(pl.LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, subroot_phantom, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, simulation, sub_iter_DIP_already_done, override_SC_init, DIP_early_stopping):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, subroot_phantom, method, all_images_DIP, global_it, suffix, override_input, scanner, simulation, hyperparameters_list, sub_iter_DIP_already_done, override_SC_init, DIP_early_stopping, image_net_input_torch):
         super().__init__()
 
         #'''
@@ -38,17 +38,23 @@ class DIP_3D(pl.LightningModule):
         self.sub_iter_DIP_already_done_before_training = sub_iter_DIP_already_done
         self.sub_iter_DIP_already_done = sub_iter_DIP_already_done
 
-        self.fixed_hyperparameters_list = fixed_hyperparameters_list
-        self.hyperparameters_list = hyperparameters_list
         self.scaling_input = scaling_input
-        self.debug = debug
         self.root = root
         self.subroot = root + subroot
         self.subroot_phantom = subroot_phantom
         self.config = config
         self.experiment = config["experiment"]
 
-        self.override_SC_init = override_SC_init
+        self.image_net_input_torch = image_net_input_torch
+        self.override_input = override_input
+        
+        # Other variables 
+        self.method = method
+        self.all_images_DIP = all_images_DIP
+        self.global_it = global_it
+        self.scanner = scanner
+        self.simulation = simulation
+        self.hyperparameters_list = hyperparameters_list
         
         '''
         ## Variables for MV ##
@@ -62,10 +68,12 @@ class DIP_3D(pl.LightningModule):
         self.scanner = scanner
         self.simulation = simulation
         
-        # Initialize early stopping method if asked for
         if(self.DIP_early_stopping):
-            self.initialize_MV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,self.sub_iter_DIP,root,subroot,scanner,simulation)
-
+            self.classMV = iMovingVariance(config)
+            self.classMV.model_class = type(self)
+            self.classMV.image_net_input_torch = self.image_net_input_torch
+            self.classMV.initialize_MV(config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,self.sub_iter_DIP,root,subroot,scanner, simulation, self.hyperparameters_list, image_net_input_torch)
+    
         self.write_current_img_mode = True
         #self.suffix = self.suffix_func(config,hyperparameters_list)
         #if (config["task"] == "post_reco"):
@@ -211,19 +219,19 @@ class DIP_3D(pl.LightningModule):
 
         # Decoder
         out = self.up1(out)
-        if (self.skip >= 1 or self.override_SC_init):
+        if (self.skip >= 1):
             out_skip1 = out3 + out
             out = self.deep5(out_skip1)
         else:
             out = self.deep5(out)
         out = self.up2(out)
-        if (self.skip >= 2 or self.override_SC_init):
+        if (self.skip >= 2):
             out_skip2 = out2 + out
             out = self.deep6(out_skip2)
         else:
             out = self.deep6(out)
         out = self.up3(out)
-        if (self.skip >= 3 or self.override_SC_init):
+        if (self.skip >= 3):
             out_skip3 = out1 + out
             out = self.deep7(out_skip3)
         else:
@@ -263,8 +271,9 @@ class DIP_3D(pl.LightningModule):
         self.logger.experiment.add_scalar('loss', loss,self.current_epoch)        
 
         # MV
-        self.SUCCESS, self.VAR_recon, self.MSE_MV, self.PSNR_MV, self.SSIM_MV, self.epochStar, self.patienceNumber = self.run_MV(out,self.config)
-        
+        self.SUCCESS, self.VAR_recon, self.MSE_MV, self.PSNR_MV, self.SSIM_MV, self.epochStar, self.patienceNumber = self.classMV.run_MV(out.detach().numpy(),self.config, self.current_epoch)
+        self.log("SUCCESS", int(self.classMV.SUCCESS))
+
         # Increment number of iterations since beginnning of DNA
         self.sub_iter_DIP_already_done += 1
 
@@ -326,49 +335,46 @@ class DIP_3D(pl.LightningModule):
         img.tofile(fp)
         print('Succesfully save in:', name)
 
-    def initialize_MV(self,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner, simulation):
-        self.classMV = iMovingVariance(config)            
-        self.classMV.fixed_hyperparameters_list = fixed_hyperparameters_list
-        self.classMV.hyperparameters_list = hyperparameters_list
-        self.classMV.debug = debug
-        self.classMV.param1_scale_im_corrupt = param1_scale_im_corrupt
-        self.classMV.param2_scale_im_corrupt = param2_scale_im_corrupt
-        self.classMV.scaling_input = scaling_input
-        self.classMV.suffix = suffix
-        self.classMV.global_it = global_it
-        self.classMV.scanner = scanner
-        self.classMV.simulation = simulation
-        # Initialize variables
-        self.classMV.do_everything(config,root)
+    # def initialize_MV(self,config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner, simulation):
+    #     self.classMV = iMovingVariance(config)            
+    #     self.classMV.param1_scale_im_corrupt = param1_scale_im_corrupt
+    #     self.classMV.param2_scale_im_corrupt = param2_scale_im_corrupt
+    #     self.classMV.scaling_input = scaling_input
+    #     self.classMV.suffix = suffix
+    #     self.classMV.global_it = global_it
+    #     self.classMV.scanner = scanner
+    #     self.classMV.simulation = simulation
+    #     # Initialize variables
+    #     self.classMV.do_everything(config,root)
 
-    def run_MV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner,simulation):
-        if (self.DIP_early_stopping):
-            self.SUCCESS = self.classMV.SUCCESS
-            self.log("SUCCESS", int(self.classMV.SUCCESS))
-            try:
-                out_np = out.detach().numpy()[0,0,:,:]
-            except:
-                out_np = out.cpu().detach().numpy()[0,0,:,:]
+    # def run_MV(self,out,config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner,simulation):
+    #     if (self.DIP_early_stopping):
+    #         self.SUCCESS = self.classMV.SUCCESS
+    #         self.log("SUCCESS", int(self.classMV.SUCCESS))
+    #         try:
+    #             out_np = out.detach().numpy()[0,0,:,:]
+    #         except:
+    #             out_np = out.cpu().detach().numpy()[0,0,:,:]
 
-            self.classMV.SUCCESS,self.classMV.VAR_min,self.classMV.stagnate = self.classMV.compute_MV_value(copy(out_np),self.current_epoch,self.sub_iter_DIP,self.classMV.queueQ,self.classMV.SUCCESS,self.classMV.VAR_min,self.classMV.stagnate)
+    #         self.classMV.SUCCESS,self.classMV.VAR_min,self.classMV.stagnate = self.classMV.compute_MV_value(copy(out_np),self.current_epoch,self.sub_iter_DIP,self.classMV.queueQ,self.classMV.SUCCESS,self.classMV.VAR_min,self.classMV.stagnate)
             
-            self.VAR_recon = self.classMV.VAR_recon
-            self.MSE_MV = self.classMV.MSE_MV
-            self.PSNR_MV = self.classMV.PSNR_MV
-            self.SSIM_MV = self.classMV.SSIM_MV
-            self.epochStar = self.classMV.epochStar
-            '''
-            if self.EMV_or_WMV == "EMV":
-                self.alpha_EMV = self.classMV.alpha_EMV
-            else:
-                self.windowSize = self.classMV.windowSize
-            '''
-            self.patienceNumber = self.classMV.patienceNumber
+    #         self.VAR_recon = self.classMV.VAR_recon
+    #         self.MSE_MV = self.classMV.MSE_MV
+    #         self.PSNR_MV = self.classMV.PSNR_MV
+    #         self.SSIM_MV = self.classMV.SSIM_MV
+    #         self.epochStar = self.classMV.epochStar
+    #         '''
+    #         if self.EMV_or_WMV == "EMV":
+    #             self.alpha_EMV = self.classMV.alpha_EMV
+    #         else:
+    #             self.windowSize = self.classMV.windowSize
+    #         '''
+    #         self.patienceNumber = self.classMV.patienceNumber
 
-            if self.SUCCESS:
-            # if self.classMV.SUCCESS:
-                print("SUCCESS MVVVVVVVVVVVVVVVVVV")
-                self.initialize_MV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner, simulation)
+    #         if self.SUCCESS:
+    #         # if self.classMV.SUCCESS:
+    #             print("SUCCESS MVVVVVVVVVVVVVVVVVV")
+    #             self.initialize_MV(config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner, simulation)
         
-        else:
-            self.log("SUCCESS", int(False))
+    #     else:
+    #         self.log("SUCCESS", int(False))

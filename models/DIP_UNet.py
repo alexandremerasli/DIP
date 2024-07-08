@@ -265,7 +265,10 @@ class DIP_UNet(LightningModule):
         self.num_total_batch += 1
         if (self.num_total_batch == 0):
             if (self.sub_iter_DIP_already_done_before_training - self.current_epoch == 0):
-                self.out_np_all_inputs = zeros((self.several_DIP_inputs,train_batch[0].shape[3],train_batch[0].shape[4]),dtype=float32)
+                if (self.nb_dimensions == 2):
+                    self.out_np_all_inputs = zeros((self.several_DIP_inputs,train_batch[0].shape[3],train_batch[0].shape[4]),dtype=float32)
+                else:
+                    self.out_np_all_inputs = zeros((self.several_DIP_inputs,train_batch[0].shape[3],train_batch[0].shape[4],train_batch[0].shape[5]),dtype=float32)
             else:
                 self.out_np_all_inputs[:] = 0 # Do not instantiate a new array for memory efficiency
         loss = 0
