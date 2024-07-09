@@ -174,7 +174,7 @@ class iResults(vDenoising):
             self.compute_metrics(PETImage_shape,f,self.image_gt,i,self.PSNR_recon,self.PSNR_norm_recon,self.MSE_recon,self.SSIM_recon,self.MA_cold_recon,self.AR_hot_recon,self.AR_hot_TEP_recon,self.AR_hot_TEP_match_square_recon,self.AR_hot_perfect_match_recon,self.AR_hot_MR_recon,self.loss_DIP_recon,self.CRC_hot_recon,self.AR_bkg_recon,self.IR_bkg_recon,self.IR_whole_recon,self.mean_inside_recon,phantom,writer=self.writer)
 
         if (self.tensorboard):
-            # Write image over ADMM iterations
+            # Write image for each outer iteration in tensorboard
             if (self.all_images_DIP == "Unique"):
                 self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output)",suffix,self.image_gt,i) # Showing all images with same contrast to compare them together
                 self.write_image_tensorboard(self.writer,f,"Image over " + pet_algo + " " + iteration_name + "(" + net + "output, FULL CONTRAST)",suffix,self.image_gt,i,full_contrast=True) # Showing each image with contrast = 1

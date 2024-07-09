@@ -165,8 +165,6 @@ class vGeneral(abc.ABC):
             Path(self.subroot_phantom+'Block1/' + self.suffix + '/during_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
             Path(self.subroot_phantom+'Block1/' + self.suffix + '/out_eq22').mkdir(parents=True, exist_ok=True) # CASToR path
 
-            Path(self.subroot_phantom+'Images/out_final/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the framework (Last output of the DIP)
-
             Path(self.subroot_phantom+'Block2/' + self.suffix + '/checkpoint/'+format(self.experiment)+'/').mkdir(parents=True, exist_ok=True)
             Path(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
             Path(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/vae').mkdir(parents=True, exist_ok=True) # Output of the DIP block every outer iteration
