@@ -1,5 +1,6 @@
 import numpy as np
 from pathlib import Path
+import os
 
 def fijii_np(path,shape,type_im='<f'):
     """"Transforming raw data to numpy array"""               
@@ -47,7 +48,6 @@ subsubroot = "Data/initialization/image40_1_114/BSREM_it30/replicate_1/"
 # file_extension = 'img'
 file_extension = 'raw'
 
-import os
 # List all files in subsubroot with chosen file extension
 filenames = [file for file in os.listdir(subroot + subsubroot) if file.endswith(file_extension)]
 # Remove file extension for each file name
@@ -77,4 +77,4 @@ for filename in filenames:
         im_padded[pad_x:-pad_x,pad_y:-pad_y,:] = im_full
     else:
         im_padded[:,pad_y:-pad_y,pad_x:-pad_x] = im_full
-    save_img(im_padded,filename + "_114" + "." + file_extension)
+    save_img(im_padded,filename + "_" + str(new_dimx) + "_" + str(new_dimy) + "." + file_extension)
