@@ -55,7 +55,7 @@ class vGeneral(abc.ABC):
         self.method = config["method"]
         self.processing_unit = config["processing_unit"]
         self.nb_threads = config["nb_threads"]
-        self.max_iter = config["max_iter"] # Outer iterations
+        self.max_iter = config["max_iter"]
         self.experiment = config["experiment"] # Label of the experiment
         self.replicate = config["replicates"] # Label of the replicate
         self.penalty = config["penalty"]
@@ -348,7 +348,7 @@ class vGeneral(abc.ABC):
         # If ADMMReg (not DNA), begin with CASToR default value, which is uniform image of 1
         if (len(config["method"]['grid_search']) == 1):
             if method == 'ADMMReg':
-                config["unnested_1st_global_iter"]['grid_search'] = [True]
+                config["unnested_1st_outer_iter"]['grid_search'] = [True]
         
         # Remove NNEPPS=False if True is selected for computation
         if (len(config["NNEPPS"]['grid_search']) > 1 and False in config["NNEPPS"]['grid_search'] and 'results' not in task):
@@ -362,7 +362,7 @@ class vGeneral(abc.ABC):
             if ('BSREM' in method or 'DNA' in method or "DIPRecon" in method or 'APPGML' in method):
                 config.pop("post_smoothing", None)
             if ((('ADMMReg' not in method and 'DNA' not in method) and method != 'ADMMReg_Bowsher' and "DNA" not in method) or "APPGML" in config["recoInDNA"]['grid_search'][0]):
-                #config.pop("nb_inner_iteration", None)
+                #config.pop("nb_inner_sub_iteration", None)
                 config.pop("alpha", None)
                 config.pop("adaptive_parameters", None)
                 config.pop("mu_adaptive", None)
@@ -377,7 +377,7 @@ class vGeneral(abc.ABC):
                 config.pop("tau_max", None)
                 config.pop("xi", None)
             if ('ADMMReg' not in method and "DNA" not in method and "DIPRecon" not in method):
-                config.pop("nb_outer_iteration", None)
+                config.pop("nb_inner_iteration", None)
             if ("DNA" not in method and "DIPRecon" not in method and task != "post_reco"):
                 config.pop("lr", None)
                 config.pop("sub_iter_DIP", None)
@@ -390,7 +390,7 @@ class vGeneral(abc.ABC):
                 config.pop("mu_DIP", None)
                 config.pop("tau_DIP", None)
                 config.pop("xi_DIP", None)
-                #config.pop("unnested_1st_global_iter",None)
+                #config.pop("unnested_1st_outer_iter",None)
             if (config["net"]['grid_search'][0] == "DD"):
                 config.pop("skip_connections", None)
             elif (config["net"]['grid_search'][0] != "DD_AE"): # not a Deep Decoder based architecture, so remove k and d
@@ -474,9 +474,9 @@ class vGeneral(abc.ABC):
         elif (len(L) == 3):
             i = L[0]
             k = L[1]
-            inner_it = L[2]
+            inner_sub_it = L[2]
             if variable_name != '':
-                ref_numbers = format(i) + '_' + format(k) + '_' + format(inner_it) + '_' + variable_name
+                ref_numbers = format(i) + '_' + format(k) + '_' + format(inner_sub_it) + '_' + variable_name
             else:
                 ref_numbers = format(i)
         ref_numbers = additional_name + ref_numbers
@@ -518,7 +518,7 @@ class vGeneral(abc.ABC):
             config_copy.pop('NNEPPS',None)
         # Do not put ADMMReg outer iterations in suffix
         if (("ADMMReg" in self.method and "DNA" not in self.method) or self.method == "ADMMReg_Bowsher"):
-            config_copy.pop('nb_outer_iteration',None)
+            config_copy.pop('nb_inner_iteration',None)
         # Do not put number of DIP iterations in suffix if post reco mode if post_reco_in_suffix
         elif ("post_reco" in config_copy["task"]):
             if ("post_reco_in_suffix" not in config_copy):
@@ -1243,7 +1243,7 @@ class vGeneral(abc.ABC):
 
         return executable + dim + vox + header_file + vb + th + proj + opti_like + psf + conv + sensitivity
 
-    def castor_opti_and_penalty(self, method, penalty, rho, i=None, unnested_1st_global_iter=None):
+    def castor_opti_and_penalty(self, method, penalty, rho, i=None, unnested_1st_outer_iter=None):
         if (method == 'MLEM'):
             opti = ' -opti ' + method
             pnlt = ''
@@ -1299,8 +1299,8 @@ class vGeneral(abc.ABC):
             if (self.recoInDNA == "ADMMReg"):
                 opti = ' -opti ' + 'ADMMReg' + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) + ',' + str(self.tau_max) + ',' + str(self.stoppingCriterionValue) + ',' + str(self.saveSinogramsUAndV)
                 if ("DNA" in method):
-                    # if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
-                    if ((i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
+                    # if ((i==0 and unnested_1st_outer_iter) or (i==-1 and not unnested_1st_outer_iter)): # For first iteration, put rho to zero
+                    if ((i==-1 and not unnested_1st_outer_iter)): # For first iteration, put rho to zero
                         rho = 0
                         #self.rho = 0
                     method = 'ADMMReg' + method[6:]
@@ -1326,7 +1326,7 @@ class vGeneral(abc.ABC):
 
                 penaltyStrength = ' -pnlt-beta ' + str(rho)
             elif (self.recoInDNA == "APPGML"):
-                if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
+                if ((i==0 and unnested_1st_outer_iter) or (i==-1 and not unnested_1st_outer_iter)): # For first iteration, put rho to zero
                     rho = 0
                     #self.rho = 0
                 #opti = ' -opti APPGML' + ',1,1e-10,0.01,-1,' + str(self.A_AML) + ',-1' # Do not use a multimodal image for APPGML, so let default multimodal index (-1)
@@ -1340,7 +1340,7 @@ class vGeneral(abc.ABC):
                 pnlt = ''
                 penaltyStrength = ''
         elif (method == "DIPRecon"):
-            if ((i==0 and unnested_1st_global_iter) or (i==-1 and not unnested_1st_global_iter)): # For first iteration, put rho to zero
+            if ((i==0 and unnested_1st_outer_iter) or (i==-1 and not unnested_1st_outer_iter)): # For first iteration, put rho to zero
                 rho = 0
                 #self.rho = 0
             opti = ' -opti OPTITR'
@@ -1438,11 +1438,11 @@ class vGeneral(abc.ABC):
                 self.path_stopping_criterion = self.subroot_phantom + self.suffix + '/' + format(0) + '_adaptive_stopping_criteria.log'
                 with open(self.path_stopping_criterion) as f:
                     first_line = f.readline() # Read first line to get second one
-                    self.total_nb_iter = min(int(f.readline().rstrip()) - self.i_init, config["nb_outer_iteration"] - self.i_init + 1)
+                    self.total_nb_iter = min(int(f.readline().rstrip()) - self.i_init, config["nb_inner_iteration"] - self.i_init + 1)
                     #self.total_nb_iter = int(self.total_nb_iter / self.i_init) # if 1 out of i_init iterations was saved
-                    #self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1 # Override value
+                    #self.total_nb_iter = config["nb_inner_iteration"] - self.i_init + 1 # Override value
             except:
-                self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1
+                self.total_nb_iter = config["nb_inner_iteration"] - self.i_init + 1
                 #self.total_nb_iter = int(self.total_nb_iter / self.i_init) # if 1 out of i_init iterations was saved
             self.beta = config["alpha"]
         elif ("DNA" in self.method or "DIPRecon" in self.method):
@@ -1461,11 +1461,11 @@ class vGeneral(abc.ABC):
                         self.path_stopping_criterion = self.subroot_phantom + 'Block2/' + self.suffix + '/' + 'IR_stopping_criteria.log'
                         with open(self.path_stopping_criterion) as f:
                             first_line = f.readline() # Read first line to get second one
-                            #self.total_nb_iter = min(int(f.readline().rstrip()) - self.i_init, config["nb_outer_iteration"] - self.i_init + 1)
+                            #self.total_nb_iter = min(int(f.readline().rstrip()) - self.i_init, config["nb_inner_iteration"] - self.i_init + 1)
                             # self.total_nb_iter = int(f.readline().rstrip()) - self.i_init - 1
                             self.total_nb_iter = int(f.readline().rstrip())
                             #self.total_nb_iter = int(self.total_nb_iter / self.i_init) # if 1 out of i_init iterations was saved
-                            #self.total_nb_iter = config["nb_outer_iteration"] - self.i_init + 1 # Override value
+                            #self.total_nb_iter = config["nb_inner_iteration"] - self.i_init + 1 # Override value
                     else:
                         self.total_nb_iter = config["max_iter"]    
                 except:

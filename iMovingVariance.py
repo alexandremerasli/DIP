@@ -165,15 +165,15 @@ class iMovingVariance(vGeneral):
             import matplotlib.pyplot as plt
             import numpy as np
             if (not self.SUCCESS):
-                plt.plot(np.log(self.VAR_recon),label="Outer iteration : " + str(self.global_it))
+                plt.plot(np.log(self.VAR_recon),label="Outer iteration : " + str(self.outer_it))
                 plt.legend()
                 plt.ylabel("EMV (log scale)")
                 plt.xlabel("DIP Iterations")
-                plt.savefig(self.subroot_phantom + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/MV_global_' + str(self.global_it) + '.png')
+                plt.savefig(self.subroot_phantom + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/MV_outer_' + str(self.outer_it) + '.png')
             # Open output corresponding to epoch star
-            net_output_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
+            net_output_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(self.epochStar) + '.img'
             # Open ckpt corresponding to epoch star
-            ckpt_path = self.subroot_phantom+'Block2/' + self.suffix + '/checkpoint/' + format(self.experiment) + '/' + str(self.global_it) + '/epoch=' + format(self.epochStar) + '-step=' + format(self.epochStar) + '.ckpt'
+            ckpt_path = self.subroot_phantom+'Block2/' + self.suffix + '/checkpoint/' + format(self.experiment) + '/' + str(self.outer_it) + '/epoch=' + format(self.epochStar) + '-step=' + format(self.epochStar) + '.ckpt'
             
             self.save_DIP_output(ckpt_path, net_output_path)
             
@@ -184,7 +184,7 @@ class iMovingVariance(vGeneral):
             #out = self.descale_imag(from_numpy(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
 
             # Saving ES point image
-            net_output_path = self.subroot_phantom + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/ES_out_' + self.net +  str(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
+            net_output_path = self.subroot_phantom + 'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/ES_out_' + self.net +  str(self.outer_it) + '_epoch=' + format(self.epochStar) + '.img'
             self.save_img(out, net_output_path)
             print("#### MV ########################################################")
             print("                 ES point found, epoch* =", self.epochStar)
@@ -199,21 +199,21 @@ class iMovingVariance(vGeneral):
                 print(self.epochStar)
             
                 # Open output corresponding to epoch star
-                net_output_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
+                net_output_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(self.epochStar) + '.img'
                 # Open ckpt corresponding to epoch star
-                ckpt_path = self.subroot_phantom+'Block2/' + self.suffix + '/checkpoint/' + format(self.experiment) + '/' + str(self.global_it) + '/epoch=' + format(self.epochStar) + '-step=' + format(self.epochStar) + '.ckpt'
+                ckpt_path = self.subroot_phantom+'Block2/' + self.suffix + '/checkpoint/' + format(self.experiment) + '/' + str(self.outer_it) + '/epoch=' + format(self.epochStar) + '-step=' + format(self.epochStar) + '.ckpt'
                 
                 self.save_DIP_output(ckpt_path, net_output_path)
             
         return SUCCESS, VAR_min, stagnate
     
-    def initialize_MV(self,config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,sub_iter_DIP,root, subroot, scanner, simulation, hyperparameters_list,image_net_input=None):          
+    def initialize_MV(self,config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,outer_it,sub_iter_DIP,root, subroot, scanner, simulation, hyperparameters_list,image_net_input=None):          
         self.subroot = subroot
         self.param1_scale_im_corrupt = param1_scale_im_corrupt
         self.param2_scale_im_corrupt = param2_scale_im_corrupt
         self.scaling_input = scaling_input
         self.suffix = suffix
-        self.global_it = global_it
+        self.outer_it = outer_it
         self.scanner = scanner
         self.simulation = simulation
         self.image_net_input = image_net_input

@@ -134,9 +134,9 @@ for lib_string in config_files:
             # config["image"] = tune.grid_search(['image50_1'])
         config["replicates"] = tune.grid_search(list(range(1+int(40/nb_computation)*i,1+int(40/nb_computation)*i+int(40/nb_computation))))
         if (num_meth%2==0):
-            config["nb_outer_iteration"] = tune.grid_search([10])
+            config["nb_inner_iteration"] = tune.grid_search([10])
         elif (num_meth%2==1):
-            config["nb_outer_iteration"] = tune.grid_search([2])
+            config["nb_inner_iteration"] = tune.grid_search([2])
         else:
             raise ValueError("bug num_meth")
         

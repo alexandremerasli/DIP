@@ -13,7 +13,7 @@ from iMovingVariance import iMovingVariance
 
 class DIP_UNet(LightningModule):
 
-    def __init__(self, nb_dimensions, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, subroot_phantom, method, all_images_DIP, global_it, suffix, override_input, scanner, simulation, hyperparameters_list, sub_iter_DIP_already_done, override_SC_init, DIP_early_stopping, image_net_input_torch):
+    def __init__(self, nb_dimensions, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, subroot_phantom, method, all_images_DIP, outer_it, suffix, override_input, scanner, simulation, hyperparameters_list, sub_iter_DIP_already_done, override_SC_init, DIP_early_stopping, image_net_input_torch):
         super().__init__()
 
         # Save all the arguments passed to your model in the checkpoint, especially to save learning rate
@@ -27,7 +27,7 @@ class DIP_UNet(LightningModule):
                 seed_everything(1)
 
         # Defining variables from config or from constructor       
-        self.defineMemberVariables(nb_dimensions, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, subroot_phantom, method, all_images_DIP, global_it, suffix, override_input, scanner, simulation, hyperparameters_list, sub_iter_DIP_already_done, override_SC_init, DIP_early_stopping, image_net_input_torch)
+        self.defineMemberVariables(nb_dimensions, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, subroot_phantom, method, all_images_DIP, outer_it, suffix, override_input, scanner, simulation, hyperparameters_list, sub_iter_DIP_already_done, override_SC_init, DIP_early_stopping, image_net_input_torch)
 
         # Variables to monitor lr
         self.mean_inside_list = []
@@ -42,7 +42,7 @@ class DIP_UNet(LightningModule):
         if(self.DIP_early_stopping):
             self.classMV.model_class = type(self)
             self.classMV.image_net_input_torch = self.image_net_input_torch
-            self.classMV.initialize_MV(config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,self.sub_iter_DIP,root,subroot,scanner, simulation, self.hyperparameters_list, image_net_input_torch)
+            self.classMV.initialize_MV(config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,outer_it,self.sub_iter_DIP,root,subroot,scanner, simulation, self.hyperparameters_list, image_net_input_torch)
     
         # Load system matrix and correction factors for end to end reconstruction
         if ("end_to_end" in config): # Check if run DNA with end to end mode
@@ -187,7 +187,7 @@ class DIP_UNet(LightningModule):
 
     def forward(self, x):
 
-        # Dropout, changing numpy seed at each global iteration
+        # Dropout, changing numpy seed at each outer iteration
         if (self.dropout > 0):
             drop_sample = uniform(0,1,3)
         else:
@@ -312,7 +312,10 @@ class DIP_UNet(LightningModule):
             end_epoch_LBFGS = False
             self.SUCCESS = False
             self.counter_inside_epoch += 1
-            self.log("SUCCESS", int(self.classMV.SUCCESS))
+            if (self.DIP_early_stopping):
+                self.log("SUCCESS", int(self.classMV.SUCCESS))
+            else:
+                self.log("SUCCESS", int(False))
             if (self.counter_inside_epoch == 10): # number of max iter in lbfgs opti
                 end_epoch_LBFGS = True
                 self.counter_inside_epoch = 0
@@ -337,15 +340,15 @@ class DIP_UNet(LightningModule):
         # Increment number of iterations since beginnning of DNA
         if (self.end_epoch): # We looped over all images of the batch
             self.sub_iter_DIP_already_done += 1
-            self.sub_iter_DIP_this_global_it += 1
+            self.sub_iter_DIP_this_outer_it += 1
         if (self.several_DIP_inputs > 1): # If several inputs, save MR forward
             batch_idx_name = "MR_forward"
             if (self.num_total_batch == self.several_DIP_inputs - 1):
                 if ((self.current_epoch == self.sub_iter_DIP + self.sub_iter_DIP_already_done_before_training - 1)):
-                    self.classMV.save_img(self.out_np_all_inputs[batch_idx,:], self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx_name))*(batch_idx_name!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+                    self.classMV.save_img(self.out_np_all_inputs[batch_idx,:], self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.outer_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx_name))*(batch_idx_name!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                 if (self.DIP_early_stopping):
                     if (self.SUCCESS):
-                        self.classMV.save_img(self.out_np_all_inputs[batch_idx,:], self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx_name))*(batch_idx_name!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+                        self.classMV.save_img(self.out_np_all_inputs[batch_idx,:], self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.outer_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx_name))*(batch_idx_name!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
         if (self.end_epoch):
             self.num_total_batch = -1
             self.end_epoch = False
@@ -365,11 +368,11 @@ class DIP_UNet(LightningModule):
             optimizer = optim.Adadelta(self.parameters()) # Optimizing using Adadelta
         return optimizer
     
-    def defineMemberVariables(self, nb_dimensions, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, subroot_phantom, method, all_images_DIP, global_it, suffix, override_input, scanner, simulation, hyperparameters_list, sub_iter_DIP_already_done, override_SC_init, DIP_early_stopping, image_net_input_torch):
+    def defineMemberVariables(self, nb_dimensions, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, subroot_phantom, method, all_images_DIP, outer_it, suffix, override_input, scanner, simulation, hyperparameters_list, sub_iter_DIP_already_done, override_SC_init, DIP_early_stopping, image_net_input_torch):
         # Variables from config
         self.lr = config['lr']
         self.opti_DIP = config['opti_DIP']
-        if (global_it == -1):
+        if (outer_it == -1):
             self.sub_iter_DIP = config["sub_iter_DIP_initial_and_final"] # User defined maximum number of initial DIP iterations
             # self.sub_iter_DIP = config["DIP_it_if_no_ES_found"] + config["patienceNumber"] # Maximum number of initial DIP iterations is set to DIP_it_if_no_ES_found + patienceNumber
         else:
@@ -390,7 +393,7 @@ class DIP_UNet(LightningModule):
         self.DIP_early_stopping = DIP_early_stopping
         self.sub_iter_DIP_already_done_before_training = sub_iter_DIP_already_done
         self.sub_iter_DIP_already_done = sub_iter_DIP_already_done
-        self.sub_iter_DIP_this_global_it = 0
+        self.sub_iter_DIP_this_outer_it = 0
         self.scaling_input = scaling_input
         self.image_net_input_torch = image_net_input_torch
         self.override_input = override_input
@@ -399,7 +402,7 @@ class DIP_UNet(LightningModule):
         self.nb_dimensions = nb_dimensions
         self.method = method
         self.all_images_DIP = all_images_DIP
-        self.global_it = global_it
+        self.outer_it = outer_it
         self.scanner = scanner
         self.simulation = simulation
         self.hyperparameters_list = hyperparameters_list
@@ -408,7 +411,7 @@ class DIP_UNet(LightningModule):
         self.write_current_img_mode = True
 
         # Parameters for ablation study
-        if (self.global_it < 0):
+        if (self.outer_it < 0):
             if ("initDNA" in self.config):
                 if (self.config["initDNA"]):
                     self.initDNA = True
@@ -419,7 +422,7 @@ class DIP_UNet(LightningModule):
         else:
             self.initDNA = False
 
-        if (self.global_it < 0):
+        if (self.outer_it < 0):
             if ("initDIPRecon" in self.config):
                 if (self.config["initDIPRecon"]):
                     self.initDIPRecon = True
@@ -467,9 +470,9 @@ class DIP_UNet(LightningModule):
         print("self.current_epoch",self.current_epoch)
         if (inside):
             print("save before ReLU here")
-            self.classMV.save_img(self.out_np, self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/beforeReLU_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+            self.classMV.save_img(self.out_np, self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/beforeReLU_' + 'DIP' + format(self.outer_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
         else:
-            self.classMV.save_img(self.out_np, self.subroot_phantom +'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+            self.classMV.save_img(self.out_np, self.subroot_phantom +'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.outer_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
 
     def monitor_lr_func(self,out,image_corrupt_torch):
         if ("monitor_lr" not in self.config):

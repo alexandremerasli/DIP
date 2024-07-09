@@ -34,7 +34,7 @@ from torch.nn import Parameter
 class Full_DIP_backbone(pl.LightningModule):
 
     def __init__(self, param_scale, 
-                 config_Xin, suffix_Xin, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, simulation, sub_iter_DIP_already_done, override_SC_init):
+                 config_Xin, suffix_Xin, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,outer_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, simulation, sub_iter_DIP_already_done, override_SC_init):
         super().__init__()
         # random_seed = 114514
         # pl.seed_everything(random_seed)
@@ -95,14 +95,14 @@ class Full_DIP_backbone(pl.LightningModule):
         # Defining variables from config        
         self.lr = config['lr']
         self.opti_DIP = config['opti_DIP']
-        if (global_it == -1):
+        if (outer_it == -1):
             self.sub_iter_DIP = config['sub_iter_DIP_initial_and_final']
         else:
             self.sub_iter_DIP = config['sub_iter_DIP']
         self.skip = config['skip_connections']
         self.method = method
         self.all_images_DIP = all_images_DIP
-        self.global_it = global_it
+        self.outer_it = outer_it
         self.param1_scale_im_corrupt = param1_scale_im_corrupt
         self.param2_scale_im_corrupt = param2_scale_im_corrupt
         
@@ -144,7 +144,7 @@ class Full_DIP_backbone(pl.LightningModule):
         
         # Initialize early stopping method if asked for
         if(self.DIP_early_stopping):
-            self.initialize_MV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner,simulation)
+            self.initialize_MV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,outer_it,root,subroot,scanner,simulation)
 
         self.write_current_img_mode = True
         #self.suffix = self.suffix_func(config,hyperparameters_list)
@@ -294,7 +294,7 @@ class Full_DIP_backbone(pl.LightningModule):
             #     out_avg = mean_np(self.out_np_all_inputs,axis=0)
             #     # self.write_current_img(out_avg,batch_idx="avg")
             #     batch_idx = "avg"
-            #     self.save_img(out_avg, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP_Xin' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+            #     self.save_img(out_avg, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP_Xin' + format(self.outer_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
 
         
 
@@ -308,11 +308,11 @@ class Full_DIP_backbone(pl.LightningModule):
         if (self.num_total_batch == self.several_DIP_inputs - 1):
             if ((self.current_epoch == self.sub_iter_DIP + self.sub_iter_DIP_already_done_before_training - 1)):
                 batch_idx = "MR_forward"
-                self.save_img(self.out_np_all_inputs[0,:,:], self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP_Xin' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+                self.save_img(self.out_np_all_inputs[0,:,:], self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP_Xin' + format(self.outer_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
             if (self.DIP_early_stopping):
                 if (self.SUCCESS):
                     batch_idx = "MR_forward"
-                    self.save_img(self.out_np_all_inputs[0,:,:], self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP_Xin' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+                    self.save_img(self.out_np_all_inputs[0,:,:], self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP_Xin' + format(self.outer_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
         if (self.end_epoch):
             self.num_total_batch = -1
             self.end_epoch = False
@@ -338,15 +338,15 @@ class Full_DIP_backbone(pl.LightningModule):
         print("self.current_epoch",self.current_epoch)
         if (inside):
             print("save before ReLU here")
-            # self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/beforeReLU_' + 'DIP_Xin' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+            # self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/beforeReLU_' + 'DIP_Xin' + format(self.outer_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
         else:
-            self.save_img(self.out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP_Xin' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+            self.save_img(self.out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP_Xin' + format(self.outer_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
         config_copy = dict(config)
         if (NNEPPS==False):
             config_copy.pop('NNEPPS',None)
-        #config_copy.pop('nb_outer_iteration',None)
+        #config_copy.pop('nb_inner_iteration',None)
         suffix = "config"
         for key, value in config_copy.items():
             if key in hyperparameters_list:
@@ -730,9 +730,9 @@ class DIP_skip_concat(Full_DIP_backbone):
 # skip_cnn 
 class DIP_skip_add(Full_DIP_backbone):   
                         
-    def __init__(self, unknown_param,embed_dim,unknown_2,kernel_size,skip,num_layer,depths,mode,config_Xin,suffix_Xin,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init):
+    def __init__(self, unknown_param,embed_dim,unknown_2,kernel_size,skip,num_layer,depths,mode,config_Xin,suffix_Xin,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,outer_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init):
         param_scale = 57651
-        super().__init__(param_scale,config,suffix,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init)
+        super().__init__(param_scale,config,suffix,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,outer_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init)
 
         print("init_DIP_Xin")
 
@@ -762,7 +762,7 @@ class DIP_skip_add(Full_DIP_backbone):
 # class Swin_Unetr(pl.LightningModule):
 class Swin_Unetr(Full_DIP_backbone):
 
-    def __init__(self, num_heads,embed_dim,unknown_2,kernel_size,skip,num_layer,depths,mode,config_Xin,suffix_Xin,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init):
+    def __init__(self, num_heads,embed_dim,unknown_2,kernel_size,skip,num_layer,depths,mode,config_Xin,suffix_Xin,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,outer_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init):
         # super().__init__()
 
         self.embed_dim = embed_dim
@@ -773,7 +773,7 @@ class Swin_Unetr(Full_DIP_backbone):
         self.mode = mode
         self.num_heads = num_heads
         self.sigma_p = 0
-        super().__init__(0,config,suffix,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init)
+        super().__init__(0,config,suffix,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,outer_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init)
         self.initialize_network()
         # for m in self.modules():
 		# # 判断是否属于Conv2d
@@ -815,7 +815,7 @@ class Swin_Unetr(Full_DIP_backbone):
     
 class Swin_Unet(pl.LightningModule):
 
-    def __init__(self, unknown_param,embed_dim,unknown_2,kernel_size,skip,num_layer,depths,mode,config_Xin,suffix_Xin,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init):
+    def __init__(self, unknown_param,embed_dim,unknown_2,kernel_size,skip,num_layer,depths,mode,config_Xin,suffix_Xin,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config,root,subroot,method,all_images_DIP,outer_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init):
         super().__init__()
         # random_seed = 114514
         # pl.seed_everything(random_seed)

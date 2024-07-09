@@ -68,11 +68,11 @@ class vDenoising(vGeneral):
             # Diffusion model like : add random noise to anatomical input or use several inputs for the same training
             # if (self.input == "anatomical"):
             # Generate random input
-            # gaussian_distribution = normal(0, (self.global_it+1) * self.diffusion_model_like,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).reshape(self.PETImage_shape) # reshaping (for DIP)
+            # gaussian_distribution = normal(0, (self.outer_it+1) * self.diffusion_model_like,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).reshape(self.PETImage_shape) # reshaping (for DIP)
             # self.image_net_input_scale += gaussian_distribution
             if (self.diffusion_model_like != 0):
                 if (self.several_DIP_inputs == 1):
-                    self.image_net_input_scale = self.add_gaussian_noise(copy(self.image_net_input_scale), self.global_it + 1,self.diffusion_model_like)
+                    self.image_net_input_scale = self.add_gaussian_noise(copy(self.image_net_input_scale), self.outer_it + 1,self.diffusion_model_like)
                 else:
                     raise ValueError("not implemented")
             else:
@@ -113,7 +113,7 @@ class vDenoising(vGeneral):
         gaussian_distribution = normal(0, it * diffusion_model_like_each_DIP,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).reshape(self.PETImage_shape) # reshaping (for DIP)
         return img + gaussian_distribution
 
-    def train_process(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, suffix, config, finetuning, processing_unit, sub_iter_DIP, method, global_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, experiment, checkpoint_simple_path, name_run, subroot, all_images_DIP):
+    def train_process(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, suffix, config, finetuning, processing_unit, sub_iter_DIP, method, outer_it, image_net_input_torch, image_corrupt_torch, net, PETImage_shape, experiment, checkpoint_simple_path, name_run, subroot, all_images_DIP):
         # Implements Dataset
         train_dataset = TensorDataset(image_net_input_torch, image_corrupt_torch) # Put several times the input
         # Add different level of gaussian noise to input
@@ -129,36 +129,36 @@ class vDenoising(vGeneral):
         # train_dataloader = DataLoader(train_dataset, batch_size=1,num_workers=0,shuffle=True) # Mini batch training
         train_dataloader = DataLoader(train_dataset, batch_size=1,num_workers=0,shuffle=False) # Mini batch training without shuffle
         # Choose network architecture as model
-        model, self.model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, self.override_input)
-        # Define path for this global iteration
-        self.checkpoint_simple_path_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment) + '/' + str(self.global_it)
+        model, self.model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, outer_it, PETImage_shape, suffix, self.override_input)
+        # Define path for this outer iteration
+        self.checkpoint_simple_path_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment) + '/' + str(self.outer_it)
         Path(self.checkpoint_simple_path_exp+'/').mkdir(parents=True, exist_ok=True)
-        # Define path for previous global iteration
+        # Define path for previous outer iteration
         checkpoint_simple_path_previous_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment)
-        if (self.global_it != -100): # if not in post reco mode
-            checkpoint_simple_path_previous_exp += '/' + str(self.global_it - 1)
+        if (self.outer_it != -100): # if not in post reco mode
+            checkpoint_simple_path_previous_exp += '/' + str(self.outer_it - 1)
         else:
-            checkpoint_simple_path_previous_exp += '/' + str(self.global_it)
+            checkpoint_simple_path_previous_exp += '/' + str(self.outer_it)
 
         # Start training
-        print('Starting optimization, iteration',global_it)
-        trainer = self.create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, global_it, net, checkpoint_simple_path, experiment, self.checkpoint_simple_path_exp, checkpoint_simple_path_previous_exp, config,name=name_run)
+        print('Starting optimization, iteration',outer_it)
+        trainer = self.create_pl_trainer(finetuning, processing_unit, sub_iter_DIP, outer_it, net, checkpoint_simple_path, experiment, self.checkpoint_simple_path_exp, checkpoint_simple_path_previous_exp, config,name=name_run)
         trainer.fit(model, train_dataloader)
         
         # Copy last checkpoint to file "last.ckpt" or to ES checkpoint 
-        self.choose_ckpt_for_next_global_it(finetuning, trainer, model, checkpoint_simple_path_previous_exp)
+        self.choose_ckpt_for_next_outer_it(finetuning, trainer, model, checkpoint_simple_path_previous_exp)
         
 
         return model
     
-    def choose_ckpt_for_next_global_it(self, finetuning, trainer, model, checkpoint_simple_path_previous_exp):
+    def choose_ckpt_for_next_outer_it(self, finetuning, trainer, model, checkpoint_simple_path_previous_exp):
     
         if (finetuning == "last"):
             trainer.save_checkpoint(self.checkpoint_simple_path_exp + "/last.ckpt")
 
         import shutil
         for file in os.listdir(self.checkpoint_simple_path_exp):
-            # if (self.finetuning != "ES"):# or self.global_it >= 0):
+            # if (self.finetuning != "ES"):# or self.outer_it >= 0):
             #     if ("epoch" in file):
             #         shutil.copy(os.path.join(self.checkpoint_simple_path_exp,file),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
             #         os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
@@ -178,11 +178,11 @@ class vDenoising(vGeneral):
                         else:
                             # os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
                             print(os.path.join(self.checkpoint_simple_path_exp,file))
-        if(self.global_it >= 0):
+        if(self.outer_it >= 0):
             if (os.path.isdir(os.path.join(checkpoint_simple_path_previous_exp))):
                 shutil.rmtree(os.path.join(checkpoint_simple_path_previous_exp))
 
-    def create_pl_trainer(self,finetuning, processing_unit, sub_iter_DIP, global_it, net, checkpoint_simple_path, experiment, checkpoint_simple_path_exp, checkpoint_simple_path_previous_exp, config, name=''):
+    def create_pl_trainer(self,finetuning, processing_unit, sub_iter_DIP, outer_it, net, checkpoint_simple_path, experiment, checkpoint_simple_path_exp, checkpoint_simple_path_previous_exp, config, name=''):
         
         from ray.tune.integration.pytorch_lightning import TuneReportCallback
 
@@ -207,8 +207,8 @@ class vDenoising(vGeneral):
                 self.sub_iter_DIP = self.sub_iter_DIP_initial_and_final
                 sub_iter_DIP = self.sub_iter_DIP
 
-        print("global_it",global_it)
-        if (global_it == -1): # or global_it == self.max_iter - 1): # Number of initial and final iterations are overrided here
+        print("outer_it",outer_it)
+        if (outer_it == -1): # or outer_it == self.max_iter - 1): # Number of initial and final iterations are overrided here
             print(str(self.sub_iter_DIP_initial_and_final) + " initial iterations")
             self.sub_iter_DIP = self.sub_iter_DIP_initial_and_final
             sub_iter_DIP = self.sub_iter_DIP
@@ -339,10 +339,10 @@ class vDenoising(vGeneral):
         return im_input
 
 
-    def load_model(self,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training):
+    def load_model(self,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, outer_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training):
         if (finetuning == 'last' or finetuning == "ES"): # last model saved in checkpoint
-            if (global_it > 0 or (global_it == 0 and not config["unnested_1st_global_iter"]) or (global_it == 0 and config["unnested_1st_global_iter"]) or (global_it==-100 and os.path.isfile(os.path.join(checkpoint_simple_path_exp,'last.ckpt')))): # if model has already been trained
-                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, global_it = global_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, suffix=self.suffix, override_input = self.override_input, scanner = self.scanner) # Load previous model in checkpoint
+            if (outer_it > 0 or (outer_it == 0 and not config["unnested_1st_outer_iter"]) or (outer_it == 0 and config["unnested_1st_outer_iter"]) or (outer_it==-100 and os.path.isfile(os.path.join(checkpoint_simple_path_exp,'last.ckpt')))): # if model has already been trained
+                model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, outer_it = outer_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, suffix=self.suffix, override_input = self.override_input, scanner = self.scanner) # Load previous model in checkpoint
         return model
 
     def runComputation(self,config,root):
@@ -366,14 +366,14 @@ class vDenoising(vGeneral):
         else: #3D
             self.image_corrupt_torch = self.image_corrupt_torch.view(1,1,self.PETImage_shape[2],self.PETImage_shape[1],self.PETImage_shape[0])
         # Training model with sub_iter_DIP iterations
-        model = self.train_process(self.param1_scale_im_corrupt, self.param2_scale_im_corrupt, self.scaling_input, self.suffix, config, self.finetuning, self.processing_unit, self.sub_iter_DIP, self.method, self.global_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot_phantom, self.all_images_DIP) # Not useful to make iterations, we just want to initialize writer. global_it must be set to -1, otherwise seeking for a checkpoint file...
+        model = self.train_process(self.param1_scale_im_corrupt, self.param2_scale_im_corrupt, self.scaling_input, self.suffix, config, self.finetuning, self.processing_unit, self.sub_iter_DIP, self.method, self.outer_it, self.image_net_input_torch, self.image_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot_phantom, self.all_images_DIP) # Not useful to make iterations, we just want to initialize writer. outer_it must be set to -1, otherwise seeking for a checkpoint file...
         if (self.net == 'DIP_VAE'):
             out, mu, logvar, z = model(self.image_net_input_torch)
         else:
             out = model(self.image_net_input_torch)
 
         self.sub_iter_DIP_already_done = model.sub_iter_DIP_already_done
-        self.sub_iter_DIP_this_global_it = model.sub_iter_DIP_this_global_it
+        self.sub_iter_DIP_this_outer_it = model.sub_iter_DIP_this_outer_it
         self.sub_iter_DIP = self.sub_iter_DIP_already_done
 
         self.DIP_early_stopping = model.DIP_early_stopping
@@ -392,11 +392,11 @@ class vDenoising(vGeneral):
 
         # Write descaled images in files
         if (self.all_images_DIP == "True"):
-            if (self.global_it == -100 or self.global_it == -1):
+            if (self.outer_it == -100 or self.outer_it == -1):
                 epoch_values = arange(0,self.sub_iter_DIP)
             else:
                 epoch_values = arange(self.sub_iter_DIP - config["sub_iter_DIP"],self.sub_iter_DIP)
-                epoch_values = arange(self.sub_iter_DIP - self.sub_iter_DIP_this_global_it,self.sub_iter_DIP)
+                epoch_values = arange(self.sub_iter_DIP - self.sub_iter_DIP_this_outer_it,self.sub_iter_DIP)
         elif (self.all_images_DIP == "False"):
             #epoch_values = np.arange(0,self.sub_iter_DIP,max(self.sub_iter_DIP//10,1))
             epoch_values = arange(self.sub_iter_DIP//10,self.sub_iter_DIP+self.sub_iter_DIP//10,max(self.sub_iter_DIP//10,1)) - 1
@@ -411,13 +411,13 @@ class vDenoising(vGeneral):
                 epoch_values = array([self.sub_iter_DIP-1])
 
         for epoch in epoch_values:
-            net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
+            net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(epoch) + '.img'
             out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f')
             # Descale like at the beginning
             out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
             # Saving image output
-            net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
-            os.system("mv " + net_outputs_path + " " + self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch)  + 'scaled.img')
+            net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(epoch) + '.img'
+            os.system("mv " + net_outputs_path + " " + self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(epoch)  + 'scaled.img')
             self.save_img(out_descale, net_outputs_path)
             # Squeeze image by loading it
             out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
@@ -425,14 +425,14 @@ class vDenoising(vGeneral):
             self.save_img(out_descale, net_outputs_path)
 
         batch_idx = "MR_forward"
-        net_forward_MR = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.sub_iter_DIP_already_done-1) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img'
+        net_forward_MR = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.outer_it) + '_epoch=' + format(self.sub_iter_DIP_already_done-1) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img'
         if (self.several_DIP_inputs > 1):
         # if (os.path.isfile(net_forward_MR)):
             out = self.fijii_np(net_forward_MR,shape=(self.PETImage_shape),type_im='<f')
             # Descale like at the beginning
             out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
             # Saving image output
-            os.system("mv " + net_forward_MR + " " + self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.sub_iter_DIP_already_done - 1) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + 'scaled.img')
+            os.system("mv " + net_forward_MR + " " + self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.outer_it) + '_epoch=' + format(self.sub_iter_DIP_already_done - 1) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + 'scaled.img')
             self.save_img(out_descale, net_forward_MR)
             # Squeeze image by loading it
             out_descale = self.fijii_np(net_forward_MR,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
@@ -440,13 +440,13 @@ class vDenoising(vGeneral):
             self.save_img(out_descale, net_forward_MR)
 
 
-    def choose_net(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, override_input):
+    def choose_net(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, outer_it, PETImage_shape, suffix, override_input):
         if (net == 'DIP'): # Loading DIP architecture
-            model = DIP_UNet(self.nb_dimensions, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,self.subroot_phantom,method,all_images_DIP,global_it, suffix, override_input, self.scanner, self.simulation, self.hyperparameters_list, self.sub_iter_DIP_already_done, self.override_SC_init, self.DIP_early_stopping, self.image_net_input_torch)
+            model = DIP_UNet(self.nb_dimensions, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,self.subroot_phantom,method,all_images_DIP,outer_it, suffix, override_input, self.scanner, self.simulation, self.hyperparameters_list, self.sub_iter_DIP_already_done, self.override_SC_init, self.DIP_early_stopping, self.image_net_input_torch)
             model_class = type(model)
             
             # from models.DIP_3D_to_be_removed_when_merged_with_2D import DIP_3D
-            # model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input,self.config,self.root,self.subroot,self.subroot_phantom, method,all_images_DIP,global_it, suffix, override_input, self.scanner, self.simulation, self.hyperparameters_list, self.sub_iter_DIP_already_done, self.override_SC_init, self.DIP_early_stopping, self.image_net_input_torch)
+            # model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input,self.config,self.root,self.subroot,self.subroot_phantom, method,all_images_DIP,outer_it, suffix, override_input, self.scanner, self.simulation, self.hyperparameters_list, self.sub_iter_DIP_already_done, self.override_SC_init, self.DIP_early_stopping, self.image_net_input_torch)
             # # Show summary of model
             # from torchsummary import summary
             # if (self.nb_dimensions == 2):
@@ -462,7 +462,7 @@ class vDenoising(vGeneral):
             self.depths = 2
             self.mode = "bilinear"
             from models.modules_Xin import DIP_skip_add # DIP Xin
-            model = DIP_skip_add(1,self.embed_dim,1,self.kernel_size,self.skip,self.num_layers,self.depths,self.mode,config,suffix,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot_phantom,method,all_images_DIP,global_it, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)
+            model = DIP_skip_add(1,self.embed_dim,1,self.kernel_size,self.skip,self.num_layers,self.depths,self.mode,config,suffix,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot_phantom,method,all_images_DIP,outer_it, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)
             model_class = DIP_skip_add
         elif (net == "Swin_Unetr"):
             self.embed_dim = 16
@@ -477,14 +477,14 @@ class vDenoising(vGeneral):
             self.use_v2 = True #tune.grid_search([True,False]),
             self.sigma_p = 0
             from models.modules_Xin import Swin_Unetr # Swin Unetr
-            model = Swin_Unetr(self.num_heads,self.embed_dim,1,self.kernel_size,self.skip,self.num_layers,self.depths,self.mode,config,suffix,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot_phantom,method,all_images_DIP,global_it, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)
+            model = Swin_Unetr(self.num_heads,self.embed_dim,1,self.kernel_size,self.skip,self.num_layers,self.depths,self.mode,config,suffix,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot_phantom,method,all_images_DIP,outer_it, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)
             model_class = Swin_Unetr
         elif (net == 'DIP_VAE'): # Loading DIP VAE architecture
             model = VAE_DIP_2D(config)
             model_class = VAE_DIP_2D
         elif (net == 'DD'): # Loading Deep Decoder architecture
-                #model = DD_2D(config,self.subroot_phantom,method,all_images_DIP,global_it, suffix)
-                model = DD_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot_phantom,method,all_images_DIP,global_it, suffix)
+                #model = DD_2D(config,self.subroot_phantom,method,all_images_DIP,outer_it, suffix)
+                model = DD_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot_phantom,method,all_images_DIP,outer_it, suffix)
                 model_class = DD_2D
         elif (net == 'DD_AE'): # Loading Deep Decoder based autoencoder architecture
             model = DD_AE_2D(config) 
@@ -492,17 +492,17 @@ class vDenoising(vGeneral):
 
         return model, model_class
 
-    def generate_nn_output(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, image_net_input_torch, PETImage_shape, finetuning, global_it, experiment, suffix, subroot, all_images_DIP):
+    def generate_nn_output(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, image_net_input_torch, PETImage_shape, finetuning, outer_it, experiment, suffix, subroot, all_images_DIP):
         # Loading using previous model
-        model, model_class = self.choose_net(net, config, method, all_images_DIP, global_it, PETImage_shape, suffix)
+        model, model_class = self.choose_net(net, config, method, all_images_DIP, outer_it, PETImage_shape, suffix)
         checkpoint_simple_path_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment) + '/' + suffix + '/'
-        model = self.load_model(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, global_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training=False)
+        model = self.load_model(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, outer_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training=False)
 
         # Compute output image
         out, mu, logvar, z = model(image_net_input_torch)
 
         # Loading X_label from block1 to destandardize NN output
-        image_corrupt = self.fijii_np(subroot+'Block2/' + self.suffix + '/x_label/' + format(experiment)+'/'+ format(global_it - 1) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
+        image_corrupt = self.fijii_np(subroot+'Block2/' + self.suffix + '/x_label/' + format(experiment)+'/'+ format(outer_it - 1) +'_x_label' + suffix + '.img',shape=(PETImage_shape))
         image_corrupt_scale,param1_scale_im_corrupt,param2_scale_im_corrupt = self.rescale_imag(image_corrupt)
 
         # Reverse scaling like at the beginning and add it to list of samples

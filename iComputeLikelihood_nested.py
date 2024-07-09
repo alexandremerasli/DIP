@@ -20,9 +20,9 @@ class iComputeLikelihood_DNA(vGeneral):
             self.rho = 0
         if ('ADMMReg' in self.method or  "DNA" in self.method or "DIPRecon" in self.method):
             if (self.method != "ADMMReg"):
-                self.unnested_1st_global_iter = config["unnested_1st_global_iter"]
+                self.unnested_1st_outer_iter = config["unnested_1st_outer_iter"]
             else:
-                self.unnested_1st_global_iter = None
+                self.unnested_1st_outer_iter = None
             if ( "DIPRecon" in self.method):
                 self.alpha = None
             else:

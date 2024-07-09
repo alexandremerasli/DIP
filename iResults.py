@@ -47,15 +47,15 @@ class iResults(vDenoising):
             image_corrupt_input_scale,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt = self.rescale_imag(self.image_corrupt,config["scaling"]) # Scaling of x_label image
             if ("post_reco_in_suffix" in config):
                 if (config["post_reco_in_suffix"]):
-                    self.global_it = -100
+                    self.outer_it = -100
                 else:
-                    self.global_it = -1
+                    self.outer_it = -1
             else:
-                self.global_it = -100
+                self.outer_it = -100
             if (self.DIP_early_stopping):# and "show_results_post_reco" in config["task"]):
                 from iMovingVariance import iMovingVariance
                 self.classMV = iMovingVariance(config)
-                self.classMV.initialize_MV(config,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.global_it,config["sub_iter_DIP"],root,self.subroot,self.scanner, self.simulation, self.hyperparameters_list)
+                self.classMV.initialize_MV(config,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,config["scaling"],self.suffix,self.outer_it,config["sub_iter_DIP"],root,self.subroot,self.scanner, self.simulation, self.hyperparameters_list)
                 self.lr = config['lr']
 
         if ('ADMMReg' in self.method):
@@ -520,13 +520,13 @@ class iResults(vDenoising):
                         self.iteration_name="iterations"
                     if ('post_reco' in config["task"]):
                         try:
-                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(self.global_it) + '_epoch=' + format(i-self.i_init) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(self.outer_it) + '_epoch=' + format(i-self.i_init) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
                         except:
                             print("!!!!! failed to read image")
                             break
                     elif ('end_to_end' in config["task"]):
                         try:
-                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(self.global_it) + '_epoch=' + format(i-self.i_init) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                            f_p = self.fijii_np(self.subroot_p+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(self.outer_it) + '_epoch=' + format(i-self.i_init) + NNEPPS_string + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
                         except:
                             print("!!!!! failed to read image")
                             break
@@ -543,7 +543,7 @@ class iResults(vDenoising):
                     if ('ADMMReg' in self.method):
                         subdir = 'ADMM' + '_' + str(config["nb_threads"])
                         subdir = ''
-                        #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(config["nb_inner_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
+                        #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it' + str(config["nb_inner_sub_iteration"]) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_' + format(i) + '_it1' + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         #f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0_1'  + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output
                         f_p = self.fijii_np(self.subroot_p + self.suffix + '/' + subdir + '/0'  + '_it' + format(i) + NNEPPS_string + '.img',shape=(self.PETImage_shape)) # loading optimizer output

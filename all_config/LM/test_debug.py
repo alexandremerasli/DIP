@@ -21,17 +21,17 @@ def config_func_MIC():
     }
     # Configuration dictionnary for previous hyperparameters, but fixed to simplify
     fixed_config = {
-        "max_iter" : tune.grid_search([500]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for DNA and DIPRecon
+        "max_iter" : tune.grid_search([500]), # Number of iterations for usual optimizers (MLEM, BSREM, AML etc.) and outer iterations for DNA and DIPRecon
         "nb_subsets" : tune.grid_search([1]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMReg)
-        "use_u_and_v_DNA" : tune.grid_search([False]), # If sinogram u and v from previous global iteration are used to initialize current u and v
+        "use_u_and_v_DNA" : tune.grid_search([False]), # Set to True to initialize current sinograms u and v by those from previous outer iteration 
         "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
-        "unnested_1st_global_iter" : tune.grid_search([False]), # If True, unnested are computed after 1st global iteration (because rho is set to 0). If False, needs to set f_init to initialize the network, as in DIPRecon paper, and rho is not changed.
-        "sub_iter_DIP_initial_and_final" : tune.grid_search([10000]), # Number of epochs in first global iteration (pre iteraiton) in network optimization (only for DIPRecon for now)
-        "nb_inner_iteration" : tune.grid_search([1]), # Number of inner iterations in ADMMReg (if mlem_sequence is False). (3 sub iterations are done within 1 inner iteration in CASToR)
+        "unnested_1st_outer_iter" : tune.grid_search([False]), # If True, unnested are computed after 1st outer iteration (because rho is set to 0). If False, needs to set f_init to initialize the network, as in DIPRecon paper, and rho is not changed.
+        "sub_iter_DIP_initial_and_final" : tune.grid_search([10000]), # Number of DIP iterations at DNA/DIPRecon initialization. Could be overrided if early stopping point is reached using "DIP_early_stopping_when" parameter
+        "nb_inner_sub_iteration" : tune.grid_search([1]), # Number of inner subiterations in DNA (number of iterations of gradient descent in ADMM-Reg (if mlem_sequence is False). It should be 1 as it is coded for now in CASToR
         "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMReg
         "xi_DIP" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in DIPRecon and DNA
         "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-        "DIP_early_stopping_when" : tune.grid_search(["never"]), # Use DIP early stopping - ES (never means no ES, init means ES only at initialization, all means ES at each iteration)
+        "DIP_early_stopping_when" : tune.grid_search(["init"]), # Use DIP early stopping - ES (never means no ES, init means ES only at initialization, all means ES at each iteration)
         "DIP_it_if_no_ES_found" : tune.grid_search([500]), # Number of DIP iterations if early stopping point was not found
         "EMV_or_WMV" : tune.grid_search(["EMV"]), # WMV or EMV for DIP early stopping
         "alpha_EMV" : tune.grid_search([0.1]), # EMV forgetting factor alpha
@@ -41,23 +41,23 @@ def config_func_MIC():
     # Configuration dictionnary for hyperparameters to tune
     hyperparameters_config = {
         "PSF" : tune.grid_search([False]), # Use or not of PSF in the reconstruction algorithm
-        "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
         "image_init_path_without_extension" : tune.grid_search(['MLEM_it20']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
+        "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
         "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)
-        "mu_DIP" : tune.grid_search([1000]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMReg
+        "mu_DIP" : tune.grid_search([10]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMReg
         "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMReg. If adaptive tau, it corresponds to tau max
         ## network hyperparameters
-        "lr" : tune.grid_search([1]), # Learning rate in network optimization
+        "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
         "sub_iter_DIP" : tune.grid_search([1000]), # Number of epochs in network optimization
-        "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
         "opti_DIP" : tune.grid_search(['LBFGS']), # Optimization algorithm in neural network training (Adam, LBFGS)
+        "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
         "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
         "input" : tune.grid_search(['random']), # Neural network input (random or anatomical )
         # "input" : tune.grid_search(["anatomical"]), # Neural network input (random or anatomical )
         ## ADMMReg - OPTITR hyperparameters
-        "nb_outer_iteration": tune.grid_search([10]), # Number of outer iterations in ADMMReg (and DNA) and OPTITR (for DIPRecon)
+        "nb_inner_iteration": tune.grid_search([10]), # Number of inner iterations in DNA and DIPRecon (respectively number of iterations of ADMM-Reg and OPTITR)
         "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMReg
         "adaptive_parameters" : tune.grid_search(["both"]), # which parameters are adaptive ? Must be set to nothing, alpha, or both (which means alpha and tau)
         "mu_adaptive" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMReg

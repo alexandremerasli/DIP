@@ -11,7 +11,7 @@ from iMovingVariance import iMovingVariance
 
 class DIP_3D(pl.LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, subroot_phantom, method, all_images_DIP, global_it, suffix, override_input, scanner, simulation, hyperparameters_list, sub_iter_DIP_already_done, override_SC_init, DIP_early_stopping, image_net_input_torch):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, subroot_phantom, method, all_images_DIP, outer_it, suffix, override_input, scanner, simulation, hyperparameters_list, sub_iter_DIP_already_done, override_SC_init, DIP_early_stopping, image_net_input_torch):
         super().__init__()
 
         #'''
@@ -31,7 +31,7 @@ class DIP_3D(pl.LightningModule):
         self.skip = config['skip_connections']
         self.method = method
         self.all_images_DIP = all_images_DIP
-        self.global_it = global_it
+        self.outer_it = outer_it
         self.param1_scale_im_corrupt = param1_scale_im_corrupt
         self.param2_scale_im_corrupt = param2_scale_im_corrupt
 
@@ -51,7 +51,7 @@ class DIP_3D(pl.LightningModule):
         # Other variables 
         self.method = method
         self.all_images_DIP = all_images_DIP
-        self.global_it = global_it
+        self.outer_it = outer_it
         self.scanner = scanner
         self.simulation = simulation
         self.hyperparameters_list = hyperparameters_list
@@ -72,7 +72,7 @@ class DIP_3D(pl.LightningModule):
             self.classMV = iMovingVariance(config)
             self.classMV.model_class = type(self)
             self.classMV.image_net_input_torch = self.image_net_input_torch
-            self.classMV.initialize_MV(config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,self.sub_iter_DIP,root,subroot,scanner, simulation, self.hyperparameters_list, image_net_input_torch)
+            self.classMV.initialize_MV(config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,outer_it,self.sub_iter_DIP,root,subroot,scanner, simulation, self.hyperparameters_list, image_net_input_torch)
     
         self.write_current_img_mode = True
         #self.suffix = self.suffix_func(config,hyperparameters_list)
@@ -317,13 +317,13 @@ class DIP_3D(pl.LightningModule):
         plt.colorbar()
         plt.show()
         '''
-        self.save_img(out_np, self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+        self.save_img(out_np, self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.outer_it) + '_epoch=' + format(self.current_epoch) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
                             
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
         config_copy = dict(config)
         if (NNEPPS==False):
             config_copy.pop('NNEPPS',None)
-        #config_copy.pop('nb_outer_iteration',None)
+        #config_copy.pop('nb_inner_iteration',None)
         suffix = "config"
         for key, value in config_copy.items():
             if key in hyperparameters_list:
@@ -335,19 +335,19 @@ class DIP_3D(pl.LightningModule):
         img.tofile(fp)
         print('Succesfully save in:', name)
 
-    # def initialize_MV(self,config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root, scanner, simulation):
+    # def initialize_MV(self,config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,outer_it,root, scanner, simulation):
     #     self.classMV = iMovingVariance(config)            
     #     self.classMV.param1_scale_im_corrupt = param1_scale_im_corrupt
     #     self.classMV.param2_scale_im_corrupt = param2_scale_im_corrupt
     #     self.classMV.scaling_input = scaling_input
     #     self.classMV.suffix = suffix
-    #     self.classMV.global_it = global_it
+    #     self.classMV.outer_it = outer_it
     #     self.classMV.scanner = scanner
     #     self.classMV.simulation = simulation
     #     # Initialize variables
     #     self.classMV.do_everything(config,root)
 
-    # def run_MV(self,out,config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner,simulation):
+    # def run_MV(self,out,config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,outer_it,root,subroot,scanner,simulation):
     #     if (self.DIP_early_stopping):
     #         self.SUCCESS = self.classMV.SUCCESS
     #         self.log("SUCCESS", int(self.classMV.SUCCESS))
@@ -374,7 +374,7 @@ class DIP_3D(pl.LightningModule):
     #         if self.SUCCESS:
     #         # if self.classMV.SUCCESS:
     #             print("SUCCESS MVVVVVVVVVVVVVVVVVV")
-    #             self.initialize_MV(config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,subroot,scanner, simulation)
+    #             self.initialize_MV(config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,outer_it,root,subroot,scanner, simulation)
         
     #     else:
     #         self.log("SUCCESS", int(False))

@@ -12,7 +12,7 @@ from vDenoising import vDenoising
 class iEndToEnd(vDenoising):
     def __init__(self,config, *args, **kwargs):
         self.finetuning = 'False' # to ignore last.ckpt file
-        self.global_it = -100 # Set it to -100, to ignore last.ckpt file
+        self.outer_it = -100 # Set it to -100, to ignore last.ckpt file
 
     def initializeSpecific(self,config,root, *args, **kwargs):
         print("DNA - End to end reconstruction")
@@ -67,7 +67,7 @@ class iEndToEnd(vDenoising):
         folder_sub_path = self.subroot_phantom + 'Block2/' + self.suffix + '/out_cnn/' + str(self.experiment)
         sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if os.path.splitext(filename)[1] == '.img']
         # Train model using previously trained network (at iteration before)
-        model = self.train_process(self.param1_scale_im_corrupt, self.param2_scale_im_corrupt, self.scaling_input, self.suffix,config, self.finetuning, self.processing_unit, self.total_nb_iter, self.method, self.global_it, self.image_net_input_torch, self.sinogram_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot_phantom, all_images_DIP = self.all_images_DIP)
+        model = self.train_process(self.param1_scale_im_corrupt, self.param2_scale_im_corrupt, self.scaling_input, self.suffix,config, self.finetuning, self.processing_unit, self.total_nb_iter, self.method, self.outer_it, self.image_net_input_torch, self.sinogram_corrupt_torch, self.net, self.PETImage_shape, self.experiment, self.checkpoint_simple_path, self.name_run, self.subroot_phantom, all_images_DIP = self.all_images_DIP)
         ## Variables for MV ##
         if (model.DIP_early_stopping):
             self.epochStar = model.classMV.epochStar
@@ -97,7 +97,7 @@ class iEndToEnd(vDenoising):
                 self.total_nb_iter = model.epochStar + self.patienceNumber
 
         # Initialize WMV class
-        model.initialize_MV(config,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.sub_iter_DIP,root, self.subroot,self.scanner, self.simulation, self.hyperparameters_list)
+        model.initialize_MV(config,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.outer_it,self.sub_iter_DIP,root, self.subroot,self.scanner, self.simulation, self.hyperparameters_list)
 
         # Iterations to be descaled
         if (self.all_images_DIP == "True"):
@@ -112,9 +112,9 @@ class iEndToEnd(vDenoising):
         # Write descaled images in files
         for epoch in epoch_values:
             if (self.all_images_DIP == "Unique"):
-                net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + "/ES_out_" + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
+                net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + "/ES_out_" + self.net + format(self.outer_it) + '_epoch=' + format(epoch) + '.img'
             else:
-                net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
+                net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(epoch) + '.img'
             
             out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f')
             
@@ -141,8 +141,8 @@ class iEndToEnd(vDenoising):
             out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
             #'''
             # Saving image output
-            net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch) + '.img'
-            os.system("mv " + "'" + net_outputs_path + "' '" + self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(epoch)  + 'scaled.img' + "'")
+            net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(epoch) + '.img'
+            os.system("mv " + "'" + net_outputs_path + "' '" + self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(epoch)  + 'scaled.img' + "'")
             self.save_img(out_descale, net_outputs_path)
             # Squeeze image by loading it
             out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
@@ -155,8 +155,8 @@ class iEndToEnd(vDenoising):
                     classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch,classResults.IR_bkg_recon,self.phantom)
                     classResults.writer.add_scalar('Image roughness in the background (best : 0)', classResults.IR_bkg_recon[epoch], epoch+1)
                     # Compute IR in whole phantom (different from others with several replicates)
-                    classResults.compute_IR_whole(self.PETImage_shape,out_descale,self.global_it,classResults.IR_whole_recon,self.phantom)
-                    classResults.writer.add_scalar('Image roughness in the phantom', classResults.IR_whole_recon[self.global_it], self.global_it+1)
+                    classResults.compute_IR_whole(self.PETImage_shape,out_descale,self.outer_it,classResults.IR_whole_recon,self.phantom)
+                    classResults.writer.add_scalar('Image roughness in the phantom', classResults.IR_whole_recon[self.outer_it], self.outer_it+1)
                 # Write images over epochs
             classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
 

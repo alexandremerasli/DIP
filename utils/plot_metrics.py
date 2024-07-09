@@ -30,7 +30,7 @@ nb_it = 2000
 subroot = "data/Algo/"
 folder = subroot + "/image50_1/replicate_1/DNA/Block2/post_reco config_recoI=APPGML_image=BSREM_it30_rho=3_adapt=nothing_mu_DI=100.1_tau_D=200_lr=0.01_opti_=Adam_skip_=3_overr=True_scali=standardization_input=CT_nb_ou=10_mlem_=False_A_AML=-10/out_cnn/24/"
 
-global_it = 0
+outer_it = 0
 subfolder_list = ["out_DIP-100_epoch="]
 it_list = np.arange(0,nb_it)
 MSE = np.zeros(len(it_list))

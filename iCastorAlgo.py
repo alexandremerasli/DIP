@@ -34,8 +34,8 @@ class iCastorAlgo(vReconstruction):
             subroot_output_path = (self.subroot_phantom + self.suffix)
             subdir = 'ADMM' + '_' + str(config["nb_threads"])
             subdir = ''
-            f_mu_for_penalty = ' -multimodal ' + self.subroot + 'Data/initialization/1_im_value_cropped.hdr' # Will be removed if first global iteration and unnested_1st_global_iter (rho == 0)
-            #f_mu_for_penalty = ' -multimodal ' + self.subroot + 'Data/initialization/BSREM_it30_REF_cropped.hdr' # Test for DIP_ADMM (will be removed if first global iteration and unnested_1st_global_iter (rho == 0))
+            f_mu_for_penalty = ' -multimodal ' + self.subroot + 'Data/initialization/1_im_value_cropped.hdr' # Will be removed if first outer iteration and unnested_1st_outer_iter (rho == 0)
+            #f_mu_for_penalty = ' -multimodal ' + self.subroot + 'Data/initialization/BSREM_it30_REF_cropped.hdr' # Test for DIP_ADMM (will be removed if first outer iteration and unnested_1st_outer_iter (rho == 0))
             Path(self.subroot_phantom + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
             self.ADMMReg_general(config, 0, subdir, subroot_output_path, f_mu_for_penalty)
         else:
@@ -81,7 +81,7 @@ class iCastorAlgo(vReconstruction):
 
         # NNEPPS
         if ('ADMMReg' in self.method):
-            max_it = config["nb_outer_iteration"]
+            max_it = config["nb_inner_iteration"]
         else:
             max_it = config["max_iter"]
         
@@ -106,7 +106,7 @@ class iCastorAlgo(vReconstruction):
             i = 0
             subdir = 'ADMM' + '_' + str(config["nb_threads"])
             subdir = ''
-            input_without_extension = self.subroot_phantom + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(config["nb_inner_iteration"])
+            input_without_extension = self.subroot_phantom + self.suffix + '/' +  subdir  + '/' + format(i) + '_' + str(it) + '_it' + format(config["nb_inner_sub_iteration"])
         else:
             input_without_extension = self.subroot_phantom + self.suffix + '/' + self.method + '_beta_' + str(self.beta) + '_it' + format(it)
         

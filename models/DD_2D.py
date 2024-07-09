@@ -11,7 +11,7 @@ import os
 from iMovingVariance import iMovingVariance
 class DD_2D(pl.LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, suffix, last_iter):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, outer_it, suffix, last_iter):
         super().__init__()
 
         # Set random seed if asked (for NN weights here)
@@ -33,7 +33,7 @@ class DD_2D(pl.LightningModule):
         self.config = config
         self.experiment = config["experiment"]
         self.suffix = suffix
-        self.global_it = global_it
+        self.outer_it = outer_it
         '''
         if (config['mlem_sequence'] is None):
             self.post_reco_mode = True
@@ -52,7 +52,7 @@ class DD_2D(pl.LightningModule):
             self.classMV.param2_scale_im_corrupt = param2_scale_im_corrupt
             self.classMV.scaling_input = scaling_input
             self.classMV.suffix = suffix
-            self.classMV.global_it = global_it
+            self.classMV.outer_it = outer_it
             # Initialize variables
             self.classMV.do_everything(config,root)
 
@@ -180,13 +180,13 @@ class DD_2D(pl.LightningModule):
         plt.show()
         '''
         print(self.last_iter)
-        self.save_img(out_np, self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DD' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+        self.save_img(out_np, self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DD' + format(self.outer_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
 
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
         config_copy = dict(config)
         if (NNEPPS==False):
             config_copy.pop('NNEPPS',None)
-        #config_copy.pop('nb_outer_iteration',None)
+        #config_copy.pop('nb_inner_iteration',None)
         suffix = "config"
         for key, value in config_copy.items():
             if key in hyperparameters_list:

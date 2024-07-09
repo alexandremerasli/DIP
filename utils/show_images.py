@@ -13,14 +13,14 @@ def parametersIncompatibility(config,task=None):
     if (method == 'BSREM' or method == 'DNA' or method == 'DIPRecon'):
         config.pop("post_smoothing", None)
     if ('ADMMReg' not in method and method != "DNA"):
-        config.pop("nb_outer_iteration", None)
+        config.pop("nb_inner_iteration", None)
         config.pop("alpha", None)
         config.pop("adaptive_parameters", None)
         config.pop("mu_adaptive", None)
         config.pop("tau", None)
         config.pop("xi", None)
     if ('ADMMReg' not in method and method != "DNA" and method != "DIPRecon"):
-        config.pop("nb_inner_iteration", None)
+        config.pop("nb_inner_sub_iteration", None)
     if (method != "DNA" and method != "DIPRecon" and task != "post_reco"):
         config.pop("lr", None)
         config.pop("sub_iter_DIP", None)
@@ -32,10 +32,10 @@ def parametersIncompatibility(config,task=None):
         config.pop("k_DD", None)
     if method == "DIPRecon":
         config["scaling"] = "nothing"
-        config["nb_inner_iteration"] = 50
+        config["nb_inner_sub_iteration"] = 50
     if method == 'DNA':
         config["scaling"] = "standardization"
-        config["nb_inner_iteration"] = 10
+        config["nb_inner_sub_iteration"] = 10
     config.pop("d_DD", None)
     config.pop("k_DD", None)
     
@@ -53,7 +53,7 @@ def suffix_func(config,NNEPPS=False):
     print(config_copy)
     if (NNEPPS==False):
         config_copy.pop('NNEPPS',None)
-    config_copy.pop('nb_outer_iteration',None)
+    config_copy.pop('nb_inner_iteration',None)
     suffix = "config"
     for key, value in config_copy.items():
         suffix +=  "_" + key[:min(len(key),5)] + "=" + str(value)
@@ -128,7 +128,7 @@ settings_config = {
     "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
     "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
     "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMReg and DNA)
-    "max_iter" : tune.grid_search([30]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for DNA and DIPRecon
+    "max_iter" : tune.grid_search([30]), # Number of iterations for usual optimizers (MLEM, BSREM, AML etc.) and outer iterations for DNA and DIPRecon
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMReg)
     "finetuning" : tune.grid_search(['last']),
     "experiment" : tune.grid_search([24]),
@@ -154,8 +154,8 @@ config = {
     "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
     "k_DD" : tune.grid_search([32]), # k for Deep Decoder
     ## ADMMReg - OPTITR hyperparameters
-    "nb_inner_iteration" : tune.grid_search([50]), # Number of inner iterations in ADMMReg (if mlem_sequence is False) or in OPTITR (for DIPRecon)
-    "nb_outer_iteration": tune.grid_search([10]), # Number outer iterations in ADMMReg
+    "nb_inner_sub_iteration" : tune.grid_search([50]), # Number of inner iterations in ADMMReg (if mlem_sequence is False) or in OPTITR (for DIPRecon)
+    "nb_inner_iteration": tune.grid_search([10]), # Number of inner iterations in DNA and DIPRecon (respectively number of iterations of ADMM-Reg and OPTITR)
     "alpha" : tune.grid_search([0.005]), # alpha (penalty parameter) in ADMMReg
     ## hyperparameters from CASToR algorithms 
     # Optimization transfer (OPTITR) hyperparameters

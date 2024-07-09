@@ -110,8 +110,8 @@ for lib_string in config_files:
         config = lib.config_func_MIC()
         config["image"] = tune.grid_search(['image40_1'])
         config["image"] = tune.grid_search(['imageUHR_IEC'])
-        config["image"] = tune.grid_search(['image40_1_114'])    
         config["image"] = tune.grid_search(['imageUHR_IEC4_8'])
+        config["image"] = tune.grid_search(['image40_1_114'])    
         config["replicates"] = tune.grid_search(list(range(1,1+1)))
         config["max_iter"] = tune.grid_search([30])
         config["ray"] = False

@@ -22,13 +22,13 @@ def config_func_MIC():
     }
     # Configuration dictionnary for previous hyperparameters, but fixed to simplify
     fixed_config = {
-        "max_iter" : tune.grid_search([30]), # Number of global iterations for usual optimizers (MLEM, BSREM, AML etc.) and for DNA and DIPRecon
+        "max_iter" : tune.grid_search([30]), # Number of iterations for usual optimizers (MLEM, BSREM, AML etc.) and outer iterations for DNA and DIPRecon
         "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMReg)
         "finetuning" : tune.grid_search(['False']),
         "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
-        "unnested_1st_global_iter" : tune.grid_search([True]), # If True, unnested are computed after 1st global iteration (because rho is set to 0). If False, needs to set f_init to initialize the network, as in DIPRecon paper, and rho is not changed.
-        "sub_iter_DIP_initial_and_final" : tune.grid_search([10]), # Number of epochs in first global iteration (pre iteraiton) in network optimization (only for DIPRecon for now)
-        "nb_inner_iteration" : tune.grid_search([1]), # Number of inner iterations in ADMMReg (if mlem_sequence is False) or in OPTITR (for DIPRecon). CASToR output is doubled because of 2 inner iterations for 1 inner iteration
+        "unnested_1st_outer_iter" : tune.grid_search([True]), # If True, unnested are computed after 1st outer iteration (because rho is set to 0). If False, needs to set f_init to initialize the network, as in DIPRecon paper, and rho is not changed.
+        "sub_iter_DIP_initial_and_final" : tune.grid_search([10]), # Number of DIP iterations at DNA/DIPRecon initialization. Could be overrided if early stopping point is reached using "DIP_early_stopping_when" parameter
+        "nb_inner_sub_iteration" : tune.grid_search([1]), # Number of inner subiterations in DNA (number of iterations of gradient descent in ADMM-Reg (if mlem_sequence is False). It should be 1 as it is coded for now in CASToR
         "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMReg
         "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
         "windowSize" : tune.grid_search([50]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
@@ -61,7 +61,7 @@ def config_func_MIC():
         "d_DD" : tune.grid_search([4]), # d for Deep Decoder, number of upsampling layers. Not above 4, otherwise 112 is too little as output size / not above 6, otherwise 128 is too little as output size
         "k_DD" : tune.grid_search([32]), # k for Deep Decoder
         ## ADMMReg - OPTITR hyperparameters
-        "nb_outer_iteration": tune.grid_search([1000]), # Number outer iterations in ADMMReg
+        "nb_inner_iteration": tune.grid_search([1000]), # Number of inner iterations in DNA and DIPRecon (respectively number of iterations of ADMM-Reg and OPTITR)
         "alpha" : tune.grid_search([1]), # alpha (penalty parameter) in ADMMReg
         "adaptive_parameters" : tune.grid_search(["both"]), # which parameters are adaptive ? Must be set to nothing, alpha, or both (which means alpha and tau)
         "mu_adaptive" : tune.grid_search([2]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMReg

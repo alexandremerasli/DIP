@@ -1246,7 +1246,7 @@ class iTradeoffCurves(vGeneral):
 
             if (rename_settings == "MIC"): # Remove DIPRecon failing replicates and replace them
                 if (self.phantom == "image50_1"):
-                    if (config[method]["nb_outer_iteration"]==2):
+                    if (config[method]["nb_inner_iteration"]==2):
                         rho = float(re.search(r'\d+(\.\d+)?', sorted_suffixes[i][sorted_suffixes[i].find("rho"):]).group())
                         if (method == "DNA_MIC_brain_2D_diff5" and config[method]["sub_iter_DIP"]==10 and rho==3):
                             DIPRecon_failing_replicate_list = list(np.array([30])-1)

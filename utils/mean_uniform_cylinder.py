@@ -38,8 +38,8 @@ relativePrimalResidual_list = np.zeros((finalOuterIter,1))
 relativeDualResidual_list = np.zeros((finalOuterIter,1))
 
 #'''
-for outer_it in range(1,finalOuterIter+1):
-    filename = folder_path + subfolder + "/" + subsubfolder + '_it' + format(outer_it)
+for inner_it in range(1,finalOuterIter+1):
+    filename = folder_path + subfolder + "/" + subsubfolder + '_it' + format(inner_it)
     im = fijii_np(filename + ".img",(57,112,112))
 
 

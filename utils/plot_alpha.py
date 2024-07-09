@@ -49,15 +49,15 @@ ema_dual = np.zeros((finalOuterIter,1))
 alpha_EMA = 0.1
 
 #'''
-for outer_it in range(1,finalOuterIter+1):
-    #path_adaptive = folder_path + subfolder + "/" + subsubfolder + '_adaptive_it' + format(outer_it) + '.log'
-    path_adaptive = folder_path + 'adaptive_it' + format(outer_it) + '.log'
+for inner_it in range(1,finalOuterIter+1):
+    #path_adaptive = folder_path + subfolder + "/" + subsubfolder + '_adaptive_it' + format(inner_it) + '.log'
+    path_adaptive = folder_path + 'adaptive_it' + format(inner_it) + '.log'
     theLog = pd.read_table(path_adaptive)
     alphaRow = theLog.loc[[0]]
     alphaRowArray = np.array(alphaRow)
     alphaRowString = alphaRowArray[0, 0]
-    alpha_list[outer_it - 1] = float(alphaRowString)
-    print("alpha",alpha_list[outer_it - 1])
+    alpha_list[inner_it - 1] = float(alphaRowString)
+    print("alpha",alpha_list[inner_it - 1])
     
 fig, ax1 = plt.subplots()
 plt.plot(np.arange(1,finalOuterIter+1),np.log10(alpha_list))
@@ -69,26 +69,26 @@ plt.savefig("alpha for " + subfolder + ".png")
 #'''
 
 #'''
-for outer_it in range(1,finalOuterIter+1):
-    #path_adaptive = folder_path + subfolder + "/" + subsubfolder + '_adaptive_it' + format(outer_it) + '.log'
-    path_adaptive = folder_path + 'adaptive_it' + format(outer_it) + '.log'
+for inner_it in range(1,finalOuterIter+1):
+    #path_adaptive = folder_path + subfolder + "/" + subsubfolder + '_adaptive_it' + format(inner_it) + '.log'
+    path_adaptive = folder_path + 'adaptive_it' + format(inner_it) + '.log'
     theLog = pd.read_table(path_adaptive)
     relativePrimalResidualRow = theLog.loc[[6]]
     relativePrimalResidualRowArray = np.array(relativePrimalResidualRow)
     relativePrimalResidualRowString = relativePrimalResidualRowArray[0, 0]
-    relativePrimalResidual_list[outer_it - 1] = float(relativePrimalResidualRowString)
-    print("relativePrimalResidual",relativePrimalResidual_list[outer_it - 1])
+    relativePrimalResidual_list[inner_it - 1] = float(relativePrimalResidualRowString)
+    print("relativePrimalResidual",relativePrimalResidual_list[inner_it - 1])
 
     relativeDualResidualRow = theLog.loc[[8]]
     relativeDualResidualRowArray = np.array(relativeDualResidualRow)
     relativeDualResidualRowString = relativeDualResidualRowArray[0, 0]
-    relativeDualResidual_list[outer_it - 1] = float(relativeDualResidualRowString)
-    print("relativeDualResidual",relativeDualResidual_list[outer_it - 1])
+    relativeDualResidual_list[inner_it - 1] = float(relativeDualResidualRowString)
+    print("relativeDualResidual",relativeDualResidual_list[inner_it - 1])
 
 
 
-    ema_primal[outer_it - 1] = (1-alpha_EMA) * ema_primal[outer_it - 2] + alpha_EMA * relativePrimalResidual_list[outer_it - 1]
-    ema_dual[outer_it - 1] = (1-alpha_EMA) * ema_dual[outer_it - 2] + alpha_EMA * relativeDualResidual_list[outer_it - 1]
+    ema_primal[inner_it - 1] = (1-alpha_EMA) * ema_primal[inner_it - 2] + alpha_EMA * relativePrimalResidual_list[inner_it - 1]
+    ema_dual[inner_it - 1] = (1-alpha_EMA) * ema_dual[inner_it - 2] + alpha_EMA * relativeDualResidual_list[inner_it - 1]
 
 fig, ax1 = plt.subplots()
 # plt.plot(np.arange(1,finalOuterIter+1),np.log10(500*relativePrimalResidual_list))

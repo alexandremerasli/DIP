@@ -23,13 +23,13 @@ def save_img(img,name):
 
 task = "DNA"
 # task = "denoising"
-# task = "denoising_in_DNA"
+task = "denoising_in_DNA"
 # task = "likelihood_in_DNA"
 
 im_3D = False
 nb_it = 2000-10
 nb_it = 995-10
-nb_it = 150
+nb_it = 8000
 it_start_denoising_in_DNA = 475
 it_start_denoising_in_DNA = 0
 # it_start_denoising_in_DNA = 995
@@ -44,9 +44,12 @@ elif (task == "DNA" or task == "denoising_in_DNA" or task == "likelihood_in_DNA"
         im_stacked = np.zeros((nb_it+1,172,172),dtype='<f')
     else:
         im_stacked = np.zeros((nb_it+1,112,112),dtype='<f')
+        im_stacked = np.zeros((nb_it+1,114,114),dtype='<f')
 
 subroot = "data/Algo/"
 folder = subroot + "image4_1/replicate_1/DNA/Block2/config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=100_tau_D=2_lr=0.01_sub_i=1000_opti_=Adam_skip_=3_scali=positive_normalization_input=CT_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_mlem_=False/out_cnn/24/"
+folder = "data/Algo/image40_1_114/replicate_1/DNA/Block2/config_PSF=False_image=BSREM_it30_rho=0.003_mu_DI=1000_tau_D=2_lr=1_sub_i=100_opti_=Adam_skip_=0_scali=positive_normalization_input=random_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_mlem_=False/out_cnn/24/"
+
 
 vox = np.zeros(nb_it+1)
 vox_2 = np.zeros(nb_it+1)
@@ -54,7 +57,7 @@ if (im_3D):
     num_slice = 54
 
 # subfolder_list = ["out_DIP-100_epoch=","beforeReLU_DIP-100_epoch="]
-global_it = 0
+outer_it = 0
 if (task == "denoising"):
     subfolder_list = ["out_DIP-100_epoch="]
     if (im_3D):
@@ -65,13 +68,13 @@ elif (task == "DNA"):
     subfolder_list = ["out_DIP-1_epoch="]
     it_list = np.arange(0,nb_it+1)
 elif (task == "denoising_in_DNA"):
-    global_it = 0
-    # global_it = -1
-    subfolder_list = ["out_DIP" + str(global_it) + "_epoch="]
+    outer_it = 0
+    outer_it = -1
+    subfolder_list = ["out_DIP" + str(outer_it) + "_epoch="]
     it_list = np.arange(0,nb_it)
 elif (task == "likelihood_in_DNA"):
-    global_it = 0
-    subfolder_list = [str(global_it) + "_it"]
+    outer_it = 0
+    subfolder_list = [str(outer_it) + "_it"]
     it_list = np.arange(1,nb_it+1)
 for subfolder in subfolder_list:
     for it in it_list:
@@ -97,7 +100,8 @@ for subfolder in subfolder_list:
         
 
         if (not im_3D):
-            im_it = fijii_np(filename + ".img",(112,112))
+            # im_it = fijii_np(filename + ".img",(112,112))
+            im_it = fijii_np(filename + ".img",(114,114))
             vox[it] = im_it[10,10]
             vox_2[it] = im_it[10,11]
             im_stacked[it,:,:] = im_it
@@ -110,10 +114,6 @@ for subfolder in subfolder_list:
 
 
         folder_save = folder
-
-    # folder = subroot + "/image4_1/replicate_1/DNA/Block2/GPU_config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=100_tau_D=2_lr=0.01_sub_i=1000_opti_=Adam_skip_=3_scali=positive_normalization_input=CT_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_mlem_=False/out_cnn/"
-    folder = subroot + "/image4_1/replicate_1/DNA/Block2/config_image=BSREM_it30_rho=0.003_adapt=nothing_mu_DI=100_tau_D=2_lr=0.01_sub_i=1000_opti_=Adam_skip_=3_scali=positive_normalization_input=CT_nb_ou=10_alpha=1_adapt=both_mu_ad=2_tau=100_tau_m=100_mlem_=False/out_cnn/"
-
 
     if (im_3D):
         save_img(im_stacked,folder + "0" + subfolder + "it_" + str(it) + "num_slice_" + str(num_slice) + "_stacked_" + str(task) + ".img")

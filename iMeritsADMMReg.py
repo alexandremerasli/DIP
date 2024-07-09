@@ -16,8 +16,8 @@ class iMeritsADMMReg(vGeneral):
 
     def initializeSpecific(self,config,root, *args, **kwargs):
         self.alpha = config["alpha"]
-        self.nb_outer_iteration = config["nb_outer_iteration"]
         self.nb_inner_iteration = config["nb_inner_iteration"]
+        self.nb_inner_sub_iteration = config["nb_inner_sub_iteration"]
         #self.adaptive_parameters == config["adaptive_parameters"]
 
         self.bkg_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
@@ -31,7 +31,7 @@ class iMeritsADMMReg(vGeneral):
             self.image_gt = self.image_gt.astype(np.float64)
 
         #inners = list(range(innerIteration))
-        self.outers = list(range(1,self.nb_outer_iteration+1))
+        self.outers = list(range(1,self.nb_inner_iteration+1))
         self.REPLICATES = True  # as we use variable 'replicates' above, set it to True
         self._3NORMS = True  # defaut:True
         self._2R = True  # defaut:True
@@ -39,7 +39,7 @@ class iMeritsADMMReg(vGeneral):
 
         option = 1  # Now, only option 0 and 1 are useful, option 2, 3 and 4 should be ignored
         #            0            1              2              3                 4
-        OPTION = ['alphas', 'adaptiveRho', 'inner_iters', 'outer_iters', 'calculateDiffCurve']
+        OPTION = ['alphas', 'adaptiveRho', 'inner_sub_iters', 'inner_iters', 'calculateDiffCurve']
         self.tuners_tag = OPTION[option]
         
         self._squreNorm = False  # defaut:False
@@ -51,7 +51,7 @@ class iMeritsADMMReg(vGeneral):
         nbTuners = 1
 
         if self.tuners_tag == 'alphas':
-            outer_iters = self.outers
+            inner_iters = self.outers
             tuners = self.alpha
 
         elif self.tuners_tag == 'adaptiveRho':
@@ -59,7 +59,7 @@ class iMeritsADMMReg(vGeneral):
             duplicate = ''
             if self.REPLICATES:
                 duplicate += '_rep' + str(self.replicate)
-            outer_iters = self.outers
+            inner_iters = self.outers
             tuners = alpha0s
             fp = open(self.subroot_phantom + self.suffix + '/adaptiveProcess' + str(duplicate) + '.log', mode='w+')
             fp = open(self.subroot_phantom + self.suffix + '/adaptiveProcess' + str(duplicate) + '.log', mode='w+')
@@ -69,13 +69,13 @@ class iMeritsADMMReg(vGeneral):
         if self.tuners_tag == 'alphas':
             # Extract likelihood from CASToR log file
             self.likelihoods = []
-            if self.nb_inner_iteration == 1:
+            if self.nb_inner_sub_iteration == 1:
                 logfile_name = '0.log'
             path_log = self.subroot_phantom + self.suffix + '/' + logfile_name
             self.extract_likelihood_from_log(path_log)
 
-            self.PLOT(outer_iters, self.likelihoods, tuners, nbTuners, figNum=6,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, self.likelihoods, tuners, nbTuners, figNum=6,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='Likelihood(same scale)',
                 replicate=self.replicate,
@@ -83,8 +83,8 @@ class iMeritsADMMReg(vGeneral):
                 imagePath=self.fomSavingPath)
             plt.ylim([2.904e6, 2.919e6])
 
-            self.PLOT(outer_iters, self.likelihoods, tuners, nbTuners, figNum=1,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, self.likelihoods, tuners, nbTuners, figNum=1,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='Likelihood',
                 replicate=self.replicate,
@@ -101,17 +101,17 @@ class iMeritsADMMReg(vGeneral):
             U_unscaled_norms = []
             coeff_alphas = []
             averageUs = []
-            for outer_iter in range(1,self.nb_outer_iteration+1):
+            for inner_iter in range(1,self.nb_inner_iteration+1):
                 if self.REPLICATES:
                     replicatesPath = '/replicate_' + str(self.replicate) + '/' + self.whichADMMoptimizer \
                                     #+ '/Comparison/' + self.whichADMMoptimizer
                 else:
                     replicatesPath = ''
-                imageName = '0_it' + str(outer_iter) + '.img'
-                #vName = '0_' + str(outer_iter) + '_v.img'
-                #uName = '0_' + str(outer_iter) + '_u.img'
+                imageName = '0_it' + str(inner_iter) + '.img'
+                #vName = '0_' + str(inner_iter) + '_v.img'
+                #uName = '0_' + str(inner_iter) + '_u.img'
 
-                logfile_name = '0_adaptive_it' + str(outer_iter) + '.log'
+                logfile_name = '0_adaptive_it' + str(inner_iter) + '.log'
                 path_txt = self.subroot_phantom + self.suffix + '/' + logfile_name
                 coeff_alpha = self.getValueFromLogRow(path_txt, 0)/self.getValueFromLogRow(path_txt, 4)
 
@@ -131,40 +131,40 @@ class iMeritsADMMReg(vGeneral):
                 coeff_alphas.append(coeff_alpha)
                 #averageUs.append(computeAverage(self.subroot_phantom + self.suffix + '/'+uName))
 
-            self.PLOT(outer_iters, IR_bkgs, tuners, nbTuners, figNum=2,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, IR_bkgs, tuners, nbTuners, figNum=2,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='Image Roughness in the background',
                 replicate=self.replicate,
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            self.PLOT(outer_iters, MSEs, tuners, nbTuners, figNum=3,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, MSEs, tuners, nbTuners, figNum=3,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='Mean Square Error',
                 replicate=self.replicate,
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            self.PLOT(outer_iters, CRC_hots, tuners, nbTuners, figNum=4,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, CRC_hots, tuners, nbTuners, figNum=4,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='CRC hot',
                 replicate=self.replicate,
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            self.PLOT(outer_iters, MA_colds, tuners, nbTuners, figNum=5,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, MA_colds, tuners, nbTuners, figNum=5,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='MA cold',
                 replicate=self.replicate,
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            self.PLOT(outer_iters, Xnorms, tuners, nbTuners, figNum=7,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, Xnorms, tuners, nbTuners, figNum=7,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='norm of x',
                 replicate=self.replicate,
@@ -172,40 +172,40 @@ class iMeritsADMMReg(vGeneral):
                 imagePath=self.fomSavingPath)
 
             '''
-            self.PLOT(outer_iters, Vnorms, tuners, nbTuners, figNum=8,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, Vnorms, tuners, nbTuners, figNum=8,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='norm of v',
                 replicate=self.replicate,
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            self.PLOT(outer_iters, Unorms, tuners, nbTuners, figNum=9,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, Unorms, tuners, nbTuners, figNum=9,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='norm of u',
                 replicate=self.replicate,
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            self.PLOT(outer_iters, U_unscaled_norms, tuners, nbTuners, figNum=10,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, U_unscaled_norms, tuners, nbTuners, figNum=10,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='norm of UNSCALED u',
                 replicate=self.replicate,
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
             
-            self.PLOT(outer_iters, averageUs, tuners, nbTuners, figNum=12,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, averageUs, tuners, nbTuners, figNum=12,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='average of u',
                 replicate=self.replicate,
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
             '''
-            self.PLOT(outer_iters, coeff_alphas, tuners, nbTuners, figNum=11,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, coeff_alphas, tuners, nbTuners, figNum=11,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='coeff_alphas',
                 replicate=self.replicate,
@@ -224,13 +224,13 @@ class iMeritsADMMReg(vGeneral):
             normAxv1us = []
             primals = []
             duals = []
-            for outer_iter in range(1,self.nb_outer_iteration+1):
+            for inner_iter in range(1,self.nb_inner_iteration+1):
                 if self.REPLICATES:
                     replicatesPath = '/replicate_' + str(self.replicate) + '/' + self.whichADMMoptimizer \
                                     #+ '/Comparison/' + self.whichADMMoptimizer
                 else:
                     replicatesPath = ''
-                logfile_name = '0_adaptive_it' + str(outer_iter) + '.log'
+                logfile_name = '0_adaptive_it' + str(inner_iter) + '.log'
                 path_txt = self.subroot_phantom + self.suffix + '/' + logfile_name
 
                 # get adaptive alpha
@@ -265,40 +265,40 @@ class iMeritsADMMReg(vGeneral):
                     # get norm of dual residual
                     duals.append(self.getValueFromLogRow(path_txt, 18))
 
-            self.PLOT(outer_iters, adaptiveAlphas, tuners, nbTuners, figNum=1,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, adaptiveAlphas, tuners, nbTuners, figNum=1,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='Adaptive alpha',
                 replicate=self.replicate,
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            self.PLOT(outer_iters, adaptiveTaus, tuners, nbTuners, figNum=2,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, adaptiveTaus, tuners, nbTuners, figNum=2,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='Adaptive taus',
                 replicate=self.replicate,
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            self.PLOT(outer_iters, relPrimals, tuners, nbTuners, figNum=3,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, relPrimals, tuners, nbTuners, figNum=3,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='Relative primal residuals',
                 replicate=self.replicate,
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            self.PLOT(outer_iters, relDuals, tuners, nbTuners, figNum=4,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, relDuals, tuners, nbTuners, figNum=4,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='Relative dual residuals',
                 replicate=self.replicate,
                 whichOptimizer=self.whichADMMoptimizer,
                 imagePath=self.fomSavingPath)
 
-            self.PLOT(outer_iters, xis, tuners, nbTuners, figNum=5,
-                Xlabel='Outer iteration',
+            self.PLOT(inner_iters, xis, tuners, nbTuners, figNum=5,
+                Xlabel='Inneriteration',
                 Ylabel='The legend shows different alpha',
                 Title='Xis',
                 replicate=self.replicate,
@@ -310,24 +310,24 @@ class iMeritsADMMReg(vGeneral):
                     normAxvs = np.sqrt(normAxvs)
                     normAxvus = np.sqrt(normAxvus)
                     normAxv1us = np.sqrt(normAxv1us)
-                self.PLOT(outer_iters, normAxvs, tuners, nbTuners, figNum=6,
-                    Xlabel='Outer iteration',
+                self.PLOT(inner_iters, normAxvs, tuners, nbTuners, figNum=6,
+                    Xlabel='Inneriteration',
                     Ylabel='The legend shows different alpha',
                     Title='norm of Ax(n+1) - v(n+1)',
                     replicate=self.replicate,
                     whichOptimizer=self.whichADMMoptimizer,
                     imagePath=self.fomSavingPath)
 
-                self.PLOT(outer_iters, normAxvus, tuners, nbTuners, figNum=7,
-                    Xlabel='Outer iteration',
+                self.PLOT(inner_iters, normAxvus, tuners, nbTuners, figNum=7,
+                    Xlabel='Inneriteration',
                     Ylabel='The legend shows different alpha',
                     Title='norm of Ax(n+1) - v(n) + u(n)',
                     replicate=self.replicate,
                     whichOptimizer=self.whichADMMoptimizer,
                     imagePath=self.fomSavingPath)
 
-                self.PLOT(outer_iters, normAxv1us, tuners, nbTuners, figNum=8,
-                    Xlabel='Outer iteration',
+                self.PLOT(inner_iters, normAxv1us, tuners, nbTuners, figNum=8,
+                    Xlabel='Inneriteration',
                     Ylabel='The legend shows different alpha',
                     Title='norm of Ax(n+1) - v(n+1) + u(n)',
                     replicate=self.replicate,
@@ -338,16 +338,16 @@ class iMeritsADMMReg(vGeneral):
                 if self._squreNorm:
                     primals = np.sqrt(primals)
                     duals = np.sqrt(duals)
-                self.PLOT(outer_iters, primals, tuners, nbTuners, figNum=9,
-                    Xlabel='Outer iteration',
+                self.PLOT(inner_iters, primals, tuners, nbTuners, figNum=9,
+                    Xlabel='Inneriteration',
                     Ylabel='The legend shows different alpha',
                     Title='primal residual',
                     replicate=self.replicate,
                     whichOptimizer=self.whichADMMoptimizer,
                     imagePath=self.fomSavingPath)
 
-                self.PLOT(outer_iters, duals, tuners, nbTuners, figNum=10,
-                    Xlabel='Outer iteration',
+                self.PLOT(inner_iters, duals, tuners, nbTuners, figNum=10,
+                    Xlabel='Inneriteration',
                     Ylabel='The legend shows different alpha',
                     Title='dual residual',
                     replicate=self.replicate,
