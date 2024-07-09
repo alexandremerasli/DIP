@@ -114,10 +114,10 @@ class iADMM_DIP(vReconstruction):
             self.save_img(x_label,self.subroot_phantom+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
             
             # Set DIP early stopping or not and corresponding finetuning mode for DIP
-            self.set_DIP_ES_and_finetuning(config, algo_state="init")
+            self.set_DIP_ES_and_finetuning(algo_state="init")
 
             # Set binary images and to save locally and in tensorboard
-            self.set_when_to_save_DIP_outputs(config, algo_state="outer")
+            self.set_when_to_save_DIP_outputs(config, algo_state="init")
             
             ### Initialize vDenoising object
             self.classDenoising = vDenoising(config,self.outer_it)
@@ -161,7 +161,7 @@ class iADMM_DIP(vReconstruction):
         # If DNA/DIPRecon outer iterations
         if (self.outer_it == i_init + 1 and ((i_init == -1 and not config["unnested_1st_outer_iter"]) or (i_init == 0 and config["unnested_1st_outer_iter"]))): # TESTCT_random , put back random input
             # Set DIP early stopping or not and corresponding finetuning mode for DIP
-            self.set_DIP_ES_and_finetuning(config, algo_state="outer")
+            self.set_DIP_ES_and_finetuning(algo_state="outer")
 
             # Set binary images and to save locally and in tensorboard
             self.set_when_to_save_DIP_outputs(config, algo_state="outer")
@@ -207,8 +207,8 @@ class iADMM_DIP(vReconstruction):
             raise ValueError("algo_state should be init or outer")
 
     def set_when_to_save_DIP_outputs(self,config,algo_state):
+        self.all_images_DIP_when = config["all_images_DIP_when"]
         if (algo_state == "init"):
-            self.all_images_DIP_when = config["all_images_DIP_when"]
             if self.all_images_DIP_when == "True" or self.all_images_DIP_when == "True_init":
                 self.all_images_DIP = "True"
             elif self.all_images_DIP_when == "Unique":

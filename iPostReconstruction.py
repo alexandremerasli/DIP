@@ -112,7 +112,7 @@ class iPostReconstruction(vDenoising):
 
         # Check if previous computation was already done to only scale last computed images
         # if len(sorted_files) > 0:
-        #     initialimage_not_used, it_not_used, last_iter = self.ImageAndItToResumeComputation(sorted_files,"",folder_sub_path)
+        #     initial_image_not_used, it_not_used, last_iter = self.ImageAndItToResumeComputation(sorted_files,"",folder_sub_path)
         # else:
         #     last_iter = -1
 

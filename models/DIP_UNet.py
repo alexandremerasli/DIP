@@ -457,16 +457,6 @@ class DIP_UNet(LightningModule):
                 self.write_current_img_task(batch_idx=batch_idx)
 
     def write_current_img_task(self,inside=False,batch_idx=-1):
-        # import matplotlib.pyplot as plt
-        # # plt.imshow(squeeze(out.cpu().detach().numpy()),cmap='gray')
-        # # plt.show()
-        # # plt.imshow(squeeze(image_corrupt_torch.cpu().detach().numpy()),cmap='gray')
-        # # plt.show()
-        # plt.imshow(squeeze(self.out_np_all_inputs[self.num_total_batch,:]),cmap='gray')
-        # plt.show()
-        # plt.imshow(squeeze(self.out_np),cmap='gray')
-        # plt.show()
-
         print("self.current_epoch",self.current_epoch)
         if (inside):
             print("save before ReLU here")
@@ -506,7 +496,7 @@ class DIP_UNet(LightningModule):
                     # if (self.lr > 1e-5): # Minimum lr value to 1e-5, does not need to better stability
                     self.lr /= 2
                     print(self.lr)
-                    print("chaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaange lrrrrrrrrrrrrrrrrrrrrrrrrrrr")
+                    print("lr has changed (monitor lr activated)")
 
     def initializeCorrections(self):
         # Define shapes

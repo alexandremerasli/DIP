@@ -2,11 +2,11 @@
 
 # Useful
 from pathlib import Path
-from os import getcwd, makedirs
-from os.path import exists, isfile
+from os import getcwd, makedirs, listdir
+from os.path import exists, isfile, splitext
 from functools import partial
 from ray import tune
-from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, mean, std, sum, array, column_stack, transpose, dstack, meshgrid, arange, where, unique, concatenate, setdiff1d, isin, ones, float32
+from numpy import dtype, fromfile, argwhere, isnan, zeros, squeeze, ones_like, mean, std, array, column_stack, transpose, dstack, meshgrid, arange, concatenate, ones, float32, NaN
 from numpy import max as max_np
 from numpy import min as min_np
 from pandas import read_table
@@ -1198,7 +1198,10 @@ class vGeneral(abc.ABC):
         else:
             header_file = ' -df ' + self.subroot + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[5:] + '_' + str(self.config["replicates"]) + '/data' + self.phantom[5:] + '_' + str(self.config["replicates"]) + '.cdh' # PET data path
         if (self.scanner == "UHR"):
-            vox = ' -vox 1.2,1.2,1.2'
+            if ("4_8" in self.phantom):
+                vox = ' -vox 4.8,4.8,4.8'
+            else:
+                vox = ' -vox 1.2,1.2,1.2'
             proj = ' -proj distanceDriven'
             psf = ''
             sensitivity = " -sens " + self.subroot + 'Data/database_v2/' + self.phantom + '/sensitivity' + self.phantom[5:] + '_' + str(self.config["replicates"]) + '.hdr'
@@ -1406,19 +1409,64 @@ class vGeneral(abc.ABC):
     def has_numbers(self,inputString):
         return any(char.isdigit() for char in inputString)
 
-    def ImageAndItToResumeComputation(self,sorted_files, it, folder_sub_path):
+    def ImageAndItToResumeComputation(self,folder_sub_path, config):
+        # Define list of already reconstructed images in the folder 
+        if ("ADMMReg" in self.method):
+            sorted_files = [filename*(self.has_numbers(filename)) for filename in listdir(folder_sub_path) if (splitext(filename)[1] == '.hdr' and "u" not in filename and "v" not in filename)]
+        else:
+            sorted_files = [filename*(self.has_numbers(filename)) for filename in listdir(folder_sub_path) if splitext(filename)[1] == '.hdr']
+        # sorted_files = [] # Do not resume computation
+        
+        # If there are already images in the folder, resume computation. Otherwise, start from scratch without any inialization image
+        if (len(sorted_files) > 0):
+            # Find last computed image to resume computation
+            self.last_file, self.last_iter = self.findLastFile(sorted_files)
+
+            # Define path to initial image
+            self.initial_image = ' -img ' + folder_sub_path + '/' + self.last_file
+
+            # Add -it option with number of iterations according to reconstruction method
+            if ("ADMMReg" in self.method):
+                self.it_option = ' -it ' + str(config["nb_inner_iteration"]) + ':1'  # 1 subset
+            else:
+                self.it_option = ' -it ' + str(self.max_iter) + ':' + str(config["nb_subsets"])
+
+            # Add -skip-it option to skip already done iterations
+            self.it_option += ' -skip-it ' + str(self.last_iter)
+            # Raise error if last iteration is greater than maximum number of iterations
+            # if (self.last_iter > self.max_iter):
+            #     raise ValueError("Last iteration is greater than maximum number of iterations")
+            
+            # Return 1 meaning computation will be resumed
+            return 1
+        else:
+            self.last_iter = NaN
+            self.initial_image = ''
+            if ("ADMMReg" in self.method):
+                self.it_option = ' -it ' + str(config["nb_inner_iteration"]) + ':1'
+                
+            else:
+                self.it_option = ' -it ' + str(self.max_iter) + ':' + str(config["nb_subsets"])
+            
+            # Return 0 meaning computation will start from scratch
+            return 0        
+
+    def findLastFile(self,sorted_files):
+        # Sort files by natural order
         sorted_files.sort(key=self.natural_keys)
+        # Take last file
         last_file = sorted_files[-1]
         if ("scaled" in last_file):
+            # Take penultimate file
             last_file = sorted_files[-2]
-        if ("=" in last_file): # post reco mode
+        if ("=" in last_file): # Post reco mode
             last_file = last_file[-10:]
             last_file = "it_" + last_file.split("=",1)[1]
-        last_iter = int(findall(r'(\w+?)(\d+)', last_file.split('.')[0])[0][-1])
-        initialimage = ' -img ' + folder_sub_path + '/' + last_file
-        it += ' -skip-it ' + str(last_iter)
         
-        return initialimage, it, last_iter
+        # Find last iteration number
+        last_iter = int(findall(r'(\w+?)(\d+)', last_file.split('.')[0])[0][-1])
+
+        return last_file, last_iter
 
     def linear_regression(self, x, y):
         x_mean = x.mean()

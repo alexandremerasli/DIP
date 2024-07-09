@@ -11,93 +11,98 @@ class iCastorAlgo(vReconstruction):
     def __init__(self,config, *args, **kwargs):
         print("__init__")
 
-    def runComputation(self,config,root):
-
-        if (self.method == 'AML' or self.method == 'APPGML'):
-            self.A_AML = config["A_AML"]
+    def initializeSpecific(self,config,root):
+        # Initialize specific variables from parent class
+        vReconstruction.initializeSpecific(self,config,root)
+        
+        # Initialize specific variables according to the reconstruction method
         if (self.method == 'AML'):
+            self.A_AML = config["A_AML"]
             self.beta = config["A_AML"]
+        elif (self.method == 'APPGML'):
+            self.A_AML = config["A_AML"]
+            self.beta = self.rho
         elif ('ADMMReg' in self.method):
             self.beta = config["alpha"]
             self.recoInDNA = "ADMMReg"
-        elif (self.method == 'BSREM' or self.method == 'APPGML'):
+        elif (self.method == 'BSREM'):
             self.beta = self.rho
+        elif (self.method == 'MLEM' or self.method == 'OPTITR' or self.method == 'OSEM'):
+            pass
+        else:
+            raise ValueError("Please define first class attributes for the method " + self.method + " in iCastorAlgo.__init__  (not tested)")
 
-        if (self.method != 'BSREM' and self.method != 'DNA' and self.method != 'DIPRecon' and self.method != 'APPGML'):
+        # Post smoothing by CASToR after reconstruction
+        if ("post_smoothing" in config):
             self.post_smoothing = config["post_smoothing"]
         else:
             self.post_smoothing = 0
 
-        # castor-recon command line
-        if ('ADMMReg' in self.method):
-            # Path variables
-            subroot_output_path = (self.subroot_phantom + self.suffix)
-            subdir = 'ADMM' + '_' + str(config["nb_threads"])
-            subdir = ''
-            f_mu_for_penalty = ' -multimodal ' + self.subroot + 'Data/initialization/1_im_value_cropped.hdr' # Will be removed if first outer iteration and unnested_1st_outer_iter (rho == 0)
-            #f_mu_for_penalty = ' -multimodal ' + self.subroot + 'Data/initialization/BSREM_it30_REF_cropped.hdr' # Test for DIP_ADMM (will be removed if first outer iteration and unnested_1st_outer_iter (rho == 0))
-            Path(self.subroot_phantom + self.suffix + '/' + subdir).mkdir(parents=True, exist_ok=True) # CASToR path
-            self.ADMMReg_general(config, 0, subdir, subroot_output_path, f_mu_for_penalty)
-        else:
-            folder_sub_path = self.subroot_phantom + self.suffix
-            Path(folder_sub_path).mkdir(parents=True, exist_ok=True) # CASToR path
-            output_path = ' -fout ' + folder_sub_path + '/' + self.method # Output path for CASTOR framework
-            
-            sorted_files = [filename*(self.has_numbers(filename)) for filename in os.listdir(folder_sub_path) if os.path.splitext(filename)[1] == '.hdr']
-            #sorted_files = [] # Do not resume computation
-            #'''
-            if (len(sorted_files) > 0):
-                it = ' -it ' + str(self.max_iter) + ':' + str(config["nb_subsets"])
-                initialimage, it, last_iter = self.ImageAndItToResumeComputation(sorted_files,it,folder_sub_path)
-            else:
-                initialimage = ''
-                it = ' -it ' + str(self.max_iter) + ':' + str(config["nb_subsets"])
+    def runComputation(self,config,root):
 
-            if (self.method == "APPGML"):
-                # Write shift A in config
-                # Read lines in config file
-                try:
-                    with open(folder_sub_path  + '/' + 'APPGML.conf', 'r') as read_config_file:
-                        data = read_config_file.readlines()
-                except:
-                    with open(folder_sub_path  + '/' + 'APPGML.conf', "w") as write_config_file:
-                        with open(self.subroot + 'APPGML_no_replicate.conf', "r") as read_config_file:
-                            write_config_file.write(read_config_file.read())
-                    with open(folder_sub_path  + '/' + 'APPGML.conf', 'r') as read_config_file:
-                        data = read_config_file.readlines()
-                    # Change the line with shift
-                for line_idx in range (len(data)):
-                    line = data[line_idx]
-                    if line.startswith("bound"):
-                        data[line_idx] = "bound: " + str(self.A_AML) + "\n"
-                # Write everything back
-                with open(folder_sub_path  + '/' + 'APPGML.conf', "w") as write_config_file:
-                    write_config_file.writelines(data)
+        # Initialize specific variables according to the reconstruction method
+        self.initializeSpecific(config,root)
 
-
-            print("CASToR command line : ")
-            print(self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
-            os.system(self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage)
-
-        # NNEPPS
-        if ('ADMMReg' in self.method):
-            max_it = config["nb_inner_iteration"]
-        else:
-            max_it = config["max_iter"]
+        # Create folder for CASToR output
+        Path(self.subroot_phantom + self.suffix + '/').mkdir(parents=True, exist_ok=True)
         
+        # Define castor-recon command line according to ADMMReg or other methods
+        if ('ADMMReg' in self.method):
+            # Call function to run ADMMReg from CASToR
+            self.ADMMReg_general(config, 0, self.subroot_phantom + self.suffix)
+        else:
+            # Define general path until suffix folder
+            folder_sub_path = self.subroot_phantom + self.suffix
+            # Output path for CASTOR framework
+            output_path = ' -fout ' + folder_sub_path + '/' + self.method
+            
+            # Resume computation if images are already computed
+            self.ImageAndItToResumeComputation(folder_sub_path, config)
+
+            # Write bound A in APPGML config file
+            if (self.method == "APPGML"):
+                self.write_bound_A_in_config_file(folder_sub_path)
+
+            # Print CASToR command line and run it
+            print("CASToR command line : ")
+            print(self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + self.it_option + output_path + self.initial_image)
+            os.system(self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + self.it_option + output_path + self.initial_image)
+
+        # Use NNEPPS post-processing if asked by user for each iteration
         if (config["NNEPPS"]):
-            print("NNEPPS")        
-            for it in range(1,max_it + 1):
+            for it in range(1,self.max_iter + 1):
                 self.NNEPPS_function(config,it)
         
-        # Initializing results class
+        # Compute metrics after reconstruction
         if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):
+            # Initialize classResults
             from iResults import iResults
             classResults = iResults(config)
             self.assignVariablesFromResults(classResults)
             self.assignROI(classResults)
             classResults.initializeSpecific(config,root)
+            # Compute metrics
             classResults.runComputation(config,root)
+
+    def write_bound_A_in_config_file(self,folder_sub_path):
+        try:
+            # Read APPGML config file
+            with open(folder_sub_path  + '/' + 'APPGML.conf', 'r') as read_config_file:
+                data = read_config_file.readlines()
+        except:
+            # If APPGML.conf does not exist, read configuration from APPGML_no_replicate.conf
+            with open(self.subroot + 'APPGML_no_replicate.conf', "r") as read_config_file:
+                data = read_config_file.readlines()
+        # Loop on lines
+        for line_idx in range(len(data)):
+            # Find line on bound A
+            line = data[line_idx]
+            if line.startswith("bound"):
+                # Replace bound value
+                data[line_idx] = "bound: " + str(self.A_AML) + "\n"
+        # Write everything in APPGML_no_replicate.conf
+        with open(folder_sub_path  + '/' + 'APPGML.conf', "w") as write_config_file:
+            write_config_file.writelines(data)
 
     def NNEPPS_function(self,config,it):
         executable='removeNegativeValues.exe'

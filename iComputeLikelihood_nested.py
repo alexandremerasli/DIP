@@ -14,7 +14,7 @@ class iComputeLikelihood_DNA(vGeneral):
 
     def initializeSpecific(self,config,root, *args, **kwargs):
         # Specific hyperparameters for reconstruction module (Do it here to have raytune config hyperparameters selection)
-        if (self.method != "MLEM" and self.method != "OSEM" and self.method != "AML" and self.method != "OPTITR"):
+        if (self.method != "MLEM" and self.method != "OSEM" and self.method != "AML"):
             self.rho = config["rho"]
         else:
             self.rho = 0
@@ -64,7 +64,7 @@ class iComputeLikelihood_DNA(vGeneral):
         elif (self.method == 'BSREM' or self.method == 'APPGML'):
             self.beta = self.rho
 
-        if (self.method != 'BSREM' and self.method != 'DNA' and self.method != 'DIPRecon' and self.method != 'APPGML'):
+        if ("post_smoothing" in config):
             self.post_smoothing = config["post_smoothing"]
         else:
             self.post_smoothing = 0
@@ -93,10 +93,10 @@ class iComputeLikelihood_DNA(vGeneral):
         for i in range(i_init,i_last):
             if "DNA" in self.method or "DIPRecon" in config["method"]:
                 output_path = ' -fout ' + folder_sub_path + '/' + self.method + "_" + str(i-1) # Output path for CASTOR framework
-                initialimage = ' -img ' + self.subroot_phantom + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr'
+                initial_image = ' -img ' + self.subroot_phantom + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr'
             else:
                 output_path = ' -fout ' + folder_sub_path + '/' + self.method + "_" + str(i) # Output path for CASTOR framework
-                initialimage = ' -img ' + self.subroot_phantom + '/' + self.suffix + '/' + self.method + '_it' + str(i) + '.hdr'
+                initial_image = ' -img ' + self.subroot_phantom + '/' + self.suffix + '/' + self.method + '_it' + str(i) + '.hdr'
             it = ' -it 1:1'
         
             if "DNA" in self.method or "DIPRecon" in config["method"]:
@@ -107,7 +107,7 @@ class iComputeLikelihood_DNA(vGeneral):
 
             if (not os.path.isfile(path_log)):
                 print("CASToR command line : ")
-                castor_command_line = self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initialimage
+                castor_command_line = self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho) + it + output_path + initial_image
                 # Do not save images, only log file to retrieve likelihood
                 castor_command_line += " -oit 10:10"
                 print(castor_command_line)
