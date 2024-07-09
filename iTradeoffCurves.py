@@ -111,7 +111,7 @@ class iTradeoffCurves(vGeneral):
 
         if (self.phantom == "image2_0"):
             ROI_list = ['cold','hot','phantom']
-        elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1"):
+        elif (self.phantom == "image4_0" or self.phantom == "image400_0" or self.phantom == "image40_0" or "image40_1" in self.phantom or self.phantom == "image50_0" or self.phantom == "image50_1"):
             ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','hot_TEP_match_square_recon','phantom']
             # ROI_list = ['cold','hot_TEP','hot_perfect_match_recon','phantom','whole']
             # ROI_list = ['whole']
@@ -218,7 +218,7 @@ class iTradeoffCurves(vGeneral):
                         color_dict[key] = len(color_dict[key]) * ['black']
                 else:
                     color_avg = None
-                    if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom):
+                    if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or "image40_1" in self.phantom or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom):
                         color_avg = color_dict[method][0]    
                     
 
@@ -620,7 +620,7 @@ class iTradeoffCurves(vGeneral):
     def label_method_plot(self,replicates_legend,fig_nb,method,rho_name,nb_rho,nb_other_dim,rho_idx,other_dim_name,other_dim_idx,config,config_other_dim,APPGML_vs_ADMMReg,rename_settings):
         if (self.phantom == "image2_0"):
             replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
-        elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom):
+        elif(("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or "image40_1" in self.phantom or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom)) and self.scanner == "mMR_2D":
             if ("DNA" not in method and "DNA" not in method and "DIPRecon" not in method):
                 if (fig_nb != 2):
                     replicates_legend[fig_nb].append(method + " : " + rho_name + " = " + str(config[method]["rho"][rho_idx]) + (", " + other_dim_name + " = " + str(config_other_dim[method][other_dim_idx]))*(other_dim_name!=""))
@@ -811,7 +811,7 @@ class iTradeoffCurves(vGeneral):
 
             color_dict = {**color_dict, **color_dict_supp} # Comparison between reconstruction methods
 
-        elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom):
+        elif(("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or "image40_1" in self.phantom or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom) and self.scanner == "mMR_2D"):
             color_dict_after_MIC = {
                 "DNA_ADMMReg" : ['cyan','blue','teal','blueviolet','black'],
                 #"DNA_APPGML_it" : ['darkgreen','lime','gold','darkseagreen'],
@@ -1030,7 +1030,7 @@ class iTradeoffCurves(vGeneral):
             }
 
             marker_dict = {**marker_dict, **marker_dict_supp}
-        elif("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom):
+        elif(("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or "image40_1" in self.phantom or self.phantom == "image50_0" or self.phantom == "image50_1" or "50_2" in self.phantom) and self.scanner == "mMR_2D"):
             marker_dict = {
                 "APPGML_it" : 15*[':'],
                 "APPGML_subsets" : 15*['-'],
@@ -1225,7 +1225,7 @@ class iTradeoffCurves(vGeneral):
         for i in range(len(sorted_suffixes)):
             i_replicate = idx_wanted[i] # Loop over rhos and replicates, for each sorted rho, take sorted replicate
             # if (rename_settings == "TMI"): # Remove DIPRecon failing replicates and replace them
-            #     if (self.phantom == "image40_1"):
+            #     if ("image40_1" in self.phantom):
             #         if (self.scaling == "normalization"):
             #             # DIPRecon_failing_replicate_list = list(np.array([19,25,29,36])-1)
             #             # replicates_replace_list = list(np.array([41,42,45,46])-1)

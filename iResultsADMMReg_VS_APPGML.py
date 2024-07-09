@@ -167,7 +167,7 @@ class iResultsADMMReg_VS_APPGML(vDenoising):
             i = self.total_nb_iter
             if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
                 # if (self.change_replicates == "TMI"): # Remove DIPRecon failing replicates and replace them
-                #     if (self.phantom == "image40_1"):
+                #     if ("image40_1" in self.phantom):
                 #         if (self.scaling == "normalization"):
                 #             DIPRecon_failing_replicate_list = list(np.array([19,25,29,36]))
                 #             replicates_replace_list = list(np.array([41,42,45,46]))
@@ -275,7 +275,7 @@ class iResultsADMMReg_VS_APPGML(vDenoising):
             # break
                 
             # Plot profile
-            # if (self.phantom == "image40_1"):
+            # if ("image40_1" in self.phantom):
             #     center_x_MR_tumor, center_y_MR_tumor = 66,33
             #     radius_MR_tumor = 10
             # elif (self.phantom == "image50_1"):
@@ -509,7 +509,7 @@ class iResultsADMMReg_VS_APPGML(vDenoising):
         
 
     def define_profile(self):
-        if (self.phantom == "image40_1"):
+        if ("image40_1" in self.phantom):
             center_x_MR_tumor, center_y_MR_tumor = 66,33
             radius_MR_tumor = 10
         elif (self.phantom == "image50_1"):

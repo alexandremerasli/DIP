@@ -156,16 +156,7 @@ class vGeneral(abc.ABC):
             elif (self.simulation and self.scanner == "mCT_2D"):
                 self.sinogram_shape = (336,336,1)
                 self.sinogram_shape_transpose = (336,336,1)
-            
-            # # Define ROIs for image0 phantom, otherwise it is already done in the database
-            # if (self.phantom == "image0" or self.phantom == "image2_0" and config["task"] != "show_metrics_results_already_computed"):
-            #     self.define_ROI_image0(self.PETImage_shape,self.subroot)
-            # elif (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
-            #     self.define_ROI_image2_3D(self.PETImage_shape,self.subroot)
-            # elif (("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
-            #     self.define_ROI_new_phantom(self.PETImage_shape,self.subroot)
-            # elif ((self.phantom == "image50_1" or "50_2" in self.phantom) and config["task"] != "show_metrics_results_already_computed"):
-            #     self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot)
+                
         return config
 
     def createDirectoryAndConfigFile(self,config):
@@ -241,14 +232,14 @@ class vGeneral(abc.ABC):
             self.scanner = "mMR_3D"
         elif (self.phantom == "image012_3D" or self.phantom == "image013_3D"):
             self.scanner = "mCT_3D"
-        elif (self.phantom == "imageUHR_IEC"):
+        elif ("imageUHR_IEC" in self.phantom):
             self.scanner = "UHR"
         
         else:
             self.scanner = "mMR_2D"
 
         # Define if simulation or not
-        if ("50_" in self.phantom or "4_" in self.phantom or "2_" in self.phantom or "40_" in self.phantom or self.phantom == "imageUHR_IEC" or self.phantom == "imageTest"):
+        if ((("50_" in self.phantom or "4_" in self.phantom or "2_" in self.phantom or "40_" in self.phantom) and self.scanner == "mMR_2D") or "imageUHR_IEC" in self.phantom or self.phantom == "imageTest"):
             self.simulation = True
         else:
             self.simulation = False
@@ -266,11 +257,11 @@ class vGeneral(abc.ABC):
             self.define_ROI_image0(self.PETImage_shape,self.subroot)
         elif (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_image2_3D(self.PETImage_shape,self.subroot)
-        elif (("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1") and config["task"] != "show_metrics_results_already_computed"):
+        elif (("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or "image40_1" in self.phantom) and self.scanner == "mMR_2D" and config["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_new_phantom(self.PETImage_shape,self.subroot)
         elif ((self.phantom == "image50_1" or "50_2" in self.phantom) and config["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_brain_with_tumors(self.PETImage_shape,self.subroot)
-        elif ((self.phantom == "imageUHR_IEC")):
+        elif (("imageUHR_IEC" in self.phantom)):
             self.define_ROI_IEC_3D(self.PETImage_shape,self.subroot)
 
         # Defining ROIs
@@ -288,7 +279,7 @@ class vGeneral(abc.ABC):
         self.bkg_ROI = self.fijii_np(bkg_ROI_path, shape=(self.PETImage_shape),type_im='<f')
         
         # Define hot ROI according to the phantom
-        if ("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or self.phantom == "image40_1" or self.phantom == "image50_1" or "50_2" in self.phantom):              
+        if (("4_" in self.phantom or self.phantom == "image400_0" or self.phantom == "image40_0" or "image40_1" in self.phantom or self.phantom == "image50_1" or "50_2" in self.phantom) and self.scanner == "mMR_2D"):
             self.hot_perfect_match_ROI = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_perfect_match_ROI_mask" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             self.hot_MR_recon = self.fijii_np(self.subroot+'Data/database_v2/' + self.phantom + '/' + "tumor_MR_mask_whole" + self.phantom[5:] + '.raw', shape=(self.PETImage_shape),type_im='<f')
             if ("50_2" not in self.phantom):
@@ -778,7 +769,7 @@ class vGeneral(abc.ABC):
                 classResults.cold_inside_ROI = self.cold_inside_ROI
                 classResults.cold_edge_ROI = self.cold_edge_ROI
             else:
-                classResults.hot1P_ROI = self.hot1_ROI
+                classResults.hot1_ROI = self.hot1_ROI
                 classResults.hot2_ROI = self.hot2_ROI
                 classResults.hot3_ROI = self.hot3_ROI
                 classResults.hot4_ROI = self.hot4_ROI

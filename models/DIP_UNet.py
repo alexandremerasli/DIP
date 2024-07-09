@@ -36,9 +36,10 @@ class DIP_UNet(LightningModule):
         # Variables for LBFGS
         self.counter_inside_epoch = 0
 
+        # Instantiate moving variance class to access useful functions
+        self.classMV = iMovingVariance(config)
         # Initialize early stopping method if asked for
         if(self.DIP_early_stopping):
-            self.classMV = iMovingVariance(config)
             self.classMV.model_class = type(self)
             self.classMV.image_net_input_torch = self.image_net_input_torch
             self.classMV.initialize_MV(config,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,self.sub_iter_DIP,root,subroot,scanner, simulation, self.hyperparameters_list, image_net_input_torch)
@@ -192,22 +193,6 @@ class DIP_UNet(LightningModule):
         else:
             drop_sample = (1,1,1)
 
-        # Pad if x-y dimensions not divisible by 2^3
-        original_x_y_dim = x.shape[-1]
-        if (x.shape[-1] % 8 > 0):
-            unpad_x_y_half_size = int((8 - original_x_y_dim % 8) / 2)
-            x = self.ReplicationPad_dict.get(self.nb_dimensions, None)((unpad_x_y_half_size,8 - original_x_y_dim % 8 - unpad_x_y_half_size,unpad_x_y_half_size,8 - original_x_y_dim % 8 - unpad_x_y_half_size,0,0))(x)
-        else:
-            unpad_x_y_half_size = 0
-        # Pad if 3D dimension not divisible by 2^3
-        if (self.nb_dimensions == 3):
-            original_3D_dim = x.shape[2]
-            if (x.shape[2] % 8 > 0):
-                unpad_3D_half_size = int((8 - original_3D_dim % 8) / 2)
-                x = self.ReplicationPad_dict.get(self.nb_dimensions, None)((0,0,0,0,unpad_3D_half_size,8 - original_3D_dim % 8 - unpad_3D_half_size))(x)
-            else:
-                unpad_3D_half_size = 0
-
         # Encoder
         out1 = self.deep1(x)
         out = self.down1(out1)
@@ -237,14 +222,8 @@ class DIP_UNet(LightningModule):
         else:
             out = self.deep7(out)
 
-        # Unpad if original dimensions were not divisible by 2^3
-        if (self.nb_dimensions == 3):
-            out = out[:,:,unpad_3D_half_size:original_3D_dim + unpad_3D_half_size,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size]
-        else:
-            out[:,:,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size]
-
         if ((self.method == "DIPRecon" and not self.initDNA and self.config["mu_DIP"] != 1851221) or (self.method == 'DNA' and self.config["mu_DIP"] == 1851221) or (self.method == 'DNA' and self.initDIPRecon)): # 1851221 means ReLU ablation study
-            # self.write_current_img_task(out,inside=True) # Write image before ReLU
+            # self.write_current_img_task(inside=True) # Write image before ReLU
             out = self.positivity(out)
 
         return out
@@ -274,27 +253,52 @@ class DIP_UNet(LightningModule):
         loss = 0
         for self.idx_inside_this_batch in range(train_batch[0].shape[0]):
             image_net_input_torch, image_corrupt_torch = train_batch[0][self.idx_inside_this_batch,:],train_batch[1][self.idx_inside_this_batch,:]
+
+            # Pad if x-y dimensions not divisible by 2^3
+            original_x_y_dim = image_net_input_torch.shape[-1]
+            if (image_net_input_torch.shape[-1] % 8 > 0):
+                unpad_x_y_half_size = int((8 - original_x_y_dim % 8) / 2)
+                image_corrupt_torch = self.ReplicationPad_dict.get(self.nb_dimensions, None)((unpad_x_y_half_size,8 - original_x_y_dim % 8 - unpad_x_y_half_size,unpad_x_y_half_size,8 - original_x_y_dim % 8 - unpad_x_y_half_size,0,0))(image_corrupt_torch)
+                image_net_input_torch = self.ReplicationPad_dict.get(self.nb_dimensions, None)((unpad_x_y_half_size,8 - original_x_y_dim % 8 - unpad_x_y_half_size,unpad_x_y_half_size,8 - original_x_y_dim % 8 - unpad_x_y_half_size,0,0))(image_net_input_torch)
+            else:
+                unpad_x_y_half_size = 0
+            # Pad if 3D dimension not divisible by 2^3
+            if (self.nb_dimensions == 3):
+                original_3D_dim = image_net_input_torch.shape[2]
+                if (image_net_input_torch.shape[2] % 8 > 0):
+                    unpad_3D_half_size = int((8 - original_3D_dim % 8) / 2)
+                    image_corrupt_torch = self.ReplicationPad_dict.get(self.nb_dimensions, None)((0,0,0,0,unpad_3D_half_size,8 - original_3D_dim % 8 - unpad_3D_half_size))(image_corrupt_torch)
+                    image_net_input_torch = self.ReplicationPad_dict.get(self.nb_dimensions, None)((0,0,0,0,unpad_3D_half_size,8 - original_3D_dim % 8 - unpad_3D_half_size))(image_net_input_torch)
+                else:
+                    unpad_3D_half_size = 0
+
             out = self.forward(image_net_input_torch)
-            # logging using tensorboard logger
+
+
+            # Compute loss and do backpropagation with padded dimensions (converges very slowly or does not converge with unpadded dimensions)
             if (self.end_to_end):
                 loss += self.DIP_loss_end_to_end(self.A_torch, out, image_corrupt_torch)
             else:
                 loss += self.DIP_loss(out, image_corrupt_torch)
             self.logger.experiment.add_scalar('loss', loss,self.current_epoch)
 
+            # Unpad if original dimensions were not divisible by 2^3 (for writing images, not for training)
+            if (self.nb_dimensions == 3):
+                out = out[:,:,unpad_3D_half_size:original_3D_dim + unpad_3D_half_size,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size]
+                image_corrupt_torch = image_corrupt_torch[:,:,unpad_3D_half_size:original_3D_dim + unpad_3D_half_size,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size]
+            else:
+                out = out[:,:,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size]
+                image_corrupt_torch = image_corrupt_torch[:,:,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size]
+
             try:
-                # self.out_np[self.idx_inside_this_batch,:,:] = squeeze(out.detach().numpy())
                 self.out_np = squeeze(out.detach().numpy())
             except:
-                # self.out_np[self.idx_inside_this_batch,:,:] = squeeze(out.cpu().detach().numpy())
                 self.out_np = squeeze(out.cpu().detach().numpy())
 
             if (self.num_total_batch != self.several_DIP_inputs - 1):
                 if (self.write_current_img_mode):
-                    self.write_current_img(out,batch_idx)
+                    self.write_current_img(batch_idx)
             else:
-                # if (self.write_current_img_mode):
-                #     self.write_current_img(out,batch_idx)
                 self.end_epoch = True
 
         try:
@@ -317,7 +321,7 @@ class DIP_UNet(LightningModule):
         # Save image over epochs
         if (end_epoch_LBFGS):
             if (self.write_current_img_mode):
-                self.write_current_img(out)
+                self.write_current_img()
         # Monitor learning rate across iterations
         self.monitor_lr_func(out,image_corrupt_torch)
 
@@ -439,17 +443,27 @@ class DIP_UNet(LightningModule):
         self.num_total_batch = -1
         self.end_epoch = False
 
-    def write_current_img(self,out,batch_idx=-1):
+    def write_current_img(self,batch_idx=-1):
         if (self.all_images_DIP == "False"):
             if ((self.current_epoch%(self.sub_iter_DIP // 10) == (self.sub_iter_DIP // 10) -1)):
-                self.write_current_img_task(out,batch_idx=batch_idx)
+                self.write_current_img_task(batch_idx=batch_idx)
         elif (self.all_images_DIP == "True"):
-            self.write_current_img_task(out,batch_idx=batch_idx)
+            self.write_current_img_task(batch_idx=batch_idx)
         elif (self.all_images_DIP == "Unique" and not self.DIP_early_stopping): # Write last computed image
             if (self.current_epoch == self.sub_iter_DIP + self.sub_iter_DIP_already_done_before_training - 1):
-                self.write_current_img_task(out,batch_idx=batch_idx)
+                self.write_current_img_task(batch_idx=batch_idx)
 
-    def write_current_img_task(self,out,inside=False,batch_idx=-1):
+    def write_current_img_task(self,inside=False,batch_idx=-1):
+        # import matplotlib.pyplot as plt
+        # # plt.imshow(squeeze(out.cpu().detach().numpy()),cmap='gray')
+        # # plt.show()
+        # # plt.imshow(squeeze(image_corrupt_torch.cpu().detach().numpy()),cmap='gray')
+        # # plt.show()
+        # plt.imshow(squeeze(self.out_np_all_inputs[self.num_total_batch,:]),cmap='gray')
+        # plt.show()
+        # plt.imshow(squeeze(self.out_np),cmap='gray')
+        # plt.show()
+
         print("self.current_epoch",self.current_epoch)
         if (inside):
             print("save before ReLU here")

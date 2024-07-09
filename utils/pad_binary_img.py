@@ -38,23 +38,43 @@ def write_hdr_img(path,filename):
                 else:
                     f1.write(line)
 
+# Root path
 subroot = 'data/Algo/'
-filenames = [subroot + 'Data/initialization/image010_3D/BSREM_30it/replicate_1/BSREM_it30']
 
-original_shape = (192,192,184)
-new_dimx = 284
-new_dimy = 284
-if (len(original_shape) == 2):
-    new_shape = (new_dimx,new_dimy)
+# Folder path from subroot where images to be padded are stored
+subsubroot = "Data/initialization/image40_1_114/BSREM_it30/replicate_1/"
+# Choose file extension according to extension in subsubroot folder
+# file_extension = 'img'
+file_extension = 'raw'
+
+import os
+# List all files in subsubroot with chosen file extension
+filenames = [file for file in os.listdir(subroot + subsubroot) if file.endswith(file_extension)]
+# Remove file extension for each file name
+filenames = [subroot + subsubroot + filename[:-4] for filename in filenames]
+
+# Pad x and y dimensions. Code need to be extend to pad z dimension
+original_shape = (112,112,1)
+new_dimx = 114
+new_dimy = 114
+if (1 in original_shape):
+    nb_dimensions = 2
+else:
+    nb_dimensions = 3
+if (nb_dimensions == 2):
+    new_shape = (new_dimx,new_dimy,1)
 else:
     new_shape = (original_shape[-1],new_dimy,new_dimx)
 
 for filename in filenames:
     path = Path(filename)
     print(path)
-    im_full = fijii_np(filename + ".img",original_shape,type_im='<f')
+    im_full = fijii_np(filename + "." + file_extension,original_shape,type_im='<f')
     im_padded = np.zeros(new_shape,dtype='<f')
     pad_x = (new_dimx - original_shape[0])//2
     pad_y = (new_dimy - original_shape[1])//2
-    im_padded[:,pad_y:-pad_y,pad_x:-pad_x] = im_full
-    save_img(im_padded,filename + "_padded.img")
+    if (nb_dimensions == 2):
+        im_padded[pad_x:-pad_x,pad_y:-pad_y,:] = im_full
+    else:
+        im_padded[:,pad_y:-pad_y,pad_x:-pad_x] = im_full
+    save_img(im_padded,filename + "_114" + "." + file_extension)
