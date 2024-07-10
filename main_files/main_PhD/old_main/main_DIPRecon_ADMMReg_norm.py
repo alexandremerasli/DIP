@@ -14,40 +14,39 @@ from ray import tune
 #stdoutOrigin=sys.stdout 
 #sys.stdout = open("test_log.txt", "w")
 
-# Configuration dictionnary for general settings parameters (not hyperparameters)
+# Configuration dictionary for general settings parameters
+    # Parameters in this dictionary are not added in suffix of the output folder as they are not hyperparameters
 settings_config = {
-    "image" : tune.grid_search(['image2_0']), # Image from database
+    "image" : tune.grid_search(['image2_0']), # Image from database (data/Algo/Data/database_v2)
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
     "method" : tune.grid_search(["DIPRecon"]), # Reconstruction algorithm (DNA, DIPRecon, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
-    "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
-    "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMReg and DNA)
-    "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
-    "tensorboard" : True, # Tensorboard mode = show results in tensorboard
+    "processing_unit" : tune.grid_search(['CPU']), # Run NN training with pytorch on CPU or GPU
+    "nb_threads" : tune.grid_search([1]), # Number of desired threads in reconstruction with CASToR. 0 means all the available threads will be used
+    "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR. Default is float (meaning float32 in numpy)
+    "ray" : True, # If True, run computation with raytune parallel computation (for several settings in parallel). Set it to False to debug code
+    "tensorboard" : True, # If True, show results (images, metrics) in tensorboard during or after reconstruction. Set it to False to save time
     "all_images_DIP" : tune.grid_search(['Last']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Unique" (store only last image)
     "experiment" : tune.grid_search([24]),
-    "replicates" : tune.grid_search(list(range(1,100+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
-    #"replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
-    "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
-    "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMReg)
+    "replicates" : tune.grid_search(list(range(1,100+1))), # List of desired replicates to work with in parallel. list(range(1,n+1)) means n replicates
+    #"replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates to work with in parallel. list(range(1,n+1)) means n replicates
+    "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits or residuals for ADMMReg. Must be set to False with list mode data
 }
-# Configuration dictionnary for previous hyperparameters, but fixed to simplify
+# Configuration dictionary for previous hyperparameters, but fixed to simplify
 fixed_config = {
     "max_iter" : tune.grid_search([100]), # Number of iterations for usual optimizers (MLEM, BSREM, AML etc.) and outer iterations for DNA and DIPRecon
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMReg)
     "finetuning" : tune.grid_search(['last']),
-    "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
+    "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms (MRF)
     "unnested_1st_outer_iter" : tune.grid_search([False]), # If True, unnested are computed after 1st outer iteration (because rho is set to 0). If False, needs to set f_init to initialize the network, as in DIPRecon paper, and rho is not changed.
-    "sub_iter_DIP_initial_and_final" : tune.grid_search([1000]), # Number of DIP iterations at DNA/DIPRecon initialization. Could be overrided if early stopping point is reached using "DIP_early_stopping_when" parameter
+    "sub_iter_DIP_init" : tune.grid_search([1000]), # Number of DIP iterations at DNA/DIPRecon initialization. Could be overrided if early stopping point is reached using "DIP_early_stopping_when" parameter
     "nb_inner_sub_iteration" : tune.grid_search([1]), # Number of inner subiterations in DNA (number of iterations of gradient descent in ADMM-Reg (if mlem_sequence is False). It should be 1 as it is coded for now in CASToR
     "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMReg
-    "xi_DIP" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in DIPRecon and DNA
-    "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "DIP_early_stopping" : tune.grid_search([False]), # Use DIP early stopping with moving variance strategy
-    "windowSize" : tune.grid_search([50]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-    "patienceNumber" : tune.grid_search([100]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
+    "net" : tune.grid_search(['DIP']), # Neural Network (NN) architecture to use ("DIP" (U-Net from DIPRecon paper), "DD" (Deep Decoder"), "DD_AE" (DD based autoencoder), "DIP_VAE" (DIP-based Variational AutoEncoder)))
+    "DIP_early_stopping_when" : tune.grid_search(["never"]), # Use DIP early stopping - ES ("never" means no ES, "init" means ES only at initialization, "all" means ES at each iteration)
+    "windowSize" : tune.grid_search([50]), # WMV window size
+    "patienceNumber" : tune.grid_search([100]), # Patience number in moving variance algorithms
 }
-# Configuration dictionnary for hyperparameters to tune
+# Configuration dictionary for hyperparameters to tune
 hyperparameters_config = {
     "image_init_path_without_extension" : tune.grid_search(['ADMMReg_it100']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
     "rho" : tune.grid_search([0.003,8e-4,0.008,0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)
@@ -227,22 +226,22 @@ for method in config["method"]['grid_search']:
     elif (task == 'show_metrics_results_already_computed'): # Show already computed results averaging over replicates
         classTask = iResultsAlreadyComputed(config)
     elif (task == 'compare_2_methods'): # Show already computed results averaging over replicates
-        config["average_replicates"] = tune.grid_search([True])
         classTask = iResultsADMMReg_VS_APPGML(config)
 
     # Incompatible parameters (should be written in vGeneral I think)
-    if (method == "DNA" and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
+    if (("DNA" in method or "DIPRecon" in method) and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
         raise ValueError("DNA must be launched with rho > 0")
     elif ((method != "DIPRecon" and method != "DNA") and task == "post_reco"):
         raise ValueError("Only DIPRecon or DNA can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
-    elif ((method == "DIPRecon" or method == "DNA") and config["all_images_DIP"]["grid_search"][0] != "True" and config["DIP_early_stopping"]["grid_search"][0] == "True"):
-        raise ValueError("Please set all_images_DIP to True to save all images for DNA or DIPRecon reconstruction if using moving variance algorithms")
     elif ((method == "DIPRecon" or method == "DNA") and config["rho"]["grid_search"][0] == 0 and task != "post_reco"):
         raise ValueError("Please set rho > 0 for DNA or DIPRecon reconstruction (or set task to post reconstruction).")
-    elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["DIP_early_stopping"]["grid_search"][0]):
+    elif (config["DIP_early_stopping_when"]["grid_search"][0] != "never" and (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["EMV_or_WMV"]["grid_search"][0] == "WMV")):
+
         raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
-    elif (task == "post_reco" and config["DIP_early_stopping"]["grid_search"][0] == True and config["all_images_DIP"]["grid_search"][0] == "False"):
-        raise ValueError("post reco mode need to save all images if ES")
+    elif ((config["sub_iter_DIP_init"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0]) or (config["sub_iter_DIP"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0] and config["DIP_early_stopping_when"]["grid_search"][0] == "all")):
+        raise ValueError("Please set patienceNumber higher than sub_iter_DIP")
+    elif (config["DIP_it_if_no_ES_found"]["grid_search"][0] > config["sub_iter_DIP_init"]["grid_search"][0]):
+        raise ValueError("Please set DIP_it_if_no_ES_found higher than sub_iter_DIP_init")
 
     #'''
     os.system("rm -rf " + root + subroot + 'suffixes_for_last_run_' + method + '.txt')

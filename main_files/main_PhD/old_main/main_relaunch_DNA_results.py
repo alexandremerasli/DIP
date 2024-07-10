@@ -30,6 +30,7 @@ for lib_string in config_files:
         config["tensorboard"] = False
 
         root = os.getcwd()
+        subroot = "data/Algo/"
 
         # write random seed in a file to get it in network architectures
         os.system("rm -rf " + os.getcwd() +"/seed.txt")
@@ -86,7 +87,6 @@ for lib_string in config_files:
             #     from iResultsAlreadyComputed import iResultsAlreadyComputed
             #     classTask = iResultsAlreadyComputed(config)
             elif (task == 'compare_2_methods'): # Show already computed results averaging over replicates
-                config["average_replicates"] = tune.grid_search([True])
                 from iResultsADMMReg_VS_APPGML import iResultsADMMReg_VS_APPGML
                 classTask = iResultsADMMReg_VS_APPGML(config)
 
@@ -95,14 +95,17 @@ for lib_string in config_files:
                 raise ValueError("DNA must be launched with rho > 0")
             elif ((method != "DIPRecon" and method != "DNA") and task == "post_reco"):
                 raise ValueError("Only DIPRecon or DNA can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
-            elif ((method == "DIPRecon" or method == "DNA") and config["all_images_DIP"]["grid_search"][0] != "True" and config["DIP_early_stopping"]["grid_search"][0] == "True"):
-                raise ValueError("Please set all_images_DIP to True to save all images for DNA or DIPRecon reconstruction if using moving variance algorithms")
             elif ((method == "DIPRecon" or method == "DNA") and config["rho"]["grid_search"][0] == 0 and task != "post_reco"):
                 raise ValueError("Please set rho > 0 for DNA or DIPRecon reconstruction (or set task to post reconstruction).")
-            elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["DIP_early_stopping"]["grid_search"][0]):
+            elif (config["DIP_early_stopping_when"]["grid_search"][0] != "never" and (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["EMV_or_WMV"]["grid_search"][0] == "WMV")):
+
                 raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
             elif (task == "post_reco" and config["DIP_early_stopping"]["grid_search"][0] == True and config["all_images_DIP"]["grid_search"][0] == "False"):
                 raise ValueError("post reco mode need to save all images if ES")
+            elif ((config["sub_iter_DIP_init"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0]) or (config["sub_iter_DIP"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0] and config["DIP_early_stopping_when"]["grid_search"][0] == "all")):
+                raise ValueError("Please set patienceNumber higher than sub_iter_DIP")
+            elif (config["DIP_it_if_no_ES_found"]["grid_search"][0] > config["sub_iter_DIP_init"]["grid_search"][0]):
+                raise ValueError("Please set DIP_it_if_no_ES_found higher than sub_iter_DIP_init")
 
             #'''
             os.system("rm -rf " + root + subroot + 'suffixes_for_last_run_' + method + '.txt')

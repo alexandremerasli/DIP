@@ -86,7 +86,7 @@ class iADMM_DIP(vReconstruction):
         self.f_before = self.f
 
     def initializeClassResults(self,config,root):
-        if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):
+        if ((self.average_replicates and self.replicate == 1) or (self.average_replicates == False)):
             from iResults import iResults
             self.classResults = iResults(config)
             self.assignVariablesFromResults(self.classResults)
@@ -140,7 +140,7 @@ class iADMM_DIP(vReconstruction):
                 self.classDenoising.override_SC_init = False
 
             # Set number of DIP iterations at initialization
-            self.classDenoising.sub_iter_DIP_initial_and_final = config["sub_iter_DIP_initial_and_final"]
+            self.classDenoising.sub_iter_DIP_init = config["sub_iter_DIP_init"]
 
             # Initialize other variables
             self.classDenoising.sub_iter_DIP_already_done = 0
@@ -176,7 +176,7 @@ class iADMM_DIP(vReconstruction):
         self.classDenoising.net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + '' + format(self.outer_it) + self.suffix + '.img'
         # Redefine number of DIP iterations to reach adding the ones already done
         self.classDenoising.sub_iter_DIP = config["sub_iter_DIP"] + self.sub_iter_DIP_already_done
-        # self.classDenoising.sub_iter_DIP_initial_and_final = config["DIP_it_if_no_ES_found"] + config["patienceNumber"] # Maximum number of initial DIP iterations is set to DIP_it_if_no_ES_found + patienceNumber
+        # self.classDenoising.sub_iter_DIP_init = config["DIP_it_if_no_ES_found"] + config["patienceNumber"] # Maximum number of initial DIP iterations is set to DIP_it_if_no_ES_found + patienceNumber
         
         # Loading DIP x_label (corrupted image)
         self.classDenoising.image_corrupt = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(self.outer_it) +'_x_label' + self.suffix + '.img',shape=(self.PETImage_shape))

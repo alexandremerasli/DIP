@@ -2,55 +2,54 @@ from ray import tune
 
 def config_func_MIC():
 
-    # Configuration dictionnary for general settings parameters (not hyperparameters)
+    # Configuration dictionary for general settings parameters
+    # Parameters in this dictionary are not added in suffix of the output folder as they are not hyperparameters
     settings_config = {
-        "image" : tune.grid_search(['imageUHR_IEC']), # Image from database
+        "image" : tune.grid_search(['imageUHR_IEC']), # Image from database (data/Algo/Data/database_v2)
         "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-        "method" : tune.grid_search(["DNA"]), # Reconstruction algorithm (DNA, DIPRecon, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-        "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
-        "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
-        "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMReg and DNA)
-        "ray" : False, # Ray mode = run with raytune if True, to run several settings in parallel
-        "tensorboard" : False, # Tensorboard mode = show results in tensorboard
-        "all_images_DIP_when" : tune.grid_search(['True_init']), # Option to choose which DIP outputs to save. Can be set to "True" (save all images), "False" (10 images like in tensorboard (quicker, for visualization), "Unique" (store only last image), "True_init" (save all images at initialization and at each iteration) - first DIP denoising
-        "experiment" : tune.grid_search([24]),
-        "replicates" : tune.grid_search(list(range(1,40+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
-        "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
-        "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
-        "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMReg)
+        "method" : tune.grid_search(["ADMMReg"]), # Reconstruction algorithm (DNA/DIPRecon (with ADMM or end to end mode), or algorithms from CASToR (MLEM, BSREM, AML, APPGML, ADMMReg, OPTITR))
+        "processing_unit" : tune.grid_search(['CPU']), # Run NN training with pytorch on Run NN training with pytorch on CPU or GPU
+        "nb_threads" : tune.grid_search([5]), # Number of desired threads in reconstruction with CASToR. 0 means all the available threads will be used
+        "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR. Default is float (meaning float32 in numpy)
+        "ray" : False, # If True, run computation with raytune parallel computation (for several settings in parallel). Set it to False to debug code
+        "tensorboard" : False, # If True, show results (images, metrics) in tensorboard during or after reconstruction. Set it to False to save time
+        "all_images_DIP_when" : tune.grid_search(['True_init']), # For DIP-based algorithms or DIP denoising, option to choose which DIP outputs to save. Can be set to "True" (save all DIP outputs), "False" (10 images like in tensorboard (quicker, for visualization), "Unique" (store only last image), "True_init" (save all DIP images at initialization and then last one for each outer iteration)
+        "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates to work with in parallel. list(range(1,n+1)) means n replicates
+        "castor_foms" : tune.grid_search([False]), # Set to True to compute CASToR Figure Of Merits or residuals for ADMMReg. Must be set to False with list mode data
     }
-    # Configuration dictionnary for previous hyperparameters, but fixed to simplify
+    # Configuration dictionary for some hyperparameters, usually fixed
+    # Parameters in this dictionary are not added in suffix of the output folder
     fixed_config = {
         "max_iter" : tune.grid_search([500]), # Number of iterations for usual optimizers (MLEM, BSREM, AML etc.) and outer iterations for DNA and DIPRecon
-        "nb_subsets" : tune.grid_search([1]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMReg)
-        "use_u_and_v_DNA" : tune.grid_search([False]), # Set to True to initialize current sinograms u and v by those from previous outer iteration 
-        "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
+        "nb_subsets" : tune.grid_search([8]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMReg)
+        "use_u_and_v_DNA" : tune.grid_search([False]), # For DNA reconstruction, set to True to initialize current sinograms u and v by those from previous outer iteration
+        "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms (MRF) (MRF)
         "unnested_1st_outer_iter" : tune.grid_search([False]), # If True, unnested are computed after 1st outer iteration (because rho is set to 0). If False, needs to set f_init to initialize the network, as in DIPRecon paper, and rho is not changed.
-        "sub_iter_DIP_initial_and_final" : tune.grid_search([10000]), # Number of DIP iterations at DNA/DIPRecon initialization. Could be overrided if early stopping point is reached using "DIP_early_stopping_when" parameter
+        "sub_iter_DIP_init" : tune.grid_search([10000]), # Number of DIP iterations at DNA/DIPRecon initialization. Could be overrided if early stopping point is reached using "DIP_early_stopping_when" parameter
         "nb_inner_sub_iteration" : tune.grid_search([1]), # Number of inner subiterations in DNA (number of iterations of gradient descent in ADMM-Reg (if mlem_sequence is False). It should be 1 as it is coded for now in CASToR
         "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMReg
-        "xi_DIP" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in DIPRecon and DNA
-        "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-        "DIP_early_stopping_when" : tune.grid_search(["init"]), # Use DIP early stopping - ES (never means no ES, init means ES only at initialization, all means ES at each iteration)
-        "DIP_it_if_no_ES_found" : tune.grid_search([500]), # Number of DIP iterations if early stopping point was not found
+        "net" : tune.grid_search(['DIP']), # Neural Network (NN) architecture to use ("DIP" (U-Net from DIPRecon paper), "DD" (Deep Decoder"), "DD_AE" (DD based autoencoder), "DIP_VAE" (DIP-based Variational AutoEncoder)))
+        "DIP_early_stopping_when" : tune.grid_search(["init"]), # Use DIP early stopping - ES ("never" means no ES, "init" means ES only at initialization, "all" means ES at each iteration)
+        "DIP_it_if_no_ES_found" : tune.grid_search([500]), # Fixed number of DIP iterations if early stopping point was not found
         "EMV_or_WMV" : tune.grid_search(["EMV"]), # WMV or EMV for DIP early stopping
         "alpha_EMV" : tune.grid_search([0.1]), # EMV forgetting factor alpha
-        "windowSize" : tune.grid_search([50]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-        "patienceNumber" : tune.grid_search([100]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
+        "windowSize" : tune.grid_search([50]), # WMV window size
+        "patienceNumber" : tune.grid_search([100]), # Patience number in moving variance algorithms
     }
-    # Configuration dictionnary for hyperparameters to tune
+    # Configuration dictionary for hyperparameters to tune
+    # Parameters in this dictionary are the only ones added in suffix of the output folder
     hyperparameters_config = {
         "PSF" : tune.grid_search([False]), # Use or not of PSF in the reconstruction algorithm
-        "image_init_path_without_extension" : tune.grid_search(['MLEM_it20']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
         "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
+        "image_init_path_without_extension" : tune.grid_search(['MLEM_it20']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
         "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)
-        "mu_DIP" : tune.grid_search([10]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMReg
+        "mu_DIP" : tune.grid_search([102]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMReg
         "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMReg. If adaptive tau, it corresponds to tau max
         ## network hyperparameters
-        "lr" : tune.grid_search([0.01]), # Learning rate in network optimization
+        "lr" : tune.grid_search([1]), # Learning rate in network optimization
         "sub_iter_DIP" : tune.grid_search([1000]), # Number of epochs in network optimization
-        "opti_DIP" : tune.grid_search(['LBFGS']), # Optimization algorithm in neural network training (Adam, LBFGS)
         "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
+        "opti_DIP" : tune.grid_search(['LBFGS']), # Optimization algorithm in neural network training (Adam, LBFGS)
         "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)
@@ -77,11 +76,13 @@ def config_func_MIC():
         "NNEPPS" : tune.grid_search([False]), # NNEPPS post-processing. True or False
     }
 
-    # Merge 3 dictionaries
+    # Dictionary containing list of hyperparameters keys from fixed_config and hyperparameters_config
     split_config = {
         "fixed_hyperparameters" : list(fixed_config.keys()),
         "hyperparameters" : list(hyperparameters_config.keys())
     }
+    
+    # Merge 3 dictionaries
     config = {**settings_config, **fixed_config, **hyperparameters_config, **split_config}
 
     return config

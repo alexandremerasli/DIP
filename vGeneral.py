@@ -387,7 +387,6 @@ class vGeneral(abc.ABC):
                 config.pop("adaptive_parameters_DIP", None)
                 config.pop("mu_DIP", None)
                 config.pop("tau_DIP", None)
-                config.pop("xi_DIP", None)
                 #config.pop("unnested_1st_outer_iter",None)
             if (config["net"]['grid_search'][0] == "DD"):
                 config.pop("skip_connections", None)
@@ -1499,7 +1498,7 @@ class vGeneral(abc.ABC):
                     if (config["post_reco_in_suffix"]):
                         self.total_nb_iter = config["sub_iter_DIP"]
                     else:
-                        self.total_nb_iter = config["sub_iter_DIP_initial_and_final"] # User defined maximum number of initial DIP iterations
+                        self.total_nb_iter = config["sub_iter_DIP_init"] # User defined maximum number of initial DIP iterations
                         # self.total_nb_iter = config["DIP_it_if_no_ES_found"] + config["patienceNumber"] # Maximum number of initial DIP iterations is set to DIP_it_if_no_ES_found + patienceNumber
             else:
                 try:

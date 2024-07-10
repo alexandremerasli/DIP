@@ -2,39 +2,41 @@ from ray import tune
 
 def config_func_MIC():
     
-    # Configuration dictionnary for general settings parameters (not hyperparameters)
+    # Configuration dictionary for general settings parameters
+    # Parameters in this dictionary are not added in suffix of the output folder as they are not hyperparameters
     settings_config = {
-        "image" : tune.grid_search(['image2_0']), # Image from database
+        "image" : tune.grid_search(['image2_0']), # Image from database (data/Algo/Data/database_v2)
         "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
         "method" : tune.grid_search(['APPGML']), # Reconstruction algorithm (DNA, DIPRecon, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-        "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
-        "nb_threads" : tune.grid_search([1]), # Number of desired threads. 0 means all the available threads
-        "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR (double necessary for ADMMReg and DNA)
-        "ray" : True, # Ray mode = run with raytune if True, to run several settings in parallel
-        "tensorboard" : False, # Tensorboard mode = show results in tensorboard
-        "all_images_DIP" : tune.grid_search(['True']), # Option to store only 10 images like in tensorboard (quicker, for visualization, set it to "True" by default). Can be set to "True", "False", "Unique" (store only last image)
+        "processing_unit" : tune.grid_search(['CPU']), # Run NN training with pytorch on CPU or GPU
+        "nb_threads" : tune.grid_search([1]), # Number of desired threads in reconstruction with CASToR. 0 means all the available threads will be used
+        "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR. Default is float (meaning float32 in numpy)
+        "ray" : True, # If True, run computation with raytune parallel computation (for several settings in parallel). Set it to False to debug code
+        "tensorboard" : False, # If True, show results (images, metrics) in tensorboard during or after reconstruction. Set it to False to save time
+        "all_images_DIP_when" : tune.grid_search(['True_init']), # For DIP-based algorithms or DIP denoising, option to choose which DIP outputs to save. Can be set to "True" (save all DIP outputs), "False" (10 images like in tensorboard (quicker, for visualization), "Unique" (store only last image), "True_init" (save all DIP images at initialization and then last one for each outer iteration)
         "experiment" : tune.grid_search([24]),
         "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
-        "replicates" : tune.grid_search(list(range(1,40+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
-        #"replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
-        "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
-        "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits (likelihood, residuals for ADMMReg)
+        "replicates" : tune.grid_search(list(range(1,40+1))), # List of desired replicates to work with in parallel. list(range(1,n+1)) means n replicates
+        #"replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates to work with in parallel. list(range(1,n+1)) means n replicates
+        "castor_foms" : tune.grid_search([True]), # Set to True to compute CASToR Figure Of Merits or residuals for ADMMReg. Must be set to False with list mode data
     }
-    # Configuration dictionnary for previous hyperparameters, but fixed to simplify
+    # Configuration dictionary for some hyperparameters, usually fixed
+    # Parameters in this dictionary are not added in suffix of the output folder
     fixed_config = {
         "max_iter" : tune.grid_search([30]), # Number of iterations for usual optimizers (MLEM, BSREM, AML etc.) and outer iterations for DNA and DIPRecon
         "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMReg)
         "finetuning" : tune.grid_search(['False']),
-        "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
+        "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms (MRF)
         "unnested_1st_outer_iter" : tune.grid_search([True]), # If True, unnested are computed after 1st outer iteration (because rho is set to 0). If False, needs to set f_init to initialize the network, as in DIPRecon paper, and rho is not changed.
-        "sub_iter_DIP_initial_and_final" : tune.grid_search([1000]), # Number of DIP iterations at DNA/DIPRecon initialization. Could be overrided if early stopping point is reached using "DIP_early_stopping_when" parameter
+        "sub_iter_DIP_init" : tune.grid_search([1000]), # Number of DIP iterations at DNA/DIPRecon initialization. Could be overrided if early stopping point is reached using "DIP_early_stopping_when" parameter
         "nb_inner_sub_iteration" : tune.grid_search([1]), # Number of inner subiterations in DNA (number of iterations of gradient descent in ADMM-Reg (if mlem_sequence is False). It should be 1 as it is coded for now in CASToR
         "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMReg
-        "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-        "windowSize" : tune.grid_search([50]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
-        "patienceNumber" : tune.grid_search([500]), # Network to use (DIP,DD,DD_AE,DIP_VAE)
+        "net" : tune.grid_search(['DIP']), # Neural Network (NN) architecture to use ("DIP" (U-Net from DIPRecon paper), "DD" (Deep Decoder"), "DD_AE" (DD based autoencoder), "DIP_VAE" (DIP-based Variational AutoEncoder)))
+        "windowSize" : tune.grid_search([50]), # WMV window size
+        "patienceNumber" : tune.grid_search([500]), # Patience number in moving variance algorithms
     }
-    # Configuration dictionnary for hyperparameters to tune
+    # Configuration dictionary for hyperparameters to tune
+    # Parameters in this dictionary are the only ones added in suffix of the output folder
     hyperparameters_config = {
         "rho" : tune.grid_search([0.01,0.02,0.03,0.04,0.05]), # NUYTS POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)
         "rho" : tune.grid_search([5e-7,9e-7,4e-6,8e-6,3e-5,5e-5,7e-5,9e-5,2e-4,4e-4,6e-4,8e-4,1e-3]), # QUADRATIC POTENTIAL # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)
@@ -79,11 +81,13 @@ def config_func_MIC():
         "NNEPPS" : tune.grid_search([False]), # NNEPPS post-processing. True or False
     }
 
-    # Merge 3 dictionaries
+    # Dictionary containing list of hyperparameters keys from fixed_config and hyperparameters_config
     split_config = {
         "fixed_hyperparameters" : list(fixed_config.keys()),
         "hyperparameters" : list(hyperparameters_config.keys())
     }
+    
+    # Merge 3 dictionaries
     config = {**settings_config, **fixed_config, **hyperparameters_config, **split_config}
 
     return config

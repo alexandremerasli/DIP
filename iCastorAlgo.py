@@ -74,7 +74,7 @@ class iCastorAlgo(vReconstruction):
                 self.NNEPPS_function(config,it)
         
         # Compute metrics after reconstruction
-        if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):
+        if ((self.average_replicates and self.replicate == 1) or (self.average_replicates == False)):
             # Initialize classResults
             from iResults import iResults
             classResults = iResults(config)

@@ -40,7 +40,7 @@ class iEndToEnd(vDenoising):
         
     def runComputation(self,config,root):
         # Initializing results class
-        if ((config["average_replicates"] and self.replicate == 1) or (config["average_replicates"] == False)):
+        if ((self.average_replicates and self.replicate == 1) or (self.average_replicates == False)):
             from iResults import iResults
             classResults = iResults(config)
             self.assignVariablesFromResults(classResults)

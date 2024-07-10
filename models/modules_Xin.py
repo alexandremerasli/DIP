@@ -96,7 +96,7 @@ class Full_DIP_backbone(pl.LightningModule):
         self.lr = config['lr']
         self.opti_DIP = config['opti_DIP']
         if (outer_it == -1):
-            self.sub_iter_DIP = config['sub_iter_DIP_initial_and_final']
+            self.sub_iter_DIP = config['sub_iter_DIP_inital_and_final']
         else:
             self.sub_iter_DIP = config['sub_iter_DIP']
         self.skip = config['skip_connections']

@@ -503,7 +503,7 @@ class iResults(vDenoising):
 
     def loop_on_replicates(self,config,i):
         for p in range(1,self.nb_replicates+1):
-            if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
+            if (self.average_replicates or (self.average_replicates == False and p == self.replicate)):
                 self.subroot_p = self.subroot + '/' + self.phantom + '/' + 'replicate_' + str(p) + '/' + self.method + '/' # Directory root
                 self.pet_algo=config["method"]
                 # Take NNEPPS images if NNEPPS is asked for this run
@@ -572,16 +572,16 @@ class iResults(vDenoising):
                     #         return 1
 
                     # Specific average for IR
-                    if (config["average_replicates"] == False and p == self.replicate):
+                    if (self.average_replicates == False and p == self.replicate):
                         self.IR = self.IR_bkg_recon[int((i-self.i_init))]
                         self.IR_whole = self.IR_whole_recon[int((i-self.i_init))]
-                    elif (config["average_replicates"]):
+                    elif (self.average_replicates):
                         self.IR += self.IR_bkg_recon[int((i-self.i_init))] / self.nb_replicates
                         self.IR_whole += self.IR_whole_recon[int((i-self.i_init))]
 
-                if (config["average_replicates"]): # Average images across replicates (for metrics except IR)
+                if (self.average_replicates): # Average images across replicates (for metrics except IR)
                     self.f += f_p / self.nb_replicates
-                elif (config["average_replicates"] == False and p == self.replicate):
+                elif (self.average_replicates == False and p == self.replicate):
                     self.f = f_p
             
                 # MV

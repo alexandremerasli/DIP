@@ -16,22 +16,19 @@ sys.path.append((os.getcwd()))  # Add the workspace directory to the Python path
 
 def uncompatible_parameters(config):
     method = config["method"]["grid_search"][0]
-    if (method == "DNA" and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
+    if (("DNA" in method or "DIPRecon" in method) and config["rho"]["grid_search"][0] == 0 and task == "castor_reco"):
         raise ValueError("DNA must be launched with rho > 0")
     elif ((method != "DIPRecon" and method != "DNA") and task == "post_reco"):
         raise ValueError("Only DIPRecon or DNA can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
-    # elif ((method == "DIPRecon" or method == "DNA") and config["all_images_DIP"]["grid_search"][0] != "True" and config["DIP_early_stopping"]["grid_search"][0] == "True"):
-    #     raise ValueError("Please set all_images_DIP to True to save all images for DNA or DIPRecon reconstruction if using moving variance algorithms")
     elif ((method == "DIPRecon" or method == "DNA") and config["rho"]["grid_search"][0] == 0 and task != "post_reco"):
         raise ValueError("Please set rho > 0 for DNA or DIPRecon reconstruction (or set task to post reconstruction).")
-    elif (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["EMV_or_WMV"]["grid_search"][0] == "WMV"):
+    elif (config["DIP_early_stopping_when"]["grid_search"][0] != "never" and (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["EMV_or_WMV"]["grid_search"][0] == "WMV")):
         raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
-    elif (task == "post_reco" and config["DIP_early_stopping"]["grid_search"][0] == True and config["all_images_DIP"]["grid_search"][0] == "False"):
-        raise ValueError("post reco mode need to save all images if ES")
-    elif ((config["sub_iter_DIP_initial_and_final"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0]) or (config["sub_iter_DIP_initial_and_final"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0] and config["DIP_early_stopping_when"]["grid_search"][0] == "all")):
+    elif ((config["sub_iter_DIP_init"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0]) or (config["sub_iter_DIP"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0] and (config["DIP_early_stopping_when"]["grid_search"][0] == "init" or config["DIP_early_stopping_when"]["grid_search"][0] == "all")) or (config["sub_iter_DIP"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0] and config["DIP_early_stopping_when"]["grid_search"][0] == "all")):
         raise ValueError("Please set patienceNumber higher than sub_iter_DIP")
-    elif (config["DIP_it_if_no_ES_found"]["grid_search"][0] > config["sub_iter_DIP_initial_and_final"]["grid_search"][0]):
-        raise ValueError("Please set DIP_it_if_no_ES_found higher than sub_iter_DIP_initial_and_final")
+    elif (config["DIP_it_if_no_ES_found"]["grid_search"][0] > config["sub_iter_DIP_init"]["grid_search"][0]):
+        raise ValueError("Please set DIP_it_if_no_ES_found higher than sub_iter_DIP_init")
+
 def class_for_task(config,task):
     if (task == 'full_reco_with_network'): # Run DIPRecon or DNA
         from iADMM_DIP import iADMM_DIP
@@ -60,7 +57,6 @@ def class_for_task(config,task):
     #     from iResultsAlreadyComputed import iResultsAlreadyComputed
     #     classTask = iResultsAlreadyComputed(config)
     elif ('compare_2_methods' in task): # Show already computed results averaging over replicates
-        config["average_replicates"] = tune.grid_search([True])
         from iResultsADMMReg_VS_APPGML import iResultsADMMReg_VS_APPGML
         classTask = iResultsADMMReg_VS_APPGML(config)
 
@@ -108,12 +104,12 @@ for lib_string in config_files:
         sys.path.append(join('all_config',subfolder_config))  # Add the parent directory of config files to the Python path
         lib = importlib.import_module(lib_string)
         config = lib.config_func_MIC()
-        config["image"] = tune.grid_search(['image40_1'])
+        config["image"] = tune.grid_search(['image40_1_114'])    
         config["image"] = tune.grid_search(['imageUHR_IEC'])
         config["image"] = tune.grid_search(['imageUHR_IEC4_8'])
-        config["image"] = tune.grid_search(['image40_1_114'])    
+        config["image"] = tune.grid_search(['image40_1'])
         config["replicates"] = tune.grid_search(list(range(1,1+1)))
-        config["max_iter"] = tune.grid_search([30])
+        config["max_iter"] = tune.grid_search([3])
         config["ray"] = False
 
         root = os.getcwd()
@@ -138,42 +134,5 @@ for lib_string in config_files:
             # Incompatible parameters (should be written in vGeneral I think)
             uncompatible_parameters(config)
 
-            #'''
-            os.system("rm -rf " + root + subroot + 'suffixes_for_last_run_' + method + '.txt')
-            os.system("rm -rf " + root + subroot + 'replicates_for_last_run_' + method + '.txt')
-
             # Launch task
             classTask.runRayTune(config_tmp,root,task)
-            #'''
-
-        if (task != "post_reco"):
-            config_without_grid_search = dict(config)
-            task = 'show_metrics_results_already_computed_following_step'
-
-            for key,value in config_without_grid_search.items():
-                if (type(value) == type(config_without_grid_search)):
-                    if ("grid_search" in value):
-                        config_without_grid_search[key] = value['grid_search']
-
-                        if len(config_without_grid_search[key]) > 1:
-                            print(key)
-
-                        #if len(config_without_grid_search[key]) == 1:
-                        if key != 'rho' and key != 'replicates' and key != 'method':
-                            if key != 'A_AML' and key != 'post_smoothing' and key != 'lr':
-                                config_without_grid_search[key] = config_without_grid_search[key][0]
-
-            # classTask = iTradeoffCurves(config_without_grid_search)
-            # config_without_grid_search["ray"] = False
-            # classTask.config_with_grid_search = config
-            # classTask.runRayTune(config_without_grid_search,root,task)
-
-        '''
-        classTask = iResultsADMMReg_VS_APPGML(config_without_grid_search)
-        config_without_grid_search["ray"] = False
-        classTask.runRayTune(config_without_grid_search,root,task)
-        '''
-        #sys.stdout.close()
-        #sys.stdout=stdoutOrigin
-    # except:
-    #     print(lib_string + " did not work")

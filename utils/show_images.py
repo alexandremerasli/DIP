@@ -119,26 +119,25 @@ def show_image_path(subroot,path):
     plt.savefig(root + subroot + 'img_non_DIPRecon.png')
 
 
-# Configuration dictionnary for general parameters (not hyperparameters)
+# Configuration dictionary for general parameters (not hyperparameters)
 settings_config = {
-    "image" : tune.grid_search(['image0']), # Image from database
+    "image" : tune.grid_search(['image0']), # Image from database (data/Algo/Data/database_v2)
     "net" : tune.grid_search(['DIP']), # Network to use (DIP,DD,DD_AE,DIP_VAE)
     "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
     "method" : tune.grid_search(['BSREM']), # Reconstruction algorithm (DNA, DIPRecon, or algorithms from CASToR (MLEM, BSREM, AML, etc.))
-    "processing_unit" : tune.grid_search(['CPU']), # CPU or GPU
-    "nb_threads" : tune.grid_search([64]), # Number of desired threads. 0 means all the available threads
-    "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR (double necessary for ADMMReg and DNA)
+    "processing_unit" : tune.grid_search(['CPU']), # Run NN training with pytorch on CPU or GPU
+    "nb_threads" : tune.grid_search([64]), # Number of desired threads in reconstruction with CASToR. 0 means all the available threads will be used
+    "FLTNB" : tune.grid_search(['double']), # FLTNB precision must be set as in CASToR. Default is float (meaning float32 in numpy)
     "max_iter" : tune.grid_search([30]), # Number of iterations for usual optimizers (MLEM, BSREM, AML etc.) and outer iterations for DNA and DIPRecon
     "nb_subsets" : tune.grid_search([28]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMReg)
     "finetuning" : tune.grid_search(['last']),
     "experiment" : tune.grid_search([24]),
     "image_init_path_without_extension" : tune.grid_search(['1_im_value_cropped']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
     #"f_init" : tune.grid_search(['1_im_value_cropped']),
-    "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms
-    "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates. list(range(1,n+1)) means n replicates
-    "average_replicates" : tune.grid_search([False]), # List of desired replicates. list(range(1,n+1)) means n replicates
+    "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms (MRF)
+    "replicates" : tune.grid_search(list(range(1,1+1))), # List of desired replicates to work with in parallel. list(range(1,n+1)) means n replicates
 }
-# Configuration dictionnary for hyperparameters to tune
+# Configuration dictionary for hyperparameters to tune
 config = {
     "rho" : tune.grid_search([0.03]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)
     #"rho" : tune.grid_search([0.003,0.0003,0.00003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)

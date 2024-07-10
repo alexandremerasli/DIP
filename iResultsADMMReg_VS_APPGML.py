@@ -76,7 +76,8 @@ class iResultsADMMReg_VS_APPGML(vDenoising):
 
     def runComputation(self,config,root):
         
-        config["average_replicates"] = True
+        # Set average_replicates to True to work on all replicates with a common for loop
+        self.average_replicates = True
 
         self.change_replicates = "TMI"
         # self.change_replicates = "MIC"
@@ -165,7 +166,7 @@ class iResultsADMMReg_VS_APPGML(vDenoising):
             self.subroot_phantom = self.subroot + '/' + self.phantom + '/' + 'replicate_' + str(1) + '/' + self.method + '/' # Directory root
             p_for_file = p
             i = self.total_nb_iter
-            if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
+            if (self.average_replicates or (self.average_replicates == False and p == self.replicate)):
                 # if (self.change_replicates == "TMI"): # Remove DIPRecon failing replicates and replace them
                 #     if ("image40_1" in self.phantom):
                 #         if (self.scaling == "normalization"):
@@ -242,10 +243,10 @@ class iResultsADMMReg_VS_APPGML(vDenoising):
                     nan_replicates.append(p)
                     continue
 
-                if (config["average_replicates"]): # Average images across replicates (for metrics except IR)
+                if (self.average_replicates): # Average images across replicates (for metrics except IR)
                     f += self.f_p
                     f_init_avg += f_init_p
-                elif (config["average_replicates"] == False and p == self.replicate):
+                elif (self.average_replicates == False and p == self.replicate):
                     f = self.f_p
 
                 f_list[p-1] = self.f_p
@@ -427,7 +428,7 @@ class iResultsADMMReg_VS_APPGML(vDenoising):
 
         #         for i in range(self.total_nb_iter,i_init-1,-1):
         #         # for i in range(i_init,self.total_nb_iter+1):
-        #             if (config["average_replicates"] or (config["average_replicates"] == False and p == self.replicate)):
+        #             if (self.average_replicates or (self.average_replicates == False and p == self.replicate)):
         #                 # Read image into array according to method
         #                 if(self.read_image_method(config,beta_string,i_init,p_for_file,i)): # ES found
         #                     break
