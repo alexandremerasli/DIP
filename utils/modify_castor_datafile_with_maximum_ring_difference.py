@@ -81,6 +81,7 @@ def modify_MRD_histogram_from_histo_datafile(filename_read, filename_write, data
         with open(filename_write, 'wb') as f_write:
             nb_events = 0
             while True:
+                print(nb_events)
                 ### Read one event
                 # Read 1 uint32 element
                 bytes = f_read.read(4)  # uint32 is 4 bytes
@@ -185,10 +186,10 @@ def modify_MRD_data_from_LM_datafile(filename_read, filename_write, data, data_t
 ############ Variables to be customized by the user
 # Path to the histo or LM cdf file
 subroot = "data/Algo/"
-cdf_path = "../TestCastor/umd_h12_wRot_act_BTB_1_100_df.Cdf"
-cdf_path = subroot + "/Data/database_v2/image40_1/dataLM40_1_1/data40_1_1.cdf"
-cdf_path = subroot + "/Data/database_v2/image40_1/data40_1_1/data40_1_1.cdf"
-cdf_path = subroot + "/Data/database_v2/imageUHR_IEC/dataUHR_IEC_1/dataUHR_IEC_1.cdf"
+phantom = "image40_1"
+phantom = "imageUHR_IEC"
+phantom = "imageUHR_IEC4_8"
+cdf_path = subroot + "/Data/database_v2/" + phantom + "/data" + phantom[5:] + "_1/data" + phantom[5:] + "_1.cdf"
 
 # Number of data type (time, atn, norm, scatter, random, event value, ID1, ID2) for each event in the cdf file
 nb_data_cdf = 3 # Smaller LM file (for UHR data without physics modelling)
@@ -219,9 +220,9 @@ data, data_time, data_atn, data_random, data_norm, data_event_value, data_scatte
 if (modify_MRD_histo or modify_MRD_LM):
     # Define the histogram types to modify and new datafile path
     histo_type_to_modify_str = "" # string to store the histogram types to modify, for the datafile name
-    cdf_modified_folder = subroot + "/Data/database_v2/image40_1/dataMRD_filtered_40_1_1/"
+    cdf_modified_folder = subroot + "/Data/database_v2/" + phantom + "/dataMRD_filtered_" + phantom[5:] + "_1/"
     Path(cdf_modified_folder).mkdir(parents=True, exist_ok=True) # path to store the new datafile
-    cdf_modified_histo_path = cdf_modified_folder + "data40_1_1.cdf"
+    cdf_modified_histo_path = cdf_modified_folder + "data" + phantom[5:] + "_1.cdf"
 
     # Remove the data from the histo or LM cdf file
     if (modify_MRD_histo):
