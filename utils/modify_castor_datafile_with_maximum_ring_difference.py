@@ -130,10 +130,11 @@ def modify_MRD_histogram_from_histo_datafile(filename_read, filename_write, data
     return nb_events
 
 
-def modify_MRD_data_from_LM_datafile(filename_read, filename_write, data, data_time, data_float, data_ID, MRD):
+def modify_MRD_data_from_LM_datafile(filename_read, filename_write, MRD):
     with open(filename_read, 'rb') as f_read:
         with open(filename_write, 'wb') as f_write:
             nb_events = 0
+            nb_events_MRD = 0
             while True:
                 print(nb_events)
                 ### Read one event
@@ -142,31 +143,32 @@ def modify_MRD_data_from_LM_datafile(filename_read, filename_write, data, data_t
                 if not bytes:
                     return data_time
                 value = struct.unpack('I', bytes)[0]  # 'H' is format code for uint16
-                data_time.append(value)
-                data.append(value)
+                data_time = value
                 
                 # Read 4 float32 elements
+                data_float = np.zeros(nb_data_cdf - 3)
                 for idx in range(nb_data_cdf - 3):
                     bytes = f_read.read(4)  # float32 is 4 bytes
                     if not bytes:
                         return data
                     value = struct.unpack('f', bytes)[0]
-                    data_float[idx].append(value)
-                    data.append(value)
+                    data_float[idx] = value
+
+                nb_events += 1
                 
                 # Read 2 uint32 elements
+                data_ID = np.zeros(2, dtype=int)
                 for idx in range(2):
                     bytes = f_read.read(4)  # uint32 is 4 bytes
                     if not bytes:
                         return data
                     value = struct.unpack('I', bytes)[0]  # 'H' is format code for uint16
-                    data_ID[idx].append(value)
-                    data.append(value)
+                    data_ID[idx] = value
 
                 ### Write event if ring difference <= MRD
-                if (ring_difference(data_ID[0][-1], data_ID[1][-1]) <= MRD):
+                if (ring_difference(data_ID[0], data_ID[1]) <= MRD):
                     # Write 1 uint32 element
-                    bytes = struct.pack('I', data[nb_data_cdf * nb_events])
+                    bytes = struct.pack('I', data_time)
                     f_write.write(bytes)
                     
                     # Write 4 float32 elements
@@ -175,11 +177,11 @@ def modify_MRD_data_from_LM_datafile(filename_read, filename_write, data, data_t
                     #     f_write.write(bytes)
                     
                     # Write 2 uint32 elements
-                    for j in range(1,2+1):
-                        bytes = struct.pack('I', data[nb_data_cdf * nb_events+j])
+                    for j in range(2):
+                        bytes = struct.pack('I', data_ID[j])
                         f_write.write(bytes)
                     
-                    nb_events += 1
+                    nb_events_MRD += 1
 
     return nb_events
 
@@ -211,7 +213,7 @@ else:
 modify_MRD_histo = False
 modify_MRD_LM = True
 # modify_MRD_LM = False
-MRD = 40 # Maximum Ring Difference (MRD) in millimeters
+MRD = 2 # Maximum Ring Difference (MRD) in millimeters
 
 # Define variables to store the data
 data, data_time, data_atn, data_random, data_norm, data_event_value, data_scatter, data_float, data_ID1, data_ID2, data_ID = define_data(LM_to_histo)
@@ -228,7 +230,7 @@ if (modify_MRD_histo or modify_MRD_LM):
     if (modify_MRD_histo):
         nb_events_MRD = modify_MRD_histogram_from_histo_datafile(cdf_path, cdf_modified_histo_path, data, data_time, data_float, data_ID, MRD)
     elif (modify_MRD_LM):
-        nb_events_MRD = modify_MRD_data_from_LM_datafile(cdf_path, cdf_modified_histo_path, data, data_time, data_float, data_ID, MRD)
+        nb_events_MRD = modify_MRD_data_from_LM_datafile(cdf_path, cdf_modified_histo_path, MRD)
 
     # Show nb_events_MRD
     print("nb_events_MRD = ", nb_events_MRD)
