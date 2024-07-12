@@ -10,6 +10,7 @@
 import os
 from ray import tune
 import importlib
+import sys
 
 def uncompatible_parameters(config):
     method = config["method"]["grid_search"][0]
@@ -19,13 +20,13 @@ def uncompatible_parameters(config):
         raise ValueError("Only DIPRecon or DNA can be run in post reconstruction mode, not CASToR reconstruction algorithms. Please comment this line.")
     elif ((method == "DIPRecon" or method == "DNA") and config["rho"]["grid_search"][0] == 0 and "post_reco" not in task):
         raise ValueError("Please set rho > 0 for DNA or DIPRecon reconstruction (or set task to post reconstruction).")
-elif (config["DIP_early_stopping_when"]["grid_search"][0] != "never" and (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["EMV_or_WMV"]["grid_search"][0] == "WMV")):
+    elif (config["DIP_early_stopping_when"]["grid_search"][0] != "never" and (config["windowSize"]["grid_search"][0] >= config["sub_iter_DIP"]["grid_search"][0] and config["EMV_or_WMV"]["grid_search"][0] == "WMV")):
         raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
-            raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
     elif ((config["sub_iter_DIP_init"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0]) or (config["sub_iter_DIP"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0] and config["DIP_early_stopping_when"]["grid_search"][0] == "all")):
         raise ValueError("Please set patienceNumber higher than sub_iter_DIP")
-    elif (config["DIP_it_if_no_ES_found"]["grid_search"][0] > config["sub_iter_DIP_init"]["grid_search"][0]):
-        raise ValueError("Please set DIP_it_if_no_ES_found higher than sub_iter_DIP_init")
+    if ("DIP_it_if_no_ES_found" in config):
+        if (config["DIP_it_if_no_ES_found"]["grid_search"][0] > config["sub_iter_DIP_init"]["grid_search"][0]):
+            raise ValueError("Please set DIP_it_if_no_ES_found higher than sub_iter_DIP_init")
 
 def class_for_task(config,task):
     if (task == 'full_reco_with_network'): # Run DIPRecon or DNA
@@ -83,6 +84,13 @@ def choose_task(config):
 
     return task
 
+# Add the workspace directory to the Python path
+sys.path.append((os.getcwd()))  
+# Add configuration folders to path to import them
+for subfolder_config in ["PhD","LM","."]:
+    sys.path.append(os.path.join('all_config',subfolder_config))  # Add the parent directory of config files to the Python path
+
+
 
 
 # TMI paper
@@ -100,7 +108,7 @@ for lib_string in config_files:
         num_meth +=1
     # try:
     if (True):
-        lib = importlib.import_module('all_config.' + lib_string)
+        lib = importlib.import_module(lib_string)
         config = lib.config_func_MIC()
         # config["image"] = tune.grid_search(['image4_0'])
         # config["image"] = tune.grid_search(['image010_3D'])

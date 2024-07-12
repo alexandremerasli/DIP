@@ -109,6 +109,11 @@ class vDenoising(vGeneral):
                     self.image_net_input_torch = self.image_net_input_torch.view(1,config["k_DD"],input_size_DD,input_size_DD) # For Deep Decoder, if original Deep Decoder (i.e. only with decoder part)
             save(self.image_net_input_torch,self.subroot + 'Data/initialization/pytorch/replicate_' + str(self.replicate) + '/image_' + self.net + '_input_torch.pt')
 
+        if ("DIP_it_if_no_ES_found" in config):
+            self.DIP_it_if_no_ES_found = config["DIP_it_if_no_ES_found"]
+        else:
+            self.DIP_it_if_no_ES_found = config["sub_iter_DIP_init"]
+
     def add_gaussian_noise(self,img,it,diffusion_model_like_each_DIP):
         gaussian_distribution = normal(0, it * diffusion_model_like_each_DIP,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).reshape(self.PETImage_shape) # reshaping (for DIP)
         return img + gaussian_distribution
@@ -164,14 +169,14 @@ class vDenoising(vGeneral):
             #         os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
             if (self.finetuning == "ES"):
                 if (self.DIP_early_stopping):
-                    if (model.epochStar != -1): # if ES point found, save ES ckpt
+                    if (model.epochStar != -1): # if ES point found or no ES but DIP_it_if_no_ES_found was defined by the user, save ckpt corresponding to epochStar
                         if (file == "epoch=" + str(model.epochStar) + "-step=" + str((model.epochStar+1)*self.several_DIP_inputs-1) + ".ckpt"):
                             shutil.copy(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str((model.epochStar+1)*self.several_DIP_inputs-1) + ".ckpt"),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
                         # os.remove(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str(model.epochStar) + ".ckpt"))
                         else:
                             print(os.path.join(self.checkpoint_simple_path_exp,file))
                             # os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
-                    else: # if ES point not found, save last ckpt
+                    else: # if ES point not found, save last ckpt or DIP_it_if_no_ES_found ckpt
                         if (file == "epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*self.several_DIP_inputs-1) + ".ckpt"):
                             shutil.copy(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*self.several_DIP_inputs-1) + ".ckpt"),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
                             # os.remove(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str(model.epochStar) + ".ckpt"))
@@ -204,13 +209,13 @@ class vDenoising(vGeneral):
 
         if (hasattr(config,"override_it_DIP_with_EMV_it")):
             if (config["override_it_DIP_with_EMV_it"]):
-                self.sub_iter_DIP = self.sub_iter_DIP_initial_and_final
+                self.sub_iter_DIP = self.sub_iter_DIP_init
                 sub_iter_DIP = self.sub_iter_DIP
 
         print("outer_it",outer_it)
         if (outer_it == -1): # or outer_it == self.max_iter - 1): # Number of initial and final iterations are overrided here
-            print(str(self.sub_iter_DIP_initial_and_final) + " initial iterations")
-            self.sub_iter_DIP = self.sub_iter_DIP_initial_and_final
+            print(str(self.sub_iter_DIP_init) + " initial iterations")
+            self.sub_iter_DIP = self.sub_iter_DIP_init
             sub_iter_DIP = self.sub_iter_DIP
 
 
@@ -406,38 +411,28 @@ class vDenoising(vGeneral):
                     epoch_values = array([self.epochStar])
                 else: # Use iteration from user defined value
                     # epoch_values = array([self.sub_iter_DIP-self.patienceNumber]) # ES point is not reached so threshold to max number of DIP iterations minus patience number (heuristic)
-                    epoch_values = array([config["DIP_it_if_no_ES_found"]-1])
+                    epoch_values = array([self.DIP_it_if_no_ES_found-1])
             else: # ES is not asked so take last iteration
                 epoch_values = array([self.sub_iter_DIP-1])
 
         for epoch in epoch_values:
-            net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(epoch) + '.img'
-            out = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f')
-            # Descale like at the beginning
-            out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
-            # Saving image output
-            net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(epoch) + '.img'
-            os.system("mv " + net_outputs_path + " " + self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(epoch)  + 'scaled.img')
-            self.save_img(out_descale, net_outputs_path)
-            # Squeeze image by loading it
-            out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
-            # Saving (now DESCALED) image output
-            self.save_img(out_descale, net_outputs_path)
-
+            # Descale DIP output
+            out_descale = self.descale_DIP_output(out,epoch)
+        
         batch_idx = "MR_forward"
         net_forward_MR = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.outer_it) + '_epoch=' + format(self.sub_iter_DIP_already_done-1) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img'
         if (self.several_DIP_inputs > 1):
         # if (os.path.isfile(net_forward_MR)):
             out = self.fijii_np(net_forward_MR,shape=(self.PETImage_shape),type_im='<f')
-            # Descale like at the beginning
+            # Descale like before DIP optimization
             out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
             # Saving image output
             os.system("mv " + net_forward_MR + " " + self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.outer_it) + '_epoch=' + format(self.sub_iter_DIP_already_done - 1) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + 'scaled.img')
             self.save_img(out_descale, net_forward_MR)
-            # Squeeze image by loading it
-            out_descale = self.fijii_np(net_forward_MR,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
-            # Saving (now DESCALED) image output
-            self.save_img(out_descale, net_forward_MR)
+            # # Squeeze image by loading it
+            # out_descale = self.fijii_np(net_forward_MR,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+            # # Saving (now DESCALED) image output
+            # self.save_img(out_descale, net_forward_MR)
 
 
     def choose_net(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, outer_it, PETImage_shape, suffix, override_input):
@@ -508,7 +503,54 @@ class vDenoising(vGeneral):
         # Reverse scaling like at the beginning and add it to list of samples
         out_descale = self.descale_imag(out,param1_scale_im_corrupt,param2_scale_im_corrupt,config["scaling"])
         return out_descale
-    
+
+    def set_when_to_save_DIP_outputs(self,config,algo_state):
+        self.all_images_DIP_when = config["all_images_DIP_when"]
+        if (algo_state == "init"):
+            if self.all_images_DIP_when == "True" or self.all_images_DIP_when == "True_init":
+                self.all_images_DIP = "True"
+            elif self.all_images_DIP_when == "Unique":
+                self.all_images_DIP = "Unique"
+            elif self.all_images_DIP_when == "False":
+                self.all_images_DIP = "False"
+            else:
+                raise ValueError("Please set all_images_DIP_when to True, True_init, Last or False")
+        elif (algo_state == "outer"):
+            if self.all_images_DIP_when == "True":
+                self.all_images_DIP = "True"
+            elif (self.all_images_DIP_when == "Unique" or self.all_images_DIP_when == "True_init"):
+                self.all_images_DIP = "Unique"
+            elif self.all_images_DIP_when == "False":
+                self.all_images_DIP = "False"
+            else:
+                raise ValueError("Please set all_images_DIP_when to True, True_init, Last or False")
+            # Set DIP_early_stopping and finetuning attributes to classDenoising
+            if (hasattr(self,"classDenoising")):
+                self.classDenoising.all_images_DIP = self.all_images_DIP
+        else:
+            raise ValueError("algo_state should be init or outer")    
+        
+    def set_DIP_ES_and_finetuning(self,algo_state):
+        if (algo_state == "init"):
+            if self.DIP_early_stopping_when == "all" or self.DIP_early_stopping_when == "init":
+                self.DIP_early_stopping = True
+                self.finetuning = "ES" # save NN state at ES point for next outer iteration
+            else:
+                self.DIP_early_stopping = False
+                self.finetuning = "last" # save NN state at last epoch for next outer iteration
+        elif (algo_state == "outer"):
+            if self.DIP_early_stopping_when == "all":
+                self.DIP_early_stopping = True
+                self.finetuning = "ES" # save NN state at last epoch for next outer iteration
+            else:
+                self.DIP_early_stopping = False
+                self.finetuning = "last" # save NN state at last epoch for next outer iteration
+            # Set DIP_early_stopping and finetuning attributes to classDenoising
+            if (hasattr(self,"classDenoising")):
+                self.classDenoising.DIP_early_stopping = self.DIP_early_stopping
+                self.classDenoising.finetuning = self.finetuning
+        else:
+            raise ValueError("algo_state should be init or outer")
 
 from torch.utils.data import Dataset
 class ImagePairDataset(Dataset):

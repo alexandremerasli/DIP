@@ -24,7 +24,10 @@ class iMovingVariance(vGeneral):
         self.MSE_MV = []
         self.PSNR_MV = []
         self.SSIM_MV = []
-        self.DIP_it_if_no_ES_found = config["DIP_it_if_no_ES_found"]
+        if ("DIP_it_if_no_ES_found" in config):
+            self.DIP_it_if_no_ES_found = config["DIP_it_if_no_ES_found"]
+        else:
+            self.DIP_it_if_no_ES_found = config["sub_iter_DIP_init"]
         
 
         self.EMV_or_WMV = config["EMV_or_WMV"]
@@ -179,7 +182,7 @@ class iMovingVariance(vGeneral):
             
             out = self.fijii_np(net_output_path,shape=(self.PETImage_shape),type_im='<f')
             
-            # Descale like at the beginning
+            # Descale like before DIP optimization
             out = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
             #out = self.descale_imag(from_numpy(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
 
@@ -196,14 +199,18 @@ class iMovingVariance(vGeneral):
             if (epoch == sub_iter_DIP - 1): # No ES was found, so set it to user defined value
                 # self.epochStar = current_DIP_iteration - self.patienceNumber
                 self.epochStar = self.DIP_it_if_no_ES_found - 1
-                print(self.epochStar)
+                print("No ES found, so set self.epochStar to user defined DIP_it_if_no_ES_found")
             
                 # Open output corresponding to epoch star
                 net_output_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(self.epochStar) + '.img'
                 # Open ckpt corresponding to epoch star
                 ckpt_path = self.subroot_phantom+'Block2/' + self.suffix + '/checkpoint/' + format(self.experiment) + '/' + str(self.outer_it) + '/epoch=' + format(self.epochStar) + '-step=' + format(self.epochStar) + '.ckpt'
                 
-                self.save_DIP_output(ckpt_path, net_output_path)
+                # If save last iteration, out is already the last iteration
+                if (self.DIP_it_if_no_ES_found == self.sub_iter_DIP):
+                    self.save_img(out, net_output_path)
+                else: # Use ckpt from DIP_it_if_no_ES_found iteration
+                    self.save_DIP_output(ckpt_path, net_output_path)
             
         return SUCCESS, VAR_min, stagnate
     

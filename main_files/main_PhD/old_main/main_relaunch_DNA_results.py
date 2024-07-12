@@ -11,7 +11,7 @@ import os
 from ray import tune
 
 import importlib
-config_files = ["DNA_CT_0_skip_10it","DNA_CT_1_skip_10it","DNA_CT_2_skip_10it","DNA_CT_3_skip_10it", "DNA_ADMMReg_more_ADMMReg_it_10_configuration", "DNA_random_0_skip_10it", "DNA_random_1_skip_10it", "DNA_random_2_skip_10it", "DNA_random_3_skip_10it"]
+import sysimport sysconfig_files = ["DNA_CT_0_skip_10it","DNA_CT_1_skip_10it","DNA_CT_2_skip_10it","DNA_CT_3_skip_10it", "DNA_ADMMReg_more_ADMMReg_it_10_configuration", "DNA_random_0_skip_10it", "DNA_random_1_skip_10it", "DNA_random_2_skip_10it", "DNA_random_3_skip_10it"]
 config_files = ["DNA_CT_0_skip_10it","DNA_CT_1_skip_10it","DNA_CT_3_skip_10it", "DNA_ADMMReg_more_ADMMReg_it_10_configuration", "DNA_random_0_skip_10it", "DNA_random_1_skip_10it", "DNA_random_2_skip_10it", "DNA_random_3_skip_10it"]
 config_files = ["DNA_skip0_3_my_settings"]
 
@@ -20,7 +20,7 @@ config_files = ["DNA_skip0_3_my_settings"]
 for lib_string in config_files:
     # try:
     if (True):
-        lib = importlib.import_module('all_config.' + lib_string)
+        lib = importlib.import_module(lib_string)
         config = lib.config_func_MIC()
         config["image"] = tune.grid_search(['image40_0'])
         # config["image"] = 'image40_0'

@@ -10,6 +10,7 @@
 import os
 from ray import tune
 import importlib
+import sys
 
 def uncompatible_parameters(config):
     method = config["method"]["grid_search"][0]
@@ -23,14 +24,14 @@ def uncompatible_parameters(config):
         raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
     elif ((config["sub_iter_DIP_init"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0]) or (config["sub_iter_DIP"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0] and config["DIP_early_stopping_when"]["grid_search"][0] == "all")):
         raise ValueError("Please set patienceNumber higher than sub_iter_DIP")
-    elif (config["DIP_it_if_no_ES_found"]["grid_search"][0] > config["sub_iter_DIP_init"]["grid_search"][0]):
-        raise ValueError("Please set DIP_it_if_no_ES_found higher than sub_iter_DIP_init")
+    if ("DIP_it_if_no_ES_found" in config):
+        if (config["DIP_it_if_no_ES_found"]["grid_search"][0] > config["sub_iter_DIP_init"]["grid_search"][0]):
+            raise ValueError("Please set DIP_it_if_no_ES_found higher than sub_iter_DIP_init")
 
 def class_for_task(config,task):
     if (task == 'full_reco_with_network'): # Run DIPRecon or DNA
         from iADMM_DIP import iADMM_DIP
         classTask = iADMM_DIP(config)
-        # raise ValueError("needs hyperparameters_config")
     elif (task == 'castor_reco'): # Run CASToR reconstruction with given optimizer
         from iCastorAlgo import iCastorAlgo
         classTask = iCastorAlgo(config)
@@ -81,6 +82,13 @@ def choose_task(config):
 
     return task
 
+# Add the workspace directory to the Python path
+sys.path.append((os.getcwd()))  
+# Add configuration folders to path to import them
+for subfolder_config in ["PhD","LM","."]:
+    sys.path.append(os.path.join('all_config',subfolder_config))  # Add the parent directory of config files to the Python path
+
+
 # config_files = ["DNA_random_3_skip_10it", "DNA_CT_2_skip_10it", "DNA_CT_1_skip_10it"]
 config_files = ["DIPRecon_CT_1_skip", "DIPRecon_CT_2_skip"]#, "DIPRecon_CT_3_skip"]
 config_files = ["DIPRecon_CT_3_skip","DIPRecon_CT_1_skip","DIPRecon_CT_2_skip"]
@@ -99,7 +107,7 @@ config_files = ['DIPRecon_skip3_3_my_settings']
 for lib_string in config_files:
     # try:
     if (True):
-        lib = importlib.import_module('all_config.' + lib_string)
+        lib = importlib.import_module(lib_string)
         config = lib.config_func_MIC()
         config["image"] = tune.grid_search(['image4_0'])
         # config["image"] = tune.grid_search(['image50_0'])

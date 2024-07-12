@@ -172,22 +172,8 @@ class iPostReconstruction(vDenoising):
                 if self.SUCCESS:
                     print("SUCCESS MVVVVVVVVVVVVVVVVVV")
 
-            out_descale = out
-
-
-
-            out_torch = torch.from_numpy(out)
-            # Descale like at the beginning
-            out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
-            #'''
-            # Saving image output
-            net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(epoch) + '.img'
-            os.system("mv " + "'" + net_outputs_path + "' '" + self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(epoch)  + 'scaled.img' + "'")
-            self.save_img(out_descale, net_outputs_path)
-            # Squeeze image by loading it
-            out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
-            # Saving (now DESCALED) image output
-            self.save_img(out_descale, net_outputs_path)
+            # Descale DIP output
+            out_descale = self.descale_DIP_output(out,epoch)
 
             if (self.simulation):
                 if ("post_reco" not in config["task"]):

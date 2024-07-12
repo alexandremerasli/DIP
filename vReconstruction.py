@@ -272,7 +272,7 @@ class vReconstruction(vGeneral):
     def ADMMReg_general(self, config, i, subroot_output_path,writer=None,image_gt=None, i_init=0, subdir=""):
         # if ("DNA" in self.method):
         #     self.post_smoothing = 0
-        castor_command_line_x = self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate, self.post_smoothing)
+        castor_command_line_x = self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate)
 
         base_name_i = format(i)
         full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
@@ -357,7 +357,7 @@ class vReconstruction(vGeneral):
         print(x_reconstruction_command_line)
         self.compute_x_v_u_ADMM(x_reconstruction_command_line, subdir, i, self.phantom, subroot_output_path, self.subroot, self.method, it_name = config["nb_inner_iteration"])
 
-        if (self.adaptive_parameters != "nothing"):
+        if (self.adaptive_parameters != "nothing" and config["castor_foms"]):
             #'''
             # -- AdaptiveAlpha ---- AdaptiveAlpha ---- AdaptiveAlpha ---- AdaptiveAlpha ---- AdaptiveAlpha ---- AdaptiveAlpha --
             self.path_stopping_criterion = subroot_output_path + '/' + subdir + '/' + format(i) + '_adaptive_stopping_criteria.log'

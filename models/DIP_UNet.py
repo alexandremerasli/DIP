@@ -338,7 +338,7 @@ class DIP_UNet(LightningModule):
                     self.epochStar = self.classMV.epochStar
             
         # Increment number of iterations since beginnning of DNA
-        if (self.end_epoch): # We looped over all images of the batch
+        if (self.end_epoch and end_epoch_LBFGS): # We looped over all images of the batch
             self.sub_iter_DIP_already_done += 1
             self.sub_iter_DIP_this_outer_it += 1
         if (self.several_DIP_inputs > 1): # If several inputs, save MR forward
@@ -379,8 +379,10 @@ class DIP_UNet(LightningModule):
             self.sub_iter_DIP = config['sub_iter_DIP']
         self.skip = config['skip_connections']
         self.config = config
-        self.experiment = config["experiment"]
-        
+        if ("experiment" in config):
+            self.experiment = config["experiment"] # Label of the experiment
+        else:
+            self.experiment = "24"            
         # Variables useful for paths
         self.root = root
         self.subroot = root + subroot
@@ -502,8 +504,8 @@ class DIP_UNet(LightningModule):
         # Define shapes
         self.subroot = self.root + '/data/Algo/' # Directory root
         self.phantom = self.config["image"]
-        self.PETImage_shape_str = self.read_input_dim(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
-        self.PETImage_shape = self.input_dim_str_to_list(self.PETImage_shape_str)
+        self.PETImage_shape_str = self.classMV.read_input_dim(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.hdr')
+        self.PETImage_shape = self.classMV.input_dim_str_to_list(self.PETImage_shape_str)
         if (self.simulation and self.scanner == "mMR_2D"):
             self.sinogram_shape = (344,252,1)
             self.sinogram_shape_transpose = (252,344,1)

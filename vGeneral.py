@@ -2,7 +2,7 @@
 
 # Useful
 from pathlib import Path
-from os import getcwd, makedirs, listdir
+from os import getcwd, makedirs, listdir, system
 from os.path import exists, isfile, splitext
 from functools import partial
 from ray import tune
@@ -26,7 +26,7 @@ class vGeneral(abc.ABC):
     @abc.abstractmethod
     def __init__(self,config, *args, **kwargs):
         print("__init__")
-        self.experiment = "not updated"
+        self.experiment = ""
 
     def split_config(self,config):
         config = dict(config)
@@ -56,11 +56,15 @@ class vGeneral(abc.ABC):
         self.processing_unit = config["processing_unit"]
         self.nb_threads = config["nb_threads"]
         self.max_iter = config["max_iter"]
-        self.experiment = config["experiment"] # Label of the experiment
+        if ("experiment" in config):
+            self.experiment = config["experiment"] # Label of the experiment
+        else:
+            self.experiment = "24"    
         self.replicate = config["replicates"] # Label of the replicate
         self.penalty = config["penalty"]
         self.castor_foms = config["castor_foms"]
         self.FLTNB = config["FLTNB"]
+        self.average_replicates = False # Will be overrided to True in necessary files
         if ("PSF" in config):
             if (not config["PSF"]):
                 self.PSF = False
@@ -1190,7 +1194,7 @@ class vGeneral(abc.ABC):
     def castor_common_command_line(self, subroot, PETImage_shape_str, phantom, replicates, post_smoothing=0,mlem_quick=False):
         executable = 'castor-recon'
         dim = ' -dim ' + PETImage_shape_str
-        vb = ' -vb 3'
+        vb = ' -vb 1'
         th = ' -th ' + str(self.nb_threads)
         if (not mlem_quick):
             header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data pat
@@ -1499,7 +1503,6 @@ class vGeneral(abc.ABC):
                         self.total_nb_iter = config["sub_iter_DIP"]
                     else:
                         self.total_nb_iter = config["sub_iter_DIP_init"] # User defined maximum number of initial DIP iterations
-                        # self.total_nb_iter = config["DIP_it_if_no_ES_found"] + config["patienceNumber"] # Maximum number of initial DIP iterations is set to DIP_it_if_no_ES_found + patienceNumber
             else:
                 try:
                     if (stopping_criterion):
@@ -1562,3 +1565,24 @@ class vGeneral(abc.ABC):
             if (hasattr(self,"likelihoods_alpha")):
                 self.likelihoods_alpha.append(likelihood)
             self.likelihoods.append(likelihood)
+
+    def initializeClassResults(self,config,root):
+        if ((self.average_replicates and self.replicate == 1) or (self.average_replicates == False)):
+            from iResults import iResults
+            self.classResults = iResults(config)
+            self.assignVariablesFromResults(self.classResults)
+            self.assignROI(self.classResults)
+            self.classResults.initializeSpecific(config,root)
+    
+    def descale_DIP_output(self,out,epoch):
+        # Descale like before DIP optimization
+        out_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
+        # Move DIP output to another file indicating it is scaled
+        net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(epoch) + '.img'
+        system("mv " + "'" + net_outputs_path + "' '" + self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(epoch)  + 'scaled.img' + "'")
+        # Saving descaled image output
+        self.save_img(out_descale, net_outputs_path)
+        # # Squeeze image by loading it
+        # out_descale = self.fijii_np(net_outputs_path,shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+        # # Saving (now DESCALED) image output
+        # self.save_img(out_descale, net_outputs_path)

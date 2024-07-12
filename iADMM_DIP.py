@@ -85,14 +85,6 @@ class iADMM_DIP(vReconstruction):
         # Initialize f at step before
         self.f_before = self.f
 
-    def initializeClassResults(self,config,root):
-        if ((self.average_replicates and self.replicate == 1) or (self.average_replicates == False)):
-            from iResults import iResults
-            self.classResults = iResults(config)
-            self.assignVariablesFromResults(self.classResults)
-            self.assignROI(self.classResults)
-            self.classResults.initializeSpecific(config,root)
-
     def initializeSpecific(self,config,root):
         # Initialize variables from parent class
         vReconstruction.initializeSpecific(self,config,root)
@@ -113,14 +105,23 @@ class iADMM_DIP(vReconstruction):
             x_label = self.fijii_np(self.subroot + 'Data/initialization/' + self.phantom + '/' + config["image_init_path_without_extension"] + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<f')
             self.save_img(x_label,self.subroot_phantom+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
             
-            # Set DIP early stopping or not and corresponding finetuning mode for DIP
-            self.set_DIP_ES_and_finetuning(algo_state="init")
-
-            # Set binary images and to save locally and in tensorboard
-            self.set_when_to_save_DIP_outputs(config, algo_state="init")
-            
             ### Initialize vDenoising object
             self.classDenoising = vDenoising(config,self.outer_it)
+            # Initialize useful attributes
+            self.classDenoising.sub_iter_DIP_already_done = 0
+            self.sub_iter_DIP_already_done = 0
+            self.classDenoising.config = self.config
+            self.classDenoising.root = self.root
+            self.classDenoising.method = self.method
+            self.classDenoising.scanner = self.scanner
+            self.classDenoising.simulation = self.simulation
+            self.classDenoising.checkpoint_simple_path = self.subroot_phantom+'Block2/' + self.suffix + '/checkpoint/'
+            self.classDenoising.name_run = ""
+            self.classDenoising.subroot = self.subroot
+            self.classDenoising.fixed_hyperparameters_list = self.fixed_hyperparameters_list
+            self.classDenoising.hyperparameters_list = self.hyperparameters_list
+            self.classDenoising.initializeGeneralVariables(config,root)
+
             # Put anatomical as input if asked by user (old: mu_DIP = 200 is for random only)
             if (not (i_init == 0 and config["unnested_1st_outer_iter"])):
                 if ("override_input_to_anat_init" in config):
@@ -133,6 +134,12 @@ class iADMM_DIP(vReconstruction):
             else:
                 self.classDenoising.override_input = False
 
+            # Set DIP early stopping or not and corresponding finetuning mode for DIP
+            self.classDenoising.set_DIP_ES_and_finetuning(algo_state="init")
+
+            # Set binary images and to save locally and in tensorboard
+            self.classDenoising.set_when_to_save_DIP_outputs(config, algo_state="init")
+            
             # Set variable to override or not SC at DNA/DIPRecon initialization
             if ("override_SC_init" in config):
                 self.classDenoising.override_SC_init = config['override_SC_init']
@@ -141,34 +148,20 @@ class iADMM_DIP(vReconstruction):
 
             # Set number of DIP iterations at initialization
             self.classDenoising.sub_iter_DIP_init = config["sub_iter_DIP_init"]
-
-            # Initialize other variables
-            self.classDenoising.sub_iter_DIP_already_done = 0
-            self.sub_iter_DIP_already_done = 0
-            self.classDenoising.fixed_hyperparameters_list = self.fixed_hyperparameters_list
-            self.classDenoising.hyperparameters_list = self.hyperparameters_list
-            self.classDenoising.config = self.config
-            self.classDenoising.root = self.root
-            self.classDenoising.method = self.method
-            self.classDenoising.scanner = self.scanner
-            self.classDenoising.simulation = self.simulation
-            self.classDenoising.all_images_DIP = self.all_images_DIP
-            self.classDenoising.subroot = self.subroot
-            self.classDenoising.checkpoint_simple_path = self.subroot_phantom+'Block2/' + self.suffix + '/checkpoint/'
-            self.classDenoising.name_run = ""
-            self.classDenoising.initializeGeneralVariables(config,root)
         
         # If DNA/DIPRecon outer iterations
         if (self.outer_it == i_init + 1 and ((i_init == -1 and not config["unnested_1st_outer_iter"]) or (i_init == 0 and config["unnested_1st_outer_iter"]))): # TESTCT_random , put back random input
             # Set DIP early stopping or not and corresponding finetuning mode for DIP
-            self.set_DIP_ES_and_finetuning(algo_state="outer")
+            self.classDenoising.set_DIP_ES_and_finetuning(algo_state="outer")
 
             # Set binary images and to save locally and in tensorboard
-            self.set_when_to_save_DIP_outputs(config, algo_state="outer")
+            self.classDenoising.set_when_to_save_DIP_outputs(config, algo_state="outer")
 
             # Do not override input and SC at DNA/DIPRecon outer iterations
             self.classDenoising.override_input = False
             self.classDenoising.override_SC_init = False
+            # Set DIP ES flag from updated one in classDenoising
+            self.DIP_early_stopping = self.classDenoising.DIP_early_stopping
 
         # Set current outer iteration
         self.classDenoising.outer_it = self.outer_it
@@ -176,7 +169,6 @@ class iADMM_DIP(vReconstruction):
         self.classDenoising.net_outputs_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + '' + format(self.outer_it) + self.suffix + '.img'
         # Redefine number of DIP iterations to reach adding the ones already done
         self.classDenoising.sub_iter_DIP = config["sub_iter_DIP"] + self.sub_iter_DIP_already_done
-        # self.classDenoising.sub_iter_DIP_init = config["DIP_it_if_no_ES_found"] + config["patienceNumber"] # Maximum number of initial DIP iterations is set to DIP_it_if_no_ES_found + patienceNumber
         
         # Loading DIP x_label (corrupted image)
         self.classDenoising.image_corrupt = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(self.outer_it) +'_x_label' + self.suffix + '.img',shape=(self.PETImage_shape))
@@ -184,52 +176,6 @@ class iADMM_DIP(vReconstruction):
         if ("scaling_all_init" in config):
             if (config["scaling_all_init"]):
                 self.classDenoising.image_corrupt_init = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(-1) +'_x_label' + self.suffix + '.img',shape=(self.PETImage_shape))
-
-    def set_DIP_ES_and_finetuning(self,algo_state):
-        if (algo_state == "init"):
-            if self.DIP_early_stopping_when == "all" or self.DIP_early_stopping_when == "init":
-                self.DIP_early_stopping = True
-                self.finetuning = "ES" # save NN state at ES point for next outer iteration
-            else:
-                self.DIP_early_stopping = False
-                self.finetuning = "last" # save NN state at last epoch for next outer iteration
-        elif (algo_state == "outer"):
-            if self.DIP_early_stopping_when == "all":
-                self.DIP_early_stopping = True
-                self.finetuning = "ES" # save NN state at last epoch for next outer iteration
-            else:
-                self.DIP_early_stopping = False
-                self.finetuning = "last" # save NN state at last epoch for next outer iteration
-            # Set DIP_early_stopping and finetuning attributes to classDenoising
-            self.classDenoising.DIP_early_stopping = self.DIP_early_stopping
-            self.classDenoising.finetuning = self.finetuning
-        else:
-            raise ValueError("algo_state should be init or outer")
-
-    def set_when_to_save_DIP_outputs(self,config,algo_state):
-        self.all_images_DIP_when = config["all_images_DIP_when"]
-        if (algo_state == "init"):
-            if self.all_images_DIP_when == "True" or self.all_images_DIP_when == "True_init":
-                self.all_images_DIP = "True"
-            elif self.all_images_DIP_when == "Unique":
-                self.all_images_DIP = "Unique"
-            elif self.all_images_DIP_when == "False":
-                self.all_images_DIP = "False"
-            else:
-                raise ValueError("Please set all_images_DIP_when to True, True_init, Last or False")
-        elif (algo_state == "outer"):
-            if self.all_images_DIP_when == "True":
-                self.all_images_DIP = "True"
-            elif (self.all_images_DIP_when == "Unique" or self.all_images_DIP_when == "True_init"):
-                self.all_images_DIP = "Unique"
-            elif self.all_images_DIP_when == "False":
-                self.all_images_DIP = "False"
-            else:
-                raise ValueError("Please set all_images_DIP_when to True, True_init, Last or False")
-            # Set DIP_early_stopping and finetuning attributes to classDenoising
-            self.classDenoising.all_images_DIP = self.all_images_DIP
-        else:
-            raise ValueError("algo_state should be init or outer")
         
     def end_of_DIP_denoising(self, i_init, config):
         # Update number of iterations useful for next outer iteration
@@ -243,11 +189,11 @@ class iADMM_DIP(vReconstruction):
                 self.sub_iter_DIP_already_done = self.classDenoising.sub_iter_DIP_already_done
             # DIP ES point not found, set number of iterations to DIP_it_if_no_ES_found
             else:
-                self.classDenoising.sub_iter_DIP_already_done = config["DIP_it_if_no_ES_found"]
+                self.classDenoising.sub_iter_DIP_already_done = self.classDenoising.DIP_it_if_no_ES_found
                 self.sub_iter_DIP_already_done = self.classDenoising.sub_iter_DIP_already_done
 
         # Write GT and DIP input in tensorboard
-        self.classResults.writeBeginningImages(self.suffix,self.clssDenoising.image_net_input_scale,self.outer_it)
+        self.classResults.writeBeginningImages(self.suffix,self.classDenoising.image_net_input_scale,self.outer_it)
         # Write corrupted image at DNA/DIPRecon initialization in tensorboard
         if (self.outer_it == i_init):
             self.classResults.writeCorruptedImage(0,self.max_iter,self.classDenoising.image_corrupt,self.suffix,pet_algo="to fit",iteration_name="(post reconstruction)")
@@ -260,7 +206,7 @@ class iADMM_DIP(vReconstruction):
             if (self.classDenoising.SUCCESS):
                 self.f = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.classDenoising.net + '' + format(self.outer_it) + "_epoch=" + format(self.classDenoising.sub_iter_DIP - self.classDenoising.patienceNumber - 1) + '.img',shape=(self.PETImage_shape),type_im='<f')
             else:
-                self.f = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.classDenoising.net + '' + format(self.outer_it) + "_epoch=" + format(config["DIP_it_if_no_ES_found"] - 1) + '.img',shape=(self.PETImage_shape),type_im='<f')
+                self.f = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.classDenoising.net + '' + format(self.outer_it) + "_epoch=" + format(self.classDenoising.DIP_it_if_no_ES_found - 1) + '.img',shape=(self.PETImage_shape),type_im='<f')
         else:
             # When using several DIP inputs, load DIP output with MR input for each outer iteration. Otherwise, load DIP output
             if (self.several_DIP_inputs == 1):

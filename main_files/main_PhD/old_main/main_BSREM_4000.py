@@ -233,8 +233,9 @@ for method in config["method"]['grid_search']:
         raise ValueError("Please set window size less than number of DIP iterations for Window Moving Variance.")
     elif ((config["sub_iter_DIP_init"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0]) or (config["sub_iter_DIP"]["grid_search"][0] <= config["patienceNumber"]["grid_search"][0] and config["DIP_early_stopping_when"]["grid_search"][0] == "all")):
         raise ValueError("Please set patienceNumber higher than sub_iter_DIP")
-    elif (config["DIP_it_if_no_ES_found"]["grid_search"][0] > config["sub_iter_DIP_init"]["grid_search"][0]):
-        raise ValueError("Please set DIP_it_if_no_ES_found higher than sub_iter_DIP_init")
+    if ("DIP_it_if_no_ES_found" in config):
+        if (config["DIP_it_if_no_ES_found"]["grid_search"][0] > config["sub_iter_DIP_init"]["grid_search"][0]):
+            raise ValueError("Please set DIP_it_if_no_ES_found higher than sub_iter_DIP_init")
 
     #'''
     os.system("rm -rf " + root + subroot + 'suffixes_for_last_run_' + method + '.txt')
