@@ -19,10 +19,7 @@ class iADMM_DIP(vReconstruction):
         self.initializeSpecific(config,root)
         
         # Set first iteration according to user choice on initialization run
-        if (config["unnested_1st_outer_iter"]):
-            i_init = 0
-        else:
-            i_init = -1
+        i_init = -1
 
         # Loop on outer iterations
         for self.outer_it in range(i_init, self.max_iter):
@@ -30,7 +27,7 @@ class iADMM_DIP(vReconstruction):
             start_time_inner_iter = time.time()
 
             ####################    Block 1 - Reconstruction with CASToR (tomographic reconstruction part of ADMM)    ####################
-            if (self.outer_it != i_init or config["unnested_1st_outer_iter"]):
+            if (self.outer_it != i_init):
                 print("Reconstruction with CASToR")
                 
                 # Launch CASToR reconstruction (ADMM-Reg if method is DNA, OPTITR if method is DIPRecon)
@@ -96,11 +93,10 @@ class iADMM_DIP(vReconstruction):
 
         # Initialize self.classDenoising and other variables
         self.classDenoising = None
-        self.tau_DIP = config["tau_DIP"]
 
     def initializeSettingsForCurrentIteration(self,config,i_init,root):
         # If DNA/DIPRecon initialization
-        if ((self.outer_it == i_init and ((i_init == -1 and not config["unnested_1st_outer_iter"])) or (config["unnested_1st_outer_iter"]))): # or (self.outer_it == self.max_iter - 1)): # TESTCT_random
+        if ((self.outer_it == i_init) and (i_init == -1)):
             # Set corrupted image to warm start image (pre reconstructed) and save it in block 2 folder
             x_label = self.fijii_np(self.subroot + 'Data/initialization/' + self.phantom + '/' + config["image_init_path_without_extension"] + '/replicate_' + str(self.replicate) + '/' + config["image_init_path_without_extension"] + '.img',shape=(self.PETImage_shape),type_im='<f')
             self.save_img(x_label,self.subroot_phantom+'Block2/' + self.suffix + '/x_label/' + format(self.experiment)+'/'+ format(i_init) +'_x_label' + self.suffix + '.img')
@@ -123,17 +119,14 @@ class iADMM_DIP(vReconstruction):
             self.classDenoising.initializeGeneralVariables(config,root)
 
             # Put anatomical as input if asked by user (old: mu_DIP = 200 is for random only)
-            if (not (i_init == 0 and config["unnested_1st_outer_iter"])):
-                if ("override_input_to_anat_init" in config):
-                    if (self.net == "DIP" and config["override_input_to_anat_init"]):
-                        self.classDenoising.override_input = True
-                    else:
-                        self.classDenoising.override_input = False
+            if ("override_input_to_anat_init" in config):
+                if (self.net == "DIP" and config["override_input_to_anat_init"]):
+                    self.classDenoising.override_input = True
                 else:
                     self.classDenoising.override_input = False
             else:
                 self.classDenoising.override_input = False
-
+            
             # Set DIP early stopping or not and corresponding finetuning mode for DIP
             self.classDenoising.set_DIP_ES_and_finetuning(algo_state="init")
 
@@ -150,7 +143,7 @@ class iADMM_DIP(vReconstruction):
             self.classDenoising.sub_iter_DIP_init = config["sub_iter_DIP_init"]
         
         # If DNA/DIPRecon outer iterations
-        if (self.outer_it == i_init + 1 and ((i_init == -1 and not config["unnested_1st_outer_iter"]) or (i_init == 0 and config["unnested_1st_outer_iter"]))): # TESTCT_random , put back random input
+        if ((self.outer_it == i_init + 1) and (i_init == -1)):
             # Set DIP early stopping or not and corresponding finetuning mode for DIP
             self.classDenoising.set_DIP_ES_and_finetuning(algo_state="outer")
 
@@ -229,7 +222,7 @@ class iADMM_DIP(vReconstruction):
 
     def save_mu_and_compute_metrics(self,config,i_init):
         # if DNA/DIPRecon not at initialization, update mu and save it
-        if (self.outer_it > i_init or ((i_init > -1 and not config["unnested_1st_outer_iter"]) or (i_init > 0 and config["unnested_1st_outer_iter"]))):
+        if ((self.outer_it > i_init) or (i_init > -1)):
             # Update mu
             self.mu = self.x_label - self.f
             # Save binary image
@@ -239,17 +232,17 @@ class iADMM_DIP(vReconstruction):
 
         if (self.simulation):
             # Compute IR metric (different from others with several replicates)
-            self.classResults.compute_IR_bkg(self.PETImage_shape,self.f,self.outer_it,self.classResults.IR_bkg_recon,self.phantom)
+            self.classResults.compute_IR_bkg(self.PETImage_shape,self.f,self.outer_it+1,self.classResults.IR_bkg_recon,self.phantom)
             self.classResults.writer.add_scalar('Image roughness in the background (best : 0)', self.classResults.IR_bkg_recon[self.outer_it], self.outer_it+1)
             # Compute IR in whole phantom (different from others with several replicates)
-            self.classResults.compute_IR_whole(self.PETImage_shape,self.f,self.outer_it,self.classResults.IR_whole_recon,self.phantom)
+            self.classResults.compute_IR_whole(self.PETImage_shape,self.f,self.outer_it+1,self.classResults.IR_whole_recon,self.phantom)
             self.classResults.writer.add_scalar('Image roughness in the phantom', self.classResults.IR_whole_recon[self.outer_it], self.outer_it+1)
         # Write output image and metrics to tensorboard
-        self.classResults.writeEndImagesAndMetrics(self.outer_it,config["nb_inner_iteration"],self.PETImage_shape,self.f,self.suffix,self.phantom,self.classDenoising.net,pet_algo=self.method)
+        self.classResults.writeEndImagesAndMetrics(self.outer_it+1,config["nb_inner_iteration"],self.PETImage_shape,self.f,self.suffix,self.phantom,self.classDenoising.net,pet_algo=self.method)
 
     def checkStoppingCriterion(self,config, i_init):
         # This stopping criterion is only for DNA on the brain phantom. It stops the algorithm when the IR in the background is too high (values hardcoded)
-        if (self.outer_it != i_init or config["unnested_1st_outer_iter"]): # DNA/DIPRecon not at initialization
+        if (self.outer_it != i_init): # DNA/DIPRecon not at initialization
             if ("50_" in self.phantom):
                 # Check if EMA of IR in the background exists, otherwise set it to IR
                 if hasattr(self,"IR_bkg_smoothed"):

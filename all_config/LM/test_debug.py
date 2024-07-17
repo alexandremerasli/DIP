@@ -7,7 +7,8 @@ def config_func_MIC():
     settings_config = {
         "image" : tune.grid_search(['imageUHR_IEC']), # Image from database (data/Algo/Data/database_v2)
         "random_seed" : tune.grid_search([True]), # If True, random seed is used for reproducibility (must be set to False to vary weights initialization)
-        "method" : tune.grid_search(["ADMMReg"]), # Reconstruction algorithm (DNA/DIPRecon (with ADMM or end to end mode), or algorithms from CASToR (MLEM, BSREM, AML, APPGML, ADMMReg, OPTITR))
+        "method" : tune.grid_search(["ADMMRegLM"]), # Reconstruction algorithm (DNA/DIPRecon (with ADMM or end to end mode), or algorithms from CASToR (MLEM, BSREM, AML, APPGML, ADMMReg, OPTITR))
+        "method" : tune.grid_search(["DIPRecon"]), # Reconstruction algorithm (DNA/DIPRecon (with ADMM or end to end mode), or algorithms from CASToR (MLEM, BSREM, AML, APPGML, ADMMReg, OPTITR))
         "processing_unit" : tune.grid_search(['CPU']), # Run NN training with pytorch on Run NN training with pytorch on CPU or GPU
         "nb_threads" : tune.grid_search([5]), # Number of desired threads in reconstruction with CASToR. 0 means all the available threads will be used
         "FLTNB" : tune.grid_search(['float']), # FLTNB precision must be set as in CASToR. Default is float (meaning float32 in numpy)
@@ -23,18 +24,18 @@ def config_func_MIC():
         "max_iter" : tune.grid_search([500]), # Number of iterations for usual optimizers (MLEM, BSREM, AML etc.) and outer iterations for DNA and DIPRecon
         "nb_subsets" : tune.grid_search([8]), # Number of subsets in chosen reconstruction algorithm (automatically set to 1 for ADMMReg)
         "use_u_and_v_DNA" : tune.grid_search([False]), # For DNA reconstruction, set to True to initialize current sinograms u and v by those from previous outer iteration
-        "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms (MRF) (MRF)
+        "penalty" : tune.grid_search(['MRF']), # Penalty used in CASToR for PLL algorithms (MRF)
         "unnested_1st_outer_iter" : tune.grid_search([False]), # If True, unnested are computed after 1st outer iteration (because rho is set to 0). If False, needs to set f_init to initialize the network, as in DIPRecon paper, and rho is not changed.
-        "sub_iter_DIP_init" : tune.grid_search([10000]), # Number of DIP iterations at DNA/DIPRecon initialization. Could be overrided if early stopping point is reached using "DIP_early_stopping_when" parameter
+        "sub_iter_DIP_init" : tune.grid_search([3]), # Number of DIP iterations at DNA/DIPRecon initialization. Could be overrided if early stopping point is reached using "DIP_early_stopping_when" parameter
         "nb_inner_sub_iteration" : tune.grid_search([1]), # Number of inner subiterations in DNA (number of iterations of gradient descent in ADMM-Reg (if mlem_sequence is False). It should be 1 as it is coded for now in CASToR
         "xi" : tune.grid_search([1]), # Factor to balance primal and dual residual convergence speed in adaptive tau computation in ADMMReg
         "net" : tune.grid_search(['DIP']), # Neural Network (NN) architecture to use ("DIP" (U-Net from DIPRecon paper), "DD" (Deep Decoder"), "DD_AE" (DD based autoencoder), "DIP_VAE" (DIP-based Variational AutoEncoder)))
-        "DIP_early_stopping_when" : tune.grid_search(["init"]), # Use DIP early stopping - ES ("never" means no ES, "init" means ES only at initialization, "all" means ES at each iteration)
-        "DIP_it_if_no_ES_found" : tune.grid_search([500]), # Fixed number of DIP iterations if early stopping point was not found
+        "DIP_early_stopping_when" : tune.grid_search(["never"]), # Use DIP early stopping - ES ("never" means no ES, "init" means ES only at initialization, "all" means ES at each iteration)
+        "DIP_it_if_no_ES_found" : tune.grid_search([1]), # Fixed number of DIP iterations if early stopping point was not found
         "EMV_or_WMV" : tune.grid_search(["EMV"]), # WMV or EMV for DIP early stopping
         "alpha_EMV" : tune.grid_search([0.1]), # EMV forgetting factor alpha
         "windowSize" : tune.grid_search([50]), # WMV window size
-        "patienceNumber" : tune.grid_search([100]), # Patience number in moving variance algorithms
+        "patienceNumber" : tune.grid_search([2]), # Patience number in moving variance algorithms
     }
     # Configuration dictionary for hyperparameters to tune
     # Parameters in this dictionary are the only ones added in suffix of the output folder
@@ -43,13 +44,13 @@ def config_func_MIC():
         "image_init_path_without_extension" : tune.grid_search(['BSREM_it30']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
         "image_init_path_without_extension" : tune.grid_search(['MLEM_it20']), # Initial image of the reconstruction algorithm (taken from subroot + "/Data/initialization")
         "rho" : tune.grid_search([0.003]), # Penalty strength (beta) in PLL algorithms, ADMM penalty parameter (DNA and DIPRecon)
-        "mu_DIP" : tune.grid_search([102]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMReg
+        "mu_DIP" : tune.grid_search([1111]), # Factor to balance primal and dual residual in adaptive alpha computation in ADMMReg
         "tau_DIP" : tune.grid_search([2]), # Factor to multiply alpha in adaptive alpha computation in ADMMReg. If adaptive tau, it corresponds to tau max
         ## network hyperparameters
         "lr" : tune.grid_search([1]), # Learning rate in network optimization
-        "sub_iter_DIP" : tune.grid_search([1000]), # Number of epochs in network optimization
-        "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
+        "sub_iter_DIP" : tune.grid_search([4]), # Number of epochs in network optimization
         "opti_DIP" : tune.grid_search(['LBFGS']), # Optimization algorithm in neural network training (Adam, LBFGS)
+        "opti_DIP" : tune.grid_search(['Adam']), # Optimization algorithm in neural network training (Adam, LBFGS)
         "skip_connections" : tune.grid_search([0]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         # "skip_connections" : tune.grid_search([3]), # Number of skip connections in DIP architecture (0, 1, 2, 3)
         "scaling" : tune.grid_search(['positive_normalization']), # Pre processing of neural network input (nothing, uniform, normalization, standardization)

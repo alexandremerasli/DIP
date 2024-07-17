@@ -124,13 +124,13 @@ class iEndToEnd(vDenoising):
             if (self.simulation):
                 if ("post_reco" not in config["task"]):
                     # Compute IR metric (different from others with several replicates)
-                    self.classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch,self.classResults.IR_bkg_recon,self.phantom)
+                    self.classResults.compute_IR_bkg(self.PETImage_shape,out_descale,epoch+1,self.classResults.IR_bkg_recon,self.phantom)
                     self.classResults.writer.add_scalar('Image roughness in the background (best : 0)', self.classResults.IR_bkg_recon[epoch], epoch+1)
                     # Compute IR in whole phantom (different from others with several replicates)
-                    self.classResults.compute_IR_whole(self.PETImage_shape,out_descale,self.outer_it,self.classResults.IR_whole_recon,self.phantom)
+                    self.classResults.compute_IR_whole(self.PETImage_shape,out_descale,epoch+1,self.classResults.IR_whole_recon,self.phantom)
                     self.classResults.writer.add_scalar('Image roughness in the phantom', self.classResults.IR_whole_recon[self.outer_it], self.outer_it+1)
                 # Write images over epochs
-            self.classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
+            self.classResults.writeEndImagesAndMetrics(epoch+1,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
 
             # Break loop if ES point reached
             if (self.DIP_early_stopping):

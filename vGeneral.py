@@ -254,7 +254,9 @@ class vGeneral(abc.ABC):
         # self.image_gt = self.fijii_np(self.subroot + 'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw',shape=(self.PETImage_shape),type_im='<f')            
 
 
-        # Define ROIs for image0 phantom, otherwise it is already done in the database
+        # Define ROIs for phantoms, otherwise it is already done in the database
+        bkg_ROI_path = self.subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw'
+        # if (not isfile(bkg_ROI_path)):
         if (self.phantom == "image0" or self.phantom == "image2_0" and config["task"] != "show_metrics_results_already_computed"):
             self.define_ROI_image0(self.PETImage_shape,self.subroot)
         elif (self.phantom == "image2_3D" and config["task"] != "show_metrics_results_already_computed"):
@@ -337,20 +339,9 @@ class vGeneral(abc.ABC):
         if "recoInDNA" not in config:
             config["recoInDNA"] = tune.grid_search(["ADMMReg"])
 
-        # Do not scale images if network input is uniform of if DIPRecon's method
+        # Do not scale images if network input is uniform
         if config["input"]['grid_search'] == 'uniform': # Do not standardize or normalize if uniform, otherwise NaNs
             config["scaling"] = "nothing"
-        if (len(config["method"]['grid_search']) == 1):
-            if method == "DIPRecon":
-                #print("Goooooooooooooooooooong_normalization_enforced")
-                #config["scaling"]['grid_search'] = ["normalization"]
-                #config["scaling"]['grid_search'] = ["positive_normalization"]
-                print("Gooooooooong")
-
-        # If ADMMReg (not DNA), begin with CASToR default value, which is uniform image of 1
-        if (len(config["method"]['grid_search']) == 1):
-            if method == 'ADMMReg':
-                config["unnested_1st_outer_iter"]['grid_search'] = [True]
         
         # Remove NNEPPS=False if True is selected for computation
         if (len(config["NNEPPS"]['grid_search']) > 1 and False in config["NNEPPS"]['grid_search'] and 'results' not in task):
@@ -391,7 +382,6 @@ class vGeneral(abc.ABC):
                 config.pop("adaptive_parameters_DIP", None)
                 config.pop("mu_DIP", None)
                 config.pop("tau_DIP", None)
-                #config.pop("unnested_1st_outer_iter",None)
             if (config["net"]['grid_search'][0] == "DD"):
                 config.pop("skip_connections", None)
             elif (config["net"]['grid_search'][0] != "DD_AE"): # not a Deep Decoder based architecture, so remove k and d
@@ -678,7 +668,7 @@ class vGeneral(abc.ABC):
         image_np = image.detach().numpy()
         return self.destand_numpy_imag(image_np, mean_im, std_im)
 
-    def rescale_imag(self,image_corrupt, scaling,param1=1e+40,param2=1e+40):
+    def rescale_imag(self,image_corrupt, scaling,param1=1e+40,param2=1e+40,slice_by_slice_3D=True):
         """ Scaling of input """
         if (1 in image_corrupt.shape): # 2D
             nb_slices = 1
@@ -690,17 +680,29 @@ class vGeneral(abc.ABC):
         param1 = zeros(nb_slices)
         param2 = zeros(nb_slices)
         
-        for slice in range(nb_slices):
+        if (nb_slices > 1 and slice_by_slice_3D): # Default is PhD settings, but this setting has no better justification than scaling the whole 3D image
+                for slice in range(nb_slices):
+                    if (scaling == 'standardization'):
+                        image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = self.stand_imag(image_corrupt[:,:,slice])
+                    elif (scaling == 'normalization'):
+                        image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = self.norm_imag(image_corrupt[:,:,slice])
+                    elif (scaling == 'normalization_init'):
+                        image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = self.norm_init_imag(image_corrupt[:,:,slice],param1,param2)
+                    elif (scaling == 'positive_normalization'):
+                        image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = self.norm_positive_imag(image_corrupt[:,:,slice])
+                    else: # No scaling required
+                        image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = squeeze(image_corrupt), 0, 0
+        else:
             if (scaling == 'standardization'):
-                image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = self.stand_imag(image_corrupt[:,:,slice])
+                image_corrupt_scaled, param1, param2 = self.stand_imag(image_corrupt)
             elif (scaling == 'normalization'):
-                image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = self.norm_imag(image_corrupt[:,:,slice])
+                image_corrupt_scaled, param1, param2 = self.norm_imag(image_corrupt)
             elif (scaling == 'normalization_init'):
-                image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = self.norm_init_imag(image_corrupt[:,:,slice],param1,param2)
+                image_corrupt_scaled, param1, param2 = self.norm_init_imag(image_corrupt,param1,param2)
             elif (scaling == 'positive_normalization'):
-                image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = self.norm_positive_imag(image_corrupt[:,:,slice])
+                image_corrupt_scaled, param1, param2 = self.norm_positive_imag(image_corrupt)
             else: # No scaling required
-                image_corrupt_scaled[:,:,slice], param1[slice], param2[slice] = squeeze(image_corrupt), 0, 0
+                image_corrupt_scaled, param1, param2 = squeeze(image_corrupt), 0, 0
 
         
         if (1 not in image_corrupt.shape): # 3D
@@ -708,7 +710,7 @@ class vGeneral(abc.ABC):
 
         return image_corrupt_scaled, param1, param2 
 
-    def descale_imag(self,image, param_scale1, param_scale2, scaling='standardization'):
+    def descale_imag(self,image, param_scale1, param_scale2, scaling='standardization', slice_by_slice_3D=True):
         """ Descaling of input """
         try:
             image_np = image.detach().numpy()
@@ -722,20 +724,31 @@ class vGeneral(abc.ABC):
             image_np = transpose(image_np)
             nb_slices = image_np.shape[2]
         
-        nb_slices = len(param_scale1)
-
-        for slice in range(nb_slices):
+        
+        if (nb_slices > 1 and slice_by_slice_3D): # Default is PhD settings, but this setting has no better justification than scaling the whole 3D image
+            for slice in range(nb_slices):
+                if (scaling == 'standardization'):
+                    image_np[:,:,slice] = self.destand_numpy_imag(image_np[:,:,slice], param_scale1[slice], param_scale2[slice])
+                elif (scaling == 'normalization'):
+                    image_np[:,:,slice] = self.denorm_numpy_imag(image_np[:,:,slice], param_scale1[slice], param_scale2[slice])
+                elif (scaling == 'normalization_init'):
+                    image_np[:,:,slice] = self.denorm_numpy_imag(image_np[:,:,slice], param_scale1[slice], param_scale2[slice])
+                elif (scaling == 'positive_normalization'):
+                    image_np[:,:,slice] = self.denorm_numpy_positive_imag(image_np[:,:,slice], param_scale1[slice], param_scale2[slice])
+                else: # No scaling required
+                    print("no scaling required")
+        else:
             if (scaling == 'standardization'):
-                image_np[:,:,slice] = self.destand_numpy_imag(image_np[:,:,slice], param_scale1[slice], param_scale2[slice])
+                image_np = self.destand_numpy_imag(image_np, param_scale1, param_scale2)
             elif (scaling == 'normalization'):
-                image_np[:,:,slice] = self.denorm_numpy_imag(image_np[:,:,slice], param_scale1[slice], param_scale2[slice])
+                image_np = self.denorm_numpy_imag(image_np, param_scale1, param_scale2)
             elif (scaling == 'normalization_init'):
-                image_np[:,:,slice] = self.denorm_numpy_imag(image_np[:,:,slice], param_scale1[slice], param_scale2[slice])
+                image_np = self.denorm_numpy_imag(image_np, param_scale1, param_scale2)
             elif (scaling == 'positive_normalization'):
-                image_np[:,:,slice] = self.denorm_numpy_positive_imag(image_np[:,:,slice], param_scale1[slice], param_scale2[slice])
+                image_np = self.denorm_numpy_positive_imag(image_np, param_scale1, param_scale2)
             else: # No scaling required
-                print("no scaling required")
-
+                print("no scaling required")                
+        
         if (1 not in image_np.shape): # 3D
             image_np = transpose(image_np)
 
@@ -792,7 +805,7 @@ class vGeneral(abc.ABC):
         if ("DNA" in self.method or "DIPRecon" in self.method):
             classResults.DIP_early_stopping = self.DIP_early_stopping
 
-    def points_in_circle(self,center_x,center_y,center_z,radius,PETImage_shape,inner_circle=True): # x and y are inverted in an array compared to coordinates
+    def points_in_circle(self,center_x,center_y,center_z,radius,PETImage_shape,inner_circle=True,circles_in_3D_volume=False): # x and y are inverted in an array compared to coordinates
         center_y += int(PETImage_shape[0]/2)
         center_x += int(PETImage_shape[1]/2)
         dim_y = PETImage_shape[1]
@@ -807,9 +820,17 @@ class vGeneral(abc.ABC):
             x, y = meshgrid(arange(dim_x), arange(dim_y))
             mask = (x+0.5-center_x)**2 + (y+0.5-center_y)**2 <= radius**2
         else:
-            x, y, z = meshgrid(arange(dim_x), arange(dim_y), arange(dim_z))
-            mask = (x+0.5-center_x)**2 + (y+0.5-center_y)**2 + (z+0.5-center_z)**2 <= radius**2
+            if (not circles_in_3D_volume): # Spheres
+                x, y, z = meshgrid(arange(dim_x), arange(dim_y), arange(dim_z))
+                mask = (x+0.5-center_x)**2 + (y+0.5-center_y)**2 + (z+0.5-center_z)**2 <= radius**2
+            else: # Circles in 3D volume
+                x, y = meshgrid(arange(dim_x), arange(dim_y))
+                mask = (x+0.5-center_x)**2 + (y+0.5-center_y)**2 <= radius**2
         liste = argwhere(mask)
+    
+        if (circles_in_3D_volume): # Circles in 3D volume
+            # add a z dimension to liste with zeros
+            liste = concatenate((liste, (center_z - 1) * ones((len(liste),1))), axis=1).astype(int)
 
         # import matplotlib.pyplot as plt
         # plt.figure()
@@ -1046,28 +1067,52 @@ class vGeneral(abc.ABC):
 
     def define_ROI_IEC_3D(self,PETImage_shape,subroot):
         
-        voxel_size = 1.2
+        # Define voxel size
+        if ("4_8" in self.phantom):
+            voxel_size = 4.8
+        else:
+            voxel_size = 1.2
 
-        cold1_ROI, mask = self.points_in_circle(49.54/voxel_size, 28.6/voxel_size, 0/voxel_size, 5/voxel_size-1, PETImage_shape)
+        # Remove external radius with 1 voxel
+        remove_external_radius = 1
+
+        # ROIs with removed external radius
+        # Define circular ROIs over 3D volume as in NEMA NU2
+        cold1_ROI, mask = self.points_in_circle(49.54/voxel_size, 28.6/voxel_size, 0/voxel_size, 5/voxel_size-remove_external_radius, PETImage_shape,circles_in_3D_volume=True)
+        cold2_ROI, mask = self.points_in_circle(0/voxel_size, 57.2/voxel_size, 0/voxel_size, 6.5/voxel_size-remove_external_radius, PETImage_shape,circles_in_3D_volume=True)
+        hot1_ROI, mask = self.points_in_circle(-49.54/voxel_size, 28.6/voxel_size, 0/voxel_size, 8.5/voxel_size-remove_external_radius, PETImage_shape,circles_in_3D_volume=True)
+        hot2_ROI, mask = self.points_in_circle(-49.54/voxel_size, -28.6/voxel_size, 0/voxel_size, 11/voxel_size-remove_external_radius, PETImage_shape,circles_in_3D_volume=True)
+        hot3_ROI, mask = self.points_in_circle(0/voxel_size, -57.2/voxel_size, 0/voxel_size, 14/voxel_size-remove_external_radius, PETImage_shape,circles_in_3D_volume=True)
+        hot4_ROI, mask = self.points_in_circle(49.54/voxel_size, -28.6/voxel_size, 0/voxel_size, 18.5/voxel_size-remove_external_radius, PETImage_shape,circles_in_3D_volume=True)
+
         phantom_ROI = self.points_in_cylinder(0/voxel_size, 0/voxel_size, 0/voxel_size, 105/voxel_size, 180/voxel_size, PETImage_shape)
-        cold2_ROI, mask = self.points_in_circle(0/voxel_size, 57.2/voxel_size, 0/voxel_size, 6.5/voxel_size-1, PETImage_shape)
-        hot1_ROI, mask = self.points_in_circle(-49.54/voxel_size, 28.6/voxel_size, 0/voxel_size, 8.5/voxel_size-1, PETImage_shape)
-        hot2_ROI, mask = self.points_in_circle(-49.54/voxel_size, -28.6/voxel_size, 0/voxel_size, 11/voxel_size-1, PETImage_shape)
-        hot3_ROI, mask = self.points_in_circle(0/voxel_size, -57.2/voxel_size, 0/voxel_size, 14/voxel_size-1, PETImage_shape)
-        hot4_ROI, mask = self.points_in_circle(49.54/voxel_size, -28.6/voxel_size, 0/voxel_size, 18.5/voxel_size-1, PETImage_shape)
-
-        cold1_ROI_bkg, mask = self.points_in_circle(49.54/voxel_size, 28.6/voxel_size, 0/voxel_size, 5/voxel_size+1, PETImage_shape)
-        cold2_ROI_bkg, mask = self.points_in_circle(0/voxel_size, 57.2/voxel_size, 0/voxel_size, 6.5/voxel_size+1, PETImage_shape)
-        hot1_ROI_bkg, mask = self.points_in_circle(-49.54/voxel_size, 28.6/voxel_size, 0/voxel_size, 8.5/voxel_size+1, PETImage_shape)
-        hot2_ROI_bkg, mask = self.points_in_circle(-49.54/voxel_size, -28.6/voxel_size, 0/voxel_size, 11/voxel_size+1, PETImage_shape)
-        hot3_ROI_bkg, mask = self.points_in_circle(0/voxel_size, -57.2/voxel_size, 0/voxel_size, 14/voxel_size+1, PETImage_shape)
-        hot4_ROI_bkg, mask = self.points_in_circle(49.54/voxel_size, -28.6/voxel_size, 0/voxel_size, 18.5/voxel_size+1, PETImage_shape)
         
-        phantom_ROI_bkg = self.points_in_cylinder(0/voxel_size, 0/voxel_size, 0/voxel_size, 150/voxel_size + 1, 180/voxel_size + 1, PETImage_shape)
+        # ROIs with full size for DIP input creation
+        cold1_ROI_atn, mask = self.points_in_circle(49.54/voxel_size, 28.6/voxel_size, 0/voxel_size, 5/voxel_size, PETImage_shape,circles_in_3D_volume=False)
+        cold2_ROI_atn, mask = self.points_in_circle(0/voxel_size, 57.2/voxel_size, 0/voxel_size, 6.5/voxel_size, PETImage_shape,circles_in_3D_volume=False)
+        hot1_ROI_atn, mask = self.points_in_circle(-49.54/voxel_size, 28.6/voxel_size, 0/voxel_size, 8.5/voxel_size, PETImage_shape,circles_in_3D_volume=False)
+        hot2_ROI_atn, mask = self.points_in_circle(-49.54/voxel_size, -28.6/voxel_size, 0/voxel_size, 11/voxel_size, PETImage_shape,circles_in_3D_volume=False)
+        hot3_ROI_atn, mask = self.points_in_circle(0/voxel_size, -57.2/voxel_size, 0/voxel_size, 14/voxel_size, PETImage_shape,circles_in_3D_volume=False)
+        hot4_ROI_atn, mask = self.points_in_circle(49.54/voxel_size, -28.6/voxel_size, 0/voxel_size, 18.5/voxel_size, PETImage_shape,circles_in_3D_volume=False)
+        
+        # phantom_ROI_bkg = self.points_in_cylinder(0/voxel_size, 0/voxel_size, 0/voxel_size, 150/voxel_size + 1, 180/voxel_size + 1, PETImage_shape)
 
-        # Create background ROI by removing other ROIs
-        all_defined_ROI = [phantom_ROI_bkg, cold1_ROI_bkg, cold2_ROI_bkg, hot1_ROI_bkg, hot2_ROI_bkg, hot3_ROI_bkg, hot4_ROI_bkg]
-        bkg_ROI = self.create_bkg(all_defined_ROI, PETImage_shape)
+        # Create DIP input (called atn here) by removing other ROIs
+        # all_defined_ROI = [phantom_ROI_bkg, cold1_ROI_bkg, cold2_ROI_bkg, hot1_ROI_bkg, hot2_ROI_bkg, hot3_ROI_bkg, hot4_ROI_bkg]
+        all_defined_ROI = [phantom_ROI, cold1_ROI_atn, cold2_ROI_atn, hot1_ROI_atn, hot2_ROI_atn, hot3_ROI_atn, hot4_ROI_atn]
+        atn_ROI = self.create_bkg(all_defined_ROI, PETImage_shape)
+
+        # Create background ROI (small circles for IEC)
+        # Define circular ROIs over 3D volume as in NEMA NU2
+        bkg1_ROI, mask = self.points_in_circle(0.5*(49.54 + 49.54)/voxel_size, 0.5*(28.6 + -28.6 + (18.5-5))/voxel_size, 0/voxel_size, 10/voxel_size-remove_external_radius, PETImage_shape,circles_in_3D_volume=True)
+        bkg2_ROI, mask = self.points_in_circle(0.5*(49.54 + 0)/voxel_size, 0.5*(28.6 + 57.2)/voxel_size, 0/voxel_size, 18.5/voxel_size-remove_external_radius, PETImage_shape,circles_in_3D_volume=True)
+        bkg3_ROI, mask = self.points_in_circle(0.5*(0 + -49.54)/voxel_size, 0.5*(57.2 + 28.6)/voxel_size, 0/voxel_size, 14/voxel_size-remove_external_radius, PETImage_shape,circles_in_3D_volume=True)
+        bkg4_ROI, mask = self.points_in_circle(0.5*(-49.54 + -49.54)/voxel_size, 0.5*(28.6 + -28.6)/voxel_size, 0/voxel_size, 11/voxel_size-remove_external_radius, PETImage_shape,circles_in_3D_volume=True)
+        bkg5_ROI, mask = self.points_in_circle(0.5*(-49.54 + 0)/voxel_size, 0.5*(-28.6 + -57.2)/voxel_size, 0/voxel_size, 8.5/voxel_size-remove_external_radius, PETImage_shape,circles_in_3D_volume=True)
+        bkg6_ROI, mask = self.points_in_circle(0.5*(0 + 49.54)/voxel_size, 0.5*(-57.2 + -28.6 -10)/voxel_size, 0/voxel_size, 6.5/voxel_size-remove_external_radius, PETImage_shape,circles_in_3D_volume=True)
+
+
+        bkg_ROI = None
 
         # Create masks for each ROI
         cold1_mask = zeros(PETImage_shape, dtype='<f')
@@ -1076,11 +1121,24 @@ class vGeneral(abc.ABC):
         hot2_mask = zeros(PETImage_shape, dtype='<f')
         hot3_mask = zeros(PETImage_shape, dtype='<f')
         hot4_mask = zeros(PETImage_shape, dtype='<f')
+        cold1_atn_mask = zeros(PETImage_shape, dtype='<f')
+        cold2_atn_mask = zeros(PETImage_shape, dtype='<f')
+        hot1_atn_mask = zeros(PETImage_shape, dtype='<f')
+        hot2_atn_mask = zeros(PETImage_shape, dtype='<f')
+        hot3_atn_mask = zeros(PETImage_shape, dtype='<f')
+        hot4_atn_mask = zeros(PETImage_shape, dtype='<f')
         phantom_mask = zeros(PETImage_shape, dtype='<f')
-        bkg_mask = zeros(PETImage_shape, dtype='<f')
+        bkg1_mask = zeros(PETImage_shape, dtype='<f')
+        bkg2_mask = zeros(PETImage_shape, dtype='<f')
+        bkg3_mask = zeros(PETImage_shape, dtype='<f')
+        bkg4_mask = zeros(PETImage_shape, dtype='<f')
+        bkg5_mask = zeros(PETImage_shape, dtype='<f')
+        bkg6_mask = zeros(PETImage_shape, dtype='<f')
+        atn_mask = zeros(PETImage_shape, dtype='<f')
 
-        ROI_list = [cold1_ROI, cold2_ROI, hot1_ROI, hot2_ROI, hot3_ROI, hot4_ROI, phantom_ROI, bkg_ROI]
-        mask_list = [cold1_mask, cold2_mask, hot1_mask, hot2_mask, hot3_mask, hot4_mask, phantom_mask, bkg_mask]
+        ROI_list = [cold1_ROI, cold2_ROI, hot1_ROI, hot2_ROI, hot3_ROI, hot4_ROI, phantom_ROI, atn_ROI, cold1_ROI_atn, cold2_ROI_atn, hot1_ROI_atn, hot2_ROI_atn, hot3_ROI_atn, hot4_ROI_atn, bkg1_ROI, bkg2_ROI, bkg3_ROI, bkg4_ROI, bkg5_ROI, bkg6_ROI]
+        # ROI_list = [cold1_ROI, cold2_ROI, hot1_ROI, hot2_ROI, hot3_ROI, hot4_ROI, phantom_ROI, bkg_ROI, atn_ROI]
+        mask_list = [cold1_mask, cold2_mask, hot1_mask, hot2_mask, hot3_mask, hot4_mask, phantom_mask, atn_mask, cold1_atn_mask, cold2_atn_mask, hot1_atn_mask, hot2_atn_mask, hot3_atn_mask, hot4_atn_mask, bkg1_mask, bkg2_mask, bkg3_mask, bkg4_mask, bkg5_mask, bkg6_mask]
 
         # Fill mask with one for each ROI
         for i in range(len(ROI_list)):
@@ -1089,6 +1147,17 @@ class vGeneral(abc.ABC):
             # Convert the coordinates in cold1_ROI to NumPy arrays
             x_coords, y_coords, z_coords = array(ROI).T
             mask[x_coords, y_coords, z_coords] = 1
+
+        # Final mask for background
+        bkg_mask = ones(PETImage_shape, dtype='<f')
+        bkg_mask = bkg_mask * (1 - bkg1_mask)
+        bkg_mask = bkg_mask * (1 - bkg2_mask)
+        bkg_mask = bkg_mask * (1 - bkg3_mask)
+        bkg_mask = bkg_mask * (1 - bkg4_mask)
+        bkg_mask = bkg_mask * (1 - bkg5_mask)
+        bkg_mask = bkg_mask * (1 - bkg6_mask)
+        bkg_mask = 1-bkg_mask
+        self.bkg_mask = bkg_mask
 
         # Storing into file instead of defining them at each metrics computation
         self.save_img(transpose(phantom_mask,axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + "phantom_mask" + self.phantom[5:] + '.raw')
@@ -1099,9 +1168,13 @@ class vGeneral(abc.ABC):
         self.save_img(transpose(hot3_mask, axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + "hot3_mask" + self.phantom[5:] + '.raw')
         self.save_img(transpose(hot4_mask, axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + "hot4_mask" + self.phantom[5:] + '.raw')
         self.save_img(transpose(bkg_mask, axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + "background_mask" + self.phantom[5:] + '.raw')
+        # For atn (DIP input), do an arbitrary scale to not have 0 values
+        atn_mask = atn_mask*40+10
+        self.save_img(transpose(atn_mask, axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + "image_atn" + self.phantom[5:] + '.raw')
         
         # Define GT phantom
-        self.define_GT_IEC_3D(PETImage_shape,subroot, cold1_mask, cold2_mask, hot1_mask, hot2_mask, hot3_mask, hot4_mask, phantom_mask)
+        # self.define_GT_IEC_3D(PETImage_shape,subroot, cold1_mask, cold2_mask, hot1_mask, hot2_mask, hot3_mask, hot4_mask, phantom_mask)
+        self.define_GT_IEC_3D(PETImage_shape,subroot, cold1_atn_mask, cold2_atn_mask, hot1_atn_mask, hot2_atn_mask, hot3_atn_mask, hot4_atn_mask, phantom_mask)
 
     def define_GT_IEC_3D(self,PETImage_shape,subroot, cold1_mask, cold2_mask, hot1_mask, hot2_mask, hot3_mask, hot4_mask, phantom_mask):
         image_GT = ones(PETImage_shape, dtype='<f')
@@ -1121,6 +1194,12 @@ class vGeneral(abc.ABC):
         # Storing into file instead of defining them at each metrics computation
         self.save_img(transpose(image_GT,axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.img')
         self.save_img(transpose(image_GT,axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + self.phantom + '.raw')
+
+        # Store GT image times background mask
+        image_GT_bkg = image_GT + self.bkg_mask
+        self.save_img(transpose(image_GT_bkg,axes=(2,0,1)), subroot+'Data/database_v2/' + self.phantom + '/' + "imageGT*background" + '.raw')
+        print("end")
+
 
     def create_bkg(self, all_defined_ROI, PETImage_shape):
         # Create a DataFrame from the concatenated arrays
@@ -1197,9 +1276,17 @@ class vGeneral(abc.ABC):
         vb = ' -vb 1'
         th = ' -th ' + str(self.nb_threads)
         if (not mlem_quick):
-            header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data pat
+            if ("LM" in self.method and self.phantom == "image40_1"):
+                header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data_conversion/dataLM' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data path    
+                normLM = ' -norm ' + subroot + 'Data/database_v2/' + phantom + '/data_conversion/dataLM' + phantom[5:] + '_' + str(replicates) + '/data_norm' + phantom[5:] + '_' + str(replicates) + '.cdh' # Attenuation and normalization data path
+            else:
+                header_file = ' -df ' + subroot + 'Data/database_v2/' + phantom + '/data' + phantom[5:] + '_' + str(replicates) + '/data' + phantom[5:] + '_' + str(replicates) + '.cdh' # PET data path
+                normLM = ""
         else:
             header_file = ' -df ' + self.subroot + 'Data/database_v2/' + self.phantom + '/data' + self.phantom[5:] + '_' + str(self.config["replicates"]) + '/data' + self.phantom[5:] + '_' + str(self.config["replicates"]) + '.cdh' # PET data path
+            normLM = ""
+        
+        header_file += normLM
         if (self.scanner == "UHR"):
             if ("4_8" in self.phantom):
                 vox = ' -vox 4.8,4.8,4.8'
@@ -1247,7 +1334,7 @@ class vGeneral(abc.ABC):
 
         return executable + dim + vox + header_file + vb + th + proj + opti_like + psf + conv + sensitivity
 
-    def castor_opti_and_penalty(self, method, penalty, rho, i=None, unnested_1st_outer_iter=None):
+    def castor_opti_and_penalty(self, method, penalty, rho, i=None):
         if (method == 'MLEM'):
             opti = ' -opti ' + method
             pnlt = ''
@@ -1301,10 +1388,13 @@ class vGeneral(abc.ABC):
                 pnlt = ' -pnlt ' + penalty + ':' + self.subroot + method + '_MRF.conf'
         elif ("DNA" in method or 'ADMMReg' in method):
             if (self.recoInDNA == "ADMMReg"):
-                opti = ' -opti ' + 'ADMMReg' + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) + ',' + str(self.tau_max) + ',' + str(self.stoppingCriterionValue) + ',' + str(self.saveSinogramsUAndV)
+                if ("LM" in method):
+                    opti_method = 'ADMMRegLM'
+                else:
+                    opti_method = 'ADMMReg'
+                opti = ' -opti ' + opti_method + ',' + str(self.alpha) + ',' + str(self.castor_adaptive_to_int(self.adaptive_parameters)) + ',' + str(self.mu_adaptive) + ',' + str(self.tau) + ',' + str(self.xi) + ',' + str(self.tau_max) + ',' + str(self.stoppingCriterionValue) + ',' + str(self.saveSinogramsUAndV)
                 if ("DNA" in method):
-                    # if ((i==0 and unnested_1st_outer_iter) or (i==-1 and not unnested_1st_outer_iter)): # For first iteration, put rho to zero
-                    if ((i==-1 and not unnested_1st_outer_iter)): # For first iteration, put rho to zero
+                    if (i==-1): # For first iteration, put rho to zero
                         rho = 0
                         #self.rho = 0
                     method = 'ADMMReg' + method[6:]
@@ -1330,7 +1420,7 @@ class vGeneral(abc.ABC):
 
                 penaltyStrength = ' -pnlt-beta ' + str(rho)
             elif (self.recoInDNA == "APPGML"):
-                if ((i==0 and unnested_1st_outer_iter) or (i==-1 and not unnested_1st_outer_iter)): # For first iteration, put rho to zero
+                if (i==-1): # For first iteration, put rho to zero
                     rho = 0
                     #self.rho = 0
                 #opti = ' -opti APPGML' + ',1,1e-10,0.01,-1,' + str(self.A_AML) + ',-1' # Do not use a multimodal image for APPGML, so let default multimodal index (-1)
@@ -1344,7 +1434,7 @@ class vGeneral(abc.ABC):
                 pnlt = ''
                 penaltyStrength = ''
         elif (method == "DIPRecon"):
-            if ((i==0 and unnested_1st_outer_iter) or (i==-1 and not unnested_1st_outer_iter)): # For first iteration, put rho to zero
+            if (i==-1): # For first iteration, put rho to zero
                 rho = 0
                 #self.rho = 0
             opti = ' -opti OPTITR'

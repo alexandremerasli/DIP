@@ -36,10 +36,6 @@ class vReconstruction(vGeneral):
         else:
             self.rho = 0
         if ('ADMMReg' in self.method or  "DNA" in self.method or "DIPRecon" in self.method):
-            if (self.method != "ADMMReg"):
-                self.unnested_1st_outer_iter = config["unnested_1st_outer_iter"]
-            else:
-                self.unnested_1st_outer_iter = None
             if ( "DIPRecon" in self.method):
                 self.alpha = None
             else:
@@ -108,23 +104,14 @@ class vReconstruction(vGeneral):
         start_time_block1 = time.time()
         mlem_sequence = config['mlem_sequence']
 
-        # Save image f-mu in .img and .hdr format - block 1
-        if (i == i_init and i_init > 0 and config["unnested_1st_outer_iter"]):   # choose initial image for CASToR reconstruction
-            f = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + '_FINAL.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
-            mu = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/mu/'+ format(self.experiment)+'/mu_' + format(i-1) + self.suffix + '.img',shape=(self.PETImage_shape)) # loading mu
-        elif (i == 0 and config["unnested_1st_outer_iter"]):
-            f = self.fijii_np(self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + self.net + '' + format(i-1) + '_FINAL.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
-        
+        # Save image f-mu in .img and .hdr format - block 1       
         subroot_output_path = (subroot + 'Block1/' + suffix)
         path_before_eq_22 = (subroot_output_path + '/before_eq22/')
         self.save_img(f-mu, path_before_eq_22 + format(i) + '_f_mu.img')
         self.write_hdr(self.subroot,[i],'before_eq22',phantom,'f_mu',subroot_output_path)
-        f_mu_for_penalty_path = subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr' # Will be removed if initialization and unnested_1st_outer_iter (rho == 0)
+        f_mu_for_penalty_path = subroot_output_path + '/before_eq22/' + format(i) + '_f_mu' + '.hdr'
         subdir = 'during_eq22'
 
-        # If rho is 0, remove f_mu_for_penalty
-        if ((self.rho == 0) or (i==-1 and not self.unnested_1st_outer_iter)): # For first iteration, put rho to zero
-            f_mu_for_penalty_path = ''
         # Write f_mu path in config
         text_file = open(self.subroot_phantom + 'Block1/' + self.suffix  + '/' + 'QUAD.conf', "w")
         text_file.write("# Path to target image (default is uniform image with zeros)" + "\n")
@@ -164,19 +151,13 @@ class vReconstruction(vGeneral):
                 with open(self.subroot_phantom + 'Block1/' + self.suffix  + '/' + 'APPGML.conf', "w") as write_config_file:
                     write_config_file.writelines(data)
                 # Define command line to run OPTITR with CASToR
-                castor_command_line_x = self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i, self.unnested_1st_outer_iter)
-                # Initialize image
+                castor_command_line_x = self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i)
                 
-                if (i == 0 and not config["unnested_1st_outer_iter"]):   # choose initial image for CASToR reconstruction
+                # Choose initial image for CASToR reconstruction
+                if (i == 0): # First CASToR reconstruction, initialize with DIP output
                     self.initial_image = ' -img ' + self.subroot_phantom + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # DIPRecon initializes to DIP output at pre iteratio
-                elif (i == 0 and config["unnested_1st_outer_iter"]):
-                    self.initial_image = ''
-                else:
-                    if (i == 1 and config["unnested_1st_outer_iter"]):
-                        # self.initial_image = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'    
-                        self.initial_image = ' -img ' + self.subroot_phantom + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr'
-                    else:
-                        self.initial_image = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'    
+                else: # Other CASToR reconstructions, initialize with previous CASToR output
+                    self.initial_image = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'    
                     
                 base_name_i = format(i)
                 full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
@@ -201,20 +182,16 @@ class vReconstruction(vGeneral):
                 self.it_option = ' -it ' + str(nb_inner_iteration) + ':1' # Only 2 iterations (DIPRecon) to compute argmax, if we estimate it is an enough precise approximation
 
             # Define command line to run OPTITR with CASToR
-            castor_command_line_x = self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i, self.unnested_1st_outer_iter)
-            # Initialize image
+            castor_command_line_x = self.castor_common_command_line(self.subroot, self.PETImage_shape_str, self.phantom, self.replicate) + self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i)
             
-            if (i == 0 and not config["unnested_1st_outer_iter"]):   # choose initial image for CASToR reconstruction
+            
+            # Choose initial image for CASToR reconstruction
+            if (i == 0): # First CASToR reconstruction, initialize with DIP output
                 self.initial_image = ' -img ' + self.subroot_phantom + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # DIPRecon initializes to DIP output at pre iteratio
-            elif (i == 0 and config["unnested_1st_outer_iter"]):
-                self.initial_image = ' -img ' + self.subroot + 'Data/initialization/' + '1_im_value_cropped.hdr'
-            else:
-                if (i == 1 and config["unnested_1st_outer_iter"]):
-                    self.initial_image = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'    
-                    self.initial_image = ' -img ' + self.subroot_phantom + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr'
-                else:
-                    self.initial_image = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'    
+            else: # Other CASToR reconstructions, initialize with previous CASToR output
+                self.initial_image = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'    
                 
+
             base_name_i = format(i)
             full_output_path_i = subroot_output_path + '/' + subdir + '/' + base_name_i
             x_reconstruction_command_line = castor_command_line_x + ' -fout ' + full_output_path_i + self.it_option + self.initial_image            
@@ -321,17 +298,12 @@ class vReconstruction(vGeneral):
                 #v_for_additional_data = ' -additional-data ' + v_path
                 v_for_additional_data = ',' + v_path
 
-            if (i == 0 and not config["unnested_1st_outer_iter"]):   # choose initial image for CASToR reconstruction
+            # Choose initial image for CASToR reconstruction
+            if (i == 0): # First CASToR reconstruction, initialize with DIP output
                 self.initial_image = ' -img ' + self.subroot_phantom + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # DIPRecon initializes to DIP output at pre iteratio
-            elif (i == 0 and config["unnested_1st_outer_iter"]):
-                self.initial_image = ' -img ' + self.subroot_phantom + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr' # DIPRecon initializes to DIP output at pre iteratio
-            else: # Last image for next outer iteration
-                if (i == 1 and ((i_init == -1 and not config["unnested_1st_outer_iter"]) or (i_init == 0 and config["unnested_1st_outer_iter"])) and config["unnested_1st_outer_iter"]):
-                    self.initial_image = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
-                    self.initial_image = ' -img ' + self.subroot_phantom + '/Block2/' + self.suffix + '/out_cnn/' + str(self.experiment) + '/out_' + self.net + str(i-1) + '_FINAL.hdr'
-                else:
-                    self.initial_image = ' -img ' + subroot_output_path + '/' + 'out_eq22' + '/' +format(i-1) + '.hdr'
-
+            else: # Other CASToR reconstructions, initialize with previous CASToR output
+                self.initial_image = ' -img ' + subroot_output_path + '/' + subdir + '/' + format(i-1) + '_it' + str(config["nb_inner_iteration"]) + '.hdr'    
+            
         if ('ADMMReg' in self.method):
             # Compute one ADMM iteration (x, v, u)
             if (self.post_smoothing): # Apply post smoothing for vizualization
@@ -344,8 +316,8 @@ class vReconstruction(vGeneral):
         else:
             conv = ''
 
-        # Optimizer and penalty in command line, change rho if first outer iteration and unnested_1st_outer_iter
-        opti_and_penalty = self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i, self.unnested_1st_outer_iter)
+        # Optimizer and penalty in command line, change rho if first outer iteration
+        opti_and_penalty = self.castor_opti_and_penalty(self.method, self.penalty, self.rho, i)
 
         x_reconstruction_command_line = castor_command_line_x \
                                         + opti_and_penalty \

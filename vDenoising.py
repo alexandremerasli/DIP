@@ -346,7 +346,7 @@ class vDenoising(vGeneral):
 
     def load_model(self,param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, image_net_input_torch, config, finetuning, outer_it, model, model_class, method, all_images_DIP, checkpoint_simple_path_exp, training):
         if (finetuning == 'last' or finetuning == "ES"): # last model saved in checkpoint
-            if (outer_it > 0 or (outer_it == 0 and not config["unnested_1st_outer_iter"]) or (outer_it == 0 and config["unnested_1st_outer_iter"]) or (outer_it==-100 and os.path.isfile(os.path.join(checkpoint_simple_path_exp,'last.ckpt')))): # if model has already been trained
+            if (outer_it > 0 or (outer_it == 0) or (outer_it==-100 and os.path.isfile(os.path.join(checkpoint_simple_path_exp,'last.ckpt')))): # if model has already been trained
                 model = model_class.load_from_checkpoint(os.path.join(checkpoint_simple_path_exp,'last.ckpt'), config=config, method=method, all_images_DIP = all_images_DIP, outer_it = outer_it, param1_scale_im_corrupt=param1_scale_im_corrupt, param2_scale_im_corrupt=param2_scale_im_corrupt, scaling_input=scaling_input,root=self.root,subroot=self.subroot_phantom, suffix=self.suffix, override_input = self.override_input, scanner = self.scanner) # Load previous model in checkpoint
         return model
 

@@ -183,9 +183,8 @@ class iPostReconstruction(vDenoising):
                     # Compute IR in whole phantom (different from others with several replicates)
                     classResults.compute_IR_whole(self.PETImage_shape,out_descale,self.outer_it,classResults.IR_whole_recon,self.phantom)
                     classResults.writer.add_scalar('Image roughness in the phantom', classResults.IR_whole_recon[self.outer_it], self.outer_it+1)
-                # Write images over epochs
+            # Write images over epochs
             classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out_descale,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
-            #classResults.writeEndImagesAndMetrics(epoch,self.total_nb_iter,self.PETImage_shape,out,self.suffix,self.phantom,self.net,pet_algo="to fit",iteration_name="(post reconstruction)")
 
             if (self.DIP_early_stopping):
                 if (model.classMV.SUCCESS):
