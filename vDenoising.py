@@ -209,20 +209,14 @@ class vDenoising(vGeneral):
                     os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
             if (config["finetuning"] == "ES"):
                 if (config["DIP_early_stopping"]):
-                    if (model.epochStar != -1): # if ES point found, save ES ckpt
+                    if (model.epochStar != -1): # if ES point found or DIP_it_if_no_ES_found ckpt, save ES ckpt
                         if (file == "epoch=" + str(model.epochStar) + "-step=" + str((model.epochStar+1)*self.several_DIP_inputs-1) + ".ckpt"):
+                            print("--- copying --- ", os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str((model.epochStar+1)*self.several_DIP_inputs-1) + ".ckpt") + " to " + os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
                             shutil.copy(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str((model.epochStar+1)*self.several_DIP_inputs-1) + ".ckpt"),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
-                        # os.remove(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str(model.epochStar) + ".ckpt"))
-                        else:
-                            print(os.path.join(self.checkpoint_simple_path_exp,file))
-                            # os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
-                    else: # if ES point not found, save last ckpt or DIP_it_if_no_ES_found ckpt
+                    else: # if ES point not found, save last ckpt
                         if (file == "epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*self.several_DIP_inputs-1) + ".ckpt"):
+                            print("--- copying --- ", os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*self.several_DIP_inputs-1) + ".ckpt") + " to " + os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
                             shutil.copy(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*self.several_DIP_inputs-1) + ".ckpt"),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
-                            # os.remove(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str(model.epochStar) + ".ckpt"))
-                        else:
-                            # os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
-                            print(os.path.join(self.checkpoint_simple_path_exp,file))
         if(self.global_it >= 0):
             if (os.path.isdir(os.path.join(checkpoint_simple_path_previous_exp))):
                 shutil.rmtree(os.path.join(checkpoint_simple_path_previous_exp))

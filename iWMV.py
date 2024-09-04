@@ -217,28 +217,43 @@ class iWMV(vGeneral):
             print("                 ES point found, epoch* =", self.epochStar)
             print("#################################################################")
         else:
-            if (epoch == sub_iter_DIP): # No ES was found, so set it back to intiial value
+            if (epoch == sub_iter_DIP-1): # No ES was found, so set it back to intiial value
                 # self.epochStar = -1
                 # print(self.epochStar)
                 self.epochStar = self.DIP_it_if_no_ES_found - 1
                 print("No ES found, so set self.epochStar to user defined DIP_it_if_no_ES_found")
                 
                 # Open output corresponding to epoch star
-                net_output_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(self.epochStar) + '.img'
+                net_output_path = self.subroot +'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.global_it) + '_epoch=' + format(self.epochStar) + '.img'
                 # Open ckpt corresponding to epoch star
-                ckpt_path = self.subroot_phantom+'Block2/' + self.suffix + '/checkpoint/' + format(self.experiment) + '/' + str(self.outer_it) + '/epoch=' + format(self.epochStar) + '-step=' + format(self.epochStar) + '.ckpt'
+                ckpt_path = self.subroot+'Block2/' + self.suffix + '/checkpoint/' + format(self.experiment) + '/' + str(self.global_it) + '/epoch=' + format(self.epochStar) + '-step=' + format(self.epochStar) + '.ckpt'
 
                 if ("show_results" not in self.config["task"]):
-                    if (self.DIP_it_if_no_ES_found == self.sub_iter_DIP):
+                    if (self.DIP_it_if_no_ES_found == self.config["sub_iter_DIP_initial_and_final"]):
                         # # Open it, otherwise problem of DIP output not transposed
                         # out = self.fijii_np(net_output_path,shape=(self.PETImage_shape),type_im='<f')
                         # # Descale like before DIP optimization
                         # out = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
                         # self.save_img(out, net_output_path)
-                        print("DIP_it_if_no_ES_found == sub_iter_DIP")
+                        print("DIP_it_if_no_ES_found == sub_iter_DIP_initial_and_final")
                     else: # Use ckpt from DIP_it_if_no_ES_found iteration
                         self.save_DIP_output(ckpt_path, net_output_path,unpad_x_y_half_size=unpad_x_y_half_size,unpad_3D_half_size=unpad_3D_half_size,original_x_y_dim=original_x_y_dim, original_3D_dim=original_3D_dim)
             if (current_DIP_iteration == sub_iter_DIP): # No ES was found, so set it back to intiial value
                 self.epochStar = -1
 
         return SUCCESS, VAR_min, stagnate
+    
+    def save_DIP_output(self, ckpt_path, net_output_path, unpad_x_y_half_size, unpad_3D_half_size, original_x_y_dim, original_3D_dim):
+        # Load ckpt file with pytorch ligthning and return the output of DIP network
+        model = self.model_class.load_from_checkpoint(ckpt_path)
+        # Get the output
+        self.image_net_input_torch = model.pad_input_for_divisibility(self.image_net_input_torch)
+        out = model(self.image_net_input_torch)
+        # Unpad if original dimensions were not divisible by 2^3
+        if (self.nb_dimensions == 3):
+            out = out[:,:,unpad_3D_half_size:original_3D_dim + unpad_3D_half_size,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size]
+        else:
+            out = out[:,:,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size,unpad_x_y_half_size:original_x_y_dim + unpad_x_y_half_size]
+        # Save the output
+        image_net_output = squeeze(out.detach().numpy())
+        self.save_img(image_net_output, net_output_path)
