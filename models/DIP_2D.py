@@ -417,11 +417,6 @@ class DIP_2D(LightningModule):
         for self.idx_inside_this_batch in range(train_batch[0].shape[0]):
             image_net_input_torch, image_corrupt_torch = train_batch[0][self.idx_inside_this_batch,:,:,:,:],train_batch[1][self.idx_inside_this_batch,:,:,:,:]
 
-            # Pad if x-y dimensions not divisible by 2^3
-            image_net_input_torch = self.pad_x_y_images_for_divisibility(image_net_input_torch)
-            # Pad if 3D dimension not divisible by 2^3
-            image_net_input_torch = self.pad_3D_images_for_divisibility(image_net_input_torch)
-            
             out = self.forward(image_net_input_torch)
             # logging using tensorboard logger
             if (self.end_to_end):
@@ -497,7 +492,7 @@ class DIP_2D(LightningModule):
         # WMV
         if (end_epoch_LBFGS):
             if (self.num_total_batch == self.several_DIP_inputs - 1):
-                self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.scanner,unpad_x_y_half_size=self.unpad_x_y_half_size,unpad_3D_half_size=self.unpad_3D_half_size,original_x_y_dim=self.original_x_y_dim, original_3D_dim=self.original_3D_dim)
+                self.run_WMV(out,self.config,self.fixed_hyperparameters_list,self.hyperparameters_list,self.debug,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input,self.suffix,self.global_it,self.root,self.scanner)
         
         # Increment number of iterations since beginnning of DNA
         if (self.end_epoch): # We looped over all images of the batch
@@ -634,7 +629,7 @@ class DIP_2D(LightningModule):
         # Initialize variables
         self.classWMV.do_everything(config,root)
 
-    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner,unpad_x_y_half_size=0,unpad_3D_half_size=0,original_x_y_dim=0,original_3D_dim=0):
+    def run_WMV(self,out,config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner):
         if (self.DIP_early_stopping):
             self.SUCCESS = self.classWMV.SUCCESS
             self.log("SUCCESS", int(self.classWMV.SUCCESS))
@@ -647,7 +642,7 @@ class DIP_2D(LightningModule):
             if (len(out_np.shape) == 2): # 2D
                 out_np = out_np[:,:,newaxis]
 
-            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(copy(out_np),self.current_epoch,self.sub_iter_DIP,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate,current_DIP_iteration = self.sub_iter_DIP_this_global_it,unpad_x_y_half_size=self.unpad_x_y_half_size,unpad_3D_half_size=self.unpad_3D_half_size,original_x_y_dim=self.original_x_y_dim, original_3D_dim=self.original_3D_dim)
+            self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate = self.classWMV.WMV(copy(out_np),self.current_epoch,self.sub_iter_DIP,self.classWMV.queueQ,self.classWMV.SUCCESS,self.classWMV.VAR_min,self.classWMV.stagnate,current_DIP_iteration = self.sub_iter_DIP_this_global_it)
             self.VAR_recon = self.classWMV.VAR_recon
             self.MSE_WMV = self.classWMV.MSE_WMV
             self.PSNR_WMV = self.classWMV.PSNR_WMV
@@ -869,49 +864,3 @@ class DIP_2D(LightningModule):
 
     def input_dim_str_to_list(self,PETImage_shape_str):
         return [int(e.strip()) for e in PETImage_shape_str.split(',')]#[:-1]
-
-    def pad_x_y_images_for_divisibility(self,image_net_input_torch):
-            self.original_x_y_dim = image_net_input_torch.shape[-1]
-            if (image_net_input_torch.shape[-1] % 8 > 0):
-                self.unpad_x_y_half_size = int((8 - self.original_x_y_dim % 8) / 2)
-                self.image_corrupt_torch = self.ReplicationPad_dict.get(self.nb_dimensions, None)((self.unpad_x_y_half_size,8 - self.original_x_y_dim % 8 - self.unpad_x_y_half_size,self.unpad_x_y_half_size,8 - self.original_x_y_dim % 8 - self.unpad_x_y_half_size,0,0))(self.image_corrupt_torch)
-                image_net_input_torch = self.ReplicationPad_dict.get(self.nb_dimensions, None)((self.unpad_x_y_half_size,8 - self.original_x_y_dim % 8 - self.unpad_x_y_half_size,self.unpad_x_y_half_size,8 - self.original_x_y_dim % 8 - self.unpad_x_y_half_size,0,0))(image_net_input_torch)
-                if (self.method == "DIP_OT"):
-                    self.sensitivity_image = self.ReplicationPad_dict.get(self.nb_dimensions, None)((self.unpad_x_y_half_size,8 - self.original_x_y_dim % 8 - self.unpad_x_y_half_size,self.unpad_x_y_half_size,8 - self.original_x_y_dim % 8 - self.unpad_x_y_half_size,0,0))(self.sensitivity_image)
-            else:
-                self.unpad_x_y_half_size = 0
-
-            return image_net_input_torch
-
-    def pad_3D_images_for_divisibility(self,image_net_input_torch):
-        if (self.nb_dimensions == 3):
-            self.original_3D_dim = image_net_input_torch.shape[2]
-            if (image_net_input_torch.shape[2] % 8 > 0):
-                self.unpad_3D_half_size = int((8 - self.original_3D_dim % 8) / 2)
-                self.image_corrupt_torch = self.ReplicationPad_dict.get(self.nb_dimensions, None)((0,0,0,0,self.unpad_3D_half_size,8 - self.original_3D_dim % 8 - self.unpad_3D_half_size))(self.image_corrupt_torch)
-                image_net_input_torch = self.ReplicationPad_dict.get(self.nb_dimensions, None)((0,0,0,0,self.unpad_3D_half_size,8 - self.original_3D_dim % 8 - self.unpad_3D_half_size))(image_net_input_torch)
-                if (self.method == "DIP_OT"):
-                    self.sensitivity_image = self.ReplicationPad_dict.get(self.nb_dimensions, None)((0,0,0,0,self.unpad_3D_half_size,8 - self.original_3D_dim % 8 - self.unpad_3D_half_size))(self.sensitivity_image)
-            else:
-                self.unpad_3D_half_size = 0
-        else:
-            self.unpad_3D_half_size = 0
-            self.original_3D_dim = image_net_input_torch.shape[2]
-
-        return image_net_input_torch
-
-    def pad_input_for_divisibility(self,image_net_input_torch):
-        # x-y dimensions
-        self.original_x_y_dim = image_net_input_torch.shape[-1]
-        if (image_net_input_torch.shape[-1] % 8 > 0):
-            self.unpad_x_y_half_size = int((8 - self.original_x_y_dim % 8) / 2)
-            image_net_input_torch = self.ReplicationPad_dict.get(self.nb_dimensions, None)((self.unpad_x_y_half_size,8 - self.original_x_y_dim % 8 - self.unpad_x_y_half_size,self.unpad_x_y_half_size,8 - self.original_x_y_dim % 8 - self.unpad_x_y_half_size,0,0))(image_net_input_torch)
-        
-        # 3D dimension
-        if (self.nb_dimensions == 3):
-            self.original_3D_dim = image_net_input_torch.shape[2]
-            if (image_net_input_torch.shape[2] % 8 > 0):
-                self.unpad_3D_half_size = int((8 - self.original_3D_dim % 8) / 2)
-                image_net_input_torch = self.ReplicationPad_dict.get(self.nb_dimensions, None)((0,0,0,0,self.unpad_3D_half_size,8 - self.original_3D_dim % 8 - self.unpad_3D_half_size))(image_net_input_torch)
-        
-        return image_net_input_torch
