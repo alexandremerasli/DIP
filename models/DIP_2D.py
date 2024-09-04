@@ -9,7 +9,6 @@ from numpy import ravel as ravel_np
 from numpy import ones_like, dtype, fromfile, sign, newaxis, copy, zeros, float32, squeeze, where
 from numpy.random import seed, uniform
 
-
 from pathlib import Path
 from os.path import isfile
 
@@ -18,7 +17,7 @@ from iWMV import iWMV
 
 class DIP_2D(LightningModule):
 
-    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init, image_net_input_torch):
+    def __init__(self, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, root, subroot, method, all_images_DIP, global_it, fixed_hyperparameters_list, hyperparameters_list, debug, suffix, override_input, scanner, sub_iter_DIP_already_done, override_SC_init):
         super().__init__()
 
         # Save all the arguments passed to your model in the checkpoint, especially to save learning rate
@@ -43,7 +42,6 @@ class DIP_2D(LightningModule):
         #     ckpt = load(self.checkpoint_simple_path_exp + '/optimizer.pth')
         #     self.current_epoch = ckpt['epoch']
 
-        self.image_net_input_torch = image_net_input_torch
         self.nb_dimensions = 2
 
         # Defining variables from config        
@@ -123,7 +121,6 @@ class DIP_2D(LightningModule):
         self.classWMV = iWMV(config)
         if(self.DIP_early_stopping):
             self.classWMV.model_class = type(self)
-            self.classWMV.image_net_input_torch = self.image_net_input_torch
             self.initialize_WMV(config,fixed_hyperparameters_list,hyperparameters_list,debug,param1_scale_im_corrupt,param2_scale_im_corrupt,scaling_input,suffix,global_it,root,scanner)
 
         self.write_current_img_mode = True
@@ -557,6 +554,14 @@ class DIP_2D(LightningModule):
             # self.save_img(out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/beforeReLU_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch + self.last_iter) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
         else:
             self.save_img(self.out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img') # The saved images are not destandardized !!!!!! Do it when showing images in tensorboard
+
+        # Save DIP_it_if_no_ES_found iteration with prefix NO_ES
+        if ("DIP_it_if_no_ES_found" in self.config):
+            if (self.current_epoch == self.config["DIP_it_if_no_ES_found"]):
+                self.save_img(self.out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/IF_NO_ES_' + 'out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '_scaled.img')
+                # Descale like at the beginning
+                out_np_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input).astype(float32)
+                self.save_img(out_np_descale, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/IF_NO_ES_' + 'out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img')
                             
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
         config_copy = dict(config)

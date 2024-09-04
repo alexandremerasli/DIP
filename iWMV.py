@@ -59,7 +59,7 @@ class iWMV(vGeneral):
     def runComputation(self,config,root):
         pass
 
-    def WMV(self,out,epoch,sub_iter_DIP,queueQ,SUCCESS,VAR_min,stagnate,descale=True,MV_csv=NaN,current_DIP_iteration=0, MV_metrics_already_stored_in_csv=False,original_x_y_dim=0, original_3D_dim=0):
+    def WMV(self,out,epoch,sub_iter_DIP,queueQ,SUCCESS,VAR_min,stagnate,descale=True,MV_csv=NaN,current_DIP_iteration=0, MV_metrics_already_stored_in_csv=False):
         if (type(out) == str):
             if (out == "MV_metrics_already_in_csv"):
                 pass
@@ -236,19 +236,7 @@ class iWMV(vGeneral):
                         # out = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
                         # self.save_img(out, net_output_path)
                         print("DIP_it_if_no_ES_found == sub_iter_DIP_initial_and_final")
-                    else: # Use ckpt from DIP_it_if_no_ES_found iteration
-                        self.save_DIP_output(ckpt_path, net_output_path,original_x_y_dim=original_x_y_dim, original_3D_dim=original_3D_dim)
             if (current_DIP_iteration == sub_iter_DIP): # No ES was found, so set it back to intiial value
                 self.epochStar = -1
 
         return SUCCESS, VAR_min, stagnate
-    
-    def save_DIP_output(self, ckpt_path, net_output_path, original_x_y_dim, original_3D_dim):
-        # Load ckpt file with pytorch ligthning and return the output of DIP network
-        model = self.model_class.load_from_checkpoint(ckpt_path)
-        # Get the output
-        self.image_net_input_torch = model.pad_input_for_divisibility(self.image_net_input_torch)
-        out = model(self.image_net_input_torch)
-        # Save the output
-        image_net_output = squeeze(out.detach().numpy())
-        self.save_img(image_net_output, net_output_path)
