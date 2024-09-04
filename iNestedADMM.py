@@ -123,9 +123,15 @@ class iNestedADMM(vReconstruction):
             
             self.sub_iter_DIP_already_done = classDenoising.sub_iter_DIP_already_done
             self.sub_iter_DIP_this_global_it = classDenoising.sub_iter_DIP_this_global_it
+            # If DIP early stopping, update number of iterations already done taking into account ES point iteration or user defined DIP_it_if_no_ES_found
             if (config["DIP_early_stopping"]):
+                # DIP ES point found
                 if (classDenoising.SUCCESS):
                     classDenoising.sub_iter_DIP_already_done = self.sub_iter_DIP_already_done - classDenoising.patienceNumber
+                    self.sub_iter_DIP_already_done = classDenoising.sub_iter_DIP_already_done
+                # DIP ES point not found, set number of iterations to DIP_it_if_no_ES_found
+                else:
+                    classDenoising.sub_iter_DIP_already_done = classDenoising.DIP_it_if_no_ES_found
                     self.sub_iter_DIP_already_done = classDenoising.sub_iter_DIP_already_done
 
             # # Copy last checkpoint to file "last.ckpt" or to ES checkpoint 
@@ -154,7 +160,7 @@ class iNestedADMM(vReconstruction):
                     if (classDenoising.SUCCESS):
                         self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - classDenoising.patienceNumber - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
                     else:
-                        self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
+                        self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.DIP_it_if_no_ES_found - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
                 else:
                     self.f = self.fijii_np(self.subroot+'Block2/' + self.suffix + '/out_cnn/'+ format(self.experiment)+'/out_' + classDenoising.net + '' + format(self.global_it) + "_epoch=" + format(classDenoising.sub_iter_DIP - 1) + '.img',shape=(self.PETImage_shape),type_im='<f') # loading DIP output
             else: # MIC study : save DIP output with MR input (when using several DIP inputs)

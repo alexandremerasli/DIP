@@ -127,6 +127,11 @@ class vDenoising(vGeneral):
                     self.image_net_input_torch = self.image_net_input_torch.view(1,config["k_DD"],input_size_DD,input_size_DD) # For Deep Decoder, if original Deep Decoder (i.e. only with decoder part)
             save(self.image_net_input_torch,self.subroot_data + 'Data/initialization/pytorch/replicate_' + str(self.replicate) + '/image_' + self.net + '_input_torch.pt')
 
+        if ("DIP_it_if_no_ES_found" in config):
+            self.DIP_it_if_no_ES_found = config["DIP_it_if_no_ES_found"]
+        else:
+            self.DIP_it_if_no_ES_found = config["sub_iter_DIP_initial_and_final"]
+
     def add_gaussian_noise(self,img,it,diffusion_model_like_each_DIP):
         gaussian_distribution = normal(0, it * diffusion_model_like_each_DIP,self.PETImage_shape[0]*self.PETImage_shape[1]*self.PETImage_shape[2]).reshape(self.PETImage_shape) # reshaping (for DIP)
         return img + gaussian_distribution
@@ -211,7 +216,7 @@ class vDenoising(vGeneral):
                         else:
                             print(os.path.join(self.checkpoint_simple_path_exp,file))
                             # os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
-                    else: # if ES point not found, save last ckpt
+                    else: # if ES point not found, save last ckpt or DIP_it_if_no_ES_found ckpt
                         if (file == "epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*self.several_DIP_inputs-1) + ".ckpt"):
                             shutil.copy(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*self.several_DIP_inputs-1) + ".ckpt"),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
                             # os.remove(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str(model.epochStar) + ".ckpt"))
@@ -493,7 +498,14 @@ class vDenoising(vGeneral):
             #epoch_values = np.arange(0,self.sub_iter_DIP,max(self.sub_iter_DIP//10,1))
             epoch_values = arange(self.sub_iter_DIP//10,self.sub_iter_DIP+self.sub_iter_DIP//10,max(self.sub_iter_DIP//10,1)) - 1
         elif (self.all_images_DIP == "Last"):
-            epoch_values = array([self.sub_iter_DIP-1])
+            if (self.DIP_early_stopping):
+                if (self.SUCCESS): # ES point is reached
+                    epoch_values = array([self.epochStar])
+                else: # Use iteration from user defined value
+                    # epoch_values = array([self.sub_iter_DIP-self.patienceNumber]) # ES point is not reached so threshold to max number of DIP iterations minus patience number (heuristic)
+                    epoch_values = array([self.DIP_it_if_no_ES_found-1])
+            else: # ES is not asked so take last iteration
+                epoch_values = array([self.sub_iter_DIP-1])
 
         for epoch in epoch_values:
             # if (config["finetuning"] == "ES"):

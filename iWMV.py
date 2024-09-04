@@ -25,7 +25,11 @@ class iWMV(vGeneral):
         self.PSNR_WMV = []
         self.SSIM_WMV = []
         self.SUCCESS = False
-        
+
+        if ("DIP_it_if_no_ES_found" in config):
+            self.DIP_it_if_no_ES_found = config["DIP_it_if_no_ES_found"]
+        else:
+            self.DIP_it_if_no_ES_found = config["sub_iter_DIP_initial_and_final"]        
 
         self.EMV_or_WMV = config["EMV_or_WMV"]
         if self.EMV_or_WMV == "EMV":    
@@ -55,9 +59,13 @@ class iWMV(vGeneral):
     def runComputation(self,config,root):
         pass
 
-    def WMV(self,out,epoch,sub_iter_DIP,queueQ,SUCCESS,VAR_min,stagnate,descale=True,MV_csv=NaN,current_DIP_iteration=0):
-        
-        if (out != "MV_metrics_already_in_csv"):
+    def WMV(self,out,epoch,sub_iter_DIP,queueQ,SUCCESS,VAR_min,stagnate,descale=True,MV_csv=NaN,current_DIP_iteration=0, MV_metrics_already_stored_in_csv=False,unpad_x_y_half_size=0,unpad_3D_half_size=0,original_x_y_dim=0, original_3D_dim=0):
+        if (type(out) == str):
+            if (out == "MV_metrics_already_in_csv"):
+                pass
+            else:
+                print("Error: out should be an image, not a string")
+        else:
             # Descale, squeeze image and add 3D dimension to 1 (ok for 2D images)
             if (descale):
                 out = self.descale_imag(from_numpy(out),self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
@@ -115,7 +123,12 @@ class iWMV(vGeneral):
         if (self.EMV_or_WMV == "WMV"):
             #'''
             #####################################  Window Moving Variance  #############################################
-            if (out != "MV_metrics_already_in_csv"):
+            if (type(out) == str):
+                if (out == "MV_metrics_already_in_csv"):
+                    pass
+                else:
+                    print("Error: out should be an image, not a string")
+            else:
                 queueQ.append(out_cropped.flatten()) # Add last computed image to last element in queueQ from window
                 if (len(queueQ) == self.windowSize):
                     # Compute mean for this window
@@ -149,13 +162,16 @@ class iWMV(vGeneral):
         else:
             #'''
             #####################################  Exponential Moving Variance  #############################################
-            if (out != "MV_metrics_already_in_csv"):
+            if (type(out) == str):
+                if (out == "MV_metrics_already_in_csv"):
+                    self.EMV = MV_csv
+                else:
+                    print("Error: out should be an image, not a string")
+            else:                
                 # Compute variance for this window
                 self.EMV = (1-self.alpha_EMV) * (self.EMV + self.alpha_EMV * norm(out_cropped - self.EMA)**2)
                 # Compute EMA to be used in next window
                 self.EMA = (1-self.alpha_EMV) * self.EMA + self.alpha_EMV * out_cropped
-            else:
-                self.EMV = MV_csv
             # Check if current variance is smaller than minimum previously computed variance, else count number of iterations since this minimum
             if self.EMV < VAR_min and not SUCCESS:
                 VAR_min = self.EMV
@@ -166,7 +182,13 @@ class iWMV(vGeneral):
             # ES point has been found
             if stagnate == self.patienceNumber:
                 SUCCESS = True
-            if (out != "MV_metrics_already_in_csv"):
+            
+            if (type(out) == str):
+                if (out == "MV_metrics_already_in_csv"):
+                    pass
+                else:
+                    print("Error: out should be an image, not a string")
+            else:
                 self.VAR_recon.append(self.EMV) # Store current variance to plot variance curve after
             #'''
 
@@ -197,7 +219,25 @@ class iWMV(vGeneral):
         else:
             if (epoch == sub_iter_DIP): # No ES was found, so set it back to intiial value
                 # self.epochStar = -1
-                print(self.epochStar)
+                # print(self.epochStar)
+                self.epochStar = self.DIP_it_if_no_ES_found - 1
+                print("No ES found, so set self.epochStar to user defined DIP_it_if_no_ES_found")
+                
+                # Open output corresponding to epoch star
+                net_output_path = self.subroot_phantom+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/out_' + self.net + format(self.outer_it) + '_epoch=' + format(self.epochStar) + '.img'
+                # Open ckpt corresponding to epoch star
+                ckpt_path = self.subroot_phantom+'Block2/' + self.suffix + '/checkpoint/' + format(self.experiment) + '/' + str(self.outer_it) + '/epoch=' + format(self.epochStar) + '-step=' + format(self.epochStar) + '.ckpt'
+
+                if ("show_results" not in self.config["task"]):
+                    if (self.DIP_it_if_no_ES_found == self.sub_iter_DIP):
+                        # # Open it, otherwise problem of DIP output not transposed
+                        # out = self.fijii_np(net_output_path,shape=(self.PETImage_shape),type_im='<f')
+                        # # Descale like before DIP optimization
+                        # out = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input)
+                        # self.save_img(out, net_output_path)
+                        print("DIP_it_if_no_ES_found == sub_iter_DIP")
+                    else: # Use ckpt from DIP_it_if_no_ES_found iteration
+                        self.save_DIP_output(ckpt_path, net_output_path,unpad_x_y_half_size=unpad_x_y_half_size,unpad_3D_half_size=unpad_3D_half_size,original_x_y_dim=original_x_y_dim, original_3D_dim=original_3D_dim)
             if (current_DIP_iteration == sub_iter_DIP): # No ES was found, so set it back to intiial value
                 self.epochStar = -1
 
