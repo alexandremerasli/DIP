@@ -159,7 +159,7 @@ class vDenoising(vGeneral):
             train_dataloader = DataLoader(train_dataset, batch_size=1,num_workers=0,shuffle=True) # Mini batch training
         # train_dataloader = DataLoader(train_dataset, batch_size=1, num_workers=1, persistent_workers=True) # num_workers is 0 by default, which means the training process will work sequentially inside the main process
         # Choose network architecture as model
-        model, model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, self.override_input)
+        model, self.model_class = self.choose_net(net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, self.override_input)
         # Define path for this global iteration
         self.checkpoint_simple_path_exp = subroot+'Block2/' + self.suffix + '/checkpoint/'+format(experiment) + '/' + str(self.global_it)
         Path(self.checkpoint_simple_path_exp+'/').mkdir(parents=True, exist_ok=True)
@@ -553,7 +553,7 @@ class vDenoising(vGeneral):
     def choose_net(self, net, param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, config, method, all_images_DIP, global_it, PETImage_shape, suffix, override_input):
         if (net == 'DIP'): # Loading DIP architecture
             if(PETImage_shape[2] == 1): # 2D
-                model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)
+                model = DIP_2D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init, self.image_net_input_torch)
                 model_class = DIP_2D
             else: # 3D
                 model = DIP_3D(param1_scale_im_corrupt, param2_scale_im_corrupt, scaling_input, self.config,self.root,self.subroot,method,all_images_DIP,global_it, self.fixed_hyperparameters_list, self.hyperparameters_list, self.debug, suffix, override_input, self.scanner, self.sub_iter_DIP_already_done, self.override_SC_init)

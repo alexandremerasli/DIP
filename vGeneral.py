@@ -545,6 +545,12 @@ class vGeneral(abc.ABC):
         #     PETImage_shape = (int(dim1/2),int(dim2/2),dim3)
         PETImage_shape_str = str(dim1) + ','+ str(dim2) + ',' + str(dim3)
         print('image shape :', PETImage_shape)
+
+        if (len(PETImage_shape_str.split(sep=',')) == 2 or PETImage_shape_str.split(sep=',')[2] == "1"):
+            self.nb_dimensions = 2
+        else:
+            self.nb_dimensions = 3
+
         return PETImage_shape_str
 
     def input_dim_str_to_list(self,PETImage_shape_str):
