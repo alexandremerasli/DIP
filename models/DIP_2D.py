@@ -558,10 +558,10 @@ class DIP_2D(LightningModule):
         # Save DIP_it_if_no_ES_found iteration with prefix NO_ES
         if ("DIP_it_if_no_ES_found" in self.config):
             if (self.current_epoch == self.config["DIP_it_if_no_ES_found"] - 1):
-                self.save_img(self.out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/IF_NO_ES_' + 'out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch - 1) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '_scaled.img')
+                self.save_img(self.out_np, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/IF_NO_ES_' + 'out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '_scaled.img')
                 # Descale like at the beginning
                 out_np_descale = self.descale_imag(out,self.param1_scale_im_corrupt,self.param2_scale_im_corrupt,self.scaling_input).astype(float32)
-                self.save_img(out_np_descale, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/IF_NO_ES_' + 'out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch - 1) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img')
+                self.save_img(out_np_descale, self.subroot+'Block2/' + self.suffix + '/out_cnn/' + format(self.experiment) + '/IF_NO_ES_' + 'out_' + 'DIP' + format(self.global_it) + '_epoch=' + format(self.current_epoch) + ('_batchidx=' + format(batch_idx))*(batch_idx!=-1) + '.img')
                             
     def suffix_func(self,config,hyperparameters_list,NNEPPS=False):
         config_copy = dict(config)
