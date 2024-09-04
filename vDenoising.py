@@ -213,10 +213,19 @@ class vDenoising(vGeneral):
                         if (file == "epoch=" + str(model.epochStar) + "-step=" + str((model.epochStar+1)*self.several_DIP_inputs-1) + ".ckpt"):
                             print("--- copying --- ", os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str((model.epochStar+1)*self.several_DIP_inputs-1) + ".ckpt") + " to " + os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
                             shutil.copy(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.epochStar) + "-step=" + str((model.epochStar+1)*self.several_DIP_inputs-1) + ".ckpt"),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
+                        else:
+                            os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
+                            print("--- deleting --- ",os.path.join(self.checkpoint_simple_path_exp,file))
                     else: # if ES point not found, save last ckpt
                         if (file == "epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*self.several_DIP_inputs-1) + ".ckpt"):
                             print("--- copying --- ", os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*self.several_DIP_inputs-1) + ".ckpt") + " to " + os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
                             shutil.copy(os.path.join(self.checkpoint_simple_path_exp,"epoch=" + str(model.sub_iter_DIP_already_done-1) + "-step=" + str(model.sub_iter_DIP_already_done*self.several_DIP_inputs-1) + ".ckpt"),os.path.join(self.checkpoint_simple_path_exp,"last.ckpt"))
+                        else:
+                            os.remove(os.path.join(self.checkpoint_simple_path_exp,file))
+                            print("--- deleting --- ",os.path.join(self.checkpoint_simple_path_exp,file))
+ 
+
+ 
         if(self.global_it >= 0):
             if (os.path.isdir(os.path.join(checkpoint_simple_path_previous_exp))):
                 shutil.rmtree(os.path.join(checkpoint_simple_path_previous_exp))
